@@ -80,7 +80,7 @@ Mọi truy vấn chạy bằng JWT của người dùng nên **RLS là lớp b�
 ### Cài đặt
 
 ```bash
-git clone https://github.com/<org>/CertTracker.git
+git clone https://github.com/DuongHung1712/CertTracker.git
 cd CertTracker
 pnpm install
 cp .env.example .env.local
