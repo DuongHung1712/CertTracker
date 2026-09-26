@@ -15,3 +15,5 @@ Quyết định đã chốt. Thêm mục mới ở cuối; không sửa mục c�
 | 9 | 2026-09-26 | Ask Your Data dùng query spec whitelist, không text-to-SQL tự do | Loại SQL injection và truy vấn vượt RLS |
 | 10 | 2026-09-26 | Ngưỡng expiry: Expiring Soon ≤ 30 ngày, Expiring in 60d ≤ 60 ngày | Feature list chưa định nghĩa; có thể điều chỉnh |
 | 11 | 2026-09-26 | Import Excel: số serial Excel được **chuyển** thành ngày, không xóa dòng | Diễn giải "loại bỏ ngày dạng serial" theo hướng giữ dữ liệu |
+| 12 | 2026-09-26 | Đăng nhập email + mật khẩu, tắt tự đăng ký; admin tạo tài khoản | Chỉ nhân sự nội bộ được dùng; SSO bổ sung sau như một provider |
+
