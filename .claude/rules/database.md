@@ -15,3 +15,4 @@ paths:
 - Khóa chính UUID; `members.code` (`M001`) chỉ để hiển thị.
 - Email dùng `citext`.
 - Sau migration: `pnpm db:types`, thêm/cập nhật test pgTAP trong `supabase/tests/`.
+- `supabase/config.toml`: chặn tự đăng ký bằng `[auth] enable_signup = false`; **giữ** `[auth.email] enable_signup = true` (đặt false sẽ tắt luôn đăng nhập email).
