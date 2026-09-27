@@ -1342,17 +1342,63 @@ git commit -m "feat(ui): add app shell with role-filtered sidebar"
 ### Task 5: Data building blocks and `/design` showcase
 
 **Files:**
-- Create: `src/components/data/{pagination.ts,pagination.test.ts,data-table.tsx,filter-bar.tsx,empty-state.tsx}`, `src/components/confirm-dialog.tsx`, `src/app/(dev)/design/page.tsx`, `src/app/(dev)/design/demos.tsx`, `e2e/design.spec.ts`
-- Modify: `package.json`, `pnpm-lock.yaml`
+- Create: `src/lib/utils.test.ts`, `src/components/data/{pagination.ts,pagination.test.ts,data-table.tsx,filter-bar.tsx,empty-state.tsx}`, `src/components/confirm-dialog.tsx`, `src/app/(dev)/design/page.tsx`, `src/app/(dev)/design/demos.tsx`, `e2e/design.spec.ts`
+- Modify: `src/lib/utils.ts`, the `cn` import line of every `src/components/ui/*.tsx`, `package.json`, `pnpm-lock.yaml`
 
 **Interfaces:**
 - Consumes: everything from Tasks 1–4.
 - Produces:
+  - `cn` from `@/lib/utils` that understands the design-system text sizes (used by every component, including shadcn primitives)
   - `pageRangeLabel(pageIndex: number, pageSize: number, total: number): string` from `@/components/data/pagination`
   - `<DataTable columns data isLoading? error? empty? pageSize? getRowId? />` (`DataTableProps<TData, TValue>` with `columns: ColumnDef<TData, TValue>[]`)
   - `<FilterBar search onSearchChange searchPlaceholder? hasActiveFilters onClear>{filters}</FilterBar>`
   - `<EmptyState title description? action? />`
   - `<ConfirmDialog open onOpenChange title description confirmLabel onConfirm pending? />`
+
+- [ ] **Step 0: Make `cn` understand the design-system text sizes**
+
+Found in the reviewer's dry run: `cn` (the `cn` package) does not know `text-caption`, `text-label`… are font sizes, treats them as colours, and drops them next to a colour class — `ExpiryBadge` rendered at 14px instead of 12px and table headers lost `text-label`.
+
+Create `src/lib/utils.test.ts`:
+
+```ts
+import { describe, expect, it } from "vitest";
+import { cn } from "@/lib/utils";
+
+describe("cn", () => {
+  it("keeps a design-system text size next to a text colour", () => {
+    expect(cn("text-caption", "text-status-active-fg")).toBe("text-caption text-status-active-fg");
+    expect(cn("text-label uppercase", "text-muted-foreground")).toBe("text-label uppercase text-muted-foreground");
+  });
+
+  it("still lets a later text size win over an earlier one", () => {
+    expect(cn("text-table", "text-caption")).toBe("text-caption");
+    expect(cn("text-sm", "text-body")).toBe("text-body");
+  });
+});
+```
+
+Run `pnpm test` → the 2 new tests FAIL (e.g. `Expected: "text-caption text-status-active-fg"`, `Received: "text-status-active-fg"`).
+
+Replace `src/lib/utils.ts` with:
+
+```ts
+import { createCn } from "cn/config"
+
+// Teach class merging the design-system text styles (`--text-*` in globals.css).
+// Without this, `text-caption` looks like a colour and is dropped next to `text-foreground`.
+export const cn = createCn({
+  extend: {
+    classGroups: {
+      "font-size": [{ text: ["page-title", "section-title", "body", "table", "label", "caption", "kpi"] }],
+    },
+  },
+})
+```
+
+Point every shadcn primitive at this single `cn` (they import the package directly): in each `src/components/ui/*.tsx` change `import { cn } from "cn"` to `import { cn } from "@/lib/utils"` (Git Bash: `sed -i 's|from "cn"$|from "@/lib/utils"|' src/components/ui/*.tsx`). Check: `grep -l 'from "cn"' src/components/ui/*.tsx` prints nothing.
+
+Run `pnpm test` → **56 passed**; `pnpm typecheck` passes.
 
 - [ ] **Step 1: Write the failing pagination test**
 
@@ -1389,13 +1435,15 @@ export function pageRangeLabel(pageIndex: number, pageSize: number, total: numbe
 }
 ```
 
-Run: `pnpm test` → PASS.
+Run: `pnpm test` → PASS (58).
 
 - [ ] **Step 3: Empty state, filter bar, confirm dialog**
 
 ```bash
-pnpm add @tanstack/react-table
+pnpm add @tanstack/react-table@^8
 ```
+
+Pin v8: the unpinned install now resolves v9, whose API is different (`createCoreRowModel`, `TableFeatures`) and does not compile with the code below.
 
 Create `src/components/data/empty-state.tsx`:
 
@@ -1624,7 +1672,7 @@ export function DataTable<TData, TValue>({
             ) : isLoading ? (
               Array.from({ length: 5 }, (_, i) => (
                 <TableRow key={`skeleton-${i}`}>
-                  <TableCell colSpan={columnCount} className="h-8 px-2.5 py-1.5">
+                  <TableCell colSpan={columnCount} className="h-8 px-2.5 py-1">
                     <Skeleton className="h-4 w-full" />
                   </TableCell>
                 </TableRow>
@@ -1637,7 +1685,7 @@ export function DataTable<TData, TValue>({
               rows.map((row) => (
                 <TableRow key={row.id} className="h-8">
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="bg-card px-2.5 py-1.5 first:sticky first:left-0">
+                    <TableCell key={cell.id} className="bg-card px-2.5 py-1 first:sticky first:left-0">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -1739,7 +1787,7 @@ const COLUMNS: ColumnDef<SampleRow, unknown>[] = [
     header: "",
     enableSorting: false,
     cell: ({ row }) => (
-      <Button variant="ghost" size="icon-sm" aria-label={`Thao tác cho ${row.original.name}`}>
+      <Button variant="ghost" size="icon-xs" aria-label={`Thao tác cho ${row.original.name}`}>
         <MoreHorizontal aria-hidden />
       </Button>
     ),
@@ -1991,12 +2039,16 @@ test("design showcase renders tokens and components", async ({ page }) => {
 - [ ] **Step 7: Verify**
 
 Run: `pnpm test && pnpm lint && pnpm typecheck && pnpm build && pnpm test:e2e`
-Expected: all PASS (e2e: 3 auth + 3 navigation + 1 design). The production build must list `/design`; opening it with `pnpm start` returns 404.
+Expected: all PASS — 58 unit tests; e2e 7 (3 auth + 3 navigation + 1 design). The production build must list `/design`; opening it with `pnpm start` returns 404.
+
+`pnpm lint` reports exactly **one warning** and no errors: `react-hooks/incompatible-library` on `useReactTable` in `data-table.tsx` (TanStack Table returns functions the React Compiler cannot memoize; the compiler is not enabled in this project). This is expected — do not disable the rule.
+
+Visual check on `/design` (dev): expiry badges 12px/16px/500 and 24px tall; table header 12px with 0.04em letter-spacing; body rows 32px (+1px border).
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/components/data src/components/confirm-dialog.tsx "src/app/(dev)" e2e/design.spec.ts package.json pnpm-lock.yaml
+git add src/lib/utils.ts src/lib/utils.test.ts src/components/ui src/components/data src/components/confirm-dialog.tsx "src/app/(dev)" e2e/design.spec.ts package.json pnpm-lock.yaml
 git commit -m "feat(ui): add data table, filter bar, empty state, confirm dialog and /design showcase"
 ```
 
@@ -2013,6 +2065,8 @@ git commit -m "feat(ui): add data table, filter bar, empty state, confirm dialog
 In `docs/design-system.md`:
 - §3: add a column "Trạng thái" to the component table — "✓" for everything built in Tasks 2–5, "tuần N" for `Combobox`, `DatePicker` (tuần 2), `FileDropzone` (tuần 3), `KpiTile` (tuần 5); note that `DataTable` row selection arrives with the first bulk action.
 - §9 step 3: `/design` exists at `src/app/(dev)/design/page.tsx`.
+- §2.4: table cell padding is `4px 10px` (a 24px badge or icon button + 8px = 32px row); form inputs use `h-9` (36px) — the default `Input` is 32px for toolbars.
+- §3: note that all components (shadcn included) import `cn` from `@/lib/utils`, which knows the `text-*` styles.
 
 - [ ] **Step 2: Rules for future sessions**
 
