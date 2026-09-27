@@ -37,11 +37,22 @@ const SAMPLE_ROWS: SampleRow[] = [
   { id: "6", code: "M006", name: "Đặng Gia Huy", course: "IBM Data Science", status: "not_started", progress: 0, expiryStatus: "Active", daysToExpiry: 400, expiryDate: "2027-10-31" },
 ];
 
+// DataTable's default sort (Vietnamese collation) doesn't know what "order"
+// means for these two columns — it would sort by the raw enum or the
+// English `expiry_status` string. A column overrides with its own
+// `sortingFn` whenever "sorted" means something other than text order.
+const STATUS_RANK: Record<RecordStatus, number> = { not_started: 0, in_progress: 1, done: 2 };
+
 const COLUMNS: ColumnDef<SampleRow, unknown>[] = [
   { accessorKey: "code", header: "Mã", cell: ({ row }) => <MemberCode code={row.original.code} /> },
   { accessorKey: "name", header: "Họ tên" },
   { accessorKey: "course", header: "Khóa học" },
-  { accessorKey: "status", header: "Trạng thái", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
+  {
+    accessorKey: "status",
+    header: "Trạng thái",
+    cell: ({ row }) => <RecordStatusLabel status={row.original.status} />,
+    sortingFn: (a, b) => STATUS_RANK[a.original.status] - STATUS_RANK[b.original.status],
+  },
   { accessorKey: "progress", header: "Tiến độ", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
   {
     accessorKey: "expiryStatus",
@@ -53,6 +64,10 @@ const COLUMNS: ColumnDef<SampleRow, unknown>[] = [
         expiryDate={row.original.expiryDate}
       />
     ),
+    // Urgency order (days left, ascending), not the English status string;
+    // no expiry date (null) always sorts to the "far" end.
+    sortingFn: (a, b) =>
+      (a.original.daysToExpiry ?? Number.POSITIVE_INFINITY) - (b.original.daysToExpiry ?? Number.POSITIVE_INFINITY),
   },
   {
     id: "actions",

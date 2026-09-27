@@ -18,6 +18,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  pendingLabel,
   onConfirm,
   pending = false,
 }: {
@@ -26,20 +27,30 @@ export function ConfirmDialog({
   title: string;
   description: string;
   confirmLabel: string;
+  /** Shown on the confirm button while `pending`. Defaults to "Đang xử lý…". */
+  pendingLabel?: string;
   onConfirm: () => void;
   pending?: boolean;
 }) {
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
+    <AlertDialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // Ignore Esc / backdrop / Cancel while the destructive action is in
+        // flight — otherwise the dialog can be dismissed mid-request.
+        if (pending && !nextOpen) return;
+        onOpenChange(nextOpen);
+      }}
+    >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
+          <AlertDialogTitle className="text-section-title">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-body">{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Hủy</AlertDialogCancel>
           <Button variant="destructive" disabled={pending} onClick={onConfirm}>
-            {pending ? "Đang xử lý…" : confirmLabel}
+            {pending ? (pendingLabel ?? "Đang xử lý…") : confirmLabel}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

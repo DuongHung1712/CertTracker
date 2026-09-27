@@ -1,15 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-
-// Credentials come from supabase/seed.sql (local test users only).
-const SEED_PASSWORD = "Password123!";
-
-async function signIn(page: Page, email: string) {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Mật khẩu").fill(SEED_PASSWORD);
-  await page.getByRole("button", { name: "Đăng nhập" }).click();
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-}
+import { expect, test } from "@playwright/test";
+import { signIn } from "./helpers";
 
 test("admin sees admin-only sections", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
@@ -24,9 +14,15 @@ test("member sees only personal sections", async ({ page }) => {
   await expect(page.getByRole("link", { name: "Thành viên" })).toHaveCount(0);
 });
 
-test("sidebar link navigates and marks the breadcrumb", async ({ page }) => {
+test("sidebar link navigates, marks the breadcrumb and the active item", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
-  await page.getByRole("link", { name: "Khóa học" }).click();
+  // Scoped to the sidebar nav: the active breadcrumb item also has role
+  // "link" (it's a disabled <span role="link">), so an unscoped query for
+  // "Khóa học" matches both.
+  const link = page.getByRole("navigation", { name: "Điều hướng chính" }).getByRole("link", { name: "Khóa học" });
+  await link.click();
   await expect(page).toHaveURL(/\/courses$/);
   await expect(page.getByRole("heading", { name: "Khóa học" })).toBeVisible();
+  await expect(page.locator('[data-slot="breadcrumb-page"]')).toHaveText("Khóa học");
+  await expect(link).toHaveAttribute("aria-current", "page");
 });

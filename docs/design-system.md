@@ -38,7 +38,7 @@ Tên token theo **vai trò**, theo quy ước của shadcn/ui. Chỉ có giao di
 | `accent` | `#E2EFEC` | Dòng bảng đang chọn, mục sidebar active, hover dòng | — |
 | `accent-foreground` | `#0E5C58` | Chữ trên `accent` | 6.6:1 |
 | `destructive` | `#B42318` | Nút xóa, chữ lỗi form | 6.6:1 trên trắng, cả hai chiều |
-| `border` | `#D8DEDB` | Đường kẻ bảng, viền thẻ, phân cách (trang trí) | 1.4:1 — không dùng làm ranh giới control |
+| `border` | `#D8DEDB` | Đường kẻ bảng, viền thẻ, phân cách (trang trí) | 1.27:1 trên `background`, 1.36:1 trên `card` — không dùng làm ranh giới control |
 | `input` | `#83908C` | Viền ô nhập, checkbox, select | 3.3:1 trên `card`, 3.1:1 trên `background` |
 | `ring` | `#1C7C75` | Focus ring (2px, offset 2px) | 4.7:1 trên `background` |
 
@@ -68,6 +68,8 @@ Badge dạng "tem": nền nhạt, chữ đậm, viền 1px. Mỗi trạng thái 
 
 Màu trạng thái **chỉ** dùng cho hạn chứng chỉ. Không dùng cho nút, trạng thái học hay vai trò.
 
+Sáu tông màu có độ sáng khá gần nhau (khó phân biệt nhanh với người mù màu đỏ-lục). Riêng `expired` in đậm (`font-semibold` thay vì `font-medium`) — trạng thái cần chú ý nhất được thêm một lớp phân biệt ngoài màu và icon.
+
 ### 2.3 Chữ
 
 | Vai trò | Font | Ghi chú |
@@ -88,7 +90,7 @@ Màu trạng thái **chỉ** dùng cho hạn chứng chỉ. Không dùng cho nú
 ### 2.4 Khoảng cách, kích thước, bo góc, bóng
 
 - **Lưới 4px:** `4 · 8 · 12 · 16 · 24 · 32` (Tailwind `1 · 2 · 3 · 4 · 6 · 8`). Nhóm phần tử dùng `gap`, không dùng margin lẻ.
-- **Bảng:** dòng 32px, padding ô `4px 10px` (badge hoặc nút icon 24px + 8px), header dính khi cuộn; nút thao tác trong dòng dùng `size="icon-xs"`.
+- **Bảng:** dòng 32px, padding ô `4px 10px` (badge hoặc nút icon 24px + 8px); header nằm trong cùng khung cuộn ngang với phần thân, không cố định khi cuộn dọc (một khung cuộn cao không giới hạn thì không dính được — chưa cần thiết ở quy mô bảng hiện tại); nút thao tác trong dòng dùng `size="icon-xs"`.
 - **Control:** cao 32px trong bảng/bộ lọc/toolbar (mặc định của `Input`, `Button`); 36px trong form (`h-9` / `size="lg"`).
 - **Nội dung trang:** padding 24px (16px dưới 640px); form rộng tối đa 640px.
 
@@ -104,16 +106,16 @@ Bóng đổ chỉ cho lớp nổi (popover, menu, hộp thoại, toast). Thẻ v
 
 ## 3. Component
 
-Component gốc lấy từ **shadcn/ui** style `base-nova` (Base UI) trong `src/components/ui`, sinh bằng `pnpm dlx shadcn@latest add`. Ghép component bằng prop **`render`** (không phải `asChild`). Component riêng của CertTracker nằm ở các thư mục bên dưới; component chỉ thuộc một nghiệp vụ đặt trong `src/features/<feature>/components/`.
+Component gốc lấy từ **shadcn/ui** style `base-nova` (Base UI) trong `src/components/ui`, sinh bằng `pnpm exec shadcn add <tên>` (dùng bản đã ghim trong `package.json`, không phải `dlx shadcn@latest` — tránh lệch phiên bản với lockfile). Ghép component bằng prop **`render`** (không phải `asChild`). Component riêng của CertTracker nằm ở các thư mục bên dưới; component chỉ thuộc một nghiệp vụ đặt trong `src/features/<feature>/components/`.
 
-Mọi component (kể cả shadcn) import `cn` từ `@/lib/utils` — bản đã được dạy các cỡ chữ `text-page-title … text-kpi`, để `text-caption` không bị xóa khi đứng cạnh một class màu.
+Mọi component (kể cả shadcn) import `cn` từ `@/lib/utils` — bản đã được dạy các cỡ chữ `text-page-title … text-kpi`, để `text-caption` không bị xóa khi đứng cạnh một class màu. `shadcn add` luôn sinh `import { cn } from "cn"`: đổi lại thành `@/lib/utils` sau mỗi lần thêm component — ESLint chặn import `"cn"` trực tiếp nên quên bước này sẽ báo lỗi ngay.
 
 | Nhóm | Component | Vị trí | Hành vi chính | Trạng thái |
 |---|---|---|---|---|
 | Khung app | `AppSidebar` | `components/app-shell/` | shadcn `sidebar`; thu gọn thành cột icon; ngăn kéo dưới 1024px; mục lọc theo vai trò (§4.5) | ✓ |
 | | `Topbar`, `UserMenu` | `components/app-shell/` | Breadcrumb trái; menu người dùng phải (email, `RoleBadge`, Đăng xuất) | ✓ |
 | | `PageHeader` | `components/app-shell/` | `page-title`, mô tả một dòng, vùng nút hành động bên phải | ✓ |
-| Dữ liệu | `DataTable` | `components/data/` | TanStack Table v8; compact; sắp xếp; menu "⋯" cuối dòng; phân trang 25 dòng; trạng thái rỗng / đang tải (skeleton 5 dòng) / lỗi | ✓ (chọn nhiều dòng: khi có thao tác hàng loạt đầu tiên) |
+| Dữ liệu | `DataTable` | `components/data/` | TanStack Table v8; compact; sắp xếp (mặc định theo tiếng Việt qua `Intl.Collator`, cột tự khai `sortingFn` riêng nếu "sắp xếp" có nghĩa khác — vd. hạn theo số ngày còn lại, không theo chuỗi tiếng Anh); phân trang 25 dòng; trạng thái rỗng / đang tải (skeleton 5 dòng, tôn trọng `prefers-reduced-motion`) / lỗi | ✓ (chọn nhiều dòng: khi có thao tác hàng loạt đầu tiên) |
 | | `FilterBar` | `components/data/` | Ô tìm kiếm + bộ lọc (children) + "Xóa lọc" (chỉ hiện khi có lọc) | ✓ |
 | | `EmptyState` | `components/data/` | Một câu giải thích + một nút hành động; không hình minh họa | ✓ |
 | Trạng thái | `ExpiryBadge` | `components/status/` | Nhận `expiry_status` + `days_to_expiry` + `expiry_date`; tooltip "Còn 23 ngày · hết hạn 19/10/2026" / "Đã hết hạn 5 ngày · …" | ✓ |
@@ -131,7 +133,7 @@ Mọi component (kể cả shadcn) import `cn` từ `@/lib/utils` — bản đã
 | | `Alert` | shadcn | Thông báo trong trang | ✓ |
 | Dashboard | `KpiTile` | `components/data/` | Số `kpi`, nhãn `label`, biến động so với kỳ trước | tuần 5 |
 
-Icon: **lucide-react**, cỡ 16px trong bảng/nút, 20px trong sidebar. Nút chỉ có icon phải có `aria-label` và `Tooltip`.
+Icon: **lucide-react**, cỡ 16px (`size-4`) ở mọi nơi, kể cả sidebar — CSS của shadcn `Sidebar` tự đặt `[&_svg]:size-4` với độ ưu tiên cao hơn `size-5` gọi từ ngoài, nên 16px là kích thước thực tế dùng chung. Nút chỉ có icon phải có `aria-label` và `Tooltip`.
 
 ---
 
@@ -146,7 +148,7 @@ DataTable    Mã │ Họ tên │ Email │ Team │ Chứng chỉ │ Sắp h�
              phân trang 25 dòng/trang
 ```
 
-Cột đầu là định danh (mã hoặc tên), cột cuối là menu "⋯". Cột số canh phải.
+Cột đầu là định danh (mã hoặc tên), cột cuối là menu "⋯" — cột này do trang gọi `DataTable` tự khai báo, không phải tính năng có sẵn của component. Cột số canh phải.
 
 ### 4.2 Tạo, sửa, xem
 
@@ -208,10 +210,12 @@ Khi DB **chặn** xóa (vd. khóa học đang có bản ghi chứng chỉ dùng 
 ## 6. Truy cập
 
 - Chữ ≥ 4.5:1 trên nền của nó; viền control, focus ring, icon mang nghĩa ≥ 3:1 (bảng ở §2.1, §2.2 — được kiểm tra bằng test).
-- Focus ring `ring` 2px + offset 2px luôn nhìn thấy khi dùng bàn phím (`focus-visible`).
+- Focus ring `ring` 2px + offset 2px luôn nhìn thấy khi dùng bàn phím (`focus-visible`), kể cả trên nền `Sidebar` — quy tắc CSS không nằm trong layer nên thắng được `outline-hidden` mặc định của shadcn.
 - Mọi thao tác làm được bằng bàn phím: menu dòng, hộp thoại (bẫy focus, `Esc` để đóng), combobox.
-- Trạng thái luôn có chữ; icon trang trí có `aria-hidden`.
-- Tôn trọng `prefers-reduced-motion`: tắt chuyển động trượt của sheet/sidebar, chỉ giữ đổi độ mờ.
+- Trạng thái luôn có chữ; icon trang trí có `aria-hidden`. Chi tiết chỉ hiện khi hover (như tooltip của `ExpiryBadge`) luôn có thêm một bản sao `sr-only` — tooltip không mở được bằng chạm và không phải trình duyệt nào cũng gắn `aria-describedby`.
+- Landmark: `<nav aria-label="Điều hướng chính">` bọc menu sidebar; `<header>` (Topbar) là anh em của `<main>`, không lồng bên trong — lồng bên trong sẽ mất vai trò "banner". Có link "Bỏ qua đến nội dung" (skip link) đầu mỗi trang trong khung app.
+- Tên hiển thị không được thay thế bằng `aria-label`: nếu một nút đã có chữ nhìn thấy (như tên/vai trò trong menu tài khoản), thêm ngữ cảnh bằng `sr-only` phía trước, không dùng `aria-label` đè lên (WCAG 2.5.3 Label in Name).
+- Tôn trọng `prefers-reduced-motion`: dừng mọi animation ở 1 vòng lặp thay vì lặp vô hạn (skeleton, spinner) để tránh nhấp nháy ngẫu nhiên; tắt chuyển động trượt của sheet/sidebar, chỉ giữ đổi độ mờ.
 - Vùng bấm tối thiểu 32×32px (24×24px cho icon trong ô bảng có khoảng trống xung quanh).
 
 ---
@@ -221,16 +225,16 @@ Khi DB **chặn** xóa (vd. khóa học đang có bản ghi chứng chỉ dùng 
 | Độ rộng | Thay đổi |
 |---|---|
 | ≥ 1024px | Sidebar cố định (thu gọn được) |
-| < 1024px | Sidebar thành ngăn kéo, mở bằng nút menu trên Topbar |
+| < 1024px | Sidebar thành ngăn kéo, mở bằng nút menu trên Topbar; tự đóng khi điều hướng sang trang khác |
 | < 640px | Form một cột; bảng cuộn ngang trong khung riêng, cột đầu dính; `PageHeader` xếp nút xuống dưới tiêu đề |
 
-Trang không bao giờ cuộn ngang; chỉ bảng cuộn trong khung của nó.
+Trang không bao giờ cuộn ngang; chỉ bảng cuộn trong khung của nó (`SidebarInset` cần `min-w-0` — mặc định flex item không co lại dưới nội dung dài nhất bên trong, ở đây là một bảng `white-space: nowrap`).
 
 ---
 
 ## 8. Không làm
 
-- Màu, cỡ chữ, bo góc viết cứng trong component (`bg-teal-700`, `#0E5C58`, `text-[13px]`).
+- Màu, cỡ chữ, bo góc viết cứng trong component của CertTracker (`bg-teal-700`, `#0E5C58`, `text-[13px]`). Các file sinh sẵn trong `src/components/ui/` (shadcn) được miễn trừ — mặc định của chúng (`text-sm`/`text-xs`…) trùng giá trị `body`/`caption` nên không lệch thị giác; chỉ sửa khi một giá trị thực sự khác token (đã làm ở `RoleBadge`: `rounded-4xl` → `rounded-sm`).
 - Dùng màu trạng thái cho thứ khác ngoài hạn chứng chỉ.
 - Emoji làm icon; gradient trang trí; thẻ có sọc màu bên trái; bóng đổ trên thẻ/bảng.
 - Bo góc lớn hơn 8px.

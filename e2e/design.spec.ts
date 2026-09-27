@@ -1,14 +1,8 @@
 import { expect, test } from "@playwright/test";
-
-// Credentials come from supabase/seed.sql (local test users only).
-const SEED_PASSWORD = "Password123!";
+import { signIn } from "./helpers";
 
 test("design showcase renders tokens and components", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@certtracker.test");
-  await page.getByLabel("Mật khẩu").fill(SEED_PASSWORD);
-  await page.getByRole("button", { name: "Đăng nhập" }).click();
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await signIn(page, "admin@certtracker.test");
 
   await page.goto("/design");
   await expect(page.getByRole("heading", { name: "Trạng thái hết hạn" })).toBeVisible();

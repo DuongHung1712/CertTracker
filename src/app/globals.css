@@ -176,6 +176,11 @@
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
+    /* Without this, an infinite animation (Skeleton's pulse, a spinner)
+       still loops every 0.01ms and each frame samples a random phase,
+       which reads as flicker instead of stillness. */
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

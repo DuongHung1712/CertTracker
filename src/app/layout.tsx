@@ -29,7 +29,12 @@ export default function RootLayout({
     <html lang="vi" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <TooltipProvider delay={200}>{children}</TooltipProvider>
-        <Toaster theme="light" position="bottom-right" />
+        <Toaster
+          theme="light"
+          position="bottom-right"
+          closeButton
+          toastOptions={{ closeButtonAriaLabel: "Đóng thông báo" }}
+        />
       </body>
     </html>
   );

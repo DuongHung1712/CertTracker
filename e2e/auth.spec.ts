@@ -1,8 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { signIn } from "./helpers";
 
-// Credentials come from supabase/seed.sql (local test users only).
 const ADMIN_EMAIL = "admin@certtracker.test";
-const SEED_PASSWORD = "Password123!";
 
 test("unauthenticated visitor is sent to login", async ({ page }) => {
   await page.goto("/");
@@ -10,12 +9,7 @@ test("unauthenticated visitor is sent to login", async ({ page }) => {
 });
 
 test("admin signs in, sees dashboard, and signs out", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(ADMIN_EMAIL);
-  await page.getByLabel("Mật khẩu").fill(SEED_PASSWORD);
-  await page.getByRole("button", { name: "Đăng nhập" }).click();
-
-  await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+  await signIn(page, ADMIN_EMAIL);
   await expect(page.getByText("Quản trị")).toBeVisible();
 
   await page.getByRole("button", { name: "Tài khoản" }).click();

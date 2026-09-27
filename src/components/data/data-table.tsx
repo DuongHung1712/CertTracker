@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  flexRender,
   getCoreRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+  flexRender,
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
@@ -27,6 +27,20 @@ export type DataTableProps<TData, TValue> = {
   getRowId?: (row: TData, index: number) => string;
 };
 
+// Sorts Vietnamese text correctly by default (Đ between D and E, diacritics
+// ignored) and compares numbers numerically. A column with its own meaning
+// of "order" — e.g. an expiry column that should sort by days left, not by
+// the English `expiry_status` string — passes its own `sortingFn` to
+// override this.
+const viCollator = new Intl.Collator("vi", { numeric: true, sensitivity: "base" });
+
+function defaultSortingFn(rowA: { getValue: (id: string) => unknown }, rowB: { getValue: (id: string) => unknown }, columnId: string) {
+  const a = rowA.getValue(columnId);
+  const b = rowB.getValue(columnId);
+  if (typeof a === "number" && typeof b === "number") return a - b;
+  return viCollator.compare(String(a ?? ""), String(b ?? ""));
+}
+
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -47,17 +61,27 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageIndex: 0, pageSize } },
+    defaultColumn: { sortingFn: defaultSortingFn },
   });
 
   const columnCount = table.getVisibleLeafColumns().length;
   const rows = table.getRowModel().rows;
-  const { pageIndex } = table.getState().pagination;
+  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination;
+  const totalRows = table.getPrePaginationRowModel().rows.length;
+  const showFooter = !isLoading && !error;
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="overflow-x-auto rounded-lg border bg-card">
+      {/*
+       * A single scroll container (Table's own `overflow-x-auto`, from
+       * ui/table.tsx) — the design was to also stick the header while
+       * scrolling, but that needs a bounded-height frame (awkward on
+       * mobile) and was dropped; `overflow-hidden` here only clips the
+       * table's square corners to this box's rounded ones.
+       */}
+      <div className="overflow-hidden rounded-lg border bg-card">
         <Table className="text-table tabular-nums">
-          <TableHeader className="sticky top-0 z-10 bg-muted">
+          <TableHeader>
             {table.getHeaderGroups().map((group) => (
               <TableRow key={group.id} className="hover:bg-transparent">
                 {group.headers.map((header) => {
@@ -67,7 +91,7 @@ export function DataTable<TData, TValue>({
                     <TableHead
                       key={header.id}
                       aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
-                      className="h-8 bg-muted px-2.5 text-label uppercase text-muted-foreground first:sticky first:left-0"
+                      className="h-8 bg-muted px-2.5 text-label uppercase text-muted-foreground first:sticky first:left-0 first:z-[1]"
                     >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
                         <button
@@ -89,28 +113,42 @@ export function DataTable<TData, TValue>({
           </TableHeader>
           <TableBody>
             {error ? (
-              <TableRow>
-                <TableCell colSpan={columnCount} className="px-2.5 py-6 text-center text-destructive">
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={columnCount}
+                  role="alert"
+                  className="px-2.5 py-6 text-center whitespace-normal text-destructive"
+                >
                   {error}
                 </TableCell>
               </TableRow>
             ) : isLoading ? (
-              Array.from({ length: 5 }, (_, i) => (
-                <TableRow key={`skeleton-${i}`}>
-                  <TableCell colSpan={columnCount} className="h-8 px-2.5 py-1">
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
+              <>
+                <TableRow className="sr-only">
+                  <TableCell colSpan={columnCount}>Đang tải…</TableCell>
                 </TableRow>
-              ))
+                {Array.from({ length: 5 }, (_, i) => (
+                  <TableRow key={`skeleton-${i}`} aria-hidden className="hover:bg-transparent">
+                    <TableCell colSpan={columnCount} className="h-8 px-2.5 py-1">
+                      <Skeleton className="h-4 w-full motion-reduce:animate-none" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </>
             ) : rows.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={columnCount}>{empty ?? <EmptyState title="Không có dữ liệu" />}</TableCell>
+                <TableCell colSpan={columnCount} className="whitespace-normal">
+                  {empty ?? <EmptyState title="Không có dữ liệu" />}
+                </TableCell>
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} className="h-8">
+                <TableRow key={row.id} className="group h-8 hover:bg-accent">
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="bg-card px-2.5 py-1 first:sticky first:left-0">
+                    <TableCell
+                      key={cell.id}
+                      className="px-2.5 py-1 first:sticky first:left-0 first:z-[1] first:bg-card group-hover:first:bg-accent"
+                    >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -120,27 +158,29 @@ export function DataTable<TData, TValue>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex items-center justify-end gap-2 text-caption text-muted-foreground">
-        <span className="tabular-nums">{pageRangeLabel(pageIndex, pageSize, data.length)}</span>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          aria-label="Trang trước"
-          onClick={() => table.previousPage()}
-          disabled={!table.getCanPreviousPage()}
-        >
-          <ChevronLeft aria-hidden />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          aria-label="Trang sau"
-          onClick={() => table.nextPage()}
-          disabled={!table.getCanNextPage()}
-        >
-          <ChevronRight aria-hidden />
-        </Button>
-      </div>
+      {showFooter && (
+        <div className="flex items-center justify-end gap-2 text-caption text-muted-foreground">
+          <span className="tabular-nums">{pageRangeLabel(pageIndex, currentPageSize, totalRows)}</span>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Trang trước"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeft aria-hidden />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            aria-label="Trang sau"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRight aria-hidden />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
