@@ -422,7 +422,7 @@ git commit -m "feat(ui): add design tokens with enforced contrast"
 ### Task 2: shadcn primitives
 
 **Files:**
-- Create (generated): `src/components/ui/{sidebar,table,dialog,alert-dialog,sheet,dropdown-menu,sonner,tooltip,skeleton,badge,alert,textarea,checkbox,switch,form,breadcrumb,separator}.tsx`, `src/hooks/use-mobile.ts` and any other files the CLI adds
+- Create (generated): `src/components/ui/{sidebar,table,dialog,alert-dialog,sheet,dropdown-menu,sonner,tooltip,skeleton,badge,alert,textarea,checkbox,switch,field,breadcrumb,separator}.tsx`, `src/hooks/use-mobile.ts` (then rewritten, Step 3)
 - Modify: `src/app/layout.tsx` (Toaster, TooltipProvider), `package.json`, `pnpm-lock.yaml`
 
 **Interfaces:**
@@ -432,10 +432,12 @@ git commit -m "feat(ui): add design tokens with enforced contrast"
 - [ ] **Step 1: Add the components without overwriting anything**
 
 ```bash
-pnpm dlx shadcn@latest add sidebar table dialog alert-dialog sheet dropdown-menu sonner tooltip skeleton badge alert textarea checkbox switch form breadcrumb separator
+pnpm dlx shadcn@latest add sidebar table dialog alert-dialog sheet dropdown-menu sonner tooltip skeleton badge alert textarea checkbox switch field breadcrumb separator
 ```
 
 When asked to overwrite an existing file (`button.tsx`, `input.tsx`, `label.tsx`, `card.tsx`), answer **No**.
+
+Use `field`, not `form`: the `base-nova` registry has no `form` item and the CLI skips it silently. Expected result (reviewer dry-run): 18 new files under `src/components/ui/` plus `src/hooks/use-mobile.ts`; `package.json` gains `sonner` and `next-themes`; `globals.css` is **not** modified.
 
 - [ ] **Step 2: Undo any change the CLI made to the tokens**
 
@@ -443,7 +445,33 @@ Run: `git diff --stat -- src/app/globals.css`
 If it shows changes (the `sidebar` item ships its own CSS variables), restore Task 1's file: `git checkout -- src/app/globals.css`.
 Then run `pnpm test` — the token test must still PASS.
 
-- [ ] **Step 3: Mount the toaster (and tooltip provider if exported)**
+- [ ] **Step 3: Replace the generated `use-mobile` hook**
+
+The generated hook fails `pnpm lint` (`react-hooks/set-state-in-effect`) and uses shadcn's 768px breakpoint, while the spec (§7) switches the sidebar to a drawer below 1024px. Replace `src/hooks/use-mobile.ts` with:
+
+```ts
+import * as React from "react"
+
+// docs/design-system.md §7: the sidebar becomes a drawer below 1024px.
+const MOBILE_BREAKPOINT = 1024
+const QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`
+
+function subscribe(onChange: () => void) {
+  const mql = window.matchMedia(QUERY)
+  mql.addEventListener("change", onChange)
+  return () => mql.removeEventListener("change", onChange)
+}
+
+export function useIsMobile() {
+  return React.useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(QUERY).matches,
+    () => false
+  )
+}
+```
+
+- [ ] **Step 3b: Mount the toaster and tooltip provider**
 
 In `src/app/layout.tsx` import `Toaster` from `@/components/ui/sonner` and render it last inside `<body>`:
 
@@ -456,12 +484,19 @@ In `src/app/layout.tsx` import `Toaster` from `@/components/ui/sonner` and rende
 
 `theme="light"` is required: the generated wrapper reads `next-themes`, which would otherwise follow the OS and show dark toasts.
 
-Open `src/components/ui/tooltip.tsx`. If it exports `TooltipProvider`, wrap `{children}` with `<TooltipProvider delay={200}>` (check the prop name in that file; Base UI uses `delay`). If it does not export one, skip this.
+Also wrap `{children}` with `TooltipProvider` from `@/components/ui/tooltip` (it is exported; its default `delay` is 0):
+
+```tsx
+<body className="min-h-full flex flex-col">
+  <TooltipProvider delay={200}>{children}</TooltipProvider>
+  <Toaster theme="light" position="bottom-right" />
+</body>
+```
 
 - [ ] **Step 4: Verify**
 
 Run: `pnpm test && pnpm lint && pnpm typecheck && pnpm build`
-Expected: all PASS. If lint fails inside a generated file under `src/components/ui/`, fix the minimum (for example an unused import) and list it in the commit body — do not disable rules.
+Expected: all PASS (35 unit tests; lint clean after Step 3). If lint fails in another generated file, fix the minimum and list it in the commit body — do not disable rules.
 
 - [ ] **Step 5: Commit**
 
