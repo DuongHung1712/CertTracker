@@ -16,9 +16,10 @@ test("admin signs in, sees dashboard, and signs out", async ({ page }) => {
   await page.getByRole("button", { name: "Đăng nhập" }).click();
 
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-  await expect(page.getByText("Vai trò: admin")).toBeVisible();
+  await expect(page.getByText("Quản trị")).toBeVisible();
 
-  await page.getByRole("button", { name: "Đăng xuất" }).click();
+  await page.getByRole("button", { name: "Tài khoản" }).click();
+  await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
 

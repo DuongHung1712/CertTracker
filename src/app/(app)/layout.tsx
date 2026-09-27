@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { signOut } from "@/features/auth/actions";
+import { AppSidebar } from "@/components/app-shell/app-sidebar";
+import { Topbar } from "@/components/app-shell/topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -10,20 +12,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, member_id")
+    .eq("user_id", user.id)
+    .single();
+
+  const role = profile?.role ?? "member";
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+
   return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between border-b px-6 py-3">
-        <span className="font-semibold">CertTracker</span>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">{user.email}</span>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
-              Đăng xuất
-            </Button>
-          </form>
-        </div>
-      </header>
-      {children}
-    </div>
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <AppSidebar role={role} hasMember={profile?.member_id != null} />
+      <SidebarInset>
+        <Topbar email={user.email ?? ""} role={role} />
+        <div className="flex-1 p-4 sm:p-6">{children}</div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
