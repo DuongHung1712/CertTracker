@@ -92,11 +92,11 @@ Màu trạng thái **chỉ** dùng cho hạn chứng chỉ. Không dùng cho nú
 - **Control:** cao 32px trong bảng/bộ lọc/toolbar; 36px trong form.
 - **Nội dung trang:** padding 24px (16px dưới 640px); form rộng tối đa 640px.
 
-| Bo góc | Giá trị | Dùng cho |
-|---|---|---|
-| `radius-sm` | 4px | Badge, ô nhập, checkbox |
-| `radius-md` | 6px | Nút, thẻ, menu |
-| `radius-lg` | 8px | Hộp thoại, sheet |
+| Bo góc | Giá trị | Class Tailwind | Dùng cho |
+|---|---|---|---|
+| nhỏ | 4px | `rounded-sm`, `rounded-md` | Badge, checkbox |
+| vừa | 6px | `rounded-lg` | Nút, ô nhập, thẻ, menu (mặc định của shadcn `base-nova`) |
+| lớn | 8px | `rounded-xl` trở lên | Hộp thoại, sheet |
 
 Bóng đổ chỉ cho lớp nổi (popover, menu, hộp thoại, toast). Thẻ và bảng tách lớp bằng viền `border`.
 
