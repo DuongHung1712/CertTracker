@@ -88,8 +88,8 @@ Màu trạng thái **chỉ** dùng cho hạn chứng chỉ. Không dùng cho nú
 ### 2.4 Khoảng cách, kích thước, bo góc, bóng
 
 - **Lưới 4px:** `4 · 8 · 12 · 16 · 24 · 32` (Tailwind `1 · 2 · 3 · 4 · 6 · 8`). Nhóm phần tử dùng `gap`, không dùng margin lẻ.
-- **Bảng:** dòng 32px, padding ô `6px 10px`, header dính khi cuộn.
-- **Control:** cao 32px trong bảng/bộ lọc/toolbar; 36px trong form.
+- **Bảng:** dòng 32px, padding ô `4px 10px` (badge hoặc nút icon 24px + 8px), header dính khi cuộn; nút thao tác trong dòng dùng `size="icon-xs"`.
+- **Control:** cao 32px trong bảng/bộ lọc/toolbar (mặc định của `Input`, `Button`); 36px trong form (`h-9` / `size="lg"`).
 - **Nội dung trang:** padding 24px (16px dưới 640px); form rộng tối đa 640px.
 
 | Bo góc | Giá trị | Class Tailwind | Dùng cho |
@@ -104,29 +104,32 @@ Bóng đổ chỉ cho lớp nổi (popover, menu, hộp thoại, toast). Thẻ v
 
 ## 3. Component
 
-Component gốc lấy từ **shadcn/ui** (`src/components/ui`, sinh bằng `pnpm dlx shadcn@latest add`). Component riêng của CertTracker nằm ở các thư mục bên dưới. Component chỉ thuộc một nghiệp vụ đặt trong `src/features/<feature>/components/`.
+Component gốc lấy từ **shadcn/ui** style `base-nova` (Base UI) trong `src/components/ui`, sinh bằng `pnpm dlx shadcn@latest add`. Ghép component bằng prop **`render`** (không phải `asChild`). Component riêng của CertTracker nằm ở các thư mục bên dưới; component chỉ thuộc một nghiệp vụ đặt trong `src/features/<feature>/components/`.
 
-| Nhóm | Component | Vị trí | Hành vi chính |
-|---|---|---|---|
-| Khung app | `AppSidebar` | `components/app-shell/` | shadcn `sidebar`; thu gọn thành cột icon; ngăn kéo dưới 1024px; mục lọc theo vai trò (§4.5) |
-| | `Topbar` | `components/app-shell/` | Breadcrumb trái; menu người dùng phải (email, `RoleBadge`, Đăng xuất) |
-| | `PageHeader` | `components/app-shell/` | `page-title`, mô tả một dòng, vùng nút hành động bên phải |
-| Dữ liệu | `DataTable` | `components/data/` | TanStack Table; compact; sắp xếp; chọn dòng; menu "⋯" cuối dòng; phân trang; trạng thái rỗng / đang tải (skeleton 5 dòng) / lỗi |
-| | `FilterBar` | `components/data/` | Ô tìm kiếm + bộ lọc dạng chip + "Xóa lọc" (chỉ hiện khi có lọc) |
-| | `EmptyState` | `components/data/` | Một câu giải thích + một nút hành động; không hình minh họa |
-| Trạng thái | `ExpiryBadge` | `components/status/` | Nhận `expiry_status` + `days_to_expiry` + `expiry_date`; tooltip "Còn 23 ngày · hết hạn 19/10/2026" / "Đã hết hạn 5 ngày" |
-| | `RecordStatus` | `components/status/` | Done `circle-check` · In Progress `loader-circle` · Not Started `circle-dashed`; chữ `foreground`, không màu trạng thái |
-| | `ProgressInline` | `components/status/` | Thanh 4px màu `primary` trên `muted` + số % bên phải |
-| | `RoleBadge` | `components/status/` | Admin / Manager / Member; badge trung tính (`secondary`) |
-| | `MemberCode` | `components/status/` | `M001` bằng font mono, `muted-foreground` |
-| Form | `FormField`, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn | Nhãn trên ô; lỗi dưới ô màu `destructive`; dùng chung Zod schema với server |
-| | `Combobox` | shadcn `command` + `popover` | Chọn có tìm kiếm: member, khóa học, team |
-| | `DatePicker` | shadcn `calendar` | Hiển thị `dd/MM/yyyy`; locale `vi`; tuần bắt đầu thứ Hai |
-| Lớp phủ | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | Xem §4.2 |
-| | `ConfirmDialog` | `components/confirm-dialog.tsx` | Tiêu đề nêu tên đối tượng; mô tả hậu quả; nút xác nhận `destructive` ghi đúng hành động |
-| Phản hồi | `Toast` | shadcn `sonner` | Góc dưới phải; thành công 4s, lỗi giữ tới khi đóng |
-| | `Alert` | shadcn | Thông báo trong trang |
-| Dashboard | `KpiTile` | `components/data/` (tuần 5) | Số `kpi`, nhãn `label`, biến động so với kỳ trước |
+Mọi component (kể cả shadcn) import `cn` từ `@/lib/utils` — bản đã được dạy các cỡ chữ `text-page-title … text-kpi`, để `text-caption` không bị xóa khi đứng cạnh một class màu.
+
+| Nhóm | Component | Vị trí | Hành vi chính | Trạng thái |
+|---|---|---|---|---|
+| Khung app | `AppSidebar` | `components/app-shell/` | shadcn `sidebar`; thu gọn thành cột icon; ngăn kéo dưới 1024px; mục lọc theo vai trò (§4.5) | ✓ |
+| | `Topbar`, `UserMenu` | `components/app-shell/` | Breadcrumb trái; menu người dùng phải (email, `RoleBadge`, Đăng xuất) | ✓ |
+| | `PageHeader` | `components/app-shell/` | `page-title`, mô tả một dòng, vùng nút hành động bên phải | ✓ |
+| Dữ liệu | `DataTable` | `components/data/` | TanStack Table v8; compact; sắp xếp; menu "⋯" cuối dòng; phân trang 25 dòng; trạng thái rỗng / đang tải (skeleton 5 dòng) / lỗi | ✓ (chọn nhiều dòng: khi có thao tác hàng loạt đầu tiên) |
+| | `FilterBar` | `components/data/` | Ô tìm kiếm + bộ lọc (children) + "Xóa lọc" (chỉ hiện khi có lọc) | ✓ |
+| | `EmptyState` | `components/data/` | Một câu giải thích + một nút hành động; không hình minh họa | ✓ |
+| Trạng thái | `ExpiryBadge` | `components/status/` | Nhận `expiry_status` + `days_to_expiry` + `expiry_date`; tooltip "Còn 23 ngày · hết hạn 19/10/2026" / "Đã hết hạn 5 ngày · …" | ✓ |
+| | `RecordStatusLabel` | `components/status/` | Hoàn thành `circle-check` · Đang học `loader-circle` · Chưa bắt đầu `circle-dashed`; chữ `foreground`, không màu trạng thái | ✓ |
+| | `ProgressInline` | `components/status/` | Thanh 4px màu `primary` trên `muted` + số % bên phải | ✓ |
+| | `RoleBadge` | `components/status/` | Quản trị / Quản lý / Thành viên; badge `secondary` | ✓ |
+| | `MemberCode` | `components/status/` | `M001` bằng font mono, `muted-foreground` | ✓ |
+| Form | `Field`, `FieldLabel`, `FieldError`…, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn `field` | Nhãn trên ô; lỗi dưới ô màu `destructive`; dùng chung Zod schema với server | ✓ (ghép với React Hook Form ở tuần 2) |
+| | `Combobox` | shadcn `command` + `popover` | Chọn có tìm kiếm: member, khóa học, team | tuần 2 |
+| | `DatePicker` | shadcn `calendar` | Hiển thị `dd/MM/yyyy`; locale `vi`; tuần bắt đầu thứ Hai | tuần 2 |
+| | `FileDropzone` | `components/` | Kéo thả ảnh/PDF minh chứng | tuần 3 |
+| Lớp phủ | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | Xem §4.2 | ✓ |
+| | `ConfirmDialog` | `components/confirm-dialog.tsx` | Tiêu đề nêu tên đối tượng; mô tả hậu quả; nút xác nhận `destructive` ghi đúng hành động | ✓ |
+| Phản hồi | `Toast` | shadcn `sonner` | Góc dưới phải; thành công 4s, lỗi giữ tới khi đóng (`duration: Infinity`) | ✓ |
+| | `Alert` | shadcn | Thông báo trong trang | ✓ |
+| Dashboard | `KpiTile` | `components/data/` | Số `kpi`, nhãn `label`, biến động so với kỳ trước | tuần 5 |
 
 Icon: **lucide-react**, cỡ 16px trong bảng/nút, 20px trong sidebar. Nút chỉ có icon phải có `aria-label` và `Tooltip`.
 
@@ -240,7 +243,7 @@ Trang không bao giờ cuộn ngang; chỉ bảng cuộn trong khung của nó.
 
 1. Sửa token trong `src/app/globals.css` và bảng tương ứng trong file này **cùng một commit**.
 2. Chạy test tương phản (`pnpm test`); cặp nào dưới ngưỡng thì sửa màu, không hạ ngưỡng.
-3. Kiểm tra bằng mắt ở trang `/design` (chỉ có ở môi trường dev).
+3. Kiểm tra bằng mắt ở trang `/design` (`src/app/(dev)/design/page.tsx`, trả 404 trên production).
 4. Đồng bộ lên trang Design System trên claude.ai.
 5. Quyết định lớn (đổi màu nhấn, thêm dark mode) → thêm mục vào `docs/decisions.md`.
 

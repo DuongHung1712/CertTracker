@@ -13,6 +13,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 |---|---|
 | Data model, RLS, luồng, lộ trình | `docs/superpowers/specs/2026-09-26-certtracker-design.md` |
 | Các quyết định đã chốt + lý do | `docs/decisions.md` |
+| Token, component, pattern UI | `docs/design-system.md` (xem trực quan: `/design` khi chạy dev) |
 | Kế hoạch triển khai | `docs/superpowers/plans/` |
 | Yêu cầu gốc | `CertTracker - Feature List.pdf` |
 
