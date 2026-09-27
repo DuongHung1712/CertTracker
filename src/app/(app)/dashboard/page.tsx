@@ -1,19 +1,12 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { PageHeader } from "@/components/app-shell/page-header";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user.id).single();
-
+export default function DashboardPage() {
   return (
-    <main className="p-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
-      <p className="text-muted-foreground">Vai trò: {profile?.role ?? "—"}</p>
-    </main>
+    <div className="flex flex-col gap-6">
+      <PageHeader title="Dashboard" description="Tổng quan chứng chỉ của đơn vị." />
+      <p className="rounded-lg border bg-card p-6 text-body text-muted-foreground">
+        KPI và thống kê sẽ có ở tuần 5.
+      </p>
+    </div>
   );
 }

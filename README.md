@@ -2,13 +2,13 @@
 
 > Ứng dụng quản lý chứng chỉ (certification) cho team DC — thay thế file Excel/Google Sheets, tự động cảnh báo cert sắp hết hạn và hỗ trợ AI gợi ý lộ trình học.
 
-![Status](https://img.shields.io/badge/status-design-orange)
+![Status](https://img.shields.io/badge/status-in_development-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-App_Router-black?logo=next.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_%2B_RLS-3ECF8E?logo=supabase&logoColor=white)
 
 > [!NOTE]
-> Dự án đang ở giai đoạn **thiết kế**. Xem [design spec](docs/superpowers/specs/2026-09-26-certtracker-design.md). Các lệnh bên dưới sẽ dùng được sau khi hoàn thành tuần 1 của lộ trình.
+> Giai đoạn 1 tuần 1 (schema, RLS, đăng nhập, CI, deploy) và design system đã xong. Đang làm tuần 2. Xem [design spec](docs/superpowers/specs/2026-09-26-certtracker-design.md) cho kiến trúc/dữ liệu và [design system](docs/design-system.md) cho token/component UI.
 
 ## Mục lục
 
@@ -73,7 +73,7 @@ Mọi truy vấn chạy bằng JWT của người dùng nên **RLS là lớp b�
 
 ### Yêu cầu
 
-- Node.js 20+ và pnpm
+- Node.js 24+ và pnpm (CI dùng Node 24)
 - [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started)
 - Docker (để chạy Supabase local)
 
@@ -125,13 +125,17 @@ Mở <http://localhost:3000>. Tài khoản test (admin / manager / member) đư�
 │  ├─ seed.sql
 │  └─ tests/             # pgTAP
 ├─ src/
-│  ├─ app/               # routes (auth, app, api)
+│  ├─ app/               # routes (auth, app, dev, api)
 │  ├─ features/          # members, courses, records, dashboard, import, notifications
-│  ├─ lib/               # supabase, storage, email, ai, dates
-│  ├─ components/ui/     # shadcn
+│  ├─ lib/               # supabase, storage, email, ai, dates, format, design (contrast)
+│  ├─ components/
+│  │  ├─ ui/             # shadcn (base-nova)
+│  │  ├─ app-shell/       # AppSidebar, Topbar, PageHeader
+│  │  ├─ data/            # DataTable, FilterBar, EmptyState
+│  │  └─ status/          # ExpiryBadge, RecordStatusLabel, RoleBadge, MemberCode
 │  └─ types/
 ├─ e2e/                  # Playwright
-└─ docs/                 # design spec & plans
+└─ docs/                 # design spec, design system, plans
 ```
 
 ## Kiểm thử
@@ -141,9 +145,9 @@ Mở <http://localhost:3000>. Tài khoản test (admin / manager / member) đư�
 1. **RLS (pgTAP)** — mỗi vai trò chỉ thấy/sửa đúng dữ liệu của mình.
 2. **Unit (Vitest)** — pipeline làm sạch import, tính expiry.
 3. **SQL** — `v_training_records` tại các mốc biên 0 / 30 / 60 ngày.
-4. **E2E (Playwright)** — đăng nhập, import, upload minh chứng.
+4. **E2E (Playwright)** — đăng nhập, điều hướng, `/design`, khung app (không cuộn ngang, ngăn kéo tự đóng). Chạy cục bộ (`pnpm test:e2e`, cần `supabase start`); chưa có trong CI.
 
-CI (GitHub Actions) chạy toàn bộ trên mỗi pull request.
+CI (GitHub Actions) chạy lint, typecheck, unit test, pgTAP và build trên mỗi pull request.
 
 ## Lộ trình
 
@@ -158,7 +162,7 @@ CI (GitHub Actions) chạy toàn bộ trên mỗi pull request.
 
 ## Đóng góp
 
-1. Tạo branch từ `main`: `feat/<tên>`, `fix/<tên>`.
+1. Tạo branch từ `dev`: `feat/<tên>`, `fix/<tên>`. `dev` merge vào `main` khi deploy production.
 2. Commit theo [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`...).
 3. Mọi thay đổi schema đi qua `supabase/migrations/` kèm test RLS.
 4. Mở pull request; CI phải xanh trước khi merge.

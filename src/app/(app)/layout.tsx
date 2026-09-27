@@ -1,29 +1,32 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { signOut } from "@/features/auth/actions";
-import { createClient } from "@/lib/supabase/server";
+import { AppSidebar } from "@/components/app-shell/app-sidebar";
+import { Topbar } from "@/components/app-shell/topbar";
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { getCurrentUser } from "@/features/auth/queries";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   if (!user) redirect("/login");
 
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
+
   return (
-    <div className="min-h-screen">
-      <header className="flex items-center justify-between border-b px-6 py-3">
-        <span className="font-semibold">CertTracker</span>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">{user.email}</span>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm">
-              Đăng xuất
-            </Button>
-          </form>
-        </div>
-      </header>
-      {children}
-    </div>
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <AppSidebar role={user.role} hasMember={user.memberId != null} />
+      <SidebarInset className="min-w-0">
+        <a
+          href="#main-content"
+          className="sr-only focus-visible:not-sr-only focus-visible:absolute focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-primary focus-visible:px-3 focus-visible:py-2 focus-visible:text-primary-foreground"
+        >
+          Bỏ qua đến nội dung
+        </a>
+        <Topbar email={user.email} role={user.role} />
+        <main id="main-content" className="flex-1 p-4 sm:p-6">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
