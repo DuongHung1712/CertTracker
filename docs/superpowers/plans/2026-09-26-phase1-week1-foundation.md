@@ -1755,38 +1755,11 @@ Expected: the CI run on GitHub (Actions tab) is green. If `supabase db start` do
 
 ### Task 9: Cloud environments (done by the user) and status update
 
-These steps create accounts and push to external services, so the project owner performs them.
+Free tiers for the foundation phase (decision #13): Supabase Free + Vercel Hobby. The step-by-step guide lives in `docs/deploy/task9-free-tier.md`.
 
-- [ ] **Step 1: Supabase Cloud project** — create project (region `ap-southeast-1` Singapore), then:
-
-```bash
-pnpm supabase login
-pnpm supabase link --project-ref <project-ref>
-pnpm supabase db push
-```
-
-Seed is **not** pushed. In the Supabase dashboard: Auth → Sign In / Providers → turn **off** "Allow new users to sign up" but keep the **Email provider enabled**; Auth → Users → invite the first admin, then in SQL editor:
-
-```sql
-update public.profiles set role = 'admin' where user_id = (select id from auth.users where email = '<admin-email>');
-```
-
-- [ ] **Step 2: Vercel** — import the GitHub repo, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from the cloud project, deploy. In Supabase Auth → URL Configuration set Site URL to the Vercel domain.
-
-- [ ] **Step 3: Smoke test** — sign in on the Vercel URL with the admin account; dashboard shows `Vai trò: admin`.
-
-- [ ] **Step 4: Update project status**
-
-In `CLAUDE.md`, replace the "Trạng thái hiện tại" bullets with:
-
-```
-- Giai đoạn 1, **tuần 1 xong** (schema, RLS, đăng nhập, CI). Tiếp theo: tuần 2 — CRUD DC/Program/Team/Member, Course/CertType/Provider.
-- Cập nhật dòng này khi chuyển tuần/giai đoạn.
-```
-
-In `README.md` tick `Tuần 1` in the roadmap, then:
-
-```bash
-git add CLAUDE.md README.md
-git commit -m "docs: mark phase 1 week 1 complete"
-```
+- [ ] **Step 1:** Merge `feat/phase1-week1-foundation` → `dev`, then `dev` → `main` (Vercel deploys production from `main`).
+- [ ] **Step 2:** Supabase Cloud project (Singapore), `supabase link`, `supabase db push` (schema only, never seed; never `supabase config push`).
+- [ ] **Step 3:** Dashboard auth settings: sign-up off, email provider on, first admin created with **Add user → Create new user** (auto-confirm), role set to `admin` via SQL.
+- [ ] **Step 4:** Vercel project from GitHub, env `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`, deploy; set Supabase Site URL to the Vercel domain.
+- [ ] **Step 5:** Smoke test on the Vercel URL (admin sees `Vai trò: admin`; anonymous visit redirects to `/login`).
+- [ ] **Step 6:** Update `CLAUDE.md` status to "Giai đoạn 1, tuần 1 xong" and tick week 1 in `README.md`.

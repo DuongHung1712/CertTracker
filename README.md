@@ -148,7 +148,7 @@ CI (GitHub Actions) chạy toàn bộ trên mỗi pull request.
 ## Lộ trình
 
 - [ ] **Giai đoạn 1 — MVP thay Excel** (~6 tuần)
-  - [ ] Tuần 1: Setup, schema, RLS, đăng nhập
+  - [x] Tuần 1: Setup, schema, RLS, đăng nhập
   - [ ] Tuần 2: CRUD Members / Teams / Courses
   - [ ] Tuần 3: Training Records, upload minh chứng, realtime
   - [ ] Tuần 4: Import / Export Excel
