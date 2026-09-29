@@ -6,7 +6,7 @@
 
 **Architecture:** Server Components (`page.tsx`) read through `features/<x>/queries.ts` with the signed-in user's own Supabase client (RLS-scoped); Client Components render the design-system `DataTable`/`FilterBar` and a `Dialog` (small forms) or `Sheet` (Course — 8 fields) driven by React Hook Form + a Zod schema shared with the Server Action in `features/<x>/actions.ts`. Every action returns `Result<T>` and calls `revalidatePath` on success. RLS (already built in Week 1) stays the only authorization boundary; the UI hides controls a role can't use as UX only.
 
-**Tech Stack:** Next.js Server Actions, React Hook Form + `@hookform/resolvers/zod`, Zod, shadcn `field`/`select`/`dialog`/`sheet`, the design-system `DataTable`/`FilterBar`/`EmptyState`/`ConfirmDialog`/`PageHeader`/`RoleBadge`.
+**Tech Stack:** Next.js Server Actions, React Hook Form + `@hookform/resolvers/zod`, Zod, shadcn `field`/`select`/`dialog`/`sheet`, the design-system `DataTable`/`FilterBar`/`EmptyState`/`ConfirmDialog`/`PageHeader`.
 
 **Spec:** `docs/superpowers/specs/2026-09-26-certtracker-design.md` (§4 data model, §5 RLS, §6.1 CRUD pattern), `docs/design-system.md` (§3 components, §4 patterns)
 
@@ -206,7 +206,8 @@ git commit -m "feat: add shared CRUD infra (react-hook-form, shadcn select, post
 - Create: `src/features/organizations/schema.ts`, `src/features/organizations/schema.test.ts`, `src/features/organizations/queries.ts`, `src/features/organizations/actions.ts`
 - Create: `src/features/organizations/components/{dc-section.tsx,dc-dialog.tsx,program-section.tsx,program-dialog.tsx,team-section.tsx,team-dialog.tsx}`
 - Modify: `src/app/(app)/org/page.tsx`
-- Test: `e2e/org.spec.ts`
+
+(E2E coverage for this screen — `e2e/org.spec.ts` — is Task 5's deliverable, written once all three CRUD screens exist; do not create it here.)
 
 **Interfaces:**
 - Consumes: `Database` (`@/types/database`), `createClient` (`@/lib/supabase/server`), `Result`/`ok`/`err` (`@/lib/result`), `mapPostgresError` (`@/lib/postgres-error`), `PageHeader` (`@/components/app-shell/page-header`), `EmptyState`, `ConfirmDialog`.
@@ -728,7 +729,10 @@ export function ProgramDialog({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="program-dc" aria-invalid={!!form.formState.errors.dcId}>
-                    <SelectValue placeholder="Chọn trung tâm" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the DC name. */}
+                    <SelectValue placeholder="Chọn trung tâm">
+                      {(value: string) => dcs.find((dc) => dc.id === value)?.name ?? "Chọn trung tâm"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {dcs.map((dc) => (
@@ -1003,7 +1007,10 @@ export function TeamDialog({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="team-program" aria-invalid={!!form.formState.errors.programId}>
-                    <SelectValue placeholder="Chọn chương trình" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the program name. */}
+                    <SelectValue placeholder="Chọn chương trình">
+                      {(value: string) => programs.find((program) => program.id === value)?.name ?? "Chọn chương trình"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {programs.map((program) => (
@@ -1059,7 +1066,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { Button } from "@/components/ui/button";
-import { deleteTeam, listTeamManagerIds as _unused } from "@/features/organizations/actions";
+import { deleteTeam } from "@/features/organizations/actions";
 import { TeamDialog } from "@/features/organizations/components/team-dialog";
 
 type Team = { id: string; name: string; programId: string; programName: string; managerIds: string[] };
@@ -1164,21 +1171,7 @@ export function TeamSection({
 }
 ```
 
-Fix the accidental `_unused` import above: it was only written to keep the edit mechanical — remove it now.
-
-- [ ] **Step 9: Remove the stray import and wire the page**
-
-In `src/features/organizations/components/team-section.tsx`, change:
-
-```ts
-import { deleteTeam, listTeamManagerIds as _unused } from "@/features/organizations/actions";
-```
-
-to:
-
-```ts
-import { deleteTeam } from "@/features/organizations/actions";
-```
+- [ ] **Step 9: Wire the page**
 
 Replace `src/app/(app)/org/page.tsx`:
 
@@ -1231,10 +1224,11 @@ git commit -m "feat: add DC, Program, Team CRUD with team manager assignment"
 - Create: `src/features/members/schema.ts`, `src/features/members/schema.test.ts`, `src/features/members/queries.ts`, `src/features/members/actions.ts`
 - Create: `src/features/members/components/{members-table.tsx,member-dialog.tsx}`
 - Modify: `src/app/(app)/members/page.tsx`
-- Test: `e2e/members.spec.ts`
+
+(E2E coverage for this screen — `e2e/members.spec.ts` — is Task 5's deliverable; do not create it here.)
 
 **Interfaces:**
-- Consumes: `getCurrentUser` (`@/features/auth/queries`), `mapPostgresError`, `Result`/`ok`/`err`, `PageHeader`, `RoleBadge`, `DataTable`, `FilterBar`, `EmptyState`, `ConfirmDialog`.
+- Consumes: `getCurrentUser` (`@/features/auth/queries`), `mapPostgresError`, `Result`/`ok`/`err`, `PageHeader`, `DataTable`, `FilterBar`, `EmptyState`, `ConfirmDialog`.
 - Produces:
   - `memberSchema` + `MemberInput` from `@/features/members/schema`
   - `listMembers(): Promise<{ id: string; code: string; fullName: string; email: string; teamId: string | null; teamName: string | null; isActive: boolean }[]>` — RLS already scopes this to "all" for Admin / "managed team" for Manager
@@ -1492,7 +1486,10 @@ export function MemberDialog({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="member-team" aria-invalid={!!form.formState.errors.teamId}>
-                    <SelectValue placeholder="Chọn team" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the team name. */}
+                    <SelectValue placeholder="Chọn team">
+                      {(value: string) => teams.find((team) => team.id === value)?.name ?? "Chọn team"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {teams.map((team) => (
@@ -1745,7 +1742,8 @@ git commit -m "feat: add role-aware member CRUD"
 - Create: `src/features/courses/schema.ts`, `src/features/courses/schema.test.ts`, `src/features/courses/queries.ts`, `src/features/courses/actions.ts`
 - Create: `src/features/courses/components/{cert-type-section.tsx,cert-type-dialog.tsx,provider-section.tsx,provider-dialog.tsx,courses-table.tsx,course-sheet.tsx}`
 - Modify: `src/app/(app)/courses/page.tsx`
-- Test: `e2e/courses.spec.ts`
+
+(E2E coverage for this screen — `e2e/courses.spec.ts` — is Task 5's deliverable; do not create it here.)
 
 **Interfaces:**
 - Consumes: `getCurrentUser`, `mapPostgresError`, `Result`/`ok`/`err`, `PageHeader`, `DataTable`, `FilterBar`, `EmptyState`, `ConfirmDialog`, `formatVnd` (`@/lib/format`).
@@ -2419,7 +2417,10 @@ export function CourseSheet({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="course-cert-type" aria-invalid={!!form.formState.errors.certTypeId}>
-                    <SelectValue placeholder="Chọn loại chứng chỉ" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the cert type name. */}
+                    <SelectValue placeholder="Chọn loại chứng chỉ">
+                      {(value: string) => certTypes.find((option) => option.id === value)?.name ?? "Chọn loại chứng chỉ"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {certTypes.map((option) => (
@@ -2441,7 +2442,10 @@ export function CourseSheet({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="course-provider" aria-invalid={!!form.formState.errors.providerId}>
-                    <SelectValue placeholder="Chọn nhà cung cấp" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the provider name. */}
+                    <SelectValue placeholder="Chọn nhà cung cấp">
+                      {(value: string) => providers.find((option) => option.id === value)?.name ?? "Chọn nhà cung cấp"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {providers.map((option) => (
@@ -2886,7 +2890,9 @@ test("admin adds a course and a member can only read it", async ({ page }) => {
   await page.getByRole("button", { name: "Lưu" }).click();
   await expect(page.getByRole("cell", { name: courseName })).toBeVisible();
 
-  await page.getByRole("button", { name: "Đăng xuất" }).click();
+  // "Đăng xuất" is a menu item behind the "Tài khoản" trigger (src/components/app-shell/user-menu.tsx), not a plain button — see e2e/auth.spec.ts for the same two-step pattern.
+  await page.getByRole("button", { name: "Tài khoản" }).click();
+  await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
   await signIn(page, "member@certtracker.test");
   await page.goto("/courses");
   await expect(page.getByRole("cell", { name: courseName })).toBeVisible();
