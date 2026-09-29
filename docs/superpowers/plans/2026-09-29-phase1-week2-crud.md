@@ -1059,7 +1059,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { Button } from "@/components/ui/button";
-import { deleteTeam, listTeamManagerIds as _unused } from "@/features/organizations/actions";
+import { deleteTeam } from "@/features/organizations/actions";
 import { TeamDialog } from "@/features/organizations/components/team-dialog";
 
 type Team = { id: string; name: string; programId: string; programName: string; managerIds: string[] };
@@ -1164,21 +1164,7 @@ export function TeamSection({
 }
 ```
 
-Fix the accidental `_unused` import above: it was only written to keep the edit mechanical — remove it now.
-
-- [ ] **Step 9: Remove the stray import and wire the page**
-
-In `src/features/organizations/components/team-section.tsx`, change:
-
-```ts
-import { deleteTeam, listTeamManagerIds as _unused } from "@/features/organizations/actions";
-```
-
-to:
-
-```ts
-import { deleteTeam } from "@/features/organizations/actions";
-```
+- [ ] **Step 9: Wire the page**
 
 Replace `src/app/(app)/org/page.tsx`:
 
@@ -2886,7 +2872,9 @@ test("admin adds a course and a member can only read it", async ({ page }) => {
   await page.getByRole("button", { name: "Lưu" }).click();
   await expect(page.getByRole("cell", { name: courseName })).toBeVisible();
 
-  await page.getByRole("button", { name: "Đăng xuất" }).click();
+  // "Đăng xuất" is a menu item behind the "Tài khoản" trigger (src/components/app-shell/user-menu.tsx), not a plain button — see e2e/auth.spec.ts for the same two-step pattern.
+  await page.getByRole("button", { name: "Tài khoản" }).click();
+  await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
   await signIn(page, "member@certtracker.test");
   await page.goto("/courses");
   await expect(page.getByRole("cell", { name: courseName })).toBeVisible();
