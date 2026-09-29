@@ -14,7 +14,15 @@ import { ProgramDialog } from "@/features/organizations/components/program-dialo
 type Program = { id: string; name: string; dcId: string; dcName: string };
 type DcOption = { id: string; name: string };
 
-export function ProgramSection({ programs, dcs }: { programs: Program[]; dcs: DcOption[] }) {
+export function ProgramSection({
+  programs,
+  dcs,
+  canManage,
+}: {
+  programs: Program[];
+  dcs: DcOption[];
+  canManage: boolean;
+}) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Program | null>(null);
   const [confirming, setConfirming] = useState<Program | null>(null);
@@ -23,28 +31,32 @@ export function ProgramSection({ programs, dcs }: { programs: Program[]; dcs: Dc
   const columns: ColumnDef<Program, unknown>[] = [
     { accessorKey: "name", header: "Tên chương trình" },
     { accessorKey: "dcName", header: "Trung tâm" },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setEditing(row.original);
-              setDialogOpen(true);
-            }}
-          >
-            Sửa
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
-            Xóa
-          </Button>
-        </div>
-      ),
-    },
+    ...(canManage
+      ? ([
+          {
+            id: "actions",
+            header: "",
+            enableSorting: false,
+            cell: ({ row }) => (
+              <div className="flex justify-end gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setEditing(row.original);
+                    setDialogOpen(true);
+                  }}
+                >
+                  Sửa
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
+                  Xóa
+                </Button>
+              </div>
+            ),
+          },
+        ] satisfies ColumnDef<Program, unknown>[])
+      : []),
   ];
 
   async function handleDelete() {
@@ -65,17 +77,19 @@ export function ProgramSection({ programs, dcs }: { programs: Program[]; dcs: Dc
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h2 className="text-section-title">Chương trình</h2>
-        <Button
-          size="sm"
-          disabled={dcs.length === 0}
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus aria-hidden className="size-4" />
-          Thêm chương trình
-        </Button>
+        {canManage && (
+          <Button
+            size="sm"
+            disabled={dcs.length === 0}
+            onClick={() => {
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus aria-hidden className="size-4" />
+            Thêm chương trình
+          </Button>
+        )}
       </div>
       <DataTable
         columns={columns}
@@ -88,17 +102,21 @@ export function ProgramSection({ programs, dcs }: { programs: Program[]; dcs: Dc
           />
         }
       />
-      <ProgramDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} dcs={dcs} />
-      <ConfirmDialog
-        open={!!confirming}
-        onOpenChange={(open) => !open && setConfirming(null)}
-        title={`Xóa chương trình ${confirming?.name}?`}
-        description="Chỉ xóa được khi chương trình chưa có team nào."
-        confirmLabel="Xóa chương trình"
-        pendingLabel="Đang xóa…"
-        pending={pending}
-        onConfirm={handleDelete}
-      />
+      {canManage && (
+        <>
+          <ProgramDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} dcs={dcs} />
+          <ConfirmDialog
+            open={!!confirming}
+            onOpenChange={(open) => !open && setConfirming(null)}
+            title={`Xóa chương trình ${confirming?.name}?`}
+            description="Chỉ xóa được khi chương trình chưa có team nào."
+            confirmLabel="Xóa chương trình"
+            pendingLabel="Đang xóa…"
+            pending={pending}
+            onConfirm={handleDelete}
+          />
+        </>
+      )}
     </section>
   );
 }

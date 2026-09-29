@@ -34,4 +34,15 @@ test("admin manages the org tree end to end", async ({ page }) => {
 test("member has no write access to the org tree", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   await expect(page.getByRole("link", { name: "Tổ chức" })).toHaveCount(0);
+
+  // The nav link is hidden, but /org has no route guard — a Member who types the URL directly
+  // must still land on a read-only page with no write controls (server-gated via canManage, not
+  // just a client-side hide).
+  await page.goto("/org");
+  await expect(page.getByRole("heading", { name: "Tổ chức" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Thêm trung tâm" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Thêm chương trình" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Thêm team" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Sửa" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Xóa" })).toHaveCount(0);
 });
