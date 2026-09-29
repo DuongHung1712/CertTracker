@@ -728,7 +728,10 @@ export function ProgramDialog({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="program-dc" aria-invalid={!!form.formState.errors.dcId}>
-                    <SelectValue placeholder="Chọn trung tâm" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the DC name. */}
+                    <SelectValue placeholder="Chọn trung tâm">
+                      {(value: string) => dcs.find((dc) => dc.id === value)?.name ?? "Chọn trung tâm"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {dcs.map((dc) => (
@@ -1003,7 +1006,10 @@ export function TeamDialog({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="team-program" aria-invalid={!!form.formState.errors.programId}>
-                    <SelectValue placeholder="Chọn chương trình" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the program name. */}
+                    <SelectValue placeholder="Chọn chương trình">
+                      {(value: string) => programs.find((program) => program.id === value)?.name ?? "Chọn chương trình"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {programs.map((program) => (
@@ -1478,7 +1484,10 @@ export function MemberDialog({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="member-team" aria-invalid={!!form.formState.errors.teamId}>
-                    <SelectValue placeholder="Chọn team" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the team name. */}
+                    <SelectValue placeholder="Chọn team">
+                      {(value: string) => teams.find((team) => team.id === value)?.name ?? "Chọn team"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {teams.map((team) => (
@@ -2405,7 +2414,10 @@ export function CourseSheet({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="course-cert-type" aria-invalid={!!form.formState.errors.certTypeId}>
-                    <SelectValue placeholder="Chọn loại chứng chỉ" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the cert type name. */}
+                    <SelectValue placeholder="Chọn loại chứng chỉ">
+                      {(value: string) => certTypes.find((option) => option.id === value)?.name ?? "Chọn loại chứng chỉ"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {certTypes.map((option) => (
@@ -2427,7 +2439,10 @@ export function CourseSheet({
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="course-provider" aria-invalid={!!form.formState.errors.providerId}>
-                    <SelectValue placeholder="Chọn nhà cung cấp" />
+                    {/* Base UI's SelectValue renders the raw value by default; map it back to the provider name. */}
+                    <SelectValue placeholder="Chọn nhà cung cấp">
+                      {(value: string) => providers.find((option) => option.id === value)?.name ?? "Chọn nhà cung cấp"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {providers.map((option) => (
