@@ -10,7 +10,10 @@ describe("dcSchema", () => {
 
 describe("programSchema", () => {
   it("requires a name and a DC", () => {
-    const result = programSchema.safeParse({ name: "Digital Delivery", dcId: "not-a-uuid" });
+    // Not a malformed-uuid check: `dcId` only needs to be non-empty (a real DC was picked in the
+    // <Select>) — Postgres's FK constraint is what enforces it's an actual DC id. See the comment
+    // on `dcId` in schema.ts.
+    const result = programSchema.safeParse({ name: "Digital Delivery", dcId: "" });
     expect(result.success).toBe(false);
   });
 

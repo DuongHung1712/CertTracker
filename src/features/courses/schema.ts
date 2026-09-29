@@ -15,8 +15,11 @@ const emptyToNull = <T extends z.ZodTypeAny>(schema: T) =>
 
 export const courseSchema = z.object({
   name: z.string().trim().min(1, "Vui lòng nhập tên khóa học"),
-  certTypeId: z.string().uuid("Vui lòng chọn loại chứng chỉ"),
-  providerId: z.string().uuid("Vui lòng chọn nhà cung cấp"),
+  // Not `.uuid()`: Zod's uuid format check enforces RFC4122 version/variant nibbles, which the
+  // local seed data's crafted `5eed…` ids don't have. The FK constraint in Postgres is the real
+  // integrity check (see CLAUDE.md invariant #6); this only needs to reject an unselected option.
+  certTypeId: z.string().min(1, "Vui lòng chọn loại chứng chỉ"),
+  providerId: z.string().min(1, "Vui lòng chọn nhà cung cấp"),
   level: z.string().trim().optional().default(""),
   validityMonths: emptyToNull(z.coerce.number().int().positive("Thời hạn phải lớn hơn 0")),
   refundable: z.boolean().default(false),
