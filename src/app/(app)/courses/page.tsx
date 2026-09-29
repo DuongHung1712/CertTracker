@@ -20,7 +20,6 @@ export default async function CoursesPage() {
         </>
       )}
       <section className="flex flex-col gap-3">
-        {isAdmin && <h2 className="text-section-title">Khóa học</h2>}
         <CoursesTable courses={courses} certTypes={certTypes} providers={providers} canManage={isAdmin} />
       </section>
     </div>
