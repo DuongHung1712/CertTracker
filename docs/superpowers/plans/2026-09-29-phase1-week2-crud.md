@@ -6,7 +6,7 @@
 
 **Architecture:** Server Components (`page.tsx`) read through `features/<x>/queries.ts` with the signed-in user's own Supabase client (RLS-scoped); Client Components render the design-system `DataTable`/`FilterBar` and a `Dialog` (small forms) or `Sheet` (Course — 8 fields) driven by React Hook Form + a Zod schema shared with the Server Action in `features/<x>/actions.ts`. Every action returns `Result<T>` and calls `revalidatePath` on success. RLS (already built in Week 1) stays the only authorization boundary; the UI hides controls a role can't use as UX only.
 
-**Tech Stack:** Next.js Server Actions, React Hook Form + `@hookform/resolvers/zod`, Zod, shadcn `field`/`select`/`dialog`/`sheet`, the design-system `DataTable`/`FilterBar`/`EmptyState`/`ConfirmDialog`/`PageHeader`/`RoleBadge`.
+**Tech Stack:** Next.js Server Actions, React Hook Form + `@hookform/resolvers/zod`, Zod, shadcn `field`/`select`/`dialog`/`sheet`, the design-system `DataTable`/`FilterBar`/`EmptyState`/`ConfirmDialog`/`PageHeader`.
 
 **Spec:** `docs/superpowers/specs/2026-09-26-certtracker-design.md` (§4 data model, §5 RLS, §6.1 CRUD pattern), `docs/design-system.md` (§3 components, §4 patterns)
 
@@ -1228,7 +1228,7 @@ git commit -m "feat: add DC, Program, Team CRUD with team manager assignment"
 (E2E coverage for this screen — `e2e/members.spec.ts` — is Task 5's deliverable; do not create it here.)
 
 **Interfaces:**
-- Consumes: `getCurrentUser` (`@/features/auth/queries`), `mapPostgresError`, `Result`/`ok`/`err`, `PageHeader`, `RoleBadge`, `DataTable`, `FilterBar`, `EmptyState`, `ConfirmDialog`.
+- Consumes: `getCurrentUser` (`@/features/auth/queries`), `mapPostgresError`, `Result`/`ok`/`err`, `PageHeader`, `DataTable`, `FilterBar`, `EmptyState`, `ConfirmDialog`.
 - Produces:
   - `memberSchema` + `MemberInput` from `@/features/members/schema`
   - `listMembers(): Promise<{ id: string; code: string; fullName: string; email: string; teamId: string | null; teamName: string | null; isActive: boolean }[]>` — RLS already scopes this to "all" for Admin / "managed team" for Manager
