@@ -41,11 +41,33 @@ export async function updateMember(input: MemberInput & { id: string }): Promise
   return ok(null);
 }
 
-/** Admin only. */
+/**
+ * Admin only.
+ *
+ * `training_records.member_id` is `ON DELETE CASCADE`
+ * (supabase/migrations/20260928000002_catalog_and_records.sql:36), not
+ * restrict, so Postgres never raises 23503 here — deleting a member with
+ * records would silently cascade-delete their entire certification history
+ * instead of being blocked, contradicting the confirm dialog's promise.
+ * Guard it ourselves with a pre-delete count check (a data-integrity check,
+ * not an authorization check, so it doesn't duplicate RLS).
+ */
 export async function deleteMember(input: { id: string }): Promise<Result<null>> {
   const supabase = await createClient();
+
+  const { count, error: countError } = await supabase
+    .from("training_records")
+    .select("id", { count: "exact", head: true })
+    .eq("member_id", input.id);
+  if (countError) return err(mapPostgresError(countError));
+  if (count && count > 0) {
+    return err("Thành viên đang có chứng chỉ. Xóa các bản ghi chứng chỉ trước.");
+  }
+
   const { error } = await supabase.from("members").delete().eq("id", input.id);
   if (error) {
+    // Safety net only — the FK is cascade, so this branch should not fire in
+    // practice for the "has records" case anymore.
     return err(mapPostgresError(error, { restricted: "Thành viên đang có chứng chỉ. Xóa các bản ghi chứng chỉ trước." }));
   }
   revalidatePath("/members");
