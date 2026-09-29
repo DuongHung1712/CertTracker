@@ -206,7 +206,8 @@ git commit -m "feat: add shared CRUD infra (react-hook-form, shadcn select, post
 - Create: `src/features/organizations/schema.ts`, `src/features/organizations/schema.test.ts`, `src/features/organizations/queries.ts`, `src/features/organizations/actions.ts`
 - Create: `src/features/organizations/components/{dc-section.tsx,dc-dialog.tsx,program-section.tsx,program-dialog.tsx,team-section.tsx,team-dialog.tsx}`
 - Modify: `src/app/(app)/org/page.tsx`
-- Test: `e2e/org.spec.ts`
+
+(E2E coverage for this screen — `e2e/org.spec.ts` — is Task 5's deliverable, written once all three CRUD screens exist; do not create it here.)
 
 **Interfaces:**
 - Consumes: `Database` (`@/types/database`), `createClient` (`@/lib/supabase/server`), `Result`/`ok`/`err` (`@/lib/result`), `mapPostgresError` (`@/lib/postgres-error`), `PageHeader` (`@/components/app-shell/page-header`), `EmptyState`, `ConfirmDialog`.
@@ -1223,7 +1224,8 @@ git commit -m "feat: add DC, Program, Team CRUD with team manager assignment"
 - Create: `src/features/members/schema.ts`, `src/features/members/schema.test.ts`, `src/features/members/queries.ts`, `src/features/members/actions.ts`
 - Create: `src/features/members/components/{members-table.tsx,member-dialog.tsx}`
 - Modify: `src/app/(app)/members/page.tsx`
-- Test: `e2e/members.spec.ts`
+
+(E2E coverage for this screen — `e2e/members.spec.ts` — is Task 5's deliverable; do not create it here.)
 
 **Interfaces:**
 - Consumes: `getCurrentUser` (`@/features/auth/queries`), `mapPostgresError`, `Result`/`ok`/`err`, `PageHeader`, `RoleBadge`, `DataTable`, `FilterBar`, `EmptyState`, `ConfirmDialog`.
@@ -1740,7 +1742,8 @@ git commit -m "feat: add role-aware member CRUD"
 - Create: `src/features/courses/schema.ts`, `src/features/courses/schema.test.ts`, `src/features/courses/queries.ts`, `src/features/courses/actions.ts`
 - Create: `src/features/courses/components/{cert-type-section.tsx,cert-type-dialog.tsx,provider-section.tsx,provider-dialog.tsx,courses-table.tsx,course-sheet.tsx}`
 - Modify: `src/app/(app)/courses/page.tsx`
-- Test: `e2e/courses.spec.ts`
+
+(E2E coverage for this screen — `e2e/courses.spec.ts` — is Task 5's deliverable; do not create it here.)
 
 **Interfaces:**
 - Consumes: `getCurrentUser`, `mapPostgresError`, `Result`/`ok`/`err`, `PageHeader`, `DataTable`, `FilterBar`, `EmptyState`, `ConfirmDialog`, `formatVnd` (`@/lib/format`).
