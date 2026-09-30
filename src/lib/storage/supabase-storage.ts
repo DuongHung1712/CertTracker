@@ -8,7 +8,11 @@ export const EVIDENCE_BUCKET = "certificates";
 export function createSupabaseStorage(client: SupabaseClient<Database>, bucket = EVIDENCE_BUCKET): FileStorage {
   return {
     async upload(path, file, contentType) {
-      const { data, error } = await client.storage.from(bucket).upload(path, file, { contentType, upsert: false });
+      // storage-js ignores `options.contentType` for a Blob/File body (it uses the blob's own
+      // `type`, which is whatever the browser claimed). An ArrayBuffer body is sent with the
+      // explicit content-type header, so the stored type is the one the caller decided.
+      const body = await file.arrayBuffer();
+      const { data, error } = await client.storage.from(bucket).upload(path, body, { contentType, upsert: false });
       if (error) throw new Error(error.message);
       return { path: data.path };
     },
