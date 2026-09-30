@@ -34,8 +34,10 @@ export function RecordsRealtime() {
         // No session: the channel below simply receives nothing.
       }
       if (cancelled) return;
+      // A topic of its own per mount: `channel(topic)` hands back an existing channel with that topic,
+      // so a page remounting right after another one must not be able to pick up its dying channel.
       channel = supabase
-        .channel("training-records-list")
+        .channel(`training-records-${crypto.randomUUID()}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "training_records" }, refresh)
         .subscribe();
     }
