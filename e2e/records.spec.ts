@@ -28,6 +28,19 @@ async function openRowMenu(row: Locator) {
   await row.getByRole("button", { name: /Thao tác/ }).click();
 }
 
+/**
+ * Opens the row menu and clicks an item, reopening if it vanishes. A Realtime refresh (the debounced
+ * `router.refresh()` after an upload) can re-render the list and drop an open menu under the click.
+ * Only for use while no dialog/sheet is open, since it presses Escape first.
+ */
+async function clickMenuItem(page: Page, row: Locator, name: string) {
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await openRowMenu(row);
+    await page.getByRole("menuitem", { name }).click({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
 /** Admin/manager edit of a record's status + progress through the row menu; waits for the save toast. */
 async function editStatus(page: Page, row: Locator, status: string, progress: string) {
   await openRowMenu(row);
@@ -41,6 +54,7 @@ async function editStatus(page: Page, row: Locator, status: string, progress: st
 }
 
 test("admin adds a record with evidence, opens it, and deletes it", async ({ page }) => {
+  test.setTimeout(60_000); // upload + replace + cleanup, each waiting on server round trips and revalidation
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
 
@@ -63,6 +77,7 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
     // The evidence upload revalidates the list after the record itself appears, so retry until the link exists.
     const link = page.getByRole("menuitem", { name: "Xem minh chứng" });
     await expect(async () => {
+      await page.keyboard.press("Escape");
       await openRowMenu(row);
       await expect(link).toBeVisible({ timeout: 1_500 });
     }).toPass({ timeout: 15_000 });
@@ -70,13 +85,36 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
     expect(href).toMatch(/^\/api\/records\/[0-9a-f-]+\/evidence$/);
     const response = await page.request.get(href!, { maxRedirects: 0 });
     expect(response.status()).toBe(307);
-    expect(response.headers()["location"]).toContain("/storage/v1/object/sign/certificates/");
+    const oldUrl = response.headers()["location"];
+    expect(oldUrl).toContain("/storage/v1/object/sign/certificates/");
+    expect(oldUrl).toContain(".pdf");
+    // The signed URL works before the replacement (this is what makes the "gone" check below meaningful).
+    expect((await page.request.get(oldUrl)).status()).toBe(200);
     await page.keyboard.press("Escape");
+
+    // Replace the evidence: upload a PNG over the PDF through "Sửa".
+    await clickMenuItem(page, row, "Sửa");
+    const editDialog = page.getByRole("dialog");
+    await editDialog.getByLabel("Minh chứng", { exact: true }).setInputFiles("e2e/fixtures/evidence.png");
+    await editDialog.getByRole("button", { name: "Lưu" }).click();
+    await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+    await expect(editDialog).toHaveCount(0);
+
+    // The upload revalidates after the save, so poll until the route resolves to the new object.
+    let newUrl = "";
+    await expect(async () => {
+      const replaced = await page.request.get(href!, { maxRedirects: 0 });
+      expect(replaced.status()).toBe(307);
+      newUrl = replaced.headers()["location"];
+      expect(newUrl).toContain(".png");
+    }).toPass({ timeout: 15_000 });
+    expect(newUrl).not.toBe(oldUrl);
+    expect((await page.request.get(newUrl)).status()).toBe(200);
+    // The previous object was deleted from Storage, so its (still unexpired) signed URL no longer serves it.
+    expect((await page.request.get(oldUrl)).status()).toBeGreaterThanOrEqual(400);
   } finally {
     // Always remove the record, even when an assertion above failed, so the run stays re-runnable.
-    await page.keyboard.press("Escape");
-    await openRowMenu(row);
-    await page.getByRole("menuitem", { name: "Xóa" }).click();
+    await clickMenuItem(page, row, "Xóa");
     await page.getByRole("button", { name: "Xóa chứng chỉ" }).click();
     // Wait for the toast first: while the confirm dialog is open the page behind it is aria-hidden,
     // so `getByRole("row")` would report zero rows immediately, before the delete has happened.
@@ -175,6 +213,72 @@ test("member updates own progress and cannot see company fields", async ({ page 
     await page.keyboard.press("Escape");
     await editStatus(page, row, "Chưa bắt đầu", "0");
     await expect(row).toContainText("0%");
+  }
+});
+
+test("member uploads, opens and removes evidence on their own record", async ({ page }) => {
+  test.setTimeout(60_000);
+  await signIn(page, "member@certtracker.test");
+  await page.goto("/records");
+  await expect(page).toHaveURL(/\/me$/);
+
+  const row = recordRow(page, AWS);
+  const evidenceLink = page.getByRole("menuitem", { name: "Xem minh chứng" });
+  try {
+    // Upload through the sheet (the seed record has no evidence).
+    await openRowMenu(row);
+    await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
+    await expect(evidenceLink).toHaveCount(0);
+    await page.getByRole("menuitem", { name: "Sửa" }).click();
+    let dialog = page.getByRole("dialog");
+    await expect(dialog.getByLabel("Khóa học", { exact: true })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Xóa minh chứng" })).toHaveCount(0);
+    await dialog.getByLabel("Minh chứng", { exact: true }).setInputFiles("e2e/fixtures/evidence.pdf");
+    await dialog.getByRole("button", { name: "Lưu" }).click();
+    await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+    await expect(dialog).toHaveCount(0);
+
+    // The upload revalidates after the record save, so retry until the menu shows the link.
+    await expect(async () => {
+      await page.keyboard.press("Escape");
+      await openRowMenu(row);
+      await expect(evidenceLink).toBeVisible({ timeout: 1_500 });
+    }).toPass({ timeout: 15_000 });
+    const href = await evidenceLink.getAttribute("href");
+    expect(href).toMatch(/^\/api\/records\/[0-9a-f-]+\/evidence$/);
+    const response = await page.request.get(href!, { maxRedirects: 0 });
+    expect(response.status()).toBe(307);
+    expect(response.headers()["location"]).toContain("/storage/v1/object/sign/certificates/");
+    await page.keyboard.press("Escape");
+
+    // Remove it through the sheet.
+    await clickMenuItem(page, row, "Sửa");
+    dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("link", { name: "Xem minh chứng hiện tại" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Xóa minh chứng" }).click();
+    await expect(page.getByText("Đã xóa minh chứng")).toBeVisible();
+    await dialog.getByRole("button", { name: "Hủy" }).click();
+    await expect(dialog).toHaveCount(0);
+
+    // Anchored on the always-present "Sửa" item; retried until the revalidation has dropped the link.
+    await expect(async () => {
+      await page.keyboard.press("Escape");
+      await openRowMenu(row);
+      await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible({ timeout: 1_500 });
+      await expect(evidenceLink).toHaveCount(0, { timeout: 1_500 });
+    }).toPass({ timeout: 15_000 });
+    await page.keyboard.press("Escape");
+  } finally {
+    // Leave the seed record without evidence so the suite can run again on the same database.
+    await page.keyboard.press("Escape");
+    await openRowMenu(row);
+    await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
+    if ((await evidenceLink.count()) > 0) {
+      await clickMenuItem(page, row, "Sửa");
+      await page.getByRole("dialog").getByRole("button", { name: "Xóa minh chứng" }).click();
+      await expect(page.getByText("Đã xóa minh chứng").first()).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
   }
 });
 
