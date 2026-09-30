@@ -39,7 +39,11 @@ cross join lateral (
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('certificates', 'certificates', false, 4194304,
         array['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
-on conflict (id) do nothing;
+on conflict (id) do update set
+  name = excluded.name,
+  public = false,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 -- Text comparison on purpose: casting a malformed first path segment to uuid would raise
 -- instead of denying.
