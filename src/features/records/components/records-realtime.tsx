@@ -20,6 +20,7 @@ export function RecordsRealtime() {
     let channel: ReturnType<typeof supabase.channel> | undefined;
     // A bulk change (the Excel import commits hundreds of rows) arrives as a burst: coalesce it.
     const refresh = () => {
+      if (cancelled) return;
       clearTimeout(timer);
       timer = setTimeout(() => router.refresh(), 400);
     };

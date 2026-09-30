@@ -24,6 +24,8 @@ describe("fetchAllRows", () => {
   });
 
   it("never exceeds maxRows", async () => {
+    // 750 is not a multiple of the page size: the second page must be clamped from 500 rows to 250.
+    expect(await fetchAllRows(page, 500, 750)).toHaveLength(750);
     expect(await fetchAllRows(page, 500, 1000)).toHaveLength(1000);
   });
 });
