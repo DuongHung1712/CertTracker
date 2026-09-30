@@ -128,7 +128,7 @@ test("status rules are enforced in the form", async ({ page }) => {
   await expect(recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs")).toHaveCount(0);
 });
 
-test("manager sees only the managed team and can edit it", async ({ page }) => {
+test("manager sees only the managed team and can only pick managed members", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
   await page.goto("/records");
 
@@ -154,6 +154,8 @@ test("member updates own progress and cannot see company fields", async ({ page 
   const row = recordRow(page, AWS);
   try {
     await openRowMenu(row);
+    // Anchor on a visible item first: a count of 0 before the menu has rendered would pass vacuously.
+    await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: "Xóa" })).toHaveCount(0);
     await page.getByRole("menuitem", { name: "Sửa" }).click();
 
