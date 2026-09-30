@@ -89,13 +89,19 @@ export function RecordSheet({
 
   // `recordSchema` coerces/preprocesses several fields, so its input and output types diverge —
   // same three-generic form as course-sheet.tsx.
-  const form = useForm<FormValues, unknown, RecordInput>({ resolver: zodResolver(recordSchema), values });
+  const form = useForm<FormValues, unknown, RecordInput>({
+    resolver: zodResolver(recordSchema),
+    values,
+    // A realtime refresh may change `editing` under an open sheet: fields the user has touched must survive.
+    resetOptions: { keepDirtyValues: true },
+  });
 
   // Every way of closing (Hủy, Esc, overlay, successful save) goes through here, so a reopened
   // sheet never shows stale edits or a leftover file.
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
-      form.reset();
+      // `resetOptions.keepDirtyValues` would otherwise carry over here and keep the discarded edits.
+      form.reset(undefined, { keepDirtyValues: false });
       setFile(null);
       setFileError(null);
     }
