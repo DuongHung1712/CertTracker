@@ -393,6 +393,8 @@ export type Database = {
     Views: {
       v_training_records: {
         Row: {
+          cert_type_id: string | null
+          cert_type_name: string | null
           certificate_url: string | null
           course_id: string | null
           course_name: string | null
@@ -404,18 +406,46 @@ export type Database = {
           expiry_status: string | null
           id: string | null
           issued_date: string | null
+          member_code: string | null
+          member_email: string | null
           member_id: string | null
+          member_name: string | null
           notes: string | null
           planned_exam_date: string | null
           progress: number | null
           progress_updated_at: string | null
+          provider_id: string | null
+          provider_name: string | null
           refund_status: Database["public"]["Enums"]["refund_status"] | null
           status: Database["public"]["Enums"]["record_status"] | null
+          team_id: string | null
+          team_name: string | null
           updated_at: string | null
           validity_months: number | null
           via_company: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "courses_cert_type_id_fkey"
+            columns: ["cert_type_id"]
+            isOneToOne: false
+            referencedRelation: "cert_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "training_records_course_id_fkey"
             columns: ["course_id"]
@@ -438,6 +468,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      can_access_evidence: { Args: { object_name: string }; Returns: boolean }
       expiry_status: {
         Args: { p_issued: string; p_today: string; p_validity_months: number }
         Returns: string
