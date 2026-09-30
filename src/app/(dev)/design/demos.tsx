@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
+import { EntityCombobox, type ComboboxOption } from "@/components/entity-combobox";
 import { FilterBar } from "@/components/data/filter-bar";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { MemberCode } from "@/components/status/member-code";
@@ -144,6 +145,43 @@ export function ToastDemo() {
       >
         Toast lỗi
       </Button>
+    </div>
+  );
+}
+
+const COMBOBOX_OPTIONS: ComboboxOption[] = [
+  { id: "m1", label: "Nguyễn Văn An", hint: "M001" },
+  { id: "m2", label: "Trần Thị Bình", hint: "M002" },
+  { id: "m3", label: "Đặng Gia Huy", hint: "M006" },
+];
+
+export function ComboboxDemo() {
+  const [value, setValue] = useState("m1");
+  return (
+    <div className="flex max-w-sm flex-col gap-3">
+      <EntityCombobox
+        id="demo-member"
+        value={value}
+        onChange={setValue}
+        options={COMBOBOX_OPTIONS}
+        placeholder="Chọn thành viên…"
+        emptyText="Không tìm thấy thành viên"
+      />
+      <p className="text-caption text-muted-foreground">
+        Giá trị (id): <code>{value === "" ? "(trống)" : value}</code>
+      </p>
+      <Button variant="outline" size="sm" className="w-fit" onClick={() => setValue("ghost-id")}>
+        Đặt id không có trong danh sách
+      </Button>
+      <EntityCombobox
+        id="demo-member-disabled"
+        value="m2"
+        onChange={() => {}}
+        options={COMBOBOX_OPTIONS}
+        placeholder="Chọn thành viên…"
+        emptyText="Không tìm thấy thành viên"
+        disabled
+      />
     </div>
   );
 }

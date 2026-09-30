@@ -9,7 +9,7 @@ import { RoleBadge } from "@/components/status/role-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ConfirmDemo, LoadingTableDemo, TableDemo, ToastDemo } from "./demos";
+import { ComboboxDemo, ConfirmDemo, LoadingTableDemo, TableDemo, ToastDemo } from "./demos";
 
 const COLOR_TOKENS = [
   "background", "card", "foreground", "muted", "muted-foreground", "primary",
@@ -115,6 +115,10 @@ export default function DesignPage() {
           <Input id="design-email" type="email" placeholder="ten@congty.com" />
           <p className="text-caption text-muted-foreground">Dùng email công ty.</p>
         </div>
+      </Section>
+
+      <Section title="Chọn có tìm kiếm">
+        <ComboboxDemo />
       </Section>
 
       <Section title="Bảng">
