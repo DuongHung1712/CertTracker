@@ -4,7 +4,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 
 ## Trạng thái hiện tại
 
-- Giai đoạn 1, **tuần 1 xong** (schema, RLS, đăng nhập, CI, deploy Vercel + Supabase Cloud). Tiếp theo: tuần 2 — CRUD DC/Program/Team/Member, Course/CertType/Provider.
+- Giai đoạn 1, **tuần 1–3 xong** (schema, RLS, đăng nhập, CI, deploy; CRUD tổ chức/danh mục; chứng chỉ + minh chứng + Realtime). Tiếp theo: tuần 4 — Import/Export.
 - Cập nhật dòng này khi chuyển tuần/giai đoạn.
 
 ## Nguồn sự thật (đọc khi cần, đừng đọc hết mỗi phiên)
