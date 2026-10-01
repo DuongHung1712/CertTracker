@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/features/auth/queries";
 import { MAX_IMPORT_BYTES } from "@/features/import/clean";
+import { cleanupPartialBatch } from "@/features/import/cleanup";
 import { buildImportPlan } from "@/features/import/plan";
 import { loadImportLookups } from "@/features/import/queries";
 import { capMessages, capRaw, sanitizeJson } from "@/features/import/stored";
@@ -13,6 +14,24 @@ export const maxDuration = 60;
 const CHUNK = 500;
 const MULTIPART_OVERHEAD = 64 * 1024;
 const TOO_LARGE = "File lớn hơn 4 MB. Chia nhỏ file rồi nhập từng phần.";
+/** Cleanup steps for a batch whose upload failed; each reports whether it really changed the row. */
+async function removeBatch(batchId: string): Promise<boolean> {
+  const { data, error } = await (await createClient()).from("import_batches").delete().eq("id", batchId).select("id");
+  return !error && data.length > 0;
+}
+
+async function discardBatch(batchId: string): Promise<boolean> {
+  const { data, error } = await (await createClient())
+    .from("import_batches")
+    .update({ status: "discarded" })
+    .eq("id", batchId)
+    .eq("status", "parsed")
+    .select("id");
+  return !error && data.length > 0;
+}
+
+const cleanup = (batchId: string) =>
+  cleanupPartialBatch(batchId, { remove: () => removeBatch(batchId), discard: () => discardBatch(batchId) });
 const fail = (error: string, status: number) => NextResponse.json({ error }, { status });
 
 export async function POST(request: Request) {
@@ -69,21 +88,16 @@ export async function POST(request: Request) {
         })),
       );
       if (error) {
-        // Do not leave a half-written batch behind (rows cascade).
-        await supabase.from("import_batches").delete().eq("id", batch.id);
+        // A half-written batch must never stay committable: delete it, or at least mark it discarded.
+        await cleanup(batch.id);
         return fail("Không lưu được dữ liệu kiểm tra. Vui lòng thử lại.", 500);
       }
     }
     return NextResponse.json({ batchId: batch.id }, { status: 201 });
   } catch {
-    // Never leak an internal error or stack trace to the client; best-effort cleanup of a partial batch.
-    if (batchId) {
-      try {
-        await (await createClient()).from("import_batches").delete().eq("id", batchId);
-      } catch {
-        // The batch stays in "parsed" and can be discarded from the UI.
-      }
-    }
+    // Never leak an internal error or stack trace to the client. If the batch row was created, make sure
+    // it cannot be committed with a partial set of rows (the helper never throws).
+    if (batchId) await cleanup(batchId);
     return fail("Có lỗi xảy ra khi xử lý file. Vui lòng thử lại.", 500);
   }
 }
