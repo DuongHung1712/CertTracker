@@ -301,11 +301,11 @@ function multiSheetBytes(sheets: { name: string; aoa: unknown[][]; ref?: string;
 
 describe("workbook-wide limits", () => {
   it("shares one merge budget across sheets (several sheets with large lying merges fail fast)", () => {
-    // Each merge covers 1000 rows x 200 columns = 200k cells: fine alone, over the 300k budget from the second sheet on.
+    // Each merge covers 1000 rows x 200 columns of REAL used range (merges are clamped to the cells holding values):
+    // 200k cells is fine alone, over the 300k budget from the second sheet on.
     const lying = (name: string) => ({
       name,
-      aoa: [["x"], ["y"]],
-      ref: "A1:GR2011",
+      aoa: [["x"], ["y"], ...Array.from({ length: 998 }, () => []), [...Array.from({ length: 199 }, () => null), "z"]],
       merges: [{ s: { r: 1, c: 0 }, e: { r: 1000, c: 199 } }],
     });
     const started = Date.now();
@@ -330,4 +330,94 @@ describe("workbook-wide limits", () => {
     expect(onlyWide.ok).toBe(false);
     expect(!onlyWide.ok && onlyWide.error).toMatch(/Không tìm thấy hàng tiêu đề/);
   });
+});
+
+/** Rewrites the sheet XML the way Excel leaves it after formatting a range: a wide <dimension> plus styled empty cells (no value). */
+function withFormattedBlanks(bytes: Uint8Array, dimension: string, styledBlanks: string): Uint8Array {
+  const cfb = XLSX.CFB.read(bytes, { type: "array" });
+  const entry = cfb.FileIndex[cfb.FullPaths.findIndex((path: string) => path.endsWith("xl/worksheets/sheet1.xml"))]!;
+  const xml = new TextDecoder()
+    .decode(entry.content as Uint8Array)
+    .replace(/<dimension ref="[^"]*"\/>/, `<dimension ref="${dimension}"/>`)
+    .replace("</sheetData>", `${styledBlanks}</sheetData>`);
+  entry.content = new TextEncoder().encode(xml);
+  entry.size = (entry.content as Uint8Array).length;
+  return new Uint8Array(XLSX.CFB.write(cfb, { type: "array", fileType: "zip" }) as ArrayBuffer);
+}
+
+describe("formatted-but-empty ranges (legacy files)", () => {
+  const dataRows = (n: number) => [["Email", "Khóa học"], ...Array.from({ length: n }, (_, i) => [`m${i}@x.vn`, "AWS"])];
+  const plain = (n: number) => toBytes(dataRows(n));
+  const writeSheet = (sheet: XLSX.WorkSheet, compression = false) => {
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, "Data");
+    return new Uint8Array(XLSX.write(book, { type: "array", bookType: "xlsx", compression }) as ArrayBuffer);
+  };
+
+  it("does not count blank rows: 300 data rows with formatting down to row 5000", () => {
+    // Every row from 302 to 5000 carries styled empty cells, as after bordering/filling a whole range in Excel.
+    const styled = Array.from({ length: 4699 }, (_, i) => `<row r="${302 + i}"><c r="A${302 + i}" s="1"/><c r="B${302 + i}" s="1"/></row>`).join("");
+    const bytes = withFormattedBlanks(plain(300), "A1:B5000", styled);
+    const result = readImportTable(bytes);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows).toHaveLength(300);
+    expect(result.value.rows.at(-1)!.rowNumber).toBe(301);
+  });
+
+  it("ignores materialised empty and whitespace-only cells far below the data", () => {
+    const sheet = XLSX.utils.aoa_to_sheet(dataRows(300));
+    sheet["A5000"] = { t: "s", v: "" };
+    sheet["B5000"] = { t: "s", v: "  " };
+    sheet["!ref"] = "A1:B5000";
+    const result = readImportTable(writeSheet(sheet));
+    expect(result.ok && result.value.rows).toHaveLength(300);
+  });
+
+  it("ignores a styled blank cell in column XFD instead of skipping the sheet as too wide", () => {
+    const bytes = withFormattedBlanks(plain(5), "A1:XFD1500", '<row r="1500"><c r="XFD1500" s="1"/></row>');
+    const result = readImportTable(bytes);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows).toHaveLength(5);
+    expect(result.value.headers).toEqual(["Email", "Khóa học"]);
+  });
+
+  it("still rejects more than 2000 NON-BLANK data rows, however far the formatting reaches", () => {
+    const bytes = withFormattedBlanks(plain(2001), "A1:B5000", '<row r="5000"><c r="A5000" s="1"/></row>');
+    expect(readImportTable(bytes)).toEqual({
+      ok: false,
+      error: "File có 2001 dòng dữ liệu, tối đa 2000. Chia nhỏ file rồi nhập từng phần.",
+    });
+  });
+
+  it("rejects a sheet with real data beyond column 200 with a clear message", () => {
+    const sheet = XLSX.utils.aoa_to_sheet(dataRows(3));
+    sheet["HZ1"] = { t: "s", v: "Cột xa" }; // column index 233
+    sheet["!ref"] = "A1:HZ4";
+    const result = readImportTable(writeSheet(sheet));
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toContain('Sheet "Data" bị bỏ qua vì có quá nhiều cột (hơn 200).');
+  });
+
+  it("fails closed when a value sits in the last row the reader is willing to read", () => {
+    const sheet = XLSX.utils.aoa_to_sheet(dataRows(50));
+    sheet["A20000"] = { t: "s", v: "stray" };
+    sheet["!ref"] = "A1:B30000";
+    const result = readImportTable(writeSheet(sheet));
+    expect(result).toEqual({ ok: false, error: "Sheet có dữ liệu ở dòng quá xa (sau dòng 20000). Xóa các dòng thừa rồi thử lại." });
+  });
+
+  it("fails closed on a hostile file with real values in 25 000 rows", () => {
+    const started = Date.now();
+    const result = readImportTable(plain(25_000));
+    expect(result.ok).toBe(false);
+    expect(Date.now() - started).toBeLessThan(10_000);
+  }, 30_000);
+
+  it("fails closed when the value cells of a workbook exceed the cell budget", () => {
+    const header = ["Email", "Khóa học", ...Array.from({ length: 198 }, (_, i) => `C${i}`)];
+    const rows = [header, ...Array.from({ length: 2100 }, (_, i) => [`m${i}@x.vn`, "AWS", ...Array.from({ length: 198 }, () => 1)])];
+    const bytes = writeSheet(XLSX.utils.aoa_to_sheet(rows), true);
+    expect(bytes.length).toBeLessThan(4 * 1024 * 1024); // gets past the size check, so the cell budget is what rejects it
+    expect(readImportTable(bytes)).toEqual({ ok: false, error: "File có quá nhiều ô chứa dữ liệu. Chia nhỏ file rồi nhập từng phần." });
+  }, 60_000);
 });

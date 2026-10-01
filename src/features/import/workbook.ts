@@ -14,13 +14,54 @@ export function isExcelFile(bytes: Uint8Array): boolean {
 
 /** Total cells fillMergedCells may copy. A real sheet is ~2000 rows x ~15 columns, so this is generous for honest files. */
 const MAX_MERGED_CELLS = 300_000;
-/** Wider than any real import sheet; keeps sheet_to_json from materialising 16 384-column rows. Such a sheet is skipped. */
+/** Wider than any real import sheet (measured on the ACTUAL used range, not the declared dimension). Such a sheet is skipped. */
 const MAX_IMPORT_COLUMNS = 200;
+/**
+ * Raw rows read from a sheet (sheetRows), blank or not. Excel writes styled-but-empty cells and a `<dimension>` far below
+ * the data, so the 2000-row limit applies to NON-BLANK rows only; this larger cap just stops the reader from walking an
+ * unbounded sheet. A value in the last row read means the sheet was truncated and fails closed.
+ */
+const MAX_RAW_ROWS = 20_000;
+/** Cells holding a value, summed over every scanned sheet. 2000 rows x 200 columns is the largest honest sheet. */
+const MAX_VALUE_CELLS = 400_000;
 /** Only the first sheets are scanned for the header; each scanned sheet costs a sheet_to_json pass. */
 const MAX_SCANNED_SHEETS = 10;
 
 const MERGE_TOO_LARGE = "File có vùng gộp ô quá lớn.";
 class MergeTooLargeError extends Error {}
+class TooManyCellsError extends Error {}
+const TOO_MANY_CELLS = "File có quá nhiều ô chứa dữ liệu. Chia nhỏ file rồi nhập từng phần.";
+const TOO_FAR_DOWN = `Sheet có dữ liệu ở dòng quá xa (sau dòng ${MAX_RAW_ROWS}). Xóa các dòng thừa rồi thử lại.`;
+
+const hasValue = (cell: XLSX.CellObject): boolean => {
+  const v = cell.v;
+  if (v === undefined || v === null) return false;
+  return typeof v === "string" ? v.trim() !== "" : true;
+};
+
+/**
+ * Range of the cells that actually hold a value. `!ref` comes from the file's `<dimension>`, which Excel stretches over
+ * styled-but-empty cells (borders, fills), so it cannot be trusted for sizes. Returns null for a sheet without values,
+ * and charges every value cell to `budget` (shared by the workbook); throws TooManyCellsError past the budget.
+ */
+function usedRange(sheet: XLSX.WorkSheet, budget: { remaining: number }): XLSX.Range | null {
+  let range: XLSX.Range | null = null;
+  for (const key in sheet) {
+    if (key.charCodeAt(0) === 33 /* "!" */) continue;
+    const cell = sheet[key] as XLSX.CellObject | undefined;
+    if (!cell || typeof cell !== "object" || !hasValue(cell)) continue;
+    if (--budget.remaining < 0) throw new TooManyCellsError(TOO_MANY_CELLS);
+    const { r, c } = XLSX.utils.decode_cell(key);
+    if (!range) range = { s: { r, c }, e: { r, c } };
+    else {
+      if (r < range.s.r) range.s.r = r;
+      if (c < range.s.c) range.s.c = c;
+      if (r > range.e.r) range.e.r = r;
+      if (c > range.e.c) range.e.c = c;
+    }
+  }
+  return range;
+}
 
 /**
  * Legacy sheets merge a person's name/email over their rows; copy the top-left value into every merged cell.
@@ -56,11 +97,12 @@ const TOO_LARGE = "File Excel giải nén quá lớn (tối đa 50 MB). Chia nh�
 const BAD_ZIP = "File Excel không hợp lệ (cấu trúc zip bị hỏng).";
 
 /**
- * Pre-parse zip-bomb guard; returns an error message or null. SheetJS inflates whole entries and, with native zlib,
- * ignores the sizes stored in the headers, so declared sizes alone prove nothing. This therefore (1) validates the
- * central directory structure and rejects absurd declared sizes / zip64 cheaply, then (2) actually inflates every
- * deflate entry with a hard output cap, reading data from the same offsets SheetJS uses (the local header).
- * Anything inconsistent fails closed.
+ * Pre-parse zip-bomb guard; returns an error message or null. SheetJS 0.20.3 inflates with its own pure-JS inflater
+ * (it only switches to node:zlib if `use_zlib` is called, which this repo never does), and the sizes stored in the
+ * headers are attacker-controlled, so declared sizes alone prove nothing. This therefore (1) validates the central directory
+ * structure and rejects absurd declared sizes / zip64 cheaply, then (2) actually inflates every deflate entry with
+ * node:zlib under a hard output cap (MAX_UNCOMPRESSED_BYTES); that cap, not the declared sizes, is what bounds the
+ * output. Data is read from the same offsets SheetJS uses (the local header). Anything inconsistent fails closed.
  */
 function checkZip(bytes: Uint8Array): string | null {
   try {
@@ -133,7 +175,7 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
   try {
     book = XLSX.read(bytes, {
       type: "array",
-      sheetRows: MAX_IMPORT_ROWS + SCAN_ROWS + 1,
+      sheetRows: MAX_RAW_ROWS,
       cellDates: false,    // raw serials: excelSerialToDate owns the conversion
       cellFormula: false,  // cached values only
       cellHTML: false,
@@ -145,10 +187,31 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
   const date1904 = Boolean(book.Workbook?.WBProps?.date1904);
 
   const mergeBudget = { remaining: MAX_MERGED_CELLS }; // shared: bounds the whole workbook, not each sheet
+  const cellBudget = { remaining: MAX_VALUE_CELLS };
+  let skippedWide: string | null = null;
   for (const sheetName of book.SheetNames.slice(0, MAX_SCANNED_SHEETS)) {
     const sheet = book.Sheets[sheetName];
     if (!sheet?.["!ref"]) continue;
-    if (XLSX.utils.decode_range(sheet["!ref"]).e.c >= MAX_IMPORT_COLUMNS) continue; // not a data sheet
+    let used: XLSX.Range | null;
+    try {
+      used = usedRange(sheet, cellBudget);
+    } catch (error) {
+      if (error instanceof TooManyCellsError) return { ok: false, error: error.message };
+      throw error;
+    }
+    if (!used) continue; // nothing but formatting
+    const declared = XLSX.utils.decode_range(sheet["!ref"]);
+    // Anchor at the declared start (so "the first 10 rows" and Excel row numbers keep their meaning) but end at the last value.
+    const bounds: XLSX.Range = {
+      s: { r: Math.min(declared.s.r, used.s.r), c: Math.min(declared.s.c, used.s.c) },
+      e: used.e,
+    };
+    if (bounds.e.r >= MAX_RAW_ROWS - 1) return { ok: false, error: TOO_FAR_DOWN }; // the read was cut off while still on data
+    if (bounds.e.c - bounds.s.c + 1 > MAX_IMPORT_COLUMNS) {
+      skippedWide ??= sheetName; // not a data sheet; reported only if no other sheet works
+      continue;
+    }
+    sheet["!ref"] = XLSX.utils.encode_range(bounds); // everything below sees the used range, not the dimension
     try {
       fillMergedCells(sheet, mergeBudget);
     } catch (error) {
@@ -162,10 +225,7 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
     if (header.duplicates.length > 0) {
       return { ok: false, error: `Cột "${header.duplicates[0]}" trùng nghĩa với một cột khác. Xóa hoặc đổi tên một trong hai.` };
     }
-    if (rows.length >= MAX_IMPORT_ROWS + SCAN_ROWS + 1) {
-      return { ok: false, error: `File có hơn ${MAX_IMPORT_ROWS} dòng dữ liệu. Chia nhỏ file rồi nhập từng phần.` };
-    }
-    const firstRow = XLSX.utils.decode_range(sheet["!ref"]).s.r; // 0-based
+    const firstRow = bounds.s.r; // 0-based
     const dataRows = rows
       .slice(header.index + 1)
       .map((cells, offset) => ({ rowNumber: firstRow + header.index + 2 + offset, cells }))
@@ -188,6 +248,8 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
   }
   return {
     ok: false,
-    error: "Không tìm thấy hàng tiêu đề có cột Email và Khóa học trong 10 dòng đầu của các sheet.",
+    error:
+      "Không tìm thấy hàng tiêu đề có cột Email và Khóa học trong 10 dòng đầu của các sheet." +
+      (skippedWide ? ` Sheet "${skippedWide}" bị bỏ qua vì có quá nhiều cột (hơn ${MAX_IMPORT_COLUMNS}).` : ""),
   };
 }
