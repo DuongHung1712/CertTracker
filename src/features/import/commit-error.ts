@@ -7,6 +7,8 @@ import { mapPostgresError } from "@/lib/postgres-error";
  */
 export function mapCommitError(error: { code?: string | null; message: string }): string {
   if (error.code === "55000") return "Lô này đã bị hủy, không nhập được.";
+  // 22023: fewer or more rows stored than the parse announced (an interrupted upload); see commit_import.
+  if (error.code === "22023") return "Lô này chưa tải lên đủ dữ liệu nên không nhập được. Hủy lô rồi tải file lên lại.";
   if (error.code === "P0002") return "Không tìm thấy lô nhập.";
   if (error.code === "57014") return "Lô quá lớn, hết thời gian xử lý. Chia nhỏ file rồi nhập lại.";
   const rowNo = /^import row (\d+):/.exec(error.message)?.[1];

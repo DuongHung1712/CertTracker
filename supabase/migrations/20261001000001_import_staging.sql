@@ -9,6 +9,9 @@ create table public.import_batches (
   status public.import_batch_status not null default 'parsed',
   notes jsonb not null default '[]'::jsonb,
   summary jsonb,
+  -- Row count of the parsed plan, written together with the batch. The rows arrive in separate chunk inserts, so
+  -- a parse that dies between chunks leaves a "parsed" batch with fewer rows; commit_import refuses it.
+  expected_rows int not null check (expected_rows >= 0),
   committed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -69,6 +72,7 @@ declare
   v_created int := 0;
   v_updated int := 0;
   v_skipped int := 0;
+  v_stored bigint;
   v_new_members int := 0;
   v_new_courses int := 0;
   v_summary jsonb;
@@ -87,6 +91,14 @@ begin
   end if;
   if v_batch.status = 'discarded' then
     raise exception 'import batch was discarded' using errcode = '55000';
+  end if;
+
+  -- 22023 (invalid_parameter_value): the upload was cut short, so the batch holds only part of the file.
+  -- Distinct from 55000 (discarded) so the UI can tell the admin to upload the file again.
+  select count(*) into v_stored from public.import_rows where batch_id = p_batch_id;
+  if v_stored <> v_batch.expected_rows then
+    raise exception 'import batch is incomplete: % of % rows stored', v_stored, v_batch.expected_rows
+      using errcode = '22023';
   end if;
 
   for v_row in

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(25);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -34,7 +34,7 @@ insert into public.training_records (member_id, course_id, status, progress, pla
           'in_progress', 40, '2026-12-01', 'keep me');
 
 -- Batch 1: update, two creates sharing one new course, one skipped error row
-insert into public.import_batches (id, file_name) values ('b1000000-0000-0000-0000-000000000001', 'legacy.xlsx');
+insert into public.import_batches (id, file_name, expected_rows) values ('b1000000-0000-0000-0000-000000000001', 'legacy.xlsx', 4);
 insert into public.import_rows (batch_id, row_no, raw, action, normalized, errors) values
   ('b1000000-0000-0000-0000-000000000001', 2, '{}', 'update',
    '{"member":{"id":"aaaaaaaa-0000-0000-0000-000000000001"},"course":{"id":"cccccccc-0000-0000-0000-000000000001"},
@@ -53,10 +53,10 @@ insert into public.import_rows (batch_id, row_no, raw, action, normalized, error
   ('b1000000-0000-0000-0000-000000000001', 5, '{}', 'skip', null, '["Không nhận ra trạng thái"]');
 
 -- Batch 2: discarded
-insert into public.import_batches (id, file_name, status) values ('b2000000-0000-0000-0000-000000000002', 'old.xlsx', 'discarded');
+insert into public.import_batches (id, file_name, status, expected_rows) values ('b2000000-0000-0000-0000-000000000002', 'old.xlsx', 'discarded', 0);
 
 -- Batch 3: second row violates a CHECK -> nothing from row 1 may persist
-insert into public.import_batches (id, file_name) values ('b3000000-0000-0000-0000-000000000003', 'bad.xlsx');
+insert into public.import_batches (id, file_name, expected_rows) values ('b3000000-0000-0000-0000-000000000003', 'bad.xlsx', 2);
 insert into public.import_rows (batch_id, row_no, raw, action, normalized) values
   ('b3000000-0000-0000-0000-000000000003', 2, '{}', 'create',
    '{"member":{"id":"bbbbbbbb-0000-0000-0000-000000000002"},"course":{"id":"cccccccc-0000-0000-0000-000000000001"},
@@ -69,18 +69,30 @@ insert into public.import_rows (batch_id, row_no, raw, action, normalized) value
                "viaCompany":null,"refundStatus":null,"notes":null}}');
 
 -- Batch 4: "new" member whose email now exists (created after the preview)
-insert into public.import_batches (id, file_name) values ('b4000000-0000-0000-0000-000000000004', 'stale.xlsx');
+insert into public.import_batches (id, file_name, expected_rows) values ('b4000000-0000-0000-0000-000000000004', 'stale.xlsx', 1);
 insert into public.import_rows (batch_id, row_no, raw, action, normalized) values
   ('b4000000-0000-0000-0000-000000000004', 2, '{}', 'create',
    '{"member":{"email":"B@TEST.LOCAL","fullName":"Someone Else","teamId":null},"course":{"id":"cccccccc-0000-0000-0000-000000000001"},
      "record":{"status":"not_started","progress":0,"plannedExamDate":null,"issuedDate":null,"certificateUrl":null,
                "viaCompany":null,"refundStatus":null,"notes":null}}');
 
+-- Batch 5: the upload died after one of three rows. Batch 6: more rows stored than expected.
+insert into public.import_batches (id, file_name, expected_rows) values
+  ('b5000000-0000-0000-0000-000000000005', 'partial.xlsx', 3),
+  ('b6000000-0000-0000-0000-000000000006', 'extra.xlsx', 0);
+insert into public.import_rows (batch_id, row_no, raw, action, normalized) values
+  ('b5000000-0000-0000-0000-000000000005', 2, '{}', 'create',
+   '{"member":{"email":"partial@test.local","fullName":"Partial Person","teamId":null},"course":{"id":"cccccccc-0000-0000-0000-000000000001"},
+     "record":{"status":"not_started","progress":0,"plannedExamDate":null,"issuedDate":null,"certificateUrl":null,
+               "viaCompany":null,"refundStatus":null,"notes":null}}');
+insert into public.import_rows (batch_id, row_no, raw, action, normalized, errors)
+  values ('b6000000-0000-0000-0000-000000000006', 2, '{}', 'skip', null, '["x"]');
+
 -- Non-admins
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000b');
 select is((select count(*) from public.import_batches), 0::bigint, 'manager sees no import batches');
 select is((select count(*) from public.import_rows), 0::bigint, 'manager sees no import rows');
-select throws_ok($$insert into public.import_batches (file_name) values ('x.xlsx')$$, '42501', null, 'manager cannot create a batch');
+select throws_ok($$insert into public.import_batches (file_name, expected_rows) values ('x.xlsx', 0)$$, '42501', null, 'manager cannot create a batch');
 select throws_ok($$select public.commit_import('b1000000-0000-0000-0000-000000000001')$$, '42501', null, 'manager cannot commit');
 reset role;
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000c');
@@ -134,8 +146,21 @@ select is(
 select is((select count(*) from public.courses where name = 'Course Three'), 0::bigint, 'entities created before the failure are rolled back');
 select is((select status::text from public.import_batches where id = 'b3000000-0000-0000-0000-000000000003'), 'parsed', 'failed batch stays parsed');
 
+-- Incomplete uploads: refused with their own SQLSTATE (not 55000), and nothing is written
+select throws_ok($$select public.commit_import('b5000000-0000-0000-0000-000000000005')$$, '22023', null, 'a batch with fewer rows than expected cannot be committed');
+select is((select count(*) from public.members where email = 'partial@test.local'), 0::bigint, 'an incomplete batch writes nothing');
+select is((select status::text from public.import_batches where id = 'b5000000-0000-0000-0000-000000000005'), 'parsed', 'an incomplete batch stays parsed');
+select throws_ok($$select public.commit_import('b6000000-0000-0000-0000-000000000006')$$, '22023', null, 'a batch with more rows than expected cannot be committed');
+
 -- Stale preview
-select lives_ok($$select public.commit_import('b4000000-0000-0000-0000-000000000004')$$, 'a member created after the preview is reused, not duplicated');
+select is(
+  public.commit_import('b4000000-0000-0000-0000-000000000004'),
+  '{"created":1,"updated":0,"skipped":0,"newMembers":0,"newCourses":0}'::jsonb,
+  'a member created after the preview is reused, not duplicated');
+select is(
+  (select count(*) from public.training_records
+    where member_id = 'bbbbbbbb-0000-0000-0000-000000000002' and course_id = 'cccccccc-0000-0000-0000-000000000001'),
+  1::bigint, 'the record lands on the existing member found by case-insensitive email');
 reset role;
 
 select * from finish();

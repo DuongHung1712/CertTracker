@@ -4,7 +4,7 @@ import { MAX_IMPORT_BYTES } from "@/features/import/clean";
 import { cleanupPartialBatch } from "@/features/import/cleanup";
 import { buildImportPlan } from "@/features/import/plan";
 import { loadImportLookups } from "@/features/import/queries";
-import { capMessages, capRaw, sanitizeJson } from "@/features/import/stored";
+import { capMessages, capRaw, sanitizeJson, truncateText } from "@/features/import/stored";
 import { isExcelFile, readImportTable } from "@/features/import/workbook";
 import { todayVn } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -65,11 +65,17 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
     const plan = buildImportPlan(table.value, await loadImportLookups(), todayVn());
-    // The file name is only a label (truncated, never used as a path).
-    const fileName = file.name.trim().slice(0, 255) || "import.xlsx";
+    // The file name is only a label (truncated surrogate-safely, never used as a path).
+    const fileName = truncateText(file.name, 255).trim() || "import.xlsx";
+    // expected_rows lets commit_import refuse a batch whose rows were only partly written (a killed upload).
     const { data: batch, error: batchError } = await supabase
       .from("import_batches")
-      .insert({ file_name: fileName, sheet_name: table.value.sheetName, notes: capMessages(plan.notes) })
+      .insert({
+        file_name: fileName,
+        sheet_name: truncateText(table.value.sheetName, 255),
+        notes: capMessages(plan.notes),
+        expected_rows: plan.rows.length,
+      })
       .select("id")
       .single();
     if (batchError) return fail("Không tạo được lô nhập. Vui lòng thử lại.", 500);

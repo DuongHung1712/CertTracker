@@ -6,6 +6,12 @@ describe("mapCommitError", () => {
     expect(mapCommitError({ code: "55000", message: "import batch was discarded" })).toBe("Lô này đã bị hủy, không nhập được.");
   });
 
+  it("maps an incomplete batch (interrupted upload) to a re-upload instruction", () => {
+    const text = mapCommitError({ code: "22023", message: "import batch is incomplete: 500 of 1200 rows stored" });
+    expect(text).toBe("Lô này chưa tải lên đủ dữ liệu nên không nhập được. Hủy lô rồi tải file lên lại.");
+    expect(text).not.toContain("500");
+  });
+
   it("maps a missing batch", () => {
     expect(mapCommitError({ code: "P0002", message: "import batch not found" })).toBe("Không tìm thấy lô nhập.");
   });

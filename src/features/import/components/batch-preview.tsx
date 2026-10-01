@@ -73,6 +73,8 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
   const newEntities = useMemo(() => describeNewEntities(rows), [rows]);
   const importable = counts.create + counts.update;
   const actionable = batch.status === "parsed" && !finished;
+  // An upload that died between chunks leaves fewer rows than the parse announced; commit_import refuses it too (22023).
+  const incomplete = batch.status === "parsed" && rows.length !== batch.expectedRows;
 
   const hasActiveFilters = search.length > 0 || outcomeFilter !== ALL;
   const visibleRows = useMemo(() => {
@@ -152,7 +154,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
               <Button variant="outline" onClick={() => setConfirming("discard")}>
                 Hủy lô
               </Button>
-              <Button disabled={importable === 0} onClick={() => setConfirming("commit")}>
+              <Button disabled={importable === 0 || incomplete} onClick={() => setConfirming("commit")}>
                 {`Nhập ${importable} dòng`}
               </Button>
             </>
@@ -168,6 +170,14 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
             <Link href="/records" className="font-medium">
               Xem chứng chỉ
             </Link>
+          </AlertDescription>
+        </Alert>
+      )}
+      {incomplete && (
+        <Alert variant="destructive">
+          <CircleAlert aria-hidden />
+          <AlertDescription>
+            Lô chưa tải lên đủ dữ liệu (đã lưu {rows.length}/{batch.expectedRows} dòng) nên không nhập được. Hủy lô rồi tải file lên lại.
           </AlertDescription>
         </Alert>
       )}

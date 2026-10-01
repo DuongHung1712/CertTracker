@@ -22,6 +22,8 @@ export type ImportBatch = {
 
 export type ImportBatchDetail = ImportBatch & {
   sheetName: string | null;
+  /** Row count the parse announced; the stored rows must match it for the batch to be committable. */
+  expectedRows: number;
   /** Sheet-level notes from the parse (e.g. skipped title rows, unknown columns). */
   notes: string[];
   committedAt: string | null;
@@ -136,7 +138,7 @@ export async function getImportBatch(id: string): Promise<ImportBatchDetail | nu
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("import_batches")
-    .select("id, file_name, sheet_name, status, notes, summary, created_at, committed_at")
+    .select("id, file_name, sheet_name, status, notes, summary, created_at, committed_at, expected_rows")
     .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);
@@ -144,6 +146,7 @@ export async function getImportBatch(id: string): Promise<ImportBatchDetail | nu
   return {
     ...toBatch(data),
     sheetName: data.sheet_name,
+    expectedRows: data.expected_rows,
     notes: messagesSchema.parse(data.notes),
     committedAt: data.committed_at,
   };

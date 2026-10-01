@@ -141,6 +141,7 @@ export type Database = {
           committed_at: string | null
           created_at: string
           created_by: string | null
+          expected_rows: number
           file_name: string
           id: string
           notes: Json
@@ -153,6 +154,7 @@ export type Database = {
           committed_at?: string | null
           created_at?: string
           created_by?: string | null
+          expected_rows: number
           file_name: string
           id?: string
           notes?: Json
@@ -165,6 +167,7 @@ export type Database = {
           committed_at?: string | null
           created_at?: string
           created_by?: string | null
+          expected_rows?: number
           file_name?: string
           id?: string
           notes?: Json
