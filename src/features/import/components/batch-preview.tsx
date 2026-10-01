@@ -17,7 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { commitImport, discardImport } from "@/features/import/actions";
 import { countRows, describeNewEntities, ROW_OUTCOME_LABEL, rowOutcome, type RowOutcome } from "@/features/import/preview";
 import type { ImportBatchDetail, ImportRowView } from "@/features/import/queries";
+import { runBatchAction } from "@/features/import/run-batch-action";
 import { formatDateTimeVn } from "@/lib/format";
+import type { Result } from "@/lib/result";
 import { foldText } from "@/lib/text";
 
 /** A Base UI `Select` value must be a non-empty string, so "no filter" is a sentinel, not "". */
@@ -99,35 +101,40 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
     [],
   );
 
-  async function handleCommit() {
+  /** Shared by commit and discard: whatever happens, the server state is the truth, so always re-read it. */
+  async function runAction<T>(
+    action: () => Promise<Result<T>>,
+    outcomes: { onOk: (data: T) => void; rejectedMessage: string },
+  ) {
+    if (pending) return;
     setPending(true);
-    const result = await commitImport({ batchId: batch.id });
-    setPending(false);
-    setConfirming(null);
-    if (!result.ok) {
-      toast.error(result.error, { duration: Infinity });
-      // The batch may have changed under us (committed elsewhere); show whatever is true now.
-      router.refresh();
-      return;
-    }
-    setFinished(true);
-    toast.success(`Đã nhập: tạo mới ${result.data.created}, cập nhật ${result.data.updated}`);
-    router.refresh();
+    await runBatchAction(action, {
+      onOk: (data) => {
+        setFinished(true);
+        outcomes.onOk(data);
+      },
+      onError: (message) => toast.error(message, { duration: Infinity }),
+      onRejected: () => toast.error(outcomes.rejectedMessage, { duration: Infinity }),
+      onSettled: () => {
+        setPending(false);
+        setConfirming(null);
+        router.refresh();
+      },
+    });
   }
 
-  async function handleDiscard() {
-    setPending(true);
-    const result = await discardImport({ batchId: batch.id });
-    setPending(false);
-    setConfirming(null);
-    if (!result.ok) {
-      toast.error(result.error, { duration: Infinity });
-      router.refresh();
-      return;
-    }
-    setFinished(true);
-    toast.success("Đã hủy lô nhập");
-    router.refresh();
+  function handleCommit() {
+    return runAction(() => commitImport({ batchId: batch.id }), {
+      onOk: (summary) => toast.success(`Đã nhập: tạo mới ${summary.created}, cập nhật ${summary.updated}`),
+      rejectedMessage: "Không nhận được phản hồi từ máy chủ. Tải lại trang để kiểm tra lô này đã được nhập chưa.",
+    });
+  }
+
+  function handleDiscard() {
+    return runAction(() => discardImport({ batchId: batch.id }), {
+      onOk: () => toast.success("Đã hủy lô nhập"),
+      rejectedMessage: "Không hủy được lô. Tải lại trang rồi thử lại.",
+    });
   }
 
   const description = [batch.sheetName ? `Sheet ${batch.sheetName}` : null, `tải lên lúc ${formatDateTimeVn(batch.createdAt)}`]
