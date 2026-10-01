@@ -101,94 +101,100 @@ export function RecordsTable({
     });
   }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter]);
 
-  const columns: ColumnDef<RecordRow, unknown>[] = [
-    ...(isTeam
-      ? ([
-          { accessorKey: "memberCode", header: "Mã", cell: ({ row }) => <MemberCode code={row.original.memberCode} /> },
-          { accessorKey: "memberName", header: "Họ tên" },
-          { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
-        ] satisfies ColumnDef<RecordRow, unknown>[])
-      : []),
-    {
-      accessorKey: "courseName",
-      header: "Khóa học",
-      cell: ({ row }) => (
-        <div className="flex flex-col">
-          <span>{row.original.courseName}</span>
-          {row.original.providerName && (
-            <span className="text-caption text-muted-foreground">{row.original.providerName}</span>
-          )}
-        </div>
-      ),
-    },
-    { accessorKey: "status", header: "Trạng thái", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
-    { accessorKey: "progress", header: "Tiến độ", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
-    {
-      id: "expiry",
-      header: "Hạn",
-      accessorFn: (record) => record.daysToExpiry,
-      sortingFn: byDaysToExpiry,
-      // Numeric columns default to descending first; "soonest expiry first" is the useful first click.
-      sortDescFirst: false,
-      cell: ({ row }) => (
-        <ExpiryBadge
-          status={row.original.expiryStatus}
-          daysToExpiry={row.original.daysToExpiry}
-          expiryDate={row.original.expiryDate}
-        />
-      ),
-    },
-    {
-      accessorKey: "plannedExamDate",
-      header: "Ngày thi",
-      cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
-    },
-    {
-      id: "actions",
-      header: "",
-      enableSorting: false,
-      cell: ({ row }) => {
-        const record = row.original;
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label={`Thao tác cho ${record.memberName} · ${record.courseName}`}
-                />
-              }
-            >
-              <MoreHorizontal aria-hidden />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-40">
-              <DropdownMenuItem
-                onClick={() => {
-                  setEditingId(record.id);
-                  setSheetOpen(true);
-                }}
-              >
-                Sửa
-              </DropdownMenuItem>
-              {record.hasEvidence && (
-                <DropdownMenuItem
-                  render={<a href={`/api/records/${record.id}/evidence`} target="_blank" rel="noopener noreferrer" />}
-                >
-                  Xem minh chứng
-                </DropdownMenuItem>
-              )}
-              {canDelete && (
-                <DropdownMenuItem variant="destructive" onClick={() => setConfirming(record)}>
-                  Xóa
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        );
+  // Memoised: react-table renders each `cell` function as a component, so a fresh `columns` array on every render
+  // gives every cell a new component type and remounts it. That closed an open row menu on each Realtime refresh.
+  // The cells close over `canDelete` and the stable useState setters only, so these two deps are complete.
+  const columns = useMemo<ColumnDef<RecordRow, unknown>[]>(
+    () => [
+      ...(isTeam
+        ? ([
+            { accessorKey: "memberCode", header: "Mã", cell: ({ row }) => <MemberCode code={row.original.memberCode} /> },
+            { accessorKey: "memberName", header: "Họ tên" },
+            { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
+          ] satisfies ColumnDef<RecordRow, unknown>[])
+        : []),
+      {
+        accessorKey: "courseName",
+        header: "Khóa học",
+        cell: ({ row }) => (
+          <div className="flex flex-col">
+            <span>{row.original.courseName}</span>
+            {row.original.providerName && (
+              <span className="text-caption text-muted-foreground">{row.original.providerName}</span>
+            )}
+          </div>
+        ),
       },
-    },
-  ];
+      { accessorKey: "status", header: "Trạng thái", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
+      { accessorKey: "progress", header: "Tiến độ", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
+      {
+        id: "expiry",
+        header: "Hạn",
+        accessorFn: (record) => record.daysToExpiry,
+        sortingFn: byDaysToExpiry,
+        // Numeric columns default to descending first; "soonest expiry first" is the useful first click.
+        sortDescFirst: false,
+        cell: ({ row }) => (
+          <ExpiryBadge
+            status={row.original.expiryStatus}
+            daysToExpiry={row.original.daysToExpiry}
+            expiryDate={row.original.expiryDate}
+          />
+        ),
+      },
+      {
+        accessorKey: "plannedExamDate",
+        header: "Ngày thi",
+        cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
+      },
+      {
+        id: "actions",
+        header: "",
+        enableSorting: false,
+        cell: ({ row }) => {
+          const record = row.original;
+          return (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={`Thao tác cho ${record.memberName} · ${record.courseName}`}
+                  />
+                }
+              >
+                <MoreHorizontal aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-40">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setEditingId(record.id);
+                    setSheetOpen(true);
+                  }}
+                >
+                  Sửa
+                </DropdownMenuItem>
+                {record.hasEvidence && (
+                  <DropdownMenuItem
+                    render={<a href={`/api/records/${record.id}/evidence`} target="_blank" rel="noopener noreferrer" />}
+                  >
+                    Xem minh chứng
+                  </DropdownMenuItem>
+                )}
+                {canDelete && (
+                  <DropdownMenuItem variant="destructive" onClick={() => setConfirming(record)}>
+                    Xóa
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          );
+        },
+      },
+    ],
+    [isTeam, canDelete],
+  );
 
   async function handleDelete() {
     if (!confirming) return;
