@@ -63,6 +63,22 @@ export function cellText(cell: Cell | undefined): string | null {
   return text === "" || EXCEL_ERROR.test(text) ? null : text;
 }
 
+/**
+ * Free text (notes): like cellText but keeps line breaks, so an exported multi-line note re-imports unchanged.
+ * CR/CRLF become LF, runs of spaces/tabs collapse within a line, and the whole string is trimmed.
+ */
+export function normalizeNotes(cell: Cell | undefined): string | null {
+  if (cell === null || cell === undefined) return null;
+  const text = String(cell)
+    .replace(INVISIBLE, "")
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/[^\S\n]+/g, " ").trim())
+    .join("\n")
+    .trim();
+  return text === "" || EXCEL_ERROR.test(text) ? null : text;
+}
+
 /** Spec §6.3 `trimCertType`, applied to every catalog name (cert type, provider, course, team, member). */
 export const normalizeName = (cell: Cell | undefined): string | null => cellText(cell);
 

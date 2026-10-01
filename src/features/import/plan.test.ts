@@ -220,6 +220,71 @@ describe("buildImportPlan edge cases", () => {
   });
 });
 
+describe("commit_import safety of emitted records", () => {
+  const doneInDb: ImportLookups["records"][number] = {
+    id: "r-done", memberId: "m-an", courseId: "c-saa", status: "done", progress: 100, plannedExamDate: null,
+    issuedDate: "2023-10-26", certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: "cũ",
+  };
+  const withRecord = (record: ImportLookups["records"][number] | null): ImportLookups => ({ ...LOOKUPS, records: record ? [record] : [] });
+
+  it("emits the database issue date for a done update whose file has no issue date (CHECK runs before ON CONFLICT)", () => {
+    const [planned] = buildImportPlan(table([row({ "Trạng thái": "Hoàn thành", "Tiến độ": 100, "Ngày cấp": null, "Ghi chú": "mới" })]), withRecord(doneInDb), TODAY).rows;
+    expect(planned!.errors).toEqual([]);
+    expect(planned!.action).toBe("update");
+    expect(planned!.normalized!.record).toMatchObject({ status: "done", progress: 100, issuedDate: "2023-10-26", notes: "mới" });
+  });
+
+  it("does the same when status and progress are both blank and the existing record is done", () => {
+    const [planned] = buildImportPlan(table([row({ "Trạng thái": null, "Tiến độ": null, "Ngày cấp": null, "Ghi chú": "mới" })]), withRecord(doneInDb), TODAY).rows;
+    expect(planned!.errors).toEqual([]);
+    expect(planned!.action).toBe("update");
+    expect(planned!.normalized!.record).toMatchObject({ status: "done", progress: 100, issuedDate: "2023-10-26" });
+  });
+
+  it("still treats such a row as unchanged when nothing else differs", () => {
+    const [planned] = buildImportPlan(table([row({ "Trạng thái": "Hoàn thành", "Tiến độ": 100, "Ghi chú": "cũ" })]), withRecord(doneInDb), TODAY).rows;
+    expect(planned).toMatchObject({ action: "skip", errors: [] });
+  });
+
+  it("never emits a record that violates the done / not_started / in_progress CHECK constraints", () => {
+    const statuses: Cell[] = [null, "Hoàn thành", "Đang học", "Chưa bắt đầu"];
+    const progresses: Cell[] = [null, 0, 50, 99, 100];
+    const issued: Cell[] = [null, "01/01/2025"];
+    const existings = [
+      null,
+      doneInDb,
+      { ...doneInDb, id: "r-ip", status: "in_progress" as const, progress: 40, issuedDate: null },
+      { ...doneInDb, id: "r-ns", status: "not_started" as const, progress: 0, issuedDate: null },
+    ];
+    let checked = 0;
+    for (const existing of existings) {
+      for (const status of statuses) {
+        for (const progress of progresses) {
+          for (const date of issued) {
+            const [planned] = buildImportPlan(table([row({ "Trạng thái": status, "Tiến độ": progress, "Ngày cấp": date, "Ghi chú": "mới" })]), withRecord(existing), TODAY).rows;
+            if (planned!.errors.length > 0) continue;
+            const { status: s, progress: p, issuedDate } = planned!.normalized!.record;
+            const label = JSON.stringify({ existing: existing?.id, status, progress, date });
+            expect(s !== "done" || (p === 100 && issuedDate !== null), label).toBe(true);
+            expect(s !== "not_started" || p === 0, label).toBe(true);
+            expect(s !== "in_progress" || p <= 99, label).toBe(true);
+            checked++;
+          }
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(50);
+  });
+});
+
+describe("notes keep their line breaks", () => {
+  it("treats a multi-line note identical to the database as unchanged", () => {
+    const lookups: ImportLookups = { ...LOOKUPS, records: [{ ...LOOKUPS.records[0]!, notes: "dòng 1\ndòng 2" }] };
+    const [planned] = buildImportPlan(table([row({ "Tiến độ": 40, "Ghi chú": "dòng 1\r\ndòng 2" })]), lookups, TODAY).rows;
+    expect(planned).toMatchObject({ action: "skip", errors: [] });
+  });
+});
+
 describe("reconcileRecord (decision #22)", () => {
   const none = null;
   it("derives status from progress and progress from status", () => {

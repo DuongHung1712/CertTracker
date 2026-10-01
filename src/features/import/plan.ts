@@ -1,6 +1,6 @@
 import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
 import {
-  cellText, detectProgressMode, IMPORT_FIELDS, normalizeBoolean, normalizeEmail, normalizeName, normalizeRefund,
+  cellText, detectProgressMode, IMPORT_FIELDS, normalizeBoolean, normalizeEmail, normalizeName, normalizeNotes, normalizeRefund,
   normalizeStatus, normalizeUrl, parseImportDate, parseValidityMonths, progressToPercent,
   type Cell, type Cleaned, type ImportField, type ImportTable, type ProgressMode,
 } from "@/features/import/clean";
@@ -355,7 +355,7 @@ function take<T>(cleaned: Cleaned<T>, issues: Issues, fallback: T): T {
 type RecordCells = Omit<NormalizedRecord, "status" | "progress"> & { status: RecordStatus | null; progress: number | null };
 
 function readRecordCells(ctx: PlanContext, cells: RowCells, issues: Issues): RecordCells {
-  const notes = cellText(cells.notes);
+  const notes = normalizeNotes(cells.notes);
   if (notes !== null && notes.length > MAX_NOTES_LENGTH) issues.errors.push(`Ghi chú dài quá ${MAX_NOTES_LENGTH} ký tự`);
   return {
     status: take(normalizeStatus(cells.status), issues, null),
@@ -425,7 +425,11 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
   issues.warnings.push(...reconciled.warnings);
   if (issues.errors.length > 0) return skipped();
 
-  const normalizedRecord: NormalizedRecord = { ...record, status: reconciled.status, progress: reconciled.progress };
+  // commit_import upserts with INSERT ... ON CONFLICT, and PostgreSQL checks the CHECK constraints on the proposed
+  // insert row before conflict detection. A done record therefore must carry its issue date even when it only
+  // exists in the database (reconcileRecord accepted it), or the whole batch aborts with 23514.
+  const issuedDate = reconciled.status === "done" ? record.issuedDate ?? existing?.issuedDate ?? null : record.issuedDate;
+  const normalizedRecord: NormalizedRecord = { ...record, status: reconciled.status, progress: reconciled.progress, issuedDate };
   return {
     ...base,
     normalized: { member: member.ref, course: course.ref, record: normalizedRecord },

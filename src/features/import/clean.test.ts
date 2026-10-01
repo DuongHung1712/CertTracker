@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  cellText, detectProgressMode, excelSerialToDate, findHeaderRow, isoToExcelSerial, mapHeaders, normalizeBoolean,
+  cellText, normalizeNotes, detectProgressMode, excelSerialToDate, findHeaderRow, isoToExcelSerial, mapHeaders, normalizeBoolean,
   normalizeEmail, normalizeName, normalizeRefund, normalizeStatus, normalizeUrl, parseImportDate, parseNumber,
   parseValidityMonths, progressToPercent,
 } from "@/features/import/clean";
@@ -16,6 +16,27 @@ describe("cellText / normalizeName (spec: trimCertType)", () => {
     expect(cellText("#N/A")).toBeNull();
     expect(cellText(null)).toBeNull();
     expect(cellText(0)).toBe("0");
+  });
+});
+
+describe("normalizeNotes", () => {
+  it("keeps line breaks and normalises CR/CRLF to LF", () => {
+    expect(normalizeNotes("dòng 1\ndòng 2")).toBe("dòng 1\ndòng 2");
+    expect(normalizeNotes("a\r\nb")).toBe("a\nb");
+    expect(normalizeNotes("a\rb")).toBe("a\nb");
+  });
+  it("collapses spaces and tabs within lines only, and trims", () => {
+    expect(normalizeNotes("  a   b \t c  \n   d  \n")).toBe("a b c\nd");
+  });
+  it("returns null for blank, whitespace-only, invisible-only and Excel-error text", () => {
+    expect(normalizeNotes(null)).toBeNull();
+    expect(normalizeNotes(" \n \r\n ")).toBeNull();
+    expect(normalizeNotes("\u200b\ufeff")).toBeNull();
+    expect(normalizeNotes("#N/A")).toBeNull();
+  });
+  it("strips invisible characters and stringifies numbers", () => {
+    expect(normalizeNotes("a\u200bb")).toBe("ab");
+    expect(normalizeNotes(42)).toBe("42");
   });
 });
 
