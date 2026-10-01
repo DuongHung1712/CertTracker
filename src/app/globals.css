@@ -114,7 +114,7 @@
   --input: #83908C;
   --ring: #1C7C75;
 
-  /* Chart palette is designed in week 5 (docs/design-system.md §10). */
+  /* Chart palette is designed in week 5 (docs/design-system.md §11). */
   --chart-1: #0E5C58;
   --chart-2: #56636C;
   --chart-3: #83908C;
@@ -183,4 +183,13 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Fix browser autofill background on inputs to match card background */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--card) inset !important;
+  -webkit-text-fill-color: var(--foreground) !important;
+  caret-color: var(--foreground);
 }

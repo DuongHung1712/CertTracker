@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .frame { stroke: #1C7C75; stroke-width: 0.75px; }
+    }
+  </style>
+  <!-- Background squircle: token --primary (#0E5C58), radius 7px matching --radius-lg -->
+  <rect class="frame" width="32" height="32" rx="7" fill="#0E5C58"/>
+  <!-- Circular Monogram "C" (Cert): token --card (#FFFFFF) -->
+  <path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
+  <!-- Verified Checkmark (Tracker): token --accent (#E2EFEC) -->
+  <path d="M12 16L15 19L24.5 9.5" stroke="#E2EFEC" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

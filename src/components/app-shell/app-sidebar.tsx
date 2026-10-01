@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { isActivePath, navForUser } from "@/components/app-shell/nav";
+import { Logo } from "@/components/app-shell/logo";
 import type { Role } from "@/components/status/labels";
 
 export function AppSidebar({ role, hasMember }: { role: Role; hasMember: boolean }) {
@@ -35,9 +36,12 @@ export function AppSidebar({ role, hasMember }: { role: Role; hasMember: boolean
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <span className="flex h-8 items-center px-2 text-section-title text-sidebar-foreground group-data-[collapsible=icon]:hidden">
-          CertTracker
-        </span>
+        <div className="flex h-9 items-center gap-2.5 px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <Logo size={22} />
+          <span className="text-section-title font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden">
+            Cert<span className="text-primary">Tracker</span>
+          </span>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>

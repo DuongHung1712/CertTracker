@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 164 36" fill="none">
+  <!-- Brand Monogram Mark (32x32) -->
+  <g transform="translate(2, 2)">
+    <rect width="32" height="32" rx="7" fill="#0E5C58"/>
+    <path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M12 16L15 19L24.5 9.5" stroke="#E2EFEC" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <!-- Wordmark "CertTracker" -->
+  <text x="44" y="23.5" font-family="'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="18" font-weight="600" letter-spacing="-0.02em">
+    <tspan fill="#15212B">Cert</tspan><tspan fill="#0E5C58">Tracker</tspan>
+  </text>
+</svg>
