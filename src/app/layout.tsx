@@ -18,6 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CertTracker",
   description: "Quản lý chứng chỉ cho team",
+  // No `icons` here: an explicit `icons` disables Next's file-convention icons
+  // (src/app/icon.svg, src/app/favicon.ico), which are served with cache-busting hashes.
 };
 
 export default function RootLayout({
