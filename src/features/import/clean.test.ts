@@ -119,6 +119,12 @@ describe("other fields", () => {
     expect(normalizeEmail("mailto:an@x.vn")).toEqual({ ok: true, value: "an@x.vn" });
     expect(normalizeEmail("")).toEqual({ ok: false, error: "Thiếu email" });
     expect(normalizeEmail("an@").ok).toBe(false);
+    const tooLong = `${"a".repeat(250)}@x.vn`; // 255 characters
+    expect(normalizeEmail(tooLong)).toEqual({ ok: false, error: "Email quá dài (tối đa 254 ký tự)" });
+    expect(normalizeEmail(`${"a".repeat(249)}@x.vn`).ok).toBe(true); // 254 characters
+    const started = Date.now();
+    expect(normalizeEmail("a@".repeat(16_000)).ok).toBe(false);
+    expect(Date.now() - started).toBeLessThan(100); // never reaches the regex
   });
   it("reads booleans", () => {
     expect(normalizeBoolean("x", "Qua công ty")).toEqual({ ok: true, value: true });

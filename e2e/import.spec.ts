@@ -83,7 +83,7 @@ test("re-importing the same file changes nothing", async ({ page }) => {
   await expect(committed).toContainText("Đã nhập");
   await expect(committed).toContainText("Tạo mới 3 · Cập nhật 2");
   await expect(discarded).toContainText("Đã hủy");
-  await expect(committed.getByRole("link", { name: "Xem", exact: true })).toBeVisible();
+  await expect(committed.getByRole("link", { name: /^Xem/ })).toBeVisible();
 });
 
 test("a file without the required columns is rejected", async ({ page }) => {

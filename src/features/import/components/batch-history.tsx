@@ -42,10 +42,14 @@ export function BatchHistory({ batches }: { batches: ImportBatch[] }) {
       },
       {
         id: "view",
-        header: "",
+        header: () => <span className="sr-only">Thao tác</span>,
         enableSorting: false,
         cell: ({ row }) => (
-          <Link href={`/import/${row.original.id}`} className={buttonVariants({ variant: "ghost", size: "xs" })}>
+          <Link
+            href={`/import/${row.original.id}`}
+            aria-label={`Xem lô ${row.original.fileName}`}
+            className={buttonVariants({ variant: "ghost", size: "xs" })}
+          >
             Xem
           </Link>
         ),

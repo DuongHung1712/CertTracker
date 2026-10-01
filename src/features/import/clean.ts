@@ -83,9 +83,12 @@ export function normalizeNotes(cell: Cell | undefined): string | null {
 export const normalizeName = (cell: Cell | undefined): string | null => cellText(cell);
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+/** RFC 5321 path limit. Checked before the regex, which is quadratic: a 32 000-character cell took ~0.9 s. */
+const MAX_EMAIL_LENGTH = 254;
 export function normalizeEmail(cell: Cell | undefined): Cleaned<string> {
   const text = cellText(cell)?.replace(/^mailto:/i, "");
   if (!text) return fail("Thiếu email");
+  if (text.length > MAX_EMAIL_LENGTH) return fail(`Email quá dài (tối đa ${MAX_EMAIL_LENGTH} ký tự)`);
   const email = text.toLowerCase();
   return EMAIL.test(email) ? ok(email) : fail(`Email "${text}" không hợp lệ`);
 }
