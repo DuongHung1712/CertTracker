@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { Logo } from "@/components/app-shell/logo";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EXPIRY_STATUSES } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
@@ -50,6 +51,39 @@ export default function DesignPage() {
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-8 sm:px-6">
       <PageHeader title="Design system" description="Trang trưng bày token và component. Chỉ có ở môi trường dev." />
+
+      <Section title="Logo & Favicon">
+        <div className="flex flex-wrap items-center gap-6 rounded-lg border bg-card p-4">
+          <div className="flex flex-col items-center gap-1.5">
+            <Logo size={16} />
+            <span className="font-mono text-caption text-muted-foreground">16px (Tab)</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <Logo size={24} />
+            <span className="font-mono text-caption text-muted-foreground">24px</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <Logo size={32} />
+            <span className="font-mono text-caption text-muted-foreground">32px (Favicon)</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <Logo size={48} />
+            <span className="font-mono text-caption text-muted-foreground">48px</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5">
+            <Logo size={64} />
+            <span className="font-mono text-caption text-muted-foreground">64px</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5 pl-4 border-l">
+            <Logo size={28} showText />
+            <span className="font-mono text-caption text-muted-foreground">Full Wordmark</span>
+          </div>
+          <div className="flex flex-col items-center gap-1.5 pl-4 border-l">
+            <Logo size={28} variant="monogram" showText />
+            <span className="font-mono text-caption text-muted-foreground">Monogram Variant</span>
+          </div>
+        </div>
+      </Section>
 
       <Section title="Màu">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
