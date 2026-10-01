@@ -2,6 +2,7 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { assertLocalSupabaseUrl } from "../../src/lib/assert-local-supabase-url";
 import type { Database } from "../../src/types/database";
 import { SEED_PASSWORD } from "../helpers";
 
@@ -69,6 +70,8 @@ function supabaseConfig(): { url: string; anonKey: string } {
 
 export async function signInAsSeedAdmin(): Promise<Client> {
   const { url, anonKey } = supabaseConfig();
+  // The only way to obtain a client for prepareSeedState/restoreSeed, so no delete is reachable without this check.
+  assertLocalSupabaseUrl(url);
   const client = createClient<Database>(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { error } = await client.auth.signInWithPassword({ email: "admin@certtracker.test", password: SEED_PASSWORD });
   if (error) throw new Error(`Seed admin sign-in failed: ${error.message}`);
