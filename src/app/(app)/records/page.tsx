@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { getCurrentUser } from "@/features/auth/queries";
+import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
 import { listCourseOptions, listMemberOptions, listRecords } from "@/features/records/queries";
@@ -17,7 +18,11 @@ export default async function RecordsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Chứng chỉ theo người" description="Ai đang có, đang học chứng chỉ nào." />
+      <PageHeader
+        title="Chứng chỉ theo người"
+        description="Ai đang có, đang học chứng chỉ nào."
+        actions={<ExportLinks />}
+      />
       <RecordsRealtime />
       <RecordsTable
         records={records}
