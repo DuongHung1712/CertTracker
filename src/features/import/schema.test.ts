@@ -33,7 +33,15 @@ describe("import schemas", () => {
       course: { name: "C", provider: { name: "P" }, certType: null, validityMonths: 12 },
       record: { status: "done" },
     });
-    expect(parsed).toEqual({ member: { email: "a@b.c", fullName: "A" }, course: { name: "C" } });
+    expect(parsed).toEqual({
+      member: { email: "a@b.c", fullName: "A" },
+      course: { name: "C", provider: { name: "P" }, certType: null },
+    });
+    const withCatalogIds = normalizedRefsSchema.parse({
+      member: { id: "m" },
+      course: { name: "C", provider: { id: "p" }, certType: { name: "T" }, validityMonths: null },
+    });
+    expect(withCatalogIds).toEqual({ member: { id: "m" }, course: { name: "C", provider: { id: "p" }, certType: { name: "T" } } });
     expect(normalizedRefsSchema.parse({ member: { id: "m" }, course: { id: "c" } })).toEqual({ member: { id: "m" }, course: { id: "c" } });
     expect(normalizedRefsSchema.parse(null)).toBeNull();
     expect(normalizedRefsSchema.parse({ member: 1 })).toBeNull();

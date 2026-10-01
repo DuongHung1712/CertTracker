@@ -23,14 +23,20 @@ export const rawSchema = z
   })
   .catch({ cells: {}, email: null, course: null });
 
+const catalogRefSchema = z.union([z.object({ id: z.string() }), z.object({ name: z.string() })]);
+
 /**
  * The part of the `normalized` column the client reads (the "new entities" summary): which member and
- * course a row points at. Unknown keys are stripped; a malformed or missing value becomes `null`.
+ * course a row points at, and for a new course which provider / cert type it will create. Unknown keys
+ * are stripped; a malformed or missing value becomes `null`.
  */
 export const normalizedRefsSchema = z
   .object({
     member: z.union([z.object({ id: z.string() }), z.object({ email: z.string(), fullName: z.string() })]),
-    course: z.union([z.object({ id: z.string() }), z.object({ name: z.string() })]),
+    course: z.union([
+      z.object({ id: z.string() }),
+      z.object({ name: z.string(), provider: catalogRefSchema, certType: catalogRefSchema.nullable() }),
+    ]),
   })
   .nullable()
   .catch(null);
