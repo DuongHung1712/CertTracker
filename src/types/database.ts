@@ -554,9 +554,11 @@ export type Database = {
         Args: { p_issued: string; p_today: string; p_validity_months: number }
         Returns: string
       }
+      format_member_code: { Args: { n: number }; Returns: string }
       managed_member_ids: { Args: never; Returns: string[] }
       managed_team_ids: { Args: never; Returns: string[] }
       my_member_id: { Args: never; Returns: string }
+      next_member_code: { Args: never; Returns: string }
       vn_today: { Args: never; Returns: string }
     }
     Enums: {
