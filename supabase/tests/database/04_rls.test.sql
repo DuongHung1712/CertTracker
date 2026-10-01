@@ -30,6 +30,8 @@ insert into public.team_managers (team_id, user_id)
   values ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-00000000000b');
 insert into public.courses (id, name, validity_months)
   values ('cccccccc-0000-0000-0000-000000000001', 'AWS SAA', 36);
+insert into public.courses (id, name, validity_months)
+  values ('cccccccc-0000-0000-0000-000000000002', 'Second course', 12);
 insert into public.training_records (id, member_id, course_id, status, progress) values
   ('eeeeeeee-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001',
    'cccccccc-0000-0000-0000-000000000001', 'in_progress', 50),
@@ -110,7 +112,7 @@ select throws_ok(
 select lives_ok(
   $$insert into public.training_records (id, member_id, course_id, refund_status, via_company)
     values ('eeeeeeee-0000-0000-0000-00000000000c', 'aaaaaaaa-0000-0000-0000-000000000001',
-            'cccccccc-0000-0000-0000-000000000001', 'paid', true)$$,
+            'cccccccc-0000-0000-0000-000000000002', 'paid', true)$$,
   'member can create an own record'
 );
 select is(

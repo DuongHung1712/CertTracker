@@ -124,9 +124,9 @@ Mọi component (kể cả shadcn) import `cn` từ `@/lib/utils` — bản đã
 | | `RoleBadge` | `components/status/` | Quản trị / Quản lý / Thành viên; badge `secondary` | ✓ |
 | | `MemberCode` | `components/status/` | `M001` bằng font mono, `muted-foreground` | ✓ |
 | Form | `Field`, `FieldLabel`, `FieldError`…, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn `field` | Nhãn trên ô; lỗi dưới ô màu `destructive`; dùng chung Zod schema với server | ✓ (ghép với React Hook Form ở tuần 2) |
-| | `Combobox` | shadcn `command` + `popover` | Chọn có tìm kiếm: member, khóa học, team | tuần 2 |
-| | `DatePicker` | shadcn `calendar` | Hiển thị `dd/MM/yyyy`; locale `vi`; tuần bắt đầu thứ Hai | tuần 2 |
-| | `FileDropzone` | `components/` | Kéo thả ảnh/PDF minh chứng | tuần 3 |
+| | `EntityCombobox` | `components/entity-combobox.tsx` | Chọn có tìm kiếm: member, khóa học, team | ✓ |
+| | Ô nhập ngày | `Input` | Nhập tay dd/mm/yyyy, kiểm tra bằng `toIsoDate` (decisions #16) | ✓ |
+| | `FileDropzone` | `components/file-dropzone.tsx` | Kéo thả ảnh/PDF minh chứng | ✓ |
 | Lớp phủ | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | Xem §4.2 | ✓ |
 | | `ConfirmDialog` | `components/confirm-dialog.tsx` | Tiêu đề nêu tên đối tượng; mô tả hậu quả; nút xác nhận `destructive` ghi đúng hành động | ✓ |
 | Phản hồi | `Toast` | shadcn `sonner` | Góc dưới phải; thành công 4s, lỗi giữ tới khi đóng (`duration: Infinity`) | ✓ |

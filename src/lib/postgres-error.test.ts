@@ -37,4 +37,13 @@ describe("mapPostgresError", () => {
     expect(mapPostgresError({ code: "XX000", message: "boom" })).toBe("Có lỗi xảy ra. Vui lòng thử lại.");
     expect(mapPostgresError({ message: "boom" })).toBe("Có lỗi xảy ra. Vui lòng thử lại.");
   });
+
+  it("maps a check violation to a rule message", () => {
+    expect(mapPostgresError({ code: "23514", message: "violates check constraint" })).toBe(
+      "Dữ liệu không khớp quy tắc của hệ thống.",
+    );
+    expect(mapPostgresError({ code: "23514", message: "x" }, { invalid: "Trạng thái và tiến độ không khớp." })).toBe(
+      "Trạng thái và tiến độ không khớp.",
+    );
+  });
 });

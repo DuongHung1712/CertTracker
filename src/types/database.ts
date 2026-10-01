@@ -136,6 +136,89 @@ export type Database = {
         }
         Relationships: []
       }
+      import_batches: {
+        Row: {
+          committed_at: string | null
+          created_at: string
+          created_by: string | null
+          expected_rows: number
+          file_name: string
+          id: string
+          notes: Json
+          sheet_name: string | null
+          status: Database["public"]["Enums"]["import_batch_status"]
+          summary: Json | null
+          updated_at: string
+        }
+        Insert: {
+          committed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_rows: number
+          file_name: string
+          id?: string
+          notes?: Json
+          sheet_name?: string | null
+          status?: Database["public"]["Enums"]["import_batch_status"]
+          summary?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          committed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          expected_rows?: number
+          file_name?: string
+          id?: string
+          notes?: Json
+          sheet_name?: string | null
+          status?: Database["public"]["Enums"]["import_batch_status"]
+          summary?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      import_rows: {
+        Row: {
+          action: Database["public"]["Enums"]["import_action"]
+          batch_id: string
+          errors: Json
+          id: string
+          normalized: Json | null
+          raw: Json
+          row_no: number
+          warnings: Json
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["import_action"]
+          batch_id: string
+          errors?: Json
+          id?: string
+          normalized?: Json | null
+          raw: Json
+          row_no: number
+          warnings?: Json
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["import_action"]
+          batch_id?: string
+          errors?: Json
+          id?: string
+          normalized?: Json | null
+          raw?: Json
+          row_no?: number
+          warnings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           code: string
@@ -393,6 +476,8 @@ export type Database = {
     Views: {
       v_training_records: {
         Row: {
+          cert_type_id: string | null
+          cert_type_name: string | null
           certificate_url: string | null
           course_id: string | null
           course_name: string | null
@@ -404,18 +489,46 @@ export type Database = {
           expiry_status: string | null
           id: string | null
           issued_date: string | null
+          member_code: string | null
+          member_email: string | null
           member_id: string | null
+          member_name: string | null
           notes: string | null
           planned_exam_date: string | null
           progress: number | null
           progress_updated_at: string | null
+          provider_id: string | null
+          provider_name: string | null
           refund_status: Database["public"]["Enums"]["refund_status"] | null
           status: Database["public"]["Enums"]["record_status"] | null
+          team_id: string | null
+          team_name: string | null
           updated_at: string | null
           validity_months: number | null
           via_company: boolean | null
         }
         Relationships: [
+          {
+            foreignKeyName: "courses_cert_type_id_fkey"
+            columns: ["cert_type_id"]
+            isOneToOne: false
+            referencedRelation: "cert_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courses_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "training_records_course_id_fkey"
             columns: ["course_id"]
@@ -438,16 +551,22 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      can_access_evidence: { Args: { object_name: string }; Returns: boolean }
+      commit_import: { Args: { p_batch_id: string }; Returns: Json }
       expiry_status: {
         Args: { p_issued: string; p_today: string; p_validity_months: number }
         Returns: string
       }
+      format_member_code: { Args: { n: number }; Returns: string }
       managed_member_ids: { Args: never; Returns: string[] }
       managed_team_ids: { Args: never; Returns: string[] }
       my_member_id: { Args: never; Returns: string }
+      next_member_code: { Args: never; Returns: string }
       vn_today: { Args: never; Returns: string }
     }
     Enums: {
+      import_action: "create" | "update" | "skip"
+      import_batch_status: "parsed" | "committed" | "discarded"
       record_status: "not_started" | "in_progress" | "done"
       refund_status: "n_a" | "pending" | "approved" | "rejected" | "paid"
       user_role: "admin" | "manager" | "member"
@@ -581,6 +700,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      import_action: ["create", "update", "skip"],
+      import_batch_status: ["parsed", "committed", "discarded"],
       record_status: ["not_started", "in_progress", "done"],
       refund_status: ["n_a", "pending", "approved", "rejected", "paid"],
       user_role: ["admin", "manager", "member"],

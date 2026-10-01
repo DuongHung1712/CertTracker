@@ -4,7 +4,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 
 ## Trạng thái hiện tại
 
-- Giai đoạn 1, **tuần 1 xong** (schema, RLS, đăng nhập, CI, deploy Vercel + Supabase Cloud). Tiếp theo: tuần 2 — CRUD DC/Program/Team/Member, Course/CertType/Provider.
+- Giai đoạn 1, **tuần 1–4 xong** (schema, RLS, đăng nhập, CI, deploy; CRUD tổ chức/danh mục; chứng chỉ + minh chứng + Realtime; Import/Export Excel), trừ bước chạy thử với file Excel thật. Tiếp theo: tuần 5 — Dashboard.
 - Cập nhật dòng này khi chuyển tuần/giai đoạn.
 
 ## Nguồn sự thật (đọc khi cần, đừng đọc hết mỗi phiên)
@@ -34,7 +34,7 @@ supabase db reset   # chạy lại migrations + seed local
 ## Quy tắc bất biến
 
 1. **RLS là lớp bảo mật chính.** Truy vấn của người dùng luôn qua `lib/supabase/server.ts` (JWT người dùng). Không lọc quyền bằng code thay cho RLS.
-2. **Service role** chỉ trong `lib/supabase/admin.ts` (`import "server-only"`), chỉ cho cron và commit import.
+2. **Service role** chỉ trong `lib/supabase/admin.ts` (`import "server-only"`), chỉ cho cron (import chạy bằng JWT của admin, xem decisions #20).
 3. Mọi view tạo với `security_invoker = true`.
 4. Trường tính toán (expiry, days_to_expiry) nằm trong view, không lưu vào bảng.
 5. Ngày tháng tính theo `Asia/Ho_Chi_Minh` (dùng `lib/dates.ts`), không dùng `current_date` UTC trần.
