@@ -136,6 +136,86 @@ export type Database = {
         }
         Relationships: []
       }
+      import_batches: {
+        Row: {
+          committed_at: string | null
+          created_at: string
+          created_by: string | null
+          file_name: string
+          id: string
+          notes: Json
+          sheet_name: string | null
+          status: Database["public"]["Enums"]["import_batch_status"]
+          summary: Json | null
+          updated_at: string
+        }
+        Insert: {
+          committed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          id?: string
+          notes?: Json
+          sheet_name?: string | null
+          status?: Database["public"]["Enums"]["import_batch_status"]
+          summary?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          committed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          id?: string
+          notes?: Json
+          sheet_name?: string | null
+          status?: Database["public"]["Enums"]["import_batch_status"]
+          summary?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      import_rows: {
+        Row: {
+          action: Database["public"]["Enums"]["import_action"]
+          batch_id: string
+          errors: Json
+          id: string
+          normalized: Json | null
+          raw: Json
+          row_no: number
+          warnings: Json
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["import_action"]
+          batch_id: string
+          errors?: Json
+          id?: string
+          normalized?: Json | null
+          raw: Json
+          row_no: number
+          warnings?: Json
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["import_action"]
+          batch_id?: string
+          errors?: Json
+          id?: string
+          normalized?: Json | null
+          raw?: Json
+          row_no?: number
+          warnings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "import_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           code: string
@@ -469,6 +549,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       can_access_evidence: { Args: { object_name: string }; Returns: boolean }
+      commit_import: { Args: { p_batch_id: string }; Returns: Json }
       expiry_status: {
         Args: { p_issued: string; p_today: string; p_validity_months: number }
         Returns: string
@@ -479,6 +560,8 @@ export type Database = {
       vn_today: { Args: never; Returns: string }
     }
     Enums: {
+      import_action: "create" | "update" | "skip"
+      import_batch_status: "parsed" | "committed" | "discarded"
       record_status: "not_started" | "in_progress" | "done"
       refund_status: "n_a" | "pending" | "approved" | "rejected" | "paid"
       user_role: "admin" | "manager" | "member"
@@ -612,6 +695,8 @@ export const Constants = {
   },
   public: {
     Enums: {
+      import_action: ["create", "update", "skip"],
+      import_batch_status: ["parsed", "committed", "discarded"],
       record_status: ["not_started", "in_progress", "done"],
       refund_status: ["n_a", "pending", "approved", "rejected", "paid"],
       user_role: ["admin", "manager", "member"],
