@@ -15,7 +15,14 @@ export async function GET(request: Request) {
   // Early exit only — RLS (through listRecords' user-scoped client) decides which rows come back.
   if (!(await getCurrentUser())) return new Response("Chưa đăng nhập.", { status: 401 });
 
-  const rows = await listRecords(); // admin: all, manager: their teams (+ own), member: own
+  let rows: Awaited<ReturnType<typeof listRecords>>;
+  try {
+    rows = await listRecords(); // admin: all, manager: their teams (+ own), member: own
+  } catch (error) {
+    // Includes fetchAllRows refusing to truncate at its row cap: an incomplete export must never look complete.
+    console.error("export: could not load records", error);
+    return new Response("Không xuất được dữ liệu. Vui lòng thử lại.", { status: 500 });
+  }
   const headers = {
     "Content-Disposition": `attachment; filename="certtracker-chung-chi-${todayVn()}.${format}"`,
     "Cache-Control": "no-store",
