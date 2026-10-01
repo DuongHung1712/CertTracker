@@ -197,3 +197,137 @@ describe("zip bomb guard (runs before XLSX.read)", () => {
     expect(readImportTable(ole)).toEqual({ ok: false, error: "Không đọc được file. File có thể bị hỏng hoặc được đặt mật khẩu." });
   });
 });
+
+const BAD_ZIP_MESSAGE = "File Excel không hợp lệ (cấu trúc zip bị hỏng).";
+const bomb = (megabytes: number) => deflateRawSync(new Uint8Array(megabytes * 1024 * 1024));
+
+describe("zip guard bypasses (SheetJS and the guard must agree on the archive)", () => {
+  it("rejects an end-of-central-directory whose two entry counts disagree (fake entry hidden in a gap)", () => {
+    const zip = craftZip([
+      { name: "a.xml", deflated: deflateRawSync(new Uint8Array(10)), declaredSize: 10 },
+      { name: "xl/bomb.xml", deflated: bomb(60), declaredSize: 100 },
+    ]);
+    const view = new DataView(zip.buffer);
+    const eocd = zip.length - 22;
+    view.setUint16(eocd + 10, 1, true); // "total entries" says 1 ...
+    view.setUint32(eocd + 12, 46 + "a.xml".length, true); // ... and the directory looks one entry long, leaving the bomb entry in a gap
+    // SheetJS reads the count at +8 (still 2) and walks into the gap.
+    expect(readImportTable(zip)).toEqual({ ok: false, error: BAD_ZIP_MESSAGE });
+  });
+
+  it("rejects a gap between the central directory and the end record", () => {
+    const zip = craftZip([{ name: "a.xml", deflated: deflateRawSync(new Uint8Array(10)), declaredSize: 10 }]);
+    const padded = new Uint8Array(zip.length + 10);
+    padded.set(zip.subarray(0, zip.length - 22));
+    padded.set(zip.subarray(zip.length - 22), padded.length - 22);
+    expect(readImportTable(padded)).toEqual({ ok: false, error: BAD_ZIP_MESSAGE });
+  });
+
+  it("rejects entry data that sits in the end-record comment area", () => {
+    const name = new TextEncoder().encode("xl/bomb.xml");
+    const deflated = bomb(60);
+    const cdSize = 46 + name.length;
+    const local = new Uint8Array(30 + name.length);
+    const lv = new DataView(local.buffer);
+    lv.setUint32(0, 0x04034b50, true);
+    lv.setUint16(8, 8, true);
+    lv.setUint32(22, 100, true);
+    lv.setUint16(26, name.length, true);
+    lv.setUint16(28, cdSize + 22, true); // "extra field" long enough to jump over the directory and end record
+    local.set(name, 30);
+    const cd = new Uint8Array(cdSize);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(10, 8, true);
+    cv.setUint32(24, 100, true);
+    cv.setUint16(28, name.length, true);
+    cd.set(name, 46);
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true);
+    ev.setUint16(8, 1, true);
+    ev.setUint16(10, 1, true);
+    ev.setUint32(12, cdSize, true);
+    ev.setUint32(16, local.length, true);
+    ev.setUint16(20, deflated.length, true); // the bomb is the "comment"
+    const zip = new Uint8Array(local.length + cdSize + 22 + deflated.length);
+    zip.set(local);
+    zip.set(cd, local.length);
+    zip.set(eocd, local.length + cdSize);
+    zip.set(deflated, local.length + cdSize + 22);
+    const started = Date.now();
+    expect(readImportTable(zip)).toEqual({ ok: false, error: BAD_ZIP_MESSAGE });
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("rejects compression methods other than stored and deflate", () => {
+    const zip = craftZip([{ name: "a.xml", deflated: deflateRawSync(new Uint8Array(10)), declaredSize: 10 }]);
+    new DataView(zip.buffer).setUint16(8, 12, true); // local header method = bzip2
+    expect(readImportTable(zip)).toEqual({ ok: false, error: BAD_ZIP_MESSAGE });
+  });
+
+  it("guards any PK-prefixed input, not only PK 03 04", () => {
+    const zip = craftZip([{ name: "xl/bomb.xml", deflated: bomb(60), declaredSize: 100 }]);
+    zip[2] = 1;
+    zip[3] = 1; // SheetJS still treats this as a zip; it never checks the first local signature
+    const started = Date.now();
+    const result = readImportTable(zip);
+    expect(result.ok).toBe(false);
+    expect(!result.ok && result.error).toMatch(/zip|giải nén/);
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+
+  it("still imports a deflate-compressed workbook", () => {
+    const book = XLSX.utils.book_new();
+    const rows = [["Email", "Khóa học"], ...Array.from({ length: 300 }, (_, i) => [`m${i}@x.vn`, "AWS Solutions Architect"])];
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "Data");
+    const bytes = new Uint8Array(XLSX.write(book, { type: "array", bookType: "xlsx", compression: true }) as ArrayBuffer);
+    expect(new DataView(bytes.buffer).getUint16(8, true)).toBe(8); // first local entry is deflated
+    const result = readImportTable(bytes);
+    expect(result.ok && result.value.rows).toHaveLength(300);
+  });
+});
+
+function multiSheetBytes(sheets: { name: string; aoa: unknown[][]; ref?: string; merges?: XLSX.Range[] }[]): Uint8Array {
+  const book = XLSX.utils.book_new();
+  for (const { name, aoa, ref, merges } of sheets) {
+    const sheet = XLSX.utils.aoa_to_sheet(aoa);
+    if (ref) sheet["!ref"] = ref;
+    if (merges) sheet["!merges"] = merges;
+    XLSX.utils.book_append_sheet(book, sheet, name);
+  }
+  return new Uint8Array(XLSX.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer);
+}
+
+describe("workbook-wide limits", () => {
+  it("shares one merge budget across sheets (several sheets with large lying merges fail fast)", () => {
+    // Each merge covers 1000 rows x 200 columns = 200k cells: fine alone, over the 300k budget from the second sheet on.
+    const lying = (name: string) => ({
+      name,
+      aoa: [["x"], ["y"]],
+      ref: "A1:GR2011",
+      merges: [{ s: { r: 1, c: 0 }, e: { r: 1000, c: 199 } }],
+    });
+    const started = Date.now();
+    const result = readImportTable(multiSheetBytes(["S1", "S2", "S3", "S4", "S5"].map(lying)));
+    expect(result).toEqual({ ok: false, error: "File có vùng gộp ô quá lớn." });
+    expect(Date.now() - started).toBeLessThan(3000);
+  });
+
+  it("scans at most the first 10 sheets", () => {
+    const junk = Array.from({ length: 10 }, (_, i) => ({ name: `J${i}`, aoa: [["a"]] }));
+    const data = { name: "Data", aoa: [["Email", "Khóa học"], ["an@x.vn", "AWS"]] };
+    expect(readImportTable(multiSheetBytes([...junk, data])).ok).toBe(false);
+    expect(readImportTable(multiSheetBytes([...junk.slice(1), data])).ok).toBe(true);
+  });
+
+  it("skips a too-wide sheet instead of rejecting the whole file", () => {
+    const wide = { name: "Wide", aoa: [Array.from({ length: 250 }, (_, i) => `Cột ${i}`)] };
+    const data = { name: "Data", aoa: [["Email", "Khóa học"], ["an@x.vn", "AWS"]] };
+    const result = readImportTable(multiSheetBytes([wide, data]));
+    expect(result.ok && result.value.sheetName).toBe("Data");
+    const onlyWide = readImportTable(multiSheetBytes([wide]));
+    expect(onlyWide.ok).toBe(false);
+    expect(!onlyWide.ok && onlyWide.error).toMatch(/Không tìm thấy hàng tiêu đề/);
+  });
+});
