@@ -39,6 +39,109 @@ describe("deliver", () => {
     expect(sender.sent).toHaveLength(0);
   });
 
+  it("counts a claim held by another run as in-flight, not skipped, and warns about it", async () => {
+    const { ledger, sender } = setup();
+    ledger.seedPending("expiry-alert", PERIOD, "a@x.test");
+    const result = await deliver({ ...base, outbound: outbound("a@x.test", "b@x.test"), ledger, sender });
+    expect(result).toMatchObject({ planned: 2, sent: 1, skipped: 0, inFlight: 1, failed: 0 });
+    expect(result.warnings).toEqual(["a@x.test: another run holds the claim; re-run after ~15 minutes if it does not finish"]);
+    expect(sender.sent.map((m) => m.to)).toEqual(["b@x.test"]);
+    expect(ledger.rows.get(`expiry-alert|${PERIOD}|a@x.test`)?.status).toBe("pending");
+  });
+
+  it("keeps skipped for already-sent recipients only", async () => {
+    const { ledger, sender } = setup();
+    const list = outbound("a@x.test", "b@x.test");
+    await deliver({ ...base, outbound: list.slice(0, 1), ledger, sender });
+    ledger.seedPending("expiry-alert", PERIOD, "b@x.test");
+    const result = await deliver({ ...base, outbound: list, ledger, sender });
+    expect(result).toMatchObject({ sent: 0, skipped: 1, inFlight: 1 });
+  });
+
+  it("reclaims a pending row once it is older than 15 minutes", async () => {
+    const { ledger, sender } = setup();
+    ledger.seedPending("expiry-alert", PERIOD, "a@x.test");
+    ledger.advance(15 * 60_000 + 1);
+    const result = await deliver({ ...base, outbound: outbound("a@x.test"), ledger, sender });
+    expect(result).toMatchObject({ sent: 1, inFlight: 0 });
+    expect(ledger.rows.get(`expiry-alert|${PERIOD}|a@x.test`)).toMatchObject({ status: "sent", attempts: 2 });
+  });
+
+  it("re-claims a failed recipient on the next call and skips the one already sent (decisions #36)", async () => {
+    const { ledger, sender } = setup();
+    const list = outbound("a@x.test", "b@x.test");
+    sender.outcome = (to) => (to === "b@x.test" ? { ok: false, error: "provider 500" } : { ok: true, providerId: "p" });
+    const first = await deliver({ ...base, outbound: list, ledger, sender });
+    expect(first).toMatchObject({ sent: 1, failed: 1 });
+    expect(ledger.rows.get(`expiry-alert|${PERIOD}|b@x.test`)?.status).toBe("failed");
+
+    sender.sent = [];
+    sender.outcome = () => ({ ok: true, providerId: "p2" });
+    const second = await deliver({ ...base, outbound: list, ledger, sender });
+    expect(second).toMatchObject({ sent: 1, skipped: 1, inFlight: 0, failed: 0 });
+    expect(sender.sent.map((m) => m.to)).toEqual(["b@x.test"]);
+    expect(ledger.rows.get(`expiry-alert|${PERIOD}|b@x.test`)).toMatchObject({ status: "sent", attempts: 2 });
+  });
+
+  it("retries markSent once before calling a sent mail unrecorded", async () => {
+    const { ledger, sender } = setup();
+    ledger.markSentThrowsFor.set("a@x.test", 1);
+    const result = await deliver({ ...base, outbound: outbound("a@x.test"), ledger, sender });
+    expect(result).toMatchObject({ sent: 1, failed: 0 });
+    expect(result.warnings).toEqual([]);
+    expect(ledger.calls.markSent).toBe(2);
+    expect(ledger.rows.get(`expiry-alert|${PERIOD}|a@x.test`)?.status).toBe("sent");
+  });
+
+  it("gives up after the single retry and mentions the idempotency window", async () => {
+    const { ledger, sender } = setup();
+    ledger.markSentThrowsFor.set("a@x.test", 2);
+    const result = await deliver({ ...base, outbound: outbound("a@x.test"), ledger, sender });
+    expect(result).toMatchObject({ sent: 0, failed: 1 });
+    expect(ledger.calls.markSent).toBe(2);
+    expect(result.failures[0].error).toContain("sent but could not be recorded");
+    expect(result.failures[0].error).toContain("24 h");
+  });
+
+  describe("accounting: planned = sent + skipped + inFlight + failed + unreached", () => {
+    const total = (r: { sent: number; skipped: number; inFlight: number; failed: number }) => r.sent + r.skipped + r.inFlight + r.failed;
+
+    it("holds in the normal case", async () => {
+      const { ledger, sender } = setup();
+      const list = outbound("a@x.test", "b@x.test", "c@x.test", "d@x.test");
+      await deliver({ ...base, outbound: list.slice(0, 1), ledger, sender }); // a already sent
+      ledger.seedPending("expiry-alert", PERIOD, "b@x.test"); // b in flight
+      const r = await deliver({ ...base, outbound: list, ledger, sender });
+      expect(r).toMatchObject({ planned: 4, sent: 2, skipped: 1, inFlight: 1, failed: 0, truncated: false });
+      expect(total(r)).toBe(r.planned);
+    });
+
+    it("holds when some recipients fail", async () => {
+      const { ledger, sender } = setup();
+      ledger.claimThrowsFor.add("a@x.test");
+      sender.outcome = (to) => (to === "b@x.test" ? { ok: false, error: "x" } : { ok: true, providerId: null });
+      const r = await deliver({ ...base, outbound: outbound("a@x.test", "b@x.test", "c@x.test"), ledger, sender });
+      expect(r).toMatchObject({ planned: 3, sent: 1, failed: 2 });
+      expect(total(r)).toBe(r.planned);
+    });
+
+    it("holds when truncated: the remainder is exactly the recipients never claimed", async () => {
+      const { ledger, sender } = setup();
+      ledger.seedPending("expiry-alert", PERIOD, "a@x.test");
+      let clock = 0;
+      const now = () => {
+        const t = clock;
+        clock += 10_000;
+        return t;
+      };
+      const list = outbound("a@x.test", "b@x.test", "c@x.test", "d@x.test", "e@x.test");
+      const r = await deliver({ ...base, now, deadlineMs: 30_000, outbound: list, ledger, sender });
+      expect(r).toMatchObject({ planned: 5, inFlight: 1, sent: 2, truncated: true });
+      expect(r.planned - total(r)).toBe(2);
+      expect(r.planned - total(r)).toBe(list.length - ledger.calls.claim);
+    });
+  });
+
   it("counts a send failure, records it and still delivers to the next recipient (edge #45)", async () => {
     const { ledger, sender } = setup();
     sender.outcome = (to) => (to === "b@x.test" ? { ok: false, error: "provider 500" } : { ok: true, providerId: null });
@@ -76,7 +179,7 @@ describe("deliver", () => {
 
   it("reports a send that could not be recorded as failed (edge #47)", async () => {
     const { ledger, sender } = setup();
-    ledger.markSentThrowsFor.add("a@x.test");
+    ledger.markSentThrowsFor.set("a@x.test", Infinity);
     const result = await deliver({ ...base, outbound: outbound("a@x.test", "b@x.test"), ledger, sender });
     expect(sender.sent.map((m) => m.to)).toEqual(["a@x.test", "b@x.test"]);
     expect(result).toMatchObject({ sent: 1, failed: 1 });
@@ -151,7 +254,7 @@ describe("deliver", () => {
   it("handles an empty list without error", async () => {
     const { ledger, sender } = setup();
     const result = await deliver({ ...base, outbound: [], ledger, sender });
-    expect(result).toEqual({ planned: 0, sent: 0, skipped: 0, failed: 0, truncated: false, failures: [], warnings: [] });
+    expect(result).toEqual({ planned: 0, sent: 0, skipped: 0, inFlight: 0, failed: 0, truncated: false, failures: [], warnings: [] });
     expect(sender.sent).toHaveLength(0);
   });
 });

@@ -126,13 +126,13 @@ describe("handleCron runs", () => {
     const { deps, sender } = setup();
     const first = await handleCron(request(), "expiry-alerts", deps);
     expect(first.status).toBe(200);
-    expect(await first.json()).toMatchObject({ sent: 2, skipped: 0, failed: 0 });
+    expect(await first.json()).toMatchObject({ sent: 2, skipped: 0, inFlight: 0, failed: 0 });
     expect(sender.sent).toHaveLength(2);
     expect(sender.sent[0].html).toContain("https://app.example.test"); // trailing slash trimmed, link rendered
 
     const second = await handleCron(request(), "expiry-alerts", deps);
     expect(second.status).toBe(200);
-    expect(await second.json()).toMatchObject({ sent: 0, skipped: 2 });
+    expect(await second.json()).toMatchObject({ sent: 0, skipped: 2, inFlight: 0 });
     expect(sender.sent).toHaveLength(2);
   });
 
@@ -150,16 +150,42 @@ describe("handleCron runs", () => {
     const { deps, sender } = setup({
       now: () => {
         const t = clock;
-        clock += 30_000;
+        clock += 20_000; // entry T (deadline T+50s), today T+20s, first claim check T+40s, second T+60s
         return t;
       },
     });
     const res = await handleCron(request(), "expiry-alerts", deps);
     expect(res.status).toBe(200);
     const body = (await res.json()) as RunSummary;
-    expect(body.truncated).toBe(true);
-    expect(body.sent).toBeLessThan(body.planned);
-    expect(sender.sent.length).toBe(body.sent);
+    expect(body).toMatchObject({ planned: 2, sent: 1, truncated: true, failed: 0 });
+    expect(sender.sent).toHaveLength(1);
+  });
+
+  it("counts the time spent loading the snapshot against the budget", async () => {
+    let clock = NOON_OCT_5;
+    const { deps, sender, ledger } = setup({
+      now: () => clock,
+      loadSnapshot: async () => {
+        clock += 60_000; // a slow snapshot eats the whole 50 s budget
+        return snapshot;
+      },
+    });
+    const res = await handleCron(request(), "expiry-alerts", deps);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ planned: 2, sent: 0, truncated: true });
+    expect(sender.sent).toHaveLength(0);
+    expect(ledger.calls.claim).toBe(0);
+  });
+
+  it("answers 200 but reports in-flight recipients with a warning when another run holds the claim", async () => {
+    const { deps, sender, ledger } = setup();
+    ledger.seedPending("expiry-alert", "2026-W41", "a@x.test");
+    const res = await handleCron(request(), "expiry-alerts", deps);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as RunSummary;
+    expect(body).toMatchObject({ planned: 2, sent: 1, skipped: 0, inFlight: 1, failed: 0 });
+    expect(body.warnings).toEqual(["a@x.test: another run holds the claim; re-run after ~15 minutes if it does not finish"]);
+    expect(sender.sent.map((m) => m.to)).toEqual(["boss@x.test"]);
   });
 
   it("computes the period from the Vietnam date of now(): 18:00Z on 30 Sep reports September (edge #8)", async () => {

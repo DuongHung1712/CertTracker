@@ -28,6 +28,8 @@ const json = (body: unknown, status: number) => Response.json(body, { status, he
 export async function handleCron(request: Request, job: CronJob, deps: HandlerDeps): Promise<Response> {
   const env = deps.env ?? process.env;
   const now = deps.now ?? Date.now;
+  // Taken at entry so that loading the snapshot counts against the budget.
+  const deadlineMs = now() + BUDGET_MS;
 
   const auth = checkCronAuth(request.headers.get("authorization"), env.CRON_SECRET);
   if (auth === "misconfigured") return json({ error: "cron-not-configured" }, 500);
@@ -59,7 +61,7 @@ export async function handleCron(request: Request, job: CronJob, deps: HandlerDe
       sender,
       dryRun,
       now,
-      deadlineMs: now() + BUDGET_MS,
+      deadlineMs,
     });
     // A non-2xx makes the cron run show up as failed in the Vercel dashboard — the only place an operator looks.
     return json(summary, summary.failed > 0 ? 500 : 200);

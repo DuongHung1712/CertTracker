@@ -5,10 +5,16 @@ import type { EmailSender, SendResult } from "@/lib/email/sender";
 
 export type Outbound = { email: string; detail: Record<string, number>; render: () => Promise<RenderedEmail> };
 
+/**
+ * `planned = sent + skipped + inFlight + failed + (recipients not reached when `truncated`)`.
+ * `skipped` is only "already sent"; `inFlight` is a claim another run still holds (a crashed run's row stays
+ * pending for up to 15 minutes) and is also reported once per recipient in `warnings`.
+ */
 export type DeliverResult = {
   planned: number;
   sent: number;
   skipped: number;
+  inFlight: number;
   failed: number;
   truncated: boolean;
   failures: { email: string; error: string }[];
@@ -34,6 +40,7 @@ export async function deliver(args: {
     planned: outbound.length,
     sent: 0,
     skipped: 0,
+    inFlight: 0,
     failed: 0,
     truncated: false,
     failures: [],
@@ -65,7 +72,12 @@ export async function deliver(args: {
       continue;
     }
     if (!claim.claimed) {
-      result.skipped += 1;
+      if (claim.reason === "sent") {
+        result.skipped += 1;
+      } else {
+        result.inFlight += 1;
+        result.warnings.push(`${o.email}: another run holds the claim; re-run after ~15 minutes if it does not finish`);
+      }
       continue;
     }
 
@@ -87,13 +99,20 @@ export async function deliver(args: {
       continue;
     }
     try {
-      const held = await ledger.markSent(claim.id, claim.attempt, outcome.providerId);
+      // One retry: the mail is already out, so a transient database error should not turn it into a failure.
+      let held: boolean;
+      try {
+        held = await ledger.markSent(claim.id, claim.attempt, outcome.providerId);
+      } catch {
+        held = await ledger.markSent(claim.id, claim.attempt, outcome.providerId);
+      }
       if (!held) result.warnings.push(`${o.email}: claim lost before it was recorded as sent`);
       result.sent += 1;
     } catch (e) {
       // The mail went out but the log still says pending: the next call reclaims it after 15 minutes and
-      // Resend's idempotency key keeps that retry from delivering a second copy.
-      fail(o.email, `sent but could not be recorded: ${message(e)}`);
+      // Resend's idempotency key keeps that retry from delivering a second copy. Resend only dedupes a key for
+      // about 24 hours, so a re-send after that window can duplicate.
+      fail(o.email, `sent but could not be recorded (a re-send after ~24 h may duplicate): ${message(e)}`);
     }
   }
   return result;
