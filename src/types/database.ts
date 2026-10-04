@@ -553,6 +553,49 @@ export type Database = {
       }
       can_access_evidence: { Args: { object_name: string }; Returns: boolean }
       commit_import: { Args: { p_batch_id: string }; Returns: Json }
+      dashboard_breakdown: {
+        Args: { p_dimension: string; p_limit?: number }
+        Returns: {
+          done: number
+          expired: number
+          group_key: string
+          group_label: string
+          headcount: number
+          in_progress: number
+          not_started: number
+          people: number
+          records: number
+          valid: number
+        }[]
+      }
+      dashboard_kpis: {
+        Args: never
+        Returns: {
+          active_certs: number
+          done_records: number
+          expired_certs: number
+          expiring_60_certs: number
+          expiring_soon_certs: number
+          in_progress_records: number
+          no_expiry_certs: number
+          not_started_records: number
+          total_members: number
+          total_records: number
+        }[]
+      }
+      dashboard_ranking: {
+        Args: never
+        Returns: {
+          done_certs: number
+          full_name: string
+          in_progress: number
+          member_code: string
+          member_id: string
+          rank: number
+          team_name: string
+          valid_certs: number
+        }[]
+      }
       expiry_status: {
         Args: { p_issued: string; p_today: string; p_validity_months: number }
         Returns: string

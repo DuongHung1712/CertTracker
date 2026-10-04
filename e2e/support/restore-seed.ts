@@ -68,14 +68,21 @@ function supabaseConfig(): { url: string; anonKey: string } {
   return { url, anonKey };
 }
 
-export async function signInAsSeedAdmin(): Promise<Client> {
+/**
+ * A client signed in as a seeded user with the anon key — the same access the browser has, so RLS and function
+ * grants apply. Every client the e2e helpers create comes from here, so none is reachable without the local-URL check.
+ */
+export async function signInAsSeedUser(email: string): Promise<Client> {
   const { url, anonKey } = supabaseConfig();
-  // The only way to obtain a client for prepareSeedState/restoreSeed, so no delete is reachable without this check.
   assertLocalSupabaseUrl(url);
   const client = createClient<Database>(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error } = await client.auth.signInWithPassword({ email: "admin@certtracker.test", password: SEED_PASSWORD });
-  if (error) throw new Error(`Seed admin sign-in failed: ${error.message}`);
+  const { error } = await client.auth.signInWithPassword({ email, password: SEED_PASSWORD });
+  if (error) throw new Error(`Seed sign-in as ${email} failed: ${error.message}`);
   return client;
+}
+
+export function signInAsSeedAdmin(): Promise<Client> {
+  return signInAsSeedUser("admin@certtracker.test");
 }
 
 function check<T>(result: { data: T | null; error: { message: string } | null }, what: string): T {

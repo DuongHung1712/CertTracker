@@ -102,6 +102,11 @@ Sáu tông màu có độ sáng khá gần nhau (khó phân biệt nhanh với n
 
 Bóng đổ chỉ cho lớp nổi (popover, menu, hộp thoại, toast). Thẻ và bảng tách lớp bằng viền `border`.
 
+### 2.5 Biểu đồ
+
+- **Bảng màu biểu đồ.** Tỉ lệ (hoàn thành) vẽ bằng thanh `primary` trên nền `muted`, không dùng chart-token. Biểu đồ phân bố hạn dùng đúng 5 màu `--status-*-fg` (`active`, `expiring-60`, `expiring-soon`, `expired`, `no-expiry`; ngoại lệ duy nhất của quy tắc "màu trạng thái chỉ cho hạn"), mỗi cột luôn có nhãn chữ và số; biểu đồ phải có bản chữ cho người đọc màn hình. Không animation. `--chart-1…5` giữ lại cho biểu đồ nhiều chuỗi sau này.
+- **Tương phản.** Màu cột là đối tượng đồ họa nên phải ≥ 3:1 với `card` (WCAG 1.4.11); `src/app/tokens.test.ts` kiểm tra cho 5 màu trên.
+
 ---
 
 ## 3. Component
@@ -131,7 +136,7 @@ Mọi component (kể cả shadcn) import `cn` từ `@/lib/utils` — bản đã
 | | `ConfirmDialog` | `components/confirm-dialog.tsx` | Tiêu đề nêu tên đối tượng; mô tả hậu quả; nút xác nhận `destructive` ghi đúng hành động | ✓ |
 | Phản hồi | `Toast` | shadcn `sonner` | Góc dưới phải; thành công 4s, lỗi giữ tới khi đóng (`duration: Infinity`) | ✓ |
 | | `Alert` | shadcn | Thông báo trong trang | ✓ |
-| Dashboard | `KpiTile` | `components/data/` | Số `kpi`, nhãn `label`, biến động so với kỳ trước | tuần 5 |
+| Dashboard | `KpiTile` | `components/data/` | Số `kpi`, nhãn `label`, chú thích tùy chọn; không có "biến động so với kỳ trước" (không có lịch sử, spec §11) | ✓ |
 
 Icon: **lucide-react**, cỡ 16px (`size-4`) ở mọi nơi, kể cả sidebar — CSS của shadcn `Sidebar` tự đặt `[&_svg]:size-4` với độ ưu tiên cao hơn `size-5` gọi từ ngoài, nên 16px là kích thước thực tế dùng chung. Nút chỉ có icon phải có `aria-label` và `Tooltip`.
 
@@ -254,5 +259,4 @@ Trang không bao giờ cuộn ngang; chỉ bảng cuộn trong khung của nó (
 ## 10. Chưa làm
 
 - **Dark mode** — token đã đặt tên theo vai trò; khi làm chỉ khai báo lại giá trị.
-- **Bảng màu biểu đồ** — làm cùng Dashboard (tuần 5).
 - **Logo** — chưa có; dùng chữ "CertTracker" (600, `foreground`).
