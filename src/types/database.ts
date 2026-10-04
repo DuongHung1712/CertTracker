@@ -474,6 +474,24 @@ export type Database = {
       }
     }
     Views: {
+      v_data_quality_issues: {
+        Row: {
+          course_id: string | null
+          course_name: string | null
+          days: number | null
+          issue_type: string | null
+          member_code: string | null
+          member_id: string | null
+          member_name: string | null
+          record_id: string | null
+          severity: string | null
+          since: string | null
+          subject_id: string | null
+          team_id: string | null
+          team_name: string | null
+        }
+        Relationships: []
+      }
       v_training_records: {
         Row: {
           cert_type_id: string | null
