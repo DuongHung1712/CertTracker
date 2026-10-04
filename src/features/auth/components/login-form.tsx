@@ -11,20 +11,39 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input id="email" name="email" type="email" autoComplete="email" required />
+      <div className="space-y-1.5">
+        <Label htmlFor="email" className="text-caption font-medium text-foreground">
+          Email
+        </Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          placeholder="ten@congty.com"
+          className="h-9 bg-card"
+          required
+        />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Mật khẩu</Label>
-        <Input id="password" name="password" type="password" autoComplete="current-password" required />
+      <div className="space-y-1.5">
+        <Label htmlFor="password" className="text-caption font-medium text-foreground">
+          Mật khẩu
+        </Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          className="h-9 bg-card"
+          required
+        />
       </div>
       {state && !state.ok && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="text-caption text-destructive">
           {state.error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button type="submit" size="lg" className="w-full mt-2 font-medium" disabled={pending}>
         {pending ? "Đang đăng nhập..." : "Đăng nhập"}
       </Button>
     </form>

@@ -256,7 +256,23 @@ Trang không bao giờ cuộn ngang; chỉ bảng cuộn trong khung của nó (
 4. Đồng bộ lên trang Design System trên claude.ai.
 5. Quyết định lớn (đổi màu nhấn, thêm dark mode) → thêm mục vào `docs/decisions.md`.
 
-## 10. Chưa làm
+## 10. Logo & Favicon
+
+- **Ý nghĩa nhận diện:** Biểu tượng Monogram chữ **C** (Certificate / Chứng chỉ) uốn cong vững chãi, ôm trọn dấu **Checkmark** (Tracker / Đạt chuẩn / Đã xác thực) vươn lên qua khe mở. Thiết kế tối giản, hình học chuẩn xác, cân bằng quang học và nhận diện rõ nét từ kích thước 16x16px của tab trình duyệt đến kích thước hiển thị lớn.
+- **Màu sắc & Token:**
+  - Khung nền bo góc squircle: token `primary` (`#0E5C58`), `rx` = 7/32 cạnh logo (≈ 22%, theo tỷ lệ). **Ngoại lệ có chủ ý** của quy tắc "bo góc ≤ 8px" (§8): logo là hình vẽ co giãn theo kích thước, không phải component UI, nên ở `size` ≥ 37px góc bo vượt 8px.
+  - Đường nét chữ "C": token `card` / trắng (`#FFFFFF`), stroke 3.2px, đầu nét bo tròn `round`.
+  - Dấu kiểm xác thực: token `accent` (`#E2EFEC`), stroke 3.2px, góc nối và đầu nét `round`.
+  - Chỉ **file favicon SVG** (`src/app/icon.svg`) tự thêm viền `#1C7C75` (token `ring`) khi trình duyệt ở chế độ tối (`@media (prefers-color-scheme: dark)`), để biểu tượng không chìm vào nền tab tối. Ứng dụng vẫn chưa có dark mode (xem §11).
+  - Dạng Wordmark: Chữ "Cert" dùng token `foreground` (`#15212B`), "Tracker" dùng token `primary` (`#0E5C58`), font Be Vietnam Pro SemiBold (600), `letter-spacing: -0.02em`.
+- **Tệp nguồn:**
+  - `src/app/icon.svg` và `src/app/favicon.ico`: favicon theo quy ước file của Next.js App Router (tự thêm vào `<head>` kèm hash chống cache; **không** khai báo `metadata.icons` trong `layout.tsx`, vì khai báo đó tắt cơ chế này).
+  - `public/logo.svg`: bản vector đầy đủ gồm biểu tượng + chữ "CertTracker".
+  - `public/icon-512.png`: ảnh 512×512 cho nơi cần ảnh vuông lớn (chia sẻ, PWA sau này); hiện chưa được tham chiếu trong app.
+- **Component:** `src/components/app-shell/logo.tsx` (`Logo`, `LogoMark`) dùng linh hoạt trong Sidebar (cả khi mở và thu gọn) và trang Login.
+
+## 11. Chưa làm
 
 - **Dark mode** — token đã đặt tên theo vai trò; khi làm chỉ khai báo lại giá trị.
 - **Logo** — chưa có; dùng chữ "CertTracker" (600, `foreground`).
+- **Bảng màu biểu đồ** — làm cùng Dashboard (tuần 5).
