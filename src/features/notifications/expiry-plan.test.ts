@@ -165,8 +165,16 @@ describe("planExpiryAlerts", () => {
 
   it("#20 a manager with no teams, or whose teams have no certificates, gets nothing", () => {
     const base = { members: [member("a", { teamId: "t1" })], records: [record("r1", "a")] };
-    const noTeams = planExpiryAlerts(snap({ staff: [manager("boss", { teamIds: [] })] }));
-    expect(noTeams.alerts).toEqual([]);
+    // Certificates exist in both teams: an empty `teamIds` must mean "no teams", not "all teams".
+    const noTeams = planExpiryAlerts(
+      snap({
+        members: [member("a", { teamId: "t1" }), member("b", { teamId: "t2" })],
+        staff: [manager("boss", { teamIds: [] })],
+        records: [record("r1", "a"), record("r2", "b")],
+      }),
+    );
+    expect(noTeams.alerts.find((a) => a.email === "boss@x.test")).toBeUndefined();
+    expect(noTeams.alerts.map((a) => a.email)).toEqual(["a@x.test", "b@x.test"]); // members still get their own mail
     const otherTeam = planExpiryAlerts(snap({ ...base, staff: [manager("boss", { teamIds: ["t2"] })] }));
     expect(otherTeam.alerts.map((a) => a.email)).toEqual(["a@x.test"]); // only the member's own mail
     const unknownTeam = planExpiryAlerts(snap({ ...base, staff: [manager("boss", { teamIds: ["ghost"] })] }));
@@ -280,6 +288,22 @@ describe("planExpiryAlerts", () => {
     const boss = first.alerts.find((a) => a.email === "boss@x.test");
     // Ties at 10 days: Ánh before Zoe (Vietnamese collation), same member by course.
     expect(boss?.teams[0]?.items.map((i) => i.recordId)).toEqual(["r4", "r6", "r2", "r3", "r1", "r5"]);
+  });
+
+  it("breaks a full tie (same days, name and course) by member code, whatever the input order", () => {
+    const build = (order: string[]) =>
+      snap({
+        members: [
+          member("x", { fullName: "Same", code: "B-002", email: "x@x.test" }),
+          member("y", { fullName: "Same", code: "A-001", email: "y@x.test" }),
+        ],
+        staff: [manager("boss")],
+        records: order.map((id) => record(`r-${id}`, id, { courseName: "Same course", daysToExpiry: 7 })),
+      });
+    for (const order of [["x", "y"], ["y", "x"]]) {
+      const boss = planExpiryAlerts(build(order)).alerts.find((a) => a.email === "boss@x.test");
+      expect(boss?.teams[0]?.items.map((i) => i.memberCode)).toEqual(["A-001", "B-002"]);
+    }
   });
 
   it("orders team sections by team name", () => {

@@ -124,6 +124,30 @@ describe("planMonthlyReports scope", () => {
     expect(r.overall.records).toBe(3);
   });
 
+  it("#28 a manager with no teams gets no report even though teams have active members (empty means none, not all)", () => {
+    const { reports } = planMonthlyReports(
+      snap({ members, records, staff: [manager("boss", { teamIds: [] })] }),
+      MONTH,
+    );
+    expect(reports).toEqual([]);
+  });
+
+  it("#27 a member whose team id matches no known team is counted under 'Chưa có team', so team rows add up to overall", () => {
+    const { reports } = planMonthlyReports(
+      snap({
+        members: [member("m1", { teamId: "t1" }), member("m2", { teamId: "ghost" }), member("m3", { teamId: null })],
+        staff: [admin()],
+      }),
+      MONTH,
+    );
+    const r = reports[0]!;
+    expect(r.teams.map((t) => [t.teamId, t.kpi.members])).toEqual([
+      ["t1", 1],
+      [null, 2],
+    ]);
+    expect(r.teams.reduce((sum, t) => sum + t.kpi.members, 0)).toBe(r.overall.members);
+  });
+
   it("#29 staff that are neither admin nor manager get no report", () => {
     const { reports } = planMonthlyReports(
       snap({

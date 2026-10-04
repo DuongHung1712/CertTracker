@@ -40,7 +40,8 @@ const viCollator = new Intl.Collator("vi", { numeric: true, sensitivity: "base" 
 export const byUrgency = (a: ExpiryItem, b: ExpiryItem): number =>
   a.daysToExpiry - b.daysToExpiry ||
   viCollator.compare(a.memberName, b.memberName) ||
-  viCollator.compare(a.courseName, b.courseName);
+  viCollator.compare(a.courseName, b.courseName) ||
+  (a.memberCode < b.memberCode ? -1 : a.memberCode > b.memberCode ? 1 : 0); // code-point order: fully deterministic
 
 export function buildExpiryItems(records: SnapshotRecord[], membersById: Map<string, SnapshotMember>): ExpiryItem[] {
   return records.flatMap((r): ExpiryItem[] => {
@@ -62,8 +63,6 @@ export function buildExpiryItems(records: SnapshotRecord[], membersById: Map<str
   });
 }
 
-type Draft = { email: string; name: string | null; own: ExpiryItem[]; teams: TeamSection[] };
-
 export function planExpiryAlerts(s: Snapshot): { alerts: ExpiryAlert[]; undeliverable: string[] } {
   const membersById = new Map(s.members.map((m) => [m.id, m]));
   const teamNames = new Map(s.teams.map((t) => [t.id, t.name]));
@@ -73,9 +72,9 @@ export function planExpiryAlerts(s: Snapshot): { alerts: ExpiryAlert[]; undelive
   // A staff account linked to a member receives that member's certificates in its own mail (decisions #34).
   const staffByMember = new Map(s.staff.flatMap((u) => (u.memberId ? [[u.memberId, u] as const] : [])));
 
-  const drafts = new Map<string, Draft>();
+  const drafts = new Map<string, ExpiryAlert>();
   const undeliverable = new Set<string>();
-  const draftFor = (email: string, name: string | null): Draft | null => {
+  const draftFor = (email: string, name: string | null): ExpiryAlert | null => {
     if (!isDeliverable(email)) {
       undeliverable.add(email);
       return null;
@@ -86,7 +85,7 @@ export function planExpiryAlerts(s: Snapshot): { alerts: ExpiryAlert[]; undelive
       existing.name ??= name;
       return existing;
     }
-    const draft: Draft = { email: key, name, own: [], teams: [] };
+    const draft: ExpiryAlert = { email: key, name, own: [], teams: [] };
     drafts.set(key, draft);
     return draft;
   };
