@@ -260,6 +260,48 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          attempts: number
+          claimed_at: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          period: string
+          provider_message_id: string | null
+          recipient_email: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          period: string
+          provider_message_id?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          period?: string
+          provider_message_id?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -570,6 +612,14 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       can_access_evidence: { Args: { object_name: string }; Returns: boolean }
+      claim_notification: {
+        Args: { p_email: string; p_kind: string; p_period: string }
+        Returns: {
+          claimed: boolean
+          log_id: string
+          log_status: string
+        }[]
+      }
       commit_import: { Args: { p_batch_id: string }; Returns: Json }
       dashboard_breakdown: {
         Args: { p_dimension: string; p_limit?: number }
@@ -623,6 +673,16 @@ export type Database = {
       managed_team_ids: { Args: never; Returns: string[] }
       my_member_id: { Args: never; Returns: string }
       next_member_code: { Args: never; Returns: string }
+      notification_staff: {
+        Args: never
+        Returns: {
+          email: string
+          member_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          team_ids: string[]
+          user_id: string
+        }[]
+      }
       vn_today: { Args: never; Returns: string }
     }
     Enums: {

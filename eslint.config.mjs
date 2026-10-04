@@ -21,6 +21,30 @@ const eslintConfig = defineConfig([
               message: 'Import cn from "@/lib/utils" instead (it knows the design-system text sizes).',
             },
           ],
+          patterns: [
+            {
+              group: ["@/lib/supabase/admin", "**/lib/supabase/admin", "**/supabase/admin"],
+              message: "The service-role client is for the cron route handlers only (docs/decisions.md #35).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Flat config: the last matching config wins, so this override repeats the `cn` path restriction and
+  // simply omits the admin-client pattern, which is what lets the cron handlers import it.
+  {
+    files: ["src/app/api/cron/**/route.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "cn",
+              message: 'Import cn from "@/lib/utils" instead (it knows the design-system text sizes).',
+            },
+          ],
         },
       ],
     },
