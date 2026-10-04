@@ -190,6 +190,7 @@ Khi DB **chặn** xóa (vd. khóa học đang có bản ghi chứng chỉ dùng 
 | Chứng chỉ của tôi¹ | ✓ | ✓ | ✓ |
 | Thành viên | ✓ | ✓ (team mình) | — |
 | Chứng chỉ (theo người) | ✓ | ✓ (team mình) | — |
+| Chất lượng dữ liệu | ✓ | ✓ (team mình) | — |
 | Khóa học | ✓ | ✓ (chỉ xem) | ✓ (chỉ xem) |
 | Tổ chức (DC / Program / Team) | ✓ | — | — |
 | Import / Export | ✓ | — | — |

@@ -1,22 +1,15 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { signIn } from "./helpers";
 import { signInAsSeedUser } from "./support/restore-seed";
+import { assertSeedFresh } from "./support/seed-fresh";
 
 // Seed (supabase/seed.sql): An–AWS done (expires in ~25 days), Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
 // Manager manages Team Cloud (An, Châu). Earlier specs can leave extra members without records, so the members
 // tile is asserted `>= 3`; every records-based number is exact.
 const AWS = "AWS Solutions Architect Associate";
 
-// The tile numbers below depend on the seed's relative dates: An's certificate expires ~26 days after
-// `supabase db reset`. On an older database it silently becomes Active/Expired, so fail with the real reason.
-test.beforeAll(async () => {
-  const admin = await signInAsSeedUser("admin@certtracker.test");
-  const { data, error } = await admin.from("v_training_records").select("expiry_status").eq("member_email", "an@certtracker.test");
-  if (error) throw new Error(`Could not read the seed state: ${error.message}`);
-  if (data?.length !== 1 || data[0].expiry_status !== "Expiring Soon") {
-    throw new Error("The seed's relative dates have aged (An's certificate is no longer 'Expiring Soon'): run `pnpm supabase db reset`.");
-  }
-});
+// The tile numbers below depend on the seed's relative dates (see assertSeedFresh).
+test.beforeAll(assertSeedFresh);
 
 /** A named section (`Section` sets `aria-label`). Role queries ignore the hidden duplicate Next streams in dev. */
 function section(page: Page, name: string): Locator {

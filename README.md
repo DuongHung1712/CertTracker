@@ -97,13 +97,20 @@ Mở <http://localhost:3000>. Tài khoản test (admin / manager / member) đư�
 |---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | URL project Supabase |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon key (public, bị giới hạn bởi RLS) |
-| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only** — chỉ dùng cho cron và commit import |
-| `RESEND_API_KEY` | Gửi email |
-| `CRON_SECRET` | Xác thực request từ Vercel Cron |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Server-only** — chỉ dùng cho cron |
+| `RESEND_API_KEY` | Gửi email (Resend) |
+| `EMAIL_FROM` | Người gửi, thuộc domain đã xác minh trên Resend, vd. `CertTracker <noreply@example.com>` |
+| `EMAIL_TRANSPORT` | Tùy chọn: `console` chỉ in email ra log server (dùng cho e2e/dev; bị từ chối ở production), `resend` ép dùng Resend |
+| `APP_URL` | URL gốc của app, dùng cho liên kết trong email (không có dấu `/` cuối) |
+| `CRON_SECRET` | Xác thực request cron (`Authorization: Bearer …`); từ 16 ký tự, thiếu hoặc ngắn hơn thì cron từ chối mọi request |
 | `ANTHROPIC_API_KEY` | AI (Giai đoạn 2) |
 
 > [!WARNING]
 > Không commit `.env.local`. `SUPABASE_SERVICE_ROLE_KEY` vượt qua RLS — tuyệt đối không dùng ở client.
+
+### Cron và email
+
+Hai route do Vercel Cron gọi (`vercel.json`): `GET /api/cron/expiry-alerts` (08:00 thứ Hai, giờ Việt Nam) và `GET /api/cron/monthly-report` (08:00 ngày 1). Cả hai xác thực bằng `CRON_SECRET`, hỗ trợ `?dryRun=1` (chỉ liệt kê người nhận), gọi lại an toàn (idempotent). Lịch sử gửi xem ở trang **Cài đặt** (Admin). Cấu hình Resend, biến môi trường, chạy thử, xử lý lỗi và quy trình UAT: [`docs/deploy/cron-email.md`](docs/deploy/cron-email.md).
 
 ## Scripts
 
