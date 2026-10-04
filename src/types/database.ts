@@ -616,6 +616,7 @@ export type Database = {
         Args: { p_email: string; p_kind: string; p_period: string }
         Returns: {
           claimed: boolean
+          log_attempts: number
           log_id: string
           log_status: string
         }[]

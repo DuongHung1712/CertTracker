@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(48);
+select plan(51);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -115,6 +115,25 @@ select results_eq(
   $$select claimed, log_status from public.claim_notification('expiry-alert', '2026-W42', 'a@test.local')$$,
   $$values (true, 'pending'::text)$$,
   'the same e-mail in another period is claimed independently');
+
+-- claim token: log_attempts is 1 on the first claim and 2 after a failed reclaim
+select results_eq(
+  $$select claimed, log_attempts from public.claim_notification('expiry-alert', '2026-W41', 'token@test.local')$$,
+  $$values (true, 1)$$,
+  'the first claim returns attempts = 1');
+update public.notification_log set status = 'failed', error = 'boom' where recipient_email = 'token@test.local';
+select results_eq(
+  $$select claimed, log_attempts from public.claim_notification('expiry-alert', '2026-W41', 'token@test.local')$$,
+  $$values (true, 2)$$,
+  'a failed reclaim returns attempts = 2');
+
+-- a row that holds a mixed-case e-mail (Studio edit, backfill, direct insert) is still found, not an empty result
+insert into public.notification_log (kind, period, recipient_email, status, sent_at)
+  values ('expiry-alert', '2026-W41', 'Mixed@Test.Local', 'sent', now());
+select results_eq(
+  $$select claimed, log_status, log_attempts from public.claim_notification('expiry-alert', '2026-W41', 'mixed@test.local')$$,
+  $$values (false, 'sent'::text, 1)$$,
+  'a claim hitting a mixed-case stored e-mail reports the existing sent row');
 
 -- ===== table constraints =====
 select throws_ok(

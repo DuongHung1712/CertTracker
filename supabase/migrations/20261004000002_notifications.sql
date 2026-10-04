@@ -35,16 +35,19 @@ grant select on public.notification_log to authenticated;
 
 -- Atomically claim the right to send. Returns claimed = true when this caller must send; otherwise the
 -- existing row's status tells why (sent: done already; pending: another worker holds it).
+-- log_attempts is the claim token: the caller passes it back to markSent/markFailed so a worker whose claim
+-- was taken over cannot overwrite the new owner's row.
 -- A claim is taken over when the previous attempt failed, or was left pending for more than 15 minutes
 -- (the worker died). ON CONFLICT DO UPDATE ... WHERE locks the row, so two callers never both win.
 create function public.claim_notification(p_kind text, p_period text, p_email text)
-returns table (claimed boolean, log_id uuid, log_status text)
+returns table (claimed boolean, log_id uuid, log_status text, log_attempts int)
 language plpgsql
 set search_path = ''
 as $$
 declare
   v_email extensions.citext := lower(btrim(p_email));
   v_id uuid;
+  v_attempts int;
 begin
   insert into public.notification_log as n (kind, period, recipient_email)
   values (p_kind, p_period, v_email)
@@ -52,17 +55,20 @@ begin
     set status = 'pending', attempts = n.attempts + 1, claimed_at = now(), error = null
     where n.status = 'failed'
        or (n.status = 'pending' and n.claimed_at < now() - interval '15 minutes')
-  returning n.id into v_id;
+  returning n.id, n.attempts into v_id, v_attempts;
 
   if v_id is not null then
-    return query select true, v_id, 'pending'::text;
+    return query select true, v_id, 'pending'::text, v_attempts;
     return;
   end if;
 
   return query
-    select false, n.id, n.status
+    select false, n.id, n.status, n.attempts
     from public.notification_log n
-    where n.kind = p_kind and n.period = p_period and n.recipient_email = v_email;
+    where n.kind = p_kind and n.period = p_period
+      -- Under search_path = '' the citext `=` operator is not visible and a bare `=` silently compares as text,
+      -- so lower-case explicitly: a row holding a mixed-case e-mail (Studio edit, backfill) must still be found.
+      and lower(n.recipient_email::text) = v_email::text;
 end;
 $$;
 

@@ -23,7 +23,15 @@ const eslintConfig = defineConfig([
           ],
           patterns: [
             {
-              group: ["@/lib/supabase/admin", "**/lib/supabase/admin", "**/supabase/admin"],
+              // Static imports only: ESLint does not check dynamic `import()` here.
+              group: [
+                "@/lib/supabase/admin",
+                "**/lib/supabase/admin",
+                "**/supabase/admin",
+                "./admin",
+                "../admin",
+                "../supabase/admin",
+              ],
               message: "The service-role client is for the cron route handlers only (docs/decisions.md #35).",
             },
           ],
