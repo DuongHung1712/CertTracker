@@ -8,7 +8,7 @@ import { emailSetupStatus } from "@/features/notifications/runs";
 export default async function SettingsPage() {
   const user = await getCurrentUser();
   // UX only — the notification_log policy returns nothing to non-admins.
-  if (user && user.role !== "admin") redirect("/dashboard");
+  if (user?.role !== "admin") redirect("/dashboard");
   const runs = await listNotificationRuns();
   return (
     <div className="flex flex-col gap-6">

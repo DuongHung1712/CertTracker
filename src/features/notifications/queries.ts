@@ -7,7 +7,7 @@ export async function listNotificationRuns(): Promise<RunRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("notification_log")
-    .select("kind, period, status, sent_at, claimed_at")
+    .select("kind, period, status, sent_at, claimed_at, error")
     .order("claimed_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(`Không tải được lịch sử gửi email: ${error.message}`);
@@ -18,6 +18,8 @@ export async function listNotificationRuns(): Promise<RunRow[]> {
       status: r.status as "pending" | "sent" | "failed",
       sentAt: r.sent_at,
       claimedAt: r.claimed_at,
+      error: r.error,
     })),
+    Date.now(),
   );
 }

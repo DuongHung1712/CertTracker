@@ -54,6 +54,10 @@ async function dryRunOnConsole(request: APIRequestContext, job: Job): Promise<Cr
     throw new Error("unset RESEND_API_KEY or set EMAIL_TRANSPORT=console in .env.local — refusing to send real mail");
   }
   expect(body.dryRun).toBe(true);
+  // A dry run claims and sends nothing.
+  expect(body.sent).toBe(0);
+  expect(body.skipped).toBe(0);
+  expect(body.inFlight).toBe(0);
   return body;
 }
 
@@ -95,6 +99,13 @@ test("cron endpoints require the bearer token and are not redirected by the logi
     maxRedirects: 0,
   });
   expect(post.status()).toBe(405);
+
+  // After authentication, any query key other than `dryRun` is refused, so a typo can never become a real send.
+  const typo = await request.get("/api/cron/expiry-alerts?dryrun=1", { headers: { Authorization: `Bearer ${SECRET}` }, maxRedirects: 0 });
+  expect(typo.status()).toBe(400);
+  expect(await typo.json()).toEqual({ error: "unknown-parameter" });
+  const typoUnauthenticated = await request.get("/api/cron/expiry-alerts?dryrun=1", { maxRedirects: 0 });
+  expect(typoUnauthenticated.status()).toBe(401);
 
   // A signed-in browser session is not a cron credential: 401 from the route itself, not a redirect to /dashboard.
   const admin = await signedInPage(browser, "admin@certtracker.test");

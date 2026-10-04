@@ -47,8 +47,8 @@ const reportOf = (over: Partial<MonthlyReport> = {}): MonthlyReport => ({
   upcoming: [item(1)],
   ...over,
 });
-const renderReport = (report: MonthlyReport, appUrl: string | null = null) =>
-  renderEmail(createElement(MonthlyReportEmail, { report, appUrl }));
+const renderReport = (report: MonthlyReport, appUrl: string | null = null, asOf = "2026-10-01") =>
+  renderEmail(createElement(MonthlyReportEmail, { report, appUrl, asOf }));
 
 describe("ExpiryAlertEmail", () => {
   it("escapes user data instead of injecting markup (edge #26)", async () => {
@@ -176,6 +176,11 @@ describe("MonthlyReportEmail", () => {
     for (const label of ["Hoàn thành", "Đang học", "Còn hiệu lực", "Sắp hết hạn (≤ 60 ngày)", "Đã hết hạn", "Cấp mới trong tháng", "Hết hạn trong tháng"]) {
       expect(html).toContain(label);
     }
+  });
+
+  it("states the date the figures are as of, and follows it", async () => {
+    expect((await renderReport(reportOf())).html).toContain("Số liệu tính đến 01/10/2026");
+    expect((await renderReport(reportOf(), null, "2026-10-02")).html).toContain("Số liệu tính đến 02/10/2026");
   });
 
   it("uses the managed-teams note for a manager report", async () => {

@@ -23,7 +23,7 @@ export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: Set
           <p className="text-caption text-muted-foreground">Mỗi dòng là một kỳ gửi; số liệu đếm theo người nhận.</p>
         </div>
         <div className="overflow-hidden rounded-lg border bg-card">
-          <Table className="text-table tabular-nums">
+          <Table aria-label="Lịch sử gửi email" className="text-table tabular-nums">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead className={HEAD}>Loại</TableHead>
@@ -31,13 +31,15 @@ export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: Set
                 <TableHead className={cn(HEAD, "text-right")}>Đã gửi</TableHead>
                 <TableHead className={cn(HEAD, "text-right")}>Lỗi</TableHead>
                 <TableHead className={cn(HEAD, "text-right")}>Đang gửi</TableHead>
+                <TableHead className={cn(HEAD, "text-right")}>Treo (chạy lại)</TableHead>
+                <TableHead className={HEAD}>Lỗi gần nhất</TableHead>
                 <TableHead className={HEAD}>Hoạt động cuối</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {runs.length === 0 ? (
                 <TableRow className="hover:bg-transparent">
-                  <TableCell colSpan={6} className="whitespace-normal">
+                  <TableCell colSpan={8} className="whitespace-normal">
                     <EmptyState
                       title="Chưa gửi email nào"
                       description="Lịch: nhắc hạn 08:00 thứ Hai, báo cáo tháng 08:00 ngày 1 (giờ Việt Nam)."
@@ -53,7 +55,17 @@ export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: Set
                     <TableCell className={cn("px-2.5 py-1 text-right", run.failed > 0 && "font-semibold text-destructive")}>
                       {run.failed}
                     </TableCell>
-                    <TableCell className="px-2.5 py-1 text-right">{run.pending}</TableCell>
+                    {/* Stale claims are shown on their own: a run died and calling the route again retries them. */}
+                    <TableCell className="px-2.5 py-1 text-right">{run.pending - run.stalePending}</TableCell>
+                    <TableCell className={cn("px-2.5 py-1 text-right", run.stalePending > 0 && "font-semibold text-destructive")}>
+                      {run.stalePending}
+                    </TableCell>
+                    <TableCell
+                      className={cn("max-w-64 truncate px-2.5 py-1", run.lastError ? "text-destructive" : "text-muted-foreground")}
+                      title={run.lastError ?? undefined}
+                    >
+                      {run.lastError ?? "—"}
+                    </TableCell>
                     <TableCell className="px-2.5 py-1">{formatDateTimeVn(run.lastActivityAt)}</TableCell>
                   </TableRow>
                 ))

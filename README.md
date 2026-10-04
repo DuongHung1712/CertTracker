@@ -101,7 +101,7 @@ Mở <http://localhost:3000>. Tài khoản test (admin / manager / member) đư�
 | `RESEND_API_KEY` | Gửi email (Resend) |
 | `EMAIL_FROM` | Người gửi, thuộc domain đã xác minh trên Resend, vd. `CertTracker <noreply@example.com>` |
 | `EMAIL_TRANSPORT` | Tùy chọn: `console` chỉ in email ra log server (dùng cho e2e/dev; bị từ chối ở production), `resend` ép dùng Resend |
-| `APP_URL` | URL gốc của app, dùng cho liên kết trong email (không có dấu `/` cuối) |
+| `APP_URL` | URL gốc của app, dùng cho liên kết trong email: `https://…` (hoặc `http://localhost…`), không dấu `/` cuối |
 | `CRON_SECRET` | Xác thực request cron (`Authorization: Bearer …`); từ 16 ký tự, thiếu hoặc ngắn hơn thì cron từ chối mọi request |
 | `ANTHROPIC_API_KEY` | AI (Giai đoạn 2) |
 
@@ -110,7 +110,7 @@ Mở <http://localhost:3000>. Tài khoản test (admin / manager / member) đư�
 
 ### Cron và email
 
-Hai route do Vercel Cron gọi (`vercel.json`): `GET /api/cron/expiry-alerts` (08:00 thứ Hai, giờ Việt Nam) và `GET /api/cron/monthly-report` (08:00 ngày 1). Cả hai xác thực bằng `CRON_SECRET`, hỗ trợ `?dryRun=1` (chỉ liệt kê người nhận), gọi lại an toàn (idempotent). Lịch sử gửi xem ở trang **Cài đặt** (Admin). Cấu hình Resend, biến môi trường, chạy thử, xử lý lỗi và quy trình UAT: [`docs/deploy/cron-email.md`](docs/deploy/cron-email.md).
+Hai route do Vercel Cron gọi (`vercel.json`): `GET /api/cron/expiry-alerts` (08:00 thứ Hai, giờ Việt Nam) và `GET /api/cron/monthly-report` (08:00 ngày 1). Cả hai xác thực bằng `CRON_SECRET`, hỗ trợ tham số `dryRun` (giá trị nào cũng được; chỉ liệt kê người nhận), mọi tham số lạ bị từ chối 400, gọi lại an toàn (idempotent). Lịch sử gửi xem ở trang **Cài đặt** (Admin). Cấu hình Resend, biến môi trường, chạy thử, xử lý lỗi và quy trình UAT: [`docs/deploy/cron-email.md`](docs/deploy/cron-email.md).
 
 ## Scripts
 

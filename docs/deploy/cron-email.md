@@ -35,7 +35,7 @@ Project → Settings → Environment Variables, môi trường **Production**:
 |---|---|
 | `RESEND_API_KEY` | API key ở bước 1 |
 | `EMAIL_FROM` | `CertTracker <noreply@<domain-da-xac-minh>>` |
-| `APP_URL` | URL production, không dấu `/` cuối (vd. `https://cert-tracker-three.vercel.app`); dùng cho liên kết trong email |
+| `APP_URL` | URL production, **`https://`**, không dấu `/` cuối (vd. `https://cert-tracker-three.vercel.app`); dùng cho liên kết trong email. Giá trị không phải `https:` (trừ `http://localhost`) bị bỏ qua: email vẫn gửi nhưng không có liên kết, và **Cài đặt** báo chưa cấu hình |
 | `CRON_SECRET` | Chuỗi ngẫu nhiên **từ 16 ký tự** (vd. `openssl rand -hex 24`). Khi biến này tồn tại, Vercel tự gắn `Authorization: Bearer <CRON_SECRET>` vào mỗi lần gọi cron |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → `service_role` (**bí mật**) |
 
@@ -65,19 +65,19 @@ Không chạy `supabase db reset --linked` và `supabase config push` (xem quy t
 
 - Cron **chỉ chạy trên deployment Production** (không chạy ở Preview). Lịch cập nhật sau mỗi lần deploy production.
 - Gói **Hobby**: tối đa **một lần/ngày** cho mỗi cron và giờ chạy có thể **lệch tới ~1 giờ** trong khung giờ đã đặt. Lịch của ta là tuần/tháng nên ổn.
-- Vercel gọi bằng `GET`, không theo chuyển hướng, và coi phản hồi không phải 2xx là "failed" (route cố ý trả HTTP 500 khi có người gửi lỗi để dashboard cron hiện đỏ).
+- Vercel gọi bằng `GET`, không theo chuyển hướng, và coi phản hồi không phải 2xx là "failed" (route cố ý trả HTTP 500 khi có người gửi lỗi **hoặc** khi lần chạy bị cắt giữa chừng, `truncated`, để dashboard cron hiện đỏ). Mỗi lần chạy còn ghi một dòng JSON `{"event":"cron-run",…}` (chỉ các số đếm, không có địa chỉ email) vào Logs.
 - Có thể bị kích hoạt trùng hoặc không tự thử lại; vì vậy route **idempotent**: người đã nhận trong kỳ đó bị bỏ qua.
 - Log: Vercel → project → **Logs** (lọc `/api/cron`) và **Settings → Cron Jobs** (nút *Run* để chạy ngay).
 
 ## 5. Chạy thử thủ công
 
-Luôn bắt đầu bằng `dryRun=1`: chỉ liệt kê người nhận, **không claim, không gửi, không ghi log**.
+Luôn bắt đầu bằng chạy thử: thêm tham số `dryRun` (**giá trị nào cũng được, kể cả rỗng; chỉ cần có mặt**, vd. `?dryRun=1`). Chạy thử chỉ liệt kê người nhận, **không claim, không gửi, không ghi log**. Gửi thật là request **không có tham số nào**; mọi khóa query khác (`dryrun`, `dry_run`, `date`…) bị từ chối với `400 {"error":"unknown-parameter"}` (quyết định #44), nên gõ nhầm không bao giờ biến thành gửi thật.
 
 ```bash
 export CRON_SECRET='<giá trị trên Vercel>'
 # 1) xem ai sẽ nhận
 curl -s -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/expiry-alerts?dryRun=1"
-# 2) gửi thật (bỏ dryRun); gọi lại bao nhiêu lần cũng an toàn
+# 2) gửi thật (bỏ hẳn tham số dryRun); gọi lại bao nhiêu lần cũng an toàn
 curl -s -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/expiry-alerts"
 curl -s -H "Authorization: Bearer $CRON_SECRET" "https://<domain>/api/cron/monthly-report"
 ```
@@ -92,13 +92,13 @@ Phản hồi JSON có các trường:
 |---|---|
 | `job`, `period` | Loại và kỳ (`2026-W41` cho nhắc hạn theo tuần ISO; `2026-09` cho báo cáo tháng = tháng trước) |
 | `transport` | `resend` (gửi thật) hoặc `console` (chỉ in log; không bao giờ dùng ở production) |
-| `dryRun` | `true` nếu chỉ liệt kê |
+| `dryRun` | `true` nếu chỉ liệt kê (có tham số `dryRun`) |
 | `planned` | Số người sẽ nhận trong kỳ này |
 | `sent` | Đã gửi thành công trong lần gọi này |
 | `skipped` | Đã gửi từ lần gọi trước trong cùng kỳ, nên bỏ qua |
 | `inFlight` | Có lần chạy khác đang giữ quyền gửi (hoặc lần chạy trước bị chết giữa chừng) |
 | `failed`, `failures[]` | Số lỗi và `{ email, error }` từng người; HTTP trả về là 500 |
-| `truncated` | `true` nếu hết ngân sách 50 giây trước khi xử lý hết |
+| `truncated` | `true` nếu hết ngân sách 50 giây trước khi xử lý hết; HTTP trả về là 500 |
 | `undeliverable[]` | Địa chỉ bị loại vì không hợp lệ (không gửi, không tính vào `planned`) |
 | `warnings[]` | Cảnh báo từng người (vd. không ghi được log) |
 | `recipients[]` | Chỉ khi `dryRun`: `{ email, detail }` từng người nhận |
@@ -106,9 +106,10 @@ Phản hồi JSON có các trường:
 Quy tắc đọc:
 
 - `sent + skipped + inFlight + failed = planned` (trừ phần chưa xử lý nếu `truncated`).
-- **`truncated: true` → gọi lại** để gửi nốt phần còn lại (người đã gửi bị `skipped`).
+- **`truncated: true` → lần chạy bị cắt và hiện đỏ (HTTP 500) trên dashboard cron; gọi lại cho tới khi `truncated: false`** để gửi nốt phần còn lại (người đã gửi bị `skipped`).
+- **Sức chứa mỗi lần chạy:** ngân sách 50 giây, gửi tuần tự và giãn ≥ 600 ms giữa hai email, nên khoảng **40–80 người nhận** mỗi lần gọi (tùy độ trễ của Resend). Đơn vị đông hơn sẽ luôn cần gọi lại; chạy cron lần hai vài phút sau là đủ.
 - **`inFlight > 0` → lần chạy khác đang giữ quyền gửi (hoặc lần chạy trước đã chết); chạy lại sau ~15 phút.** HTTP vẫn là 200 (cố ý: đây không phải lỗi).
-- `failed > 0` → xem `failures[]`, sửa nguyên nhân rồi gọi lại; chỉ những người lỗi được gửi lại.
+- `failed > 0` → xem `failures[]`, sửa nguyên nhân rồi gọi lại; chỉ những người lỗi được gửi lại. Cài đặt (Admin) cũng hiện **lỗi gần nhất của từng kỳ** (cột "Lỗi gần nhất", rê chuột để đọc đủ) và số claim **treo** quá 15 phút (cột "Treo (chạy lại)").
 - Không có gì để báo (không ai có chứng chỉ sắp hết hạn) → `planned: 0`, không gửi email, không ghi log.
 
 ## 6. Xử lý lỗi thường gặp
@@ -117,10 +118,12 @@ Quy tắc đọc:
 |---|---|
 | `500 {"error":"cron-not-configured"}` | `CRON_SECRET` thiếu hoặc ngắn hơn 16 ký tự. Đặt lại rồi Redeploy |
 | `401 {"error":"unauthorized"}` | Sai token hoặc thiếu header `Authorization: Bearer …`. Phiên đăng nhập của trình duyệt **không** thay được token |
+| `400 {"error":"unknown-parameter"}` | Query có khóa khác `dryRun` (gõ sai `dryrun`, `dry_run`…). Sửa URL; gửi thật thì bỏ hết tham số |
 | `405` | Route chỉ nhận `GET` |
 | `500 {"error":"email-not-configured","detail":…}` | Production thiếu `RESEND_API_KEY` hoặc `EMAIL_FROM` (hoặc đặt `EMAIL_TRANSPORT=console`). Route dừng **trước khi** claim nên không mất kỳ gửi nào |
 | `500 {"error":"internal"}` | Lỗi không lường trước (thường là DB/service role key sai hoặc migration chưa đẩy). Xem Vercel Logs |
 | `failures[].error` có `403` / "domain is not verified" / "can only send testing emails to your own email" | Domain gửi chưa xác minh hoặc `EMAIL_FROM` không thuộc domain đã xác minh (mục 1) |
+| `failures[].error` có `409` / `invalid_idempotent_request` | Resend đã nhận cùng khóa idempotency (`kind:kỳ:email`) với nội dung khác trong khoảng 24 giờ: email **có thể đã được gửi**. Kiểm tra trên dashboard Resend (Emails) trước khi chạy lại; chạy lại sau hơn 24 giờ có thể gửi trùng |
 | `failures[].error` có `429` | Vượt giới hạn Resend (2 req/s hoặc hạn mức ngày). Chờ rồi gọi lại |
 | `inFlight > 0` kéo dài | Chờ ~15 phút rồi chạy lại; claim treo tự được nhận lại sau thời gian đó |
 | Email vào thư rác | Kiểm tra SPF/DKIM/DMARC ở Resend; đừng dùng domain chưa có lịch sử gửi cho đợt lớn |
@@ -131,15 +134,16 @@ Quy tắc đọc:
 Route không phụ thuộc Vercel. Trên VPS, dùng cron hệ thống hoặc GitHub Actions gọi **cùng URL với cùng header**:
 
 ```cron
+CRON_SECRET=<giá trị bí mật>
 0 1 * * 1  curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/expiry-alerts
 0 1 1 * *  curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://<domain>/api/cron/monthly-report
 ```
 
-Đặt lịch theo UTC (hoặc đặt múi giờ của cron là `Asia/Ho_Chi_Minh` và đổi 01:00 thành 08:00). Cần `curl -f` hoặc kiểm tra mã HTTP để cron của VPS cũng báo lỗi khi route trả 500. Xóa `crons` khỏi `vercel.json` nếu không còn dùng Vercel Cron, để tránh chạy đôi.
+Đặt lịch theo UTC (hoặc đặt múi giờ của cron là `Asia/Ho_Chi_Minh` và đổi 01:00 thành 08:00). Dòng `CRON_SECRET=…` đặt ở đầu crontab (cron mặc định không có biến môi trường của bạn); nếu crontab của bạn không hỗ trợ biến thì ghi thẳng giá trị vào script chạy. Cần `curl -f` hoặc kiểm tra mã HTTP để cron của VPS cũng báo lỗi khi route trả 500. Xóa `crons` khỏi `vercel.json` nếu không còn dùng Vercel Cron, để tránh chạy đôi.
 
 ## 8. Tiêu chí chấp nhận (cuối giai đoạn 1)
 
-Email thứ Hai chạy đúng **2 tuần liên tiếp**. Kiểm tra trên **Cài đặt** (Admin): dòng "Nhắc hạn chứng chỉ" của hai kỳ tuần liền nhau (vd. `tuần 41/2026` và `tuần 42/2026`) đều có cột "Đã gửi" > 0 và "Lỗi" = 0 (và "Đang gửi" = 0). Báo cáo tháng: dòng "Báo cáo tháng" của tháng vừa qua cũng "Lỗi" = 0.
+Email thứ Hai chạy đúng **2 tuần liên tiếp**. Kiểm tra trên **Cài đặt** (Admin): dòng "Nhắc hạn chứng chỉ" của hai kỳ tuần liền nhau (vd. `tuần 41/2026` và `tuần 42/2026`) đều có cột "Đã gửi" > 0 và "Lỗi" = 0 (và "Đang gửi" = 0, "Treo (chạy lại)" = 0). Báo cáo tháng: dòng "Báo cáo tháng" của tháng vừa qua cũng "Lỗi" = 0.
 
 ---
 
@@ -151,8 +155,8 @@ Mục tiêu: xác nhận người thật nhận được email đúng, đúng gi
 2. **Nhập dữ liệu thật:** Admin import file Excel thật của team ở trang *Import / Export* (đã có từ tuần 4), xem trước, nhập, kiểm tra vài dòng với file gốc.
 3. **Rà trang Chất lượng dữ liệu** và sửa: bản ghi quá hạn thi, "Done" thiếu minh chứng, thành viên chưa có team, khóa học chưa khai báo thời hạn.
 4. **Bảo đảm người nhận có email đúng:** Member nhận qua `members.email`; Manager/Admin qua email tài khoản đăng nhập (đã xác nhận). Tài khoản của manager phải được liên kết với team họ quản lý.
-5. **Chạy `dryRun`** cho cả hai route (mục 5): kiểm tra danh sách `recipients` đúng người, `undeliverable` rỗng.
-6. **Gửi thật** (bỏ `dryRun`) và đọc phản hồi: `failed = 0`, `truncated = false`.
+5. **Chạy thử (thêm `?dryRun=1`)** cho cả hai route (mục 5): kiểm tra danh sách `recipients` đúng người, `undeliverable` rỗng.
+6. **Gửi thật** (bỏ hẳn tham số `dryRun`) và đọc phản hồi: `failed = 0`, `truncated = false`.
 7. **Hỏi manager và vài member:** có nhận được không (kể cả hộp thư rác)? Nội dung có đúng không (đúng chứng chỉ, đúng số ngày)? Giờ gửi 08:00 thứ Hai có hợp lý? Có cần thêm/bớt thông tin?
 8. **Ghi lại vấn đề và quyết định** vào `docs/` (vd. `docs/uat/<ngày>-team-<tên>.md`); thay đổi quyết định thì thêm một mục mới vào `docs/decisions.md`.
 9. Theo dõi hai tuần liên tiếp theo mục 8 trước khi mở rộng sang team khác.

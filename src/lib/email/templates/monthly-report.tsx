@@ -2,7 +2,7 @@ import { Heading, Text } from "@react-email/components";
 import { formatRate } from "@/features/dashboard/metrics";
 import type { Kpi, MonthlyReport } from "@/features/notifications/monthly-plan";
 import { monthLabel } from "@/features/notifications/period";
-import { formatNumber } from "@/lib/format";
+import { formatDate, formatNumber } from "@/lib/format";
 import { EMAIL_THEME as c } from "@/lib/email/theme";
 import { appLink, EmailLayout, ExpiryTable, styles } from "@/lib/email/templates/layout";
 import type { CSSProperties } from "react";
@@ -25,7 +25,8 @@ function kpiRows(k: Kpi): Array<[label: string, value: string]> {
 }
 
 /** Every user-controlled string below goes through JSX text, so React escapes it. */
-export function MonthlyReportEmail({ report, appUrl }: { report: MonthlyReport; appUrl: string | null }) {
+/** `asOf` is the Vietnam date the figures were computed on: KPIs are a snapshot of now, not of the end of the month. */
+export function MonthlyReportEmail({ report, appUrl, asOf }: { report: MonthlyReport; appUrl: string | null; asOf: string }) {
   const title = `Báo cáo ${monthLabel(report.month)}`;
   return (
     <EmailLayout preview={title} appUrl={appUrl}>
@@ -34,6 +35,7 @@ export function MonthlyReportEmail({ report, appUrl }: { report: MonthlyReport; 
         {title}
       </Heading>
       <Text style={styles.muted}>{report.scope === "teams" ? "Số liệu của các team bạn quản lý." : "Số liệu toàn đơn vị."}</Text>
+      <Text style={styles.muted}>{`Số liệu tính đến ${formatDate(asOf)}`}</Text>
 
       <table role="presentation" cellPadding={0} cellSpacing={0} style={styles.table}>
         <tbody>

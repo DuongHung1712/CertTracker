@@ -63,10 +63,17 @@ describe("buildMonthlyEmail", () => {
   };
 
   it("builds the subject from the month label and the full body", async () => {
-    const mail = await buildMonthlyEmail(report, { appUrl: "https://x.test" });
+    const mail = await buildMonthlyEmail(report, { appUrl: "https://x.test", today: "2026-10-01" });
     expect(mail.subject).toBe("[CertTracker] Báo cáo tháng 09/2026");
+    expect(mail.html).toContain("Số liệu tính đến 01/10/2026");
     expect(mail.html).toContain("Báo cáo tháng 09/2026");
     expect(mail.html).toContain("Chưa có team");
     expect(mail.text).toContain("Còn hiệu lực");
+  });
+
+  it("puts the given date into the mail", async () => {
+    const mail = await buildMonthlyEmail(report, { appUrl: null, today: "2026-10-03" });
+    expect(mail.html).toContain("Số liệu tính đến 03/10/2026");
+    expect(mail.html).not.toContain("Số liệu tính đến 01/10/2026");
   });
 });

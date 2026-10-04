@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { handleCron, type CronJob, type HandlerDeps } from "@/features/notifications/handler";
 import type { RunSummary } from "@/features/notifications/run";
 import { FakeLedger, FakeSender } from "@/features/notifications/test-doubles";
@@ -64,6 +64,10 @@ function setup(over: Partial<HandlerDeps> = {}) {
   return { deps, ledger, sender, calls };
 }
 
+beforeEach(() => {
+  // The handler logs one line per run; keep the test output clean (the logging test inspects it).
+  vi.spyOn(console, "info").mockImplementation(() => {});
+});
 afterEach(() => vi.restoreAllMocks());
 
 describe("handleCron authentication", () => {
@@ -115,11 +119,61 @@ describe("handleCron runs", () => {
     expect(sender.sent).toHaveLength(0);
   });
 
-  it("only treats dryRun=1 as a dry run", async () => {
+  it("treats the presence of dryRun, with any value, as a dry run (decisions #44)", async () => {
+    for (const query of ["?dryRun=1", "?dryRun=true", "?dryRun=0", "?dryRun=", "?dryRun"]) {
+      const { deps, sender, ledger } = setup();
+      const res = await handleCron(request(query), "expiry-alerts", deps);
+      expect(res.status).toBe(200);
+      expect(((await res.json()) as RunSummary).dryRun).toBe(true);
+      expect(sender.sent).toHaveLength(0);
+      expect(ledger.calls.claim).toBe(0);
+    }
+  });
+
+  it("refuses any other query key with 400 before creating a sender or a client", async () => {
+    for (const query of ["?dryrun=1", "?dry_run=1", "?foo=1", "?date=2026-10-05", "?dryRun=1&foo=1", "?DRYRUN=1"]) {
+      const { deps, sender, calls } = setup();
+      const res = await handleCron(request(query), "expiry-alerts", deps);
+      expect(res.status, query).toBe(400);
+      expect(await res.json()).toEqual({ error: "unknown-parameter" });
+      expect(calls).toEqual({ createClient: 0, loadSnapshot: 0, createLedger: 0, createSender: 0 });
+      expect(sender.sent).toHaveLength(0);
+    }
+  });
+
+  it("still answers 401 to an unauthenticated request that carries an unknown parameter", async () => {
+    const { deps } = setup();
+    const res = await handleCron(request("?foo=1", {}), "expiry-alerts", deps);
+    expect(res.status).toBe(401);
+  });
+
+  it("writes one structured log line per run with counts only", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => {});
     const { deps, sender } = setup();
-    const res = await handleCron(request("?dryRun=0"), "expiry-alerts", deps);
-    expect(((await res.json()) as RunSummary).dryRun).toBe(false);
-    expect(sender.sent).toHaveLength(2);
+    sender.outcome = (to) => (to === "a@x.test" ? { ok: false, error: "provider said a@x.test is bad" } : { ok: true, providerId: null });
+    await handleCron(request(), "expiry-alerts", deps);
+    expect(info).toHaveBeenCalledTimes(1);
+    const line = String(info.mock.calls[0][0]);
+    expect(line).not.toContain("@");
+    expect(line).not.toContain("provider said");
+    expect(JSON.parse(line)).toEqual({
+      event: "cron-run",
+      job: "expiry-alert",
+      period: "2026-W41",
+      transport: "console",
+      dryRun: false,
+      planned: 2,
+      sent: 1,
+      skipped: 0,
+      inFlight: 0,
+      failed: 1,
+      truncated: false,
+      warnings: 0,
+      undeliverable: 0,
+    });
+
+    await handleCron(request("?dryRun=1"), "expiry-alerts", deps);
+    expect(info).toHaveBeenCalledTimes(2);
   });
 
   it("sends for real and answers 200 when nobody failed, then skips on the second call (edge #9)", async () => {
@@ -145,7 +199,7 @@ describe("handleCron runs", () => {
     expect(body).toMatchObject({ sent: 1, failed: 1, failures: [{ email: "a@x.test", error: "provider 500" }] });
   });
 
-  it("answers 200 with truncated: true when the deadline stops the batch (edge #49)", async () => {
+  it("answers 500 with the summary when the deadline stops the batch, so the cron shows as failed (edge #49)", async () => {
     let clock = NOON_OCT_5;
     const { deps, sender } = setup({
       now: () => {
@@ -155,7 +209,7 @@ describe("handleCron runs", () => {
       },
     });
     const res = await handleCron(request(), "expiry-alerts", deps);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     const body = (await res.json()) as RunSummary;
     expect(body).toMatchObject({ planned: 2, sent: 1, truncated: true, failed: 0 });
     expect(sender.sent).toHaveLength(1);
@@ -171,7 +225,7 @@ describe("handleCron runs", () => {
       },
     });
     const res = await handleCron(request(), "expiry-alerts", deps);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(500);
     expect(await res.json()).toMatchObject({ planned: 2, sent: 0, truncated: true });
     expect(sender.sent).toHaveLength(0);
     expect(ledger.calls.claim).toBe(0);
@@ -206,6 +260,25 @@ describe("handleCron runs", () => {
     const { deps, sender } = setup({ env: { CRON_SECRET: SECRET } });
     await handleCron(request(), "expiry-alerts", deps);
     expect(sender.sent[0].html).not.toContain("https://app.example.test");
+  });
+
+  it("keeps a valid APP_URL and refuses an unsafe one (links omitted)", async () => {
+    const withEnv = (APP_URL: string) => setup({ env: { CRON_SECRET: SECRET, APP_URL } });
+    const https = withEnv("https://app.example.test");
+    await handleCron(request(), "expiry-alerts", https.deps);
+    expect(https.sender.sent[0].html).toContain('href="https://app.example.test');
+
+    const local = withEnv("http://localhost:3000/");
+    await handleCron(request(), "expiry-alerts", local.deps);
+    expect(local.sender.sent[0].html).toContain('href="http://localhost:3000');
+
+    for (const bad of ["javascript:alert(1)", "app.example.test", "http://app.example.test", "garbage"]) {
+      const { deps, sender } = withEnv(bad);
+      await handleCron(request(), "expiry-alerts", deps);
+      expect(sender.sent[0].html, bad).not.toContain("href=\"javascript:");
+      expect(sender.sent[0].html, bad).not.toContain("app.example.test");
+      expect(sender.sent[0].html, bad).not.toMatch(/href="(?!#)/);
+    }
   });
 });
 

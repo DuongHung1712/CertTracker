@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeAppUrl } from "@/features/notifications/app-url";
 import { checkCronAuth } from "@/features/notifications/cron-auth";
 import { createLedger, type NotificationLedger } from "@/features/notifications/ledger";
 import { runExpiryAlerts, runMonthlyReport, type RunSummary } from "@/features/notifications/run";
@@ -37,7 +38,12 @@ export async function handleCron(request: Request, job: CronJob, deps: HandlerDe
 
   if (job !== "expiry-alerts" && job !== "monthly-report") return json({ error: "not-found" }, 404);
 
-  const dryRun = new URL(request.url).searchParams.get("dryRun") === "1";
+  // Only the presence of `dryRun` matters (any value, even empty), so a typo can never turn a dry run into a real
+  // send; the reverse is impossible too, because every other key is refused. A real send is a request without
+  // parameters, which is exactly what Vercel Cron issues (decisions #44).
+  const params = new URL(request.url).searchParams;
+  if ([...params.keys()].some((key) => key !== "dryRun")) return json({ error: "unknown-parameter" }, 400);
+  const dryRun = params.has("dryRun");
 
   // Built before anything is claimed, and for dry runs too, so a bad mail configuration shows up immediately.
   let sender: EmailSender;
@@ -56,15 +62,35 @@ export async function handleCron(request: Request, job: CronJob, deps: HandlerDe
     const summary: RunSummary = await run({
       snapshot: await (deps.loadSnapshot ?? loadSnapshot)(client),
       today: todayVn(new Date(now())),
-      appUrl: env.APP_URL?.replace(/\/+$/, "") || null,
+      appUrl: normalizeAppUrl(env.APP_URL),
       ledger: (deps.createLedger ?? createLedger)(client),
       sender,
       dryRun,
       now,
       deadlineMs,
     });
+    // One structured line per run for the server log: counts only, never addresses or error texts.
+    console.info(
+      JSON.stringify({
+        event: "cron-run",
+        job: summary.job,
+        period: summary.period,
+        transport: summary.transport,
+        dryRun: summary.dryRun,
+        planned: summary.planned,
+        sent: summary.sent,
+        skipped: summary.skipped,
+        inFlight: summary.inFlight,
+        failed: summary.failed,
+        truncated: summary.truncated,
+        warnings: summary.warnings.length,
+        undeliverable: summary.undeliverable.length,
+      }),
+    );
     // A non-2xx makes the cron run show up as failed in the Vercel dashboard — the only place an operator looks.
-    return json(summary, summary.failed > 0 ? 500 : 200);
+    // `truncated` is red too: part of the recipients were not reached and nobody retries on their own. `inFlight`
+    // alone stays 200: another run holds the claim, so there is nothing to retry right now.
+    return json(summary, summary.failed > 0 || summary.truncated ? 500 : 200);
   } catch (e) {
     console.error(`cron ${job} failed`, e);
     return json({ error: "internal" }, 500);

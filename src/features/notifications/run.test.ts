@@ -129,6 +129,7 @@ describe("runMonthlyReport", () => {
     expect(summary).toMatchObject({ job: "monthly-report", period: "2026-09", planned: 2, sent: 2, failed: 0, transport: "console" });
     expect(sender.sent.map((m) => m.to).sort()).toEqual(["adm@x.test", "boss@x.test"]);
     expect(sender.sent.every((m) => m.subject.includes("tháng 09/2026"))).toBe(true);
+    expect(sender.sent.every((m) => m.html.includes("Số liệu tính đến 01/10/2026"))).toBe(true);
     expect(sender.sent.map((m) => m.idempotencyKey).sort()).toEqual([
       "monthly-report:2026-09:adm@x.test",
       "monthly-report:2026-09:boss@x.test",

@@ -60,7 +60,7 @@ export function runMonthlyReport(deps: RunDeps): Promise<RunSummary> {
   const outbound: Outbound[] = reports.map((report) => ({
     email: report.email,
     detail: { members: report.overall.members, teams: report.teams.length, upcoming: report.upcoming.length },
-    render: () => buildMonthlyEmail(report, { appUrl: deps.appUrl }),
+    render: () => buildMonthlyEmail(report, { appUrl: deps.appUrl, today: deps.today }),
   }));
   return run("monthly-report", period, outbound, undeliverable, deps);
 }
