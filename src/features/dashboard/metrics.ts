@@ -6,7 +6,8 @@ import { formatPercent } from "@/lib/format";
 export function ratePercent(done: number, total: number): number | null {
   if (total <= 0) return null;
   if (done >= total) return 100;
-  return Math.min(99, Math.floor((done / total) * 100));
+  // Integer product first: `(done / total) * 100` drifts (29/100 -> 28.999...), `done * 100` is exact.
+  return Math.min(99, Math.floor((done * 100) / total));
 }
 
 export const formatRate = (rate: number | null): string => (rate === null ? "—" : formatPercent(rate));

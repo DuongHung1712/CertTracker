@@ -25,6 +25,27 @@ describe("ratePercent (decision #31: rounded DOWN, 100 only when everything is d
   });
 });
 
+describe("ratePercent exactness (integer arithmetic, no float drift)", () => {
+  it.each([
+    [29, 100, 29],
+    [57, 100, 57],
+    [58, 100, 58],
+    [29, 50, 58],
+    [7, 100, 7],
+    [14, 100, 14],
+  ])("ratePercent(%i, %i) = %i", (done, total, expected) => {
+    expect(ratePercent(done, total)).toBe(expected);
+  });
+  it("equals the exact integer floor, capped at 99, for every done < total up to 200", () => {
+    for (let total = 1; total <= 200; total++) {
+      for (let done = 0; done < total; done++) {
+        // done * 100 stays far below 2^53, so plain integer arithmetic is exact here.
+        expect(ratePercent(done, total), `${done}/${total}`).toBe(Math.min(99, Math.floor((done * 100) / total)));
+      }
+    }
+  });
+});
+
 describe("formatRate", () => {
   it("shows a dash instead of 0% when there is no rate", () => {
     expect(formatRate(null)).toBe("—");
