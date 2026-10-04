@@ -193,7 +193,7 @@ export function ComboboxDemo() {
 
 // Dashboard blocks: the visual test for the Week 5 building blocks.
 const BUCKET_STATUSES = ["Active", "Expiring in 60d", "Expiring Soon", "Expired", "No Expiry"] as const;
-const BUCKET_LABELS = ["Còn hiệu lực", "Hết hạn trong 60 ngày", "Sắp hết hạn", "Đã hết hạn", "Không thời hạn"];
+const BUCKET_LABELS = ["Còn > 60 ngày", "Còn 31–60 ngày", "Còn ≤ 30 ngày", "Đã hết hạn", "Không thời hạn"];
 
 function buckets(counts: number[]): ExpiryBucket[] {
   return BUCKET_STATUSES.map((status, i) => ({ status, label: BUCKET_LABELS[i], count: counts[i] }));

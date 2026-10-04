@@ -7,6 +7,17 @@ import { signInAsSeedUser } from "./support/restore-seed";
 // tile is asserted `>= 3`; every records-based number is exact.
 const AWS = "AWS Solutions Architect Associate";
 
+// The tile numbers below depend on the seed's relative dates: An's certificate expires ~26 days after
+// `supabase db reset`. On an older database it silently becomes Active/Expired, so fail with the real reason.
+test.beforeAll(async () => {
+  const admin = await signInAsSeedUser("admin@certtracker.test");
+  const { data, error } = await admin.from("v_training_records").select("expiry_status").eq("member_email", "an@certtracker.test");
+  if (error) throw new Error(`Could not read the seed state: ${error.message}`);
+  if (data?.length !== 1 || data[0].expiry_status !== "Expiring Soon") {
+    throw new Error("The seed's relative dates have aged (An's certificate is no longer 'Expiring Soon'): run `pnpm supabase db reset`.");
+  }
+});
+
 /** A named section (`Section` sets `aria-label`). Role queries ignore the hidden duplicate Next streams in dev. */
 function section(page: Page, name: string): Locator {
   return page.getByRole("region", { name, exact: true });
@@ -65,7 +76,9 @@ test("admin sees org-wide KPIs, the expiry chart and the personal ranking", asyn
 
   const chart = section(page, "Hạn chứng chỉ").getByRole("img", { name: /^Hạn chứng chỉ:/ });
   await expect(chart).toBeVisible();
-  await expect(chart).toHaveAttribute("aria-label", /Sắp hết hạn 1/);
+  // Chart labels are day ranges, distinct from the tile labels; anchored so "…1" does not also match "…10".
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )Còn ≤ 30 ngày 1(,|$)/);
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )Còn > 60 ngày 0(,|$)/);
 
   await expect(section(page, "Theo team")).toBeVisible();
   await expect(rowWith(section(page, "Theo team"), "Team Cloud")).toBeVisible();
@@ -82,6 +95,7 @@ test("manager sees the same org-wide numbers but a ranking limited to their team
 
   // Org-wide (3 records), not just the managed team's 2.
   await expect(tileValue(page, "Bản ghi chứng chỉ")).toHaveText("3");
+  await expect(section(page, "Theo team")).toBeVisible();
 
   const ranking = section(page, "Xếp hạng cá nhân");
   await expect(rowWith(ranking, "Nguyễn Văn An")).toBeVisible();
@@ -135,7 +149,7 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
     await editor.goto("/records");
 
     await expect(tileValue(viewer, "Đang học")).toHaveText("1");
-    // After Week 4's import spec Châu can have a second record, so pin the row by member and course.
+    // Pin the row by member and course so the edit never depends on row order.
     const row = rowWith(editor.locator("body"), "Lê Minh Châu", AWS);
     await expect(row).toBeVisible();
 

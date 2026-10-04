@@ -62,11 +62,11 @@ describe("validCerts / expiringCerts", () => {
 });
 
 describe("expiryBuckets", () => {
-  it("lists the five buckets in display order, zeros included, labelled by the shared expiry labels", () => {
+  it("lists the five buckets in display order, zeros included, labelled with the chart's own day-range labels (not the badge labels)", () => {
     expect(expiryBuckets({ ...kpis, expiring60Certs: 0 })).toEqual([
-      { status: "Active", label: "Còn hiệu lực", count: 2 },
-      { status: "Expiring in 60d", label: "Hết hạn trong 60 ngày", count: 0 },
-      { status: "Expiring Soon", label: "Sắp hết hạn", count: 1 },
+      { status: "Active", label: "Còn > 60 ngày", count: 2 },
+      { status: "Expiring in 60d", label: "Còn 31–60 ngày", count: 0 },
+      { status: "Expiring Soon", label: "Còn ≤ 30 ngày", count: 1 },
       { status: "Expired", label: "Đã hết hạn", count: 1 },
       { status: "No Expiry", label: "Không thời hạn", count: 1 },
     ]);
