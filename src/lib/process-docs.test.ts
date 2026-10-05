@@ -6,21 +6,24 @@ const ROOT = process.cwd();
 const DIR = resolve(ROOT, "docs/process");
 const read = (name: string) => readFileSync(resolve(DIR, name), "utf8");
 
-/** Rows of the first Markdown table whose header starts with `firstHeader`. */
-function tableRows(markdown: string, firstHeader: string): string[][] {
+type Table = { header: string[]; rows: string[][] };
+
+const splitRow = (line: string) =>
+  line
+    .split("|")
+    .slice(1, -1)
+    .map((c) => c.trim());
+
+/** The first Markdown table whose header starts with `firstHeader`: its header cells and data rows. */
+function readTable(markdown: string, firstHeader: string): Table {
   const lines = markdown.split(/\r?\n/);
   const start = lines.findIndex((l) => l.startsWith(`| ${firstHeader} |`));
   if (start < 0) throw new Error(`table starting with "${firstHeader}" not found`);
   const rows: string[][] = [];
   for (let i = start + 2; i < lines.length && lines[i].startsWith("|"); i += 1) {
-    rows.push(
-      lines[i]
-        .split("|")
-        .slice(1, -1)
-        .map((c) => c.trim()),
-    );
+    rows.push(splitRow(lines[i]));
   }
-  return rows;
+  return { header: splitRow(lines[start]), rows };
 }
 
 type Requirement = {
@@ -39,18 +42,33 @@ type WorkPackage = {
   requirements: string;
 };
 
-const requirements: Requirement[] = tableRows(read("01-requirements-and-ca.md"), "ID")
-  .filter((r) => /^(R|NFR)-\d+$/.test(r[0]))
-  .map((r) => ({
-    id: r[0],
-    source: r[2],
-    priority: r[3],
-    build: r[4],
-    evidence: r[5],
-    validation: r[6],
-  }));
+const REQUIREMENT_HEADER = ["ID", "Requirement", "Source", "Priority", "Build status", "Evidence", "Validation"];
+const WBS_HEADER = [
+  "WBS",
+  "Work package",
+  "Deliverable",
+  "Acceptance",
+  "Planned",
+  "Actual",
+  "Est. remaining",
+  "Depends on",
+  "Status",
+  "Requirements",
+];
 
-const wbs: WorkPackage[] = tableRows(read("02-wbs.md"), "WBS").map((r) => ({
+const requirementsTable = readTable(read("01-requirements-and-ca.md"), "ID");
+const wbsTable = readTable(read("02-wbs.md"), "WBS");
+
+const requirements: Requirement[] = requirementsTable.rows.map((r) => ({
+  id: r[0],
+  source: r[2],
+  priority: r[3],
+  build: r[4],
+  evidence: r[5],
+  validation: r[6],
+}));
+
+const wbs: WorkPackage[] = wbsTable.rows.map((r) => ({
   code: r[0],
   depends: r[7],
   status: r[8],
@@ -64,6 +82,16 @@ const VALIDATION = new Set(["Assumed", "Decided", "Validated"]);
 const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Blocked (G1)"]);
 
 describe("01-requirements-and-ca.md", () => {
+  it("keeps the documented columns and well-formed rows", () => {
+    expect(requirementsTable.header).toEqual(REQUIREMENT_HEADER);
+    for (const row of requirementsTable.rows) {
+      expect(row.length, `row "${row[0]}" has ${row.length} cells, expected ${REQUIREMENT_HEADER.length}`).toBe(
+        REQUIREMENT_HEADER.length,
+      );
+      expect(row[0], `malformed requirement id "${row[0]}"`).toMatch(/^(R|NFR)-\d+$/);
+    }
+  });
+
   it("has requirements and unique ids", () => {
     expect(requirements.length).toBeGreaterThan(20);
     const ids = requirements.map((r) => r.id);
@@ -79,12 +107,17 @@ describe("01-requirements-and-ca.md", () => {
     if (r.evidence === "—") {
       expect(r.build, `${id} has no evidence but claims to be built`).toMatch(/^(Planned|Gated \(G1\))$/);
     }
+    // Anything that is not "Planned" or "Gated (G1)" must name its evidence (never blank).
+    if (!/^(Planned|Gated \(G1\))$/.test(r.build)) {
+      expect(r.evidence.length > 0 && r.evidence !== "—", `${id} is "${r.build}" but has empty evidence`).toBe(true);
+    }
   });
 
   it("every piece of evidence points at something that exists on this branch unless it is flagged as unmerged", () => {
     for (const r of requirements) {
       if (r.evidence === "—" || r.build.includes("unmerged")) continue;
       for (const path of r.evidence.split(", ")) {
+        expect(path.trim().length > 0, `${r.id}: empty evidence entry in "${r.evidence}"`).toBe(true);
         expect(existsSync(resolve(ROOT, path)), `${r.id}: ${path} does not exist`).toBe(true);
       }
     }
@@ -100,8 +133,17 @@ describe("01-requirements-and-ca.md", () => {
 });
 
 describe("02-wbs.md", () => {
+  it("keeps the documented columns and well-formed rows", () => {
+    expect(wbsTable.header).toEqual(WBS_HEADER);
+    for (const row of wbsTable.rows) {
+      expect(row.length, `row "${row[0]}" has ${row.length} cells, expected ${WBS_HEADER.length}`).toBe(WBS_HEADER.length);
+    }
+  });
+
   it("has the gate and valid statuses", () => {
-    expect(wbs.some((r) => r.code === "G1")).toBe(true);
+    const gate = wbs.find((r) => r.code === "G1");
+    expect(gate, "work package G1 is missing").toBeDefined();
+    expect(gate?.status).toBe("Not started");
     for (const r of wbs) expect(WBS_STATUS.has(r.status), `${r.code} status "${r.status}"`).toBe(true);
   });
 
