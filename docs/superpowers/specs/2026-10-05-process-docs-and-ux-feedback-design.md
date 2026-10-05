@@ -1,7 +1,7 @@
 # Phản hồi của manager: bộ tài liệu quy trình, độ trễ chuyển trang, ngôn ngữ giao diện — Design Spec
 
 - **Ngày:** 2026-10-05
-- **Trạng thái:** Đã duyệt thiết kế trong chat (3 phần), chờ review spec
+- **Trạng thái:** Đã duyệt; kế hoạch triển khai: docs/superpowers/plans/2026-10-05-process-docs-pack.md
 - **Nguồn:** phản hồi của manager về CertTracker (3 nhận xét + đề xuất quy trình), `CertTracker - Feature List.pdf`, spec `2026-09-26-certtracker-design.md`, `docs/decisions.md`
 
 ---
@@ -37,11 +37,11 @@ Mối lo lớn nhất: **requirements và WBS**. Manager đề xuất quy trình
 
 | Giả thuyết | Căn cứ | Mức tin |
 |---|---|---|
-| Hàm Vercel chạy ở US East, Supabase ở Tokyo (~150–200 ms/lần gọi) | `docs/deploy/task9-free-tier.md` (Supabase Tokyo); repo không đặt vùng cho hàm | Cao, cần kiểm tra bằng `x-vercel-id` của một request `_rsc` đã đăng nhập |
+| Hàm Vercel chạy ở US East, cách xa DB (~150–200 ms/lần gọi nếu DB ở Tokyo) | `docs/deploy/task9-free-tier.md` ghi Tokyo ở dòng trạng thái nhưng bước B1 lại ghi Singapore — **vùng Supabase chưa xác nhận** (xem Project Settings → Infrastructure); repo không đặt vùng cho hàm | Cao, cần kiểm tra bằng `x-vercel-id` của một request `_rsc` đã đăng nhập |
 | Mỗi lần chuyển trang gọi Supabase nối tiếp ≥ 3 lần trước truy vấn của trang | `proxy.ts` → `auth.getUser()`; `getCurrentUser` → `auth.getUser()` + đọc `profiles` | Cao (đã đọc code) |
 | Thiếu `loading.tsx` ở hầu hết các trang `(app)` | Trên `dev` chỉ `dashboard/loading.tsx` tồn tại | Cao (đã kiểm tra) |
 
-**Khuyến nghị (chưa thực hiện, cần duyệt):** (1) đặt vùng hàm về Tokyo (`hnd1`) hoặc Singapore (`sin1`); (2) thêm `loading.tsx` cho mọi trang trong `(app)`; (3) bỏ lần gọi Auth thừa (`getClaims` hoặc một lần `getUser`). Tiêu chí hoàn thành: đo lại cùng phương pháp, ghi số trước/sau vào `02-wbs.md`.
+**Khuyến nghị (chưa thực hiện, cần duyệt):** (1) xác nhận vùng Supabase trong dashboard (Project Settings → Infrastructure), rồi đặt vùng hàm về cùng vùng đó (Tokyo `hnd1` hoặc Singapore `sin1`); (2) thêm `loading.tsx` cho mọi trang trong `(app)`; (3) bỏ lần gọi Auth thừa (`getClaims` hoặc một lần `getUser`). Tiêu chí hoàn thành: đo lại cùng phương pháp, ghi số trước/sau vào `02-wbs.md`.
 
 ## 4. Hướng 2 — Bộ tài liệu `docs/process/` (tiếng Anh)
 

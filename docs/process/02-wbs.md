@@ -32,9 +32,9 @@
 | 4 | Training Records (W3) | List, form, evidence upload, expiry badge, Realtime | PR #10 merged | Week 3 | 2026-09-30 → 2026-10-01 | — | 3 | Done | R-05, R-06, R-08, R-18 |
 | 5 | Import / Export (W4) | Excel import with staging and preview; CSV/Excel export | PR #11 merged; real-file trial pending (1.3) | Week 4 | 2026-10-01 | — | 4 | Done | R-15, R-16 |
 | 6 | Dashboard (W5) | KPIs, breakdowns, ranking | PR #15 merged | Week 5 | 2026-10-04 | — | 4 | Done | R-09, R-10, R-11, NFR-02 |
-| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page; code on branch `feat/week6-notifications` (11 commits), **not merged into `dev`** | Branch reviewed; e2e green | Week 6 | 2026-10-04 (branch commits) | 0.5 day for review fixes | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
+| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page; code on branch `feat/week6-notifications`, **not merged into `dev`** (as of 2026-10-05) | Branch reviewed; e2e green | Week 6 | 2026-10-04 (branch commits) | 0.5 day for review fixes | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
 | 8 | Cross-cutting improvements | See 8.1–8.4 | — | — | — | — | — | Not started | — |
-| 8.1 | Page-navigation performance | Measured before/after; region set near the database; loading feedback on every page; fewer sequential auth calls | `SM-4` met on the same measurement method | — | Diagnosed 2026-10-05 (spike) | 0.5–1 day | — | Not started | NFR-03 |
+| 8.1 | Page-navigation performance | Measured before/after; Supabase region confirmed in the dashboard; function region set near the database; loading feedback on every page; fewer sequential auth calls | `SM-4` met on the same measurement method | — | Diagnosed 2026-10-05 (spike) | 0.5–1 day | — | Not started | NFR-03 |
 | 8.2 | Interface language switch (EN/VI) | Own design spec → plan → build | Both languages complete; e-mails follow the recipient's language | — | not started | 4–7 days (needs its own design) | 1.1 | Not started | NFR-04 |
 | 8.3 | Self sign-up with approval | Own design + build | A new user can request access and an admin approves | — | not started | 2–4 days | 6 | Not started | R-31 |
 | 8.4 | Accessibility audit (keyboard and screen reader) | Audit notes + fixes list | Key flows usable by keyboard; headings and labels checked | — | not started | 1–2 days | 6 | Not started | NFR-05 |
@@ -47,7 +47,7 @@
 
 Notes:
 
-- Row `7`: the 11 week-6 commits are all dated 2026-10-04, and none of week 6 is on `dev`. The cloud database schema is pushed manually (see [00 §2](00-process-status.md)); this document does not claim that any week 3–6 migration has been pushed to production.
+- Row `7`: the week-6 commits are all dated 2026-10-04, and none of week 6 is on `dev` (as of 2026-10-05). The cloud database schema is pushed manually (see [00 §2](00-process-status.md)); this document does not claim that any week 3–6 migration has been pushed to production.
 - Rows `2.5` and `2.6` were not in the spec roadmap (hence Planned `—`); they trace to `NFR-05` for the contrast work already done. `NFR-05` is `Partial` in `01`, so the open work is `8.4`.
 - Rows `1`, `1.1`, `1.2`, `1.4`, `8`, `9` and `G1` deliver process results or group other rows, so their Requirements cell is `—`.
 
@@ -72,7 +72,7 @@ Spike on 2026-10-05 (read-only):
 | Edge location | Singapore (`x-vercel-id: sin1::…`) |
 | `/login` (cached) | 0.26–0.45 s (occasionally 1.2–1.9 s on a cold connection) |
 | Redirect for a signed-out user | about 0.25 s |
-| Function region for signed-in pages | not measured — hypothesis: US East while the database is in Tokyo |
+| Function region for signed-in pages | not measured — hypothesis: US East while the database is far away. The Supabase region is recorded as Tokyo in the deployment notes (the notes also mention Singapore); confirm in the Supabase dashboard (Project Settings → Infrastructure) |
 | Sequential Supabase calls per navigation | at least 3 (proxy session check, layout session check + profile read, page query) — from code |
 | Pages with a loading state | Dashboard only on `dev` (week 6 adds the data-quality page, on its branch) |
 

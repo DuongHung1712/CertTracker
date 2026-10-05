@@ -32,7 +32,7 @@ flowchart TB
   Browser["Browser"] -->|HTTPS| Next["Next.js app on Vercel<br/>Server Components, Server Actions, Route Handlers"]
   Next -->|"user JWT, RLS applies"| PG[("Supabase Postgres")]
   Next -->|"user JWT"| Storage[("Supabase Storage<br/>private bucket")]
-  Browser -->|"Realtime channel"| PG
+  Browser -->|"Realtime service"| PG
   Cron["Vercel Cron<br/>W6, unmerged"] -->|"Bearer CRON_SECRET"| CronRoutes["Cron route handlers<br/>/api/cron/*<br/>W6, unmerged"]
   CronRoutes -->|"service role, server-only"| PG
   CronRoutes --> Resend["Resend"]
@@ -40,7 +40,7 @@ flowchart TB
 
 | Container | Technology (as in `package.json`) | Responsibility |
 |---|---|---|
-| Web app | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 + shadcn/ui, TanStack Table, Recharts, React Hook Form + Zod | Screens, Server Actions (CRUD), import and export route handlers, evidence download (redirect to a short-lived signed link); `src/proxy.ts` refreshes the session and redirects signed-out users |
+| Web app | Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4 + shadcn/ui (Base UI primitives), TanStack Table, Recharts, React Hook Form + Zod | Screens, Server Actions (CRUD), import and export route handlers, evidence download (redirect to a short-lived signed link); `src/proxy.ts` refreshes the session and redirects signed-out users |
 | Database | Supabase Postgres with Row Level Security | Data, computed expiry (views), permissions, import commit and dashboard functions |
 | Sign-in and files | Supabase Auth, Supabase Storage (behind the `FileStorage` interface) | Accounts; evidence files in a private bucket |
 | Scheduler and e-mail **(W6, unmerged)** | Vercel Cron (`vercel.json`), Resend + React Email | Weekly expiry alerts and monthly report; sending and history (`notification_log`); data-quality page and notification history in Settings |
@@ -68,7 +68,7 @@ Key rules:
 
 - One record per member per course (decisions #15). Expiry date, days to expiry and expiry status are **computed in a view** (`v_training_records`), never stored. Every table has Row Level Security; every view is `security_invoker`.
 - Ids are UUIDs; `members.code` (M001) is only a display code. A member has zero or one team, and zero or one login (`profiles.member_id`).
-- `team_managers` and `profiles` also reference the Supabase `auth.users` table (not drawn). `import_batches` and `import_rows` are staging tables, visible to Admins only.
+- `team_managers` and `profiles` also reference the Supabase `auth.users` table (among others, e.g. `created_by`; not drawn). `import_batches` and `import_rows` are staging tables, visible to Admins only.
 - **(W6, unmerged)** `notification_log` (one row per kind, period and recipient; no foreign key) and the view `v_data_quality_issues` are not drawn.
 - Details: design spec §4 and `supabase/migrations/`.
 
@@ -91,7 +91,7 @@ Key rules:
 
 **Import from Excel (admin).** Upload → parse and clean in pure functions → staged rows with errors → preview (create / update / skip) → one confirmation runs a single database transaction; a committed batch cannot run twice. Rows with errors are skipped; the commit itself is all-or-nothing. Rules: decisions #20–#29.
 
-**Scheduled e-mail (W6, unmerged).** Vercel Cron calls a route every Monday (expiry alerts) and on day 1 of the month (monthly report) → the route reads a snapshot with the service role → pure planners decide who gets what → for each recipient the database grants an atomic claim → the e-mail is sent → the claim is marked sent or failed. Re-running is safe; a `dryRun` request previews recipients without sending. Rules: decisions #34–#41 and #44; runbook: [cron-email.md](../deploy/cron-email.md) (week-6 runbook; on branch `feat/week6-notifications`, not yet merged into `dev`).
+**Scheduled e-mail (W6, unmerged).** Vercel Cron calls a route every Monday (expiry alerts) and on day 1 of the month (monthly report) → the route reads a snapshot with the service role → pure planners decide who gets what → for each recipient the database grants an atomic claim → the e-mail is sent → the claim is marked sent or failed. Re-running is safe; a `dryRun` request previews recipients without sending. Rules: decisions #34–#40 (e-mail), #41 (data quality) and #44 (`dryRun`); runbook: [cron-email.md](../deploy/cron-email.md) (week-6 runbook; on branch `feat/week6-notifications`, not yet merged into `dev`).
 
 ## 6. Quality attributes
 
@@ -106,10 +106,10 @@ Key rules:
 
 ## 7. Deployment
 
-The pilot runs on **Vercel Hobby** and **Supabase Free**, Supabase region Tokyo (decisions #13; [deployment notes](../deploy/task9-free-tier.md)). Free-tier limits: Supabase pauses after 7 idle days and has no automatic backups; Vercel Hobby is non-commercial. Every pull request runs lint, type check, unit tests, database tests and a build in GitHub Actions. Migrations reach the cloud database only when pushed manually, so the cloud schema can lag behind the code; this document makes no claim about its current state. Scheduled jobs (W6, unmerged) need Vercel Cron on the production deployment (runbook: [cron-email.md](../deploy/cron-email.md), week-6 runbook on branch `feat/week6-notifications`). Moving the web app to a VPS later only requires calling the same cron URLs from a system scheduler (decisions #39).
+The foundation deployment (2026-09-27) runs on **Vercel Hobby** and **Supabase Free** (decisions #13). The Supabase region is recorded as Tokyo in the [deployment notes](../deploy/task9-free-tier.md) (the notes also mention Singapore); confirm in the Supabase dashboard (Project Settings → Infrastructure). Free-tier limits (decisions #13): Supabase pauses after 7 idle days and has no automatic backups; Vercel Hobby is non-commercial. Every pull request runs lint, type check, unit tests, database tests and a build in GitHub Actions. Migrations reach the cloud database only when pushed manually, so the cloud schema can lag behind the code; this document makes no claim about its current state. Scheduled jobs (W6, unmerged) need Vercel Cron on the production deployment (runbook: [cron-email.md](../deploy/cron-email.md), week-6 runbook on branch `feat/week6-notifications`). Moving the web app to a VPS later only requires calling the same cron URLs from a system scheduler (decisions #39).
 
 ## 8. Decisions and known debt
 
 - All recorded decisions with reasons: [decisions.md](../decisions.md). New decisions are appended there.
-- Known debt: the e-mail component library `@react-email/components` is deprecated on npm but works (decisions #43); week 6 is not merged into `dev`; the cloud schema is updated manually (see §7); the sending domain is not yet verified on Resend ([00](00-process-status.md) §2).
+- Known debt: the e-mail component library `@react-email/components` is deprecated on npm but works (decisions #43); week 6 is not merged into `dev`; the cloud schema is updated manually (see §7); there is no evidence in the repository that the sending domain is verified on Resend (must be verified before real use; [00](00-process-status.md) §2).
 - **Phase 2 (AI)** is planned, not built, and gated by G1 — see [00](00-process-status.md) §3 and design spec §7.

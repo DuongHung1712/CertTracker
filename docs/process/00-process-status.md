@@ -24,8 +24,22 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 | SAD | Exists as the design spec | [03-sad.md](03-sad.md) condenses it |
 | Design / Mockup | Done | [Design system](../design-system.md) and the `/design` page (dev only) |
 | PoC | Partial | Foundation deployed 2026-09-27 on free tiers ([deploy notes](../deploy/task9-free-tier.md)); no separate PoC phase was run |
-| MVP | Built internally, **not validated** | Weeks 1–5 merged into `dev` via PRs #3, #8, #10, #11 and #15 (2026-09-26 → 2026-10-04); week 6 (cron, e-mail, data quality) is complete on branch `feat/week6-notifications` (11 commits, last 2026-10-04) and is not yet merged into `dev`; the legacy Excel file has not been tried; no UAT with a real team |
-| Production | Not started | Vercel Hobby + Supabase Free (no automatic backups, project pauses after 7 idle days, Hobby is non-commercial; [deploy notes](../deploy/task9-free-tier.md)). Database migrations are pushed to the cloud manually, so the cloud schema can lag behind `main`; the sender domain for e-mail is not yet verified on Resend ([e-mail setup](../deploy/cron-email.md)) |
+| MVP | Built internally, **not validated** | Weeks 1–5 merged into `dev`; week 6 is on a branch, not merged (as of 2026-10-05); see notes below the table |
+| Production | Not started | Free-tier hosting only, with known limits; see notes below the table |
+
+Statements about week 6 and the cloud/e-mail setup are as of 2026-10-05 and must be refreshed when week 6 is merged.
+
+MVP details (as of 2026-10-05):
+
+- Weeks 1–5 are merged into `dev` through the feature/chore PRs #1, #3, #4, #6, #8, #10, #11, #13 and #15 (2026-09-26 → 2026-10-04); see the counting note in [02-wbs.md](02-wbs.md).
+- Week 6 (cron, e-mail, data quality) is complete on branch `feat/week6-notifications` (last commit 2026-10-04) and is not yet merged into `dev`.
+- The legacy Excel file has not been tried; there has been no UAT with a real team.
+
+Production details (as of 2026-10-05):
+
+- Hosting is Vercel Hobby + Supabase Free: no automatic backups, the project pauses after 7 idle days, and Hobby is non-commercial ([deploy notes](../deploy/task9-free-tier.md)).
+- Database migrations are pushed to the cloud manually, so the cloud schema can lag behind `main`.
+- There is no evidence in the repository that the sending domain is verified on Resend (it must be verified before real use; [e-mail setup](../deploy/cron-email.md)).
 
 ## 3. Gate G1 — before Phase 2 (AI features, weeks 7–12)
 

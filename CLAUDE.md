@@ -16,6 +16,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 | Token, component, pattern UI | `docs/design-system.md` (xem trực quan: `/design` khi chạy dev) |
 | Kế hoạch triển khai | `docs/superpowers/plans/` |
 | Yêu cầu gốc | `CertTracker - Feature List.pdf` |
+| Quy trình, yêu cầu (CA), WBS, SAD gọn, cổng G1 | `docs/process/` (bắt đầu từ `README.md`) |
 
 Không bàn lại quyết định đã có trong `docs/decisions.md` trừ khi người dùng yêu cầu. Quyết định mới → thêm một mục vào file đó.
 
