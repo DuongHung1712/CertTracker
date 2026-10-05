@@ -31,7 +31,7 @@ Mối lo lớn nhất: **requirements và WBS**. Manager đề xuất quy trình
 
 ## 3. Hướng 1 — Kết quả spike độ trễ (chỉ đọc, đã thực hiện)
 
-**Đã đo (production, request chưa đăng nhập, 2026-10-05):** máy chủ biên ở Singapore (`x-vercel-id: sin1::…`). `/login` (cache) trả về trong 0,26–0,45 s (đôi lần 1,2–1,9 s do kết nối lần đầu); các route cần đăng nhập trả 307 về `/login` trong ~0,25 s. Phần mạng/biên không phải nguyên nhân.
+**Đã đo (production, request chưa đăng nhập, 2026-10-05):** máy chủ biên ở Singapore (`x-vercel-id: sin1::…`). `/login` (cache) trả về trong 0,26–0,45 s (đôi lần 1,2–1,9 s do kết nối lần đầu); các route cần đăng nhập trả 307 về `/login` trong ~0,25 s. Với request chưa đăng nhập, phần mạng/biên không phải nguyên nhân (chưa đo request đã đăng nhập). Lưu ý: URL Vercel công khai build từ nhánh `main` (xem `docs/deploy/task9-free-tier.md`, mục C2), nên bản người xem thấy chưa có Dashboard thật hay `loading.tsx` nào; `dev` mới có tuần 5.
 
 **Chưa đo được:** thời gian hàm phía server cho trang đã đăng nhập (cần phiên đăng nhập). Ba giả thuyết dựa trên code và tài liệu deploy:
 
@@ -105,7 +105,7 @@ Người dùng chọn **hỗ trợ cả hai ngôn ngữ (i18n, công tắc EN/VI
 - **Trong phạm vi:** viết `00`–`03`; ghi quyết định mới vào `decisions.md`; cập nhật `CLAUDE.md` (bảng "Nguồn sự thật" thêm `docs/process/`); soạn tin nhắn trả lời manager (trong chat, không phải file).
 - **Ngoài phạm vi:** sửa code hiệu năng; i18n; phỏng vấn người dùng (việc của người dùng, tài liệu chỉ cung cấp kế hoạch); bất kỳ thay đổi nào ở Giai đoạn 2.
 
-## 6.1 Quyết định mới cần ghi vào `decisions.md` khi spec được duyệt
+## 6.1 Quyết định mới (đã ghi vào `decisions.md` là #45–#48)
 
 1. Thêm CA, WBS, SAD (rút gọn) vào bộ tài liệu dự án và dùng chuỗi quy trình của manager làm khung; tài liệu bù sau vì dự án đã build trước.
 2. Cổng G1 trước Giai đoạn 2.

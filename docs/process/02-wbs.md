@@ -32,22 +32,22 @@
 | 4 | Training Records (W3) | List, form, evidence upload, expiry badge, Realtime | PR #10 merged | Week 3 | 2026-09-30 → 2026-10-01 | — | 3 | Done | R-05, R-06, R-08, R-18 |
 | 5 | Import / Export (W4) | Excel import with staging and preview; CSV/Excel export | PR #11 merged; real-file trial pending (1.3) | Week 4 | 2026-10-01 | — | 4 | Done | R-15, R-16 |
 | 6 | Dashboard (W5) | KPIs, breakdowns, ranking | PR #15 merged | Week 5 | 2026-10-04 | — | 4 | Done | R-09, R-10, R-11, NFR-02 |
-| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page; code on branch `feat/week6-notifications`, **not merged into `dev`** (as of 2026-10-05) | Branch reviewed; e2e green | Week 6 | 2026-10-04 (branch commits) | 0.5 day for review fixes | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
+| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page; code (built and reviewed on a local branch `feat/week6-notifications`; not pushed to GitHub, not merged (see 9.1); as of 2026-10-05) | Branch reviewed; e2e green | Week 6 | 2026-10-04 (branch commits) | 0 (merge and push are in 9.1) | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
 | 8 | Cross-cutting improvements | See 8.1–8.4 | — | — | — | — | — | Not started | — |
 | 8.1 | Page-navigation performance | Measured before/after; Supabase region confirmed in the dashboard; function region set near the database; loading feedback on every page; fewer sequential auth calls | `SM-4` met on the same measurement method | — | Diagnosed 2026-10-05 (spike) | 0.5–1 day | — | Not started | NFR-03 |
-| 8.2 | Interface language switch (EN/VI) | Own design spec → plan → build | Both languages complete; e-mails follow the recipient's language | — | not started | 4–7 days (needs its own design) | 1.1 | Not started | NFR-04 |
-| 8.3 | Self sign-up with approval | Own design + build | A new user can request access and an admin approves | — | not started | 2–4 days | 6 | Not started | R-31 |
+| 8.2 | Interface language switch (EN/VI) | Own design spec → plan → build | Both languages complete; e-mails follow the recipient's language. Unscheduled until after G1 unless the sponsor asks earlier (decision #48) | — | not started | 4–7 days (needs its own design) | 1.1 | Not started | NFR-04 |
+| 8.3 | Self sign-up with approval | Own design + build | A new user can request access and an admin approves. Unscheduled until after G1 unless the sponsor asks earlier | — | not started | 2–4 days | 6 | Not started | R-31 |
 | 8.4 | Accessibility audit (keyboard and screen reader) | Audit notes + fixes list | Key flows usable by keyboard; headings and labels checked | — | not started | 1–2 days | 6 | Not started | NFR-05 |
 | 9 | Validation and rollout | See 9.1–9.3 | — | — | — | — | — | Not started | — |
 | 9.1 | Merge week 6, push migrations, verify the sending domain | Week 6 merged into `dev`; cloud schema up to date; e-mail domain verified | Production shows all pages; a test e-mail is delivered | — | not started | 0.5–1 day | 7 | Not started | R-12, R-13 |
-| 9.2 | Pilot with one real team | Two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 2 calendar weeks | 9.1, 1.3 | Not started | R-12, R-13 |
+| 9.2 | Pilot with one real team | Two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 2 calendar weeks | 9.1, 1.3, 8.1 | Not started | R-12, R-13 |
 | 9.3 | Production hosting decision | Decision record: stay on free tiers or move (e.g. VPS) | Recorded in `decisions.md` | — | not started | 1–2 days | 9.2 | Not started | NFR-07 |
-| G1 | Gate: need confirmed | Sponsor sign-off that the conditions in [00 §3](00-process-status.md) are met (assumptions `A-01`…`A-10` checked, two real Mondays, Phase 2 features ranked) | Written decision to open, re-scope or stop Phase 2 | — | — | — | 1.2, 1.3, 9.2 | Not started | — |
+| G1 | Gate: need confirmed | Sponsor sign-off that the three conditions in [00 §3](00-process-status.md) are met: assumptions `A-01`…`A-10` checked as planned in `01` §7; a real team used the product for at least two consecutive weeks including two Monday e-mails (*proposed period*), with the sponsor confirming it replaces their spreadsheet; the sponsor confirms which Phase 2 features are wanted and in what order | Written decision to open, re-scope or stop Phase 2 | — | — | — | 1.2, 1.3, 9.2 | Not started | — |
 | 10 | Phase 2 — AI features | Weeks 7–12 of the design spec | Re-estimated after G1 | Weeks 7–12 | — | re-estimate after G1 | G1 | Blocked (G1) | R-20, R-21, R-22, R-23, R-24, R-25, R-26, R-27, R-28, R-29 |
 
 Notes:
 
-- Row `7`: the week-6 commits are all dated 2026-10-04, and none of week 6 is on `dev` (as of 2026-10-05). The cloud database schema is pushed manually (see [00 §2](00-process-status.md)); this document does not claim that any week 3–6 migration has been pushed to production.
+- Row `7`: the week-6 commits are all dated 2026-10-04, and none of week 6 is on `dev`, `main` or the GitHub remote (as of 2026-10-05). The cloud database schema is pushed manually (see [00 §2](00-process-status.md)); this document does not claim that any week 3–6 migration has been pushed to production.
 - Rows `2.5` and `2.6` were not in the spec roadmap (hence Planned `—`); they trace to `NFR-05` for the contrast work already done. `NFR-05` is `Partial` in `01`, so the open work is `8.4`.
 - Rows `1`, `1.1`, `1.2`, `1.4`, `8`, `9` and `G1` deliver process results or group other rows, so their Requirements cell is `—`.
 
@@ -74,6 +74,7 @@ Spike on 2026-10-05 (read-only):
 | Redirect for a signed-out user | about 0.25 s |
 | Function region for signed-in pages | not measured — hypothesis: US East while the database is far away. The Supabase region is recorded as Tokyo in the deployment notes (the notes also mention Singapore); confirm in the Supabase dashboard (Project Settings → Infrastructure) |
 | Sequential Supabase calls per navigation | at least 3 (proxy session check, layout session check + profile read, page query) — from code |
-| Pages with a loading state | Dashboard only on `dev` (week 6 adds the data-quality page, on its branch) |
+| Pages with a loading state | Dashboard only on `dev`, and none on `main`, which the public deployment builds from (week 6 adds the data-quality page, on its local branch) |
+| Public Vercel deployment | Builds from `main` ([deploy notes](../deploy/task9-free-tier.md)); last release is PR #14 (2026-10-02, weeks 1–4 plus UI fixes); `main` has only a placeholder Dashboard page and no `loading.tsx`; `dev` adds week 5; week 6 is local only. It is a pilot deployment, not a production service |
 
 Server-side time for signed-in pages could not be measured without a session; the measurements above are for signed-out requests only. After the fix, repeat the same measurements and add an "after" column here.

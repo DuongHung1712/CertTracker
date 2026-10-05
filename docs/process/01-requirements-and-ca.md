@@ -3,7 +3,7 @@
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
 - **Last updated:** 2026-10-05
 - **Owner:** CertTracker team (DC34)
-- **Sources:** `CertTracker - Feature List.pdf`, [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md); context on SkillMatrix: S+ AI Tooling Initiative proposal (internal; not stored in this repository)
+- **Sources:** `CertTracker - Feature List.pdf` (internal; not stored in this repository), [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md); context on SkillMatrix: S+ AI Tooling Initiative proposal (internal; not stored in this repository)
 
 > **Tóm tắt (VI):** Phân tích vấn đề, người dùng, phương án thay thế, danh sách requirement có ID/ưu tiên/trạng thái, chỉ số thành công và các giả định chưa xác nhận kèm kế hoạch kiểm chứng. Điều quan trọng: nhu cầu mới do manager/lead giao, **chưa** được hỏi người dùng cuối.
 
@@ -65,16 +65,16 @@ Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build
 | R-23 | AI: Skill Gap Analysis (team certificates vs project needs; key-person risk) | FL-9 | Could | Gated (G1) | — | Assumed |
 | R-24 | AI: Completion Risk Prediction (stalled progress, exam date near) | FL-9 | Could | Gated (G1) | — | Assumed |
 | R-25 | AI: Insights (Vietnamese commentary on dashboard trends, included in the monthly e-mail) | FL-9 | Could | Gated (G1) | — | Assumed |
-| R-26 | AI: Ask Your Data (natural-language questions answered through whitelisted queries) | FL-9 | Could | Gated (G1) | — | Assumed |
+| R-26 | AI: Ask Your Data (natural-language questions answered through whitelisted queries, not free text-to-SQL; DEC #9) | FL-9 | Could | Gated (G1) | — | Assumed |
 | R-27 | AI calls only from the backend; the API key never reaches the browser | FL-9 | Must | Planned | — | Decided |
 | R-28 | AI sees only data the user may see (respects RLS) | FL-9 | Must | Planned | — | Decided |
 | R-29 | No unnecessary personal data (e-mail, phone) in prompts | FL-9 | Must | Planned | — | Decided |
 | R-30 | A member belongs to exactly one team; a manager can manage several teams | DEC #3 | Must | Built (W1) | supabase/migrations/20260928000001_org_and_members.sql | Decided |
-| R-31 | Self sign-up with administrator approval (e-mail + password, no SSO); would supersede DEC #12 (self sign-up disabled, admin creates accounts) and is deferred to a separate plan (DEC #42) | PROJECT | Could | Planned | — | Assumed |
+| R-31 | Self sign-up with administrator approval (e-mail + password, no SSO); would supersede DEC #12 (self sign-up disabled, admin creates accounts) and is deferred to a separate plan (DEC #42); unscheduled until after G1 unless the sponsor asks earlier | PROJECT | Could | Planned | — | Assumed |
 | NFR-01 | Security: RLS is the main protection; the service-role key is used only by scheduled jobs | DEC #35 | Must | Built (W6, unmerged) | src/lib/supabase/admin.ts | Decided |
 | NFR-02 | Privacy: personal ranking visible to managers/admins only; members see aggregates with small groups hidden | DEC #8 | Must | Built (W5) | supabase/migrations/20261003000001_dashboard_rpc.sql | Decided |
-| NFR-03 | Performance: moving between pages feels immediate (loading feedback; on `dev` only the Dashboard has a loading state; target set after re-measuring, see `SM-4`) | MGR | Must | Partial | src/app/(app)/dashboard/loading.tsx | Assumed |
-| NFR-04 | Language: the interface can be shown in English or Vietnamese (switch); technical terms stay understandable | MGR | Should | Planned | — | Assumed |
+| NFR-03 | Performance: moving between pages feels immediate (loading feedback; on `dev` only the Dashboard has a loading state, and none on `main`, which the public deployment builds from; target set after re-measuring, see `SM-4`) | MGR | Must | Partial | src/app/(app)/dashboard/loading.tsx | Assumed |
+| NFR-04 | Language: the interface can be shown in English or Vietnamese (switch); technical terms stay understandable; unscheduled until after G1 unless the sponsor asks earlier | MGR | Should | Planned | — | Assumed |
 | NFR-05 | Accessibility: text contrast at WCAG AA (checked by an automated test); keyboard-friendly tables and forms (not yet audited) | DEC #14 | Should | Partial | docs/design-system.md, src/app/tokens.test.ts | Decided |
 | NFR-06 | Reliability: scheduled e-mails are never sent twice and failures are visible to the admin | SPEC §12 | Must | Built (W6, unmerged) | src/features/notifications/deliver.ts | Decided |
 | NFR-07 | Cost: free-tier hosting during the pilot (Vercel Hobby, Supabase Free); move before commercial use | DEC #13 | Must | Built (W1) | docs/deploy/task9-free-tier.md | Decided |
@@ -83,7 +83,7 @@ Notes on the table:
 
 - `Built` means the code exists and was tested by the build team. It does **not** mean a real user has used it. In particular, `R-15` has not been run on the real legacy file (`A-04`), and the `W6, unmerged` rows exist only on branch `feat/week6-notifications`, not on `dev` and not in production.
 - `R-27`…`R-29` are design principles for Phase 2 recorded in the Feature List, the design spec (§7.1) and decisions #5, #6 and #9. They are `Decided` as constraints, but nothing is built yet.
-- `NFR-03` is `Partial`: on `dev` only the Dashboard has a loading state (the data-quality page's loading state exists only on the unmerged week-6 branch); the diagnosis (partly still a hypothesis) is in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §3, and the slowness is not yet fixed.
+- `NFR-03` is `Partial`: on `dev` only the Dashboard has a loading state, and none on `main`, which the public deployment builds from (the data-quality page's loading state exists only on the unmerged week-6 branch); the diagnosis (partly still a hypothesis) is in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §3, and the slowness is not yet fixed.
 
 ## 5. Success criteria (measurable)
 
@@ -98,10 +98,10 @@ Notes on the table:
 
 **In scope (phase 1):** R-01 … R-19, R-30, NFR-01 … NFR-03, NFR-05 … NFR-07.
 **Phase 2 (gated by G1):** R-20 … R-29.
-**Planned, not yet designed or dated:** R-31 (self sign-up), NFR-04 (interface language switch; needs its own design cycle).
+**Planned, not yet designed or dated:** R-31 (self sign-up), NFR-04 (interface language switch; needs its own design cycle). Both are unscheduled until after gate G1 unless the sponsor asks for them earlier (decision #48).
 **Out of scope** (design spec §11): a member in several teams, a full audit log, native mobile apps, HRIS / SkillMatrix integration (only a compatible data model is kept).
 
-The design spec §11 also listed "Vietnamese interface only". That item was reversed by the owner on 2026-10-05 after the manager's feedback (see `NFR-04`); the reversal is described in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §5 and is not yet in the decision log.
+The design spec §11 also listed "Vietnamese interface only". That item was reversed by the owner on 2026-10-05 after the manager's feedback (see `NFR-04`); the reversal is described in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §5 and is recorded as decision #48.
 
 ## 7. Assumptions, risks and the plan to validate them
 
@@ -124,13 +124,13 @@ The design spec §11 also listed "Vietnamese interface only". That item was reve
 
 ## 8. Glossary (EN ↔ VI)
 
-| English term (kept in the UI where marked ✓) | Vietnamese |
+| English term (✓ = kept in English in the current UI) | Vietnamese |
 |---|---|
 | Dashboard ✓ | Bảng điều khiển / tổng quan |
-| Training Record ✓ | Bản ghi chứng chỉ của một người |
-| CertType ✓ | Loại chứng chỉ |
-| Provider ✓ | Nhà cung cấp |
-| Expiring Soon / Expiring in 60d / Expired ✓ | Sắp hết hạn (≤ 30 ngày) / Hết hạn trong 31–60 ngày / Đã hết hạn |
+| Training Record | Bản ghi chứng chỉ của một người (UI: "Chứng chỉ theo người") |
+| CertType | Loại chứng chỉ (UI: "Loại chứng chỉ") |
+| Provider | Nhà cung cấp (UI: "Nhà cung cấp") |
+| Expiring Soon / Expiring in 60d / Expired | Sắp hết hạn / Hết hạn trong 60 ngày / Đã hết hạn (the UI shows these Vietnamese labels) |
 | Evidence | Minh chứng |
 | Import / Export ✓ | Nhập / Xuất dữ liệu |
 | RLS (Row Level Security) | Phân quyền theo từng dòng dữ liệu |
