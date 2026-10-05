@@ -3,7 +3,7 @@
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
 - **Last updated:** 2026-10-05
 - **Owner:** CertTracker team (DC34)
-- **Sources:** `CertTracker - Feature List.pdf`, [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md)
+- **Sources:** `CertTracker - Feature List.pdf`, [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md); context on SkillMatrix: S+ AI Tooling Initiative proposal (internal; not stored in this repository)
 
 > **Tóm tắt (VI):** Phân tích vấn đề, người dùng, phương án thay thế, danh sách requirement có ID/ưu tiên/trạng thái, chỉ số thành công và các giả định chưa xác nhận kèm kế hoạch kiểm chứng. Điều quan trọng: nhu cầu mới do manager/lead giao, **chưa** được hỏi người dùng cuối.
 
@@ -11,7 +11,7 @@
 
 Teams in DC34 track employee certifications in Excel / Google Sheets. The expected problems are: data goes stale (nobody updates it), expiring certificates are noticed too late, and a manager cannot get a team-level view without manual work. Every claim in this section is **Assumed** until confirmed by the interviews in §7 (see `A-01`).
 
-Strategic context: CertTracker is built standalone but its data model (Member, Course, Training Record) is designed to feed **SkillMatrix**, a proposed employee-skill repository in the S+ AI Tooling Initiative, whose main risk is stale data (`A-10`).
+Strategic context: CertTracker is built standalone but its data model (Member, Course, Training Record) is designed to feed **SkillMatrix**, a proposed employee-skill repository, whose main risk is stale data (`A-10`). This context comes from the S+ AI Tooling Initiative proposal (internal; not stored in this repository, so it cannot be traced from here).
 
 ## 2. Stakeholders and users
 
@@ -51,7 +51,7 @@ Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build
 | R-09 | Dashboard KPIs: members, records, done and completion %, in progress, expired, still valid | FL-4 | Must | Built (W5) | src/features/dashboard | Assumed |
 | R-10 | Statistics by team, CertType and provider | FL-4 | Must | Built (W5) | src/features/dashboard | Assumed |
 | R-11 | Personal ranking (managers/admins only), course popularity, completion by provider | FL-4 | Should | Built (W5) | src/features/dashboard | Assumed |
-| R-12 | Weekly (Monday) e-mail about certificates expiring within 60 days | FL-5 | Must | Built (W6, unmerged) | src/app/api/cron/expiry-alerts | Assumed |
+| R-12 | Weekly (Monday) e-mail about certificates expiring within 60 days, to members (their own) and managers (their teams) | FL-5 | Must | Built (W6, unmerged) | src/app/api/cron/expiry-alerts | Assumed |
 | R-13 | Monthly KPI e-mail to managers and admins (day 1) | FL-5 | Must | Built (W6, unmerged) | src/app/api/cron/monthly-report | Assumed |
 | R-14 | Data-quality checks. The Feature List items (bad member/course references, status/progress mismatch, badly formatted dates) are blocked at write time by database constraints and import staging; the report lists what remains: exam date passed but not Done, Done without evidence, member without team, course without validity | FL-5 | Should | Built (W6, unmerged) | supabase/migrations/20261004000001_data_quality_view.sql, src/features/data-quality | Assumed |
 | R-15 | Import the legacy Excel with cleaning: normalise status, trim, progress to %, Excel serial dates, de-duplicate members by e-mail | FL-6 | Must | Built (W4) | src/features/import | Assumed |
@@ -70,10 +70,10 @@ Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build
 | R-28 | AI sees only data the user may see (respects RLS) | FL-9 | Must | Planned | — | Decided |
 | R-29 | No unnecessary personal data (e-mail, phone) in prompts | FL-9 | Must | Planned | — | Decided |
 | R-30 | A member belongs to exactly one team; a manager can manage several teams | DEC #3 | Must | Built (W1) | supabase/migrations/20260928000001_org_and_members.sql | Decided |
-| R-31 | Self sign-up with administrator approval (e-mail + password, no SSO) | PROJECT | Could | Planned | — | Assumed |
-| NFR-01 | Security: RLS is the main protection; the service-role key is used only by scheduled jobs | SPEC §5 | Must | Built (W6, unmerged) | src/lib/supabase/admin.ts | Decided |
+| R-31 | Self sign-up with administrator approval (e-mail + password, no SSO); would supersede DEC #12 (self sign-up disabled, admin creates accounts) and is deferred to a separate plan (DEC #42) | PROJECT | Could | Planned | — | Assumed |
+| NFR-01 | Security: RLS is the main protection; the service-role key is used only by scheduled jobs | DEC #35 | Must | Built (W6, unmerged) | src/lib/supabase/admin.ts | Decided |
 | NFR-02 | Privacy: personal ranking visible to managers/admins only; members see aggregates with small groups hidden | DEC #8 | Must | Built (W5) | supabase/migrations/20261003000001_dashboard_rpc.sql | Decided |
-| NFR-03 | Performance: moving between pages feels immediate (loading feedback; target set after re-measuring, see `SM-4`) | MGR | Must | Partial | src/app/(app)/dashboard/loading.tsx | Assumed |
+| NFR-03 | Performance: moving between pages feels immediate (loading feedback; on `dev` only the Dashboard has a loading state; target set after re-measuring, see `SM-4`) | MGR | Must | Partial | src/app/(app)/dashboard/loading.tsx | Assumed |
 | NFR-04 | Language: the interface can be shown in English or Vietnamese (switch); technical terms stay understandable | MGR | Should | Planned | — | Assumed |
 | NFR-05 | Accessibility: text contrast at WCAG AA (checked by an automated test); keyboard-friendly tables and forms (not yet audited) | DEC #14 | Should | Partial | docs/design-system.md, src/app/tokens.test.ts | Decided |
 | NFR-06 | Reliability: scheduled e-mails are never sent twice and failures are visible to the admin | SPEC §12 | Must | Built (W6, unmerged) | src/features/notifications/deliver.ts | Decided |
@@ -83,13 +83,13 @@ Notes on the table:
 
 - `Built` means the code exists and was tested by the build team. It does **not** mean a real user has used it. In particular, `R-15` has not been run on the real legacy file (`A-04`), and the `W6, unmerged` rows exist only on branch `feat/week6-notifications`, not on `dev` and not in production.
 - `R-27`…`R-29` are design principles for Phase 2 recorded in the Feature List, the design spec (§7.1) and decisions #5, #6 and #9. They are `Decided` as constraints, but nothing is built yet.
-- `NFR-03` is `Partial`: loading feedback exists on the Dashboard and the data-quality page only; the diagnosis (partly still a hypothesis) is in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §3, and the slowness is not yet fixed.
+- `NFR-03` is `Partial`: on `dev` only the Dashboard has a loading state (the data-quality page's loading state exists only on the unmerged week-6 branch); the diagnosis (partly still a hypothesis) is in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §3, and the slowness is not yet fixed.
 
 ## 5. Success criteria (measurable)
 
 | ID | Criterion | Target | Basis |
 |---|---|---|---|
-| SM-1 | A real team stops using its spreadsheet | The sponsor and the admin confirm the spreadsheet is no longer updated for 4 consecutive weeks | Design spec §1 (phase-1 goal) |
+| SM-1 | A real team stops using its spreadsheet | The sponsor and the admin confirm the spreadsheet is no longer updated, after at least two consecutive weeks of real use — *proposed; the sponsor decides the final period* (aligned with gate G1 in `00-process-status.md` §3) | Design spec §1 (phase-1 goal) |
 | SM-2 | Legacy data imports cleanly | A real file imports with zero unresolved error rows after cleaning; manual fixes recorded | Design spec §10 — *proposed numeric target to confirm with the sponsor* |
 | SM-3 | Weekly e-mail works | The Monday e-mail runs correctly on two consecutive Mondays with no failed delivery (Settings history shows Sent > 0, Failed = 0) | Design spec §10 |
 | SM-4 | Navigation feels immediate | Moving between pages shows feedback at once and the 75th-percentile page load stays under 1 second — *proposed; confirm after re-measuring with the same method* | Manager feedback (2026-10-05); measurements in `02-wbs.md` item 8.1 |
@@ -98,7 +98,7 @@ Notes on the table:
 
 **In scope (phase 1):** R-01 … R-19, R-30, NFR-01 … NFR-03, NFR-05 … NFR-07.
 **Phase 2 (gated by G1):** R-20 … R-29.
-**Planned, not scheduled:** R-31 (self sign-up), NFR-04 (interface language switch; needs its own design cycle).
+**Planned, not yet designed or dated:** R-31 (self sign-up), NFR-04 (interface language switch; needs its own design cycle).
 **Out of scope** (design spec §11): a member in several teams, a full audit log, native mobile apps, HRIS / SkillMatrix integration (only a compatible data model is kept).
 
 The design spec §11 also listed "Vietnamese interface only". That item was reversed by the owner on 2026-10-05 after the manager's feedback (see `NFR-04`); the reversal is described in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §5 and is not yet in the decision log.
