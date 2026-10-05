@@ -20,7 +20,7 @@
 
 | WBS | Work package | Deliverable | Acceptance | Planned | Actual | Est. remaining | Depends on | Status | Requirements |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Requirements and project governance | Process documents `00`–`03`, validated assumptions | Documents reviewed by the sponsor; assumptions `A-01`…`A-10` checked | — | 2026-10-05 → | 3–5 days incl. interviews | — | In progress | — |
+| 1 | Requirements and project governance | Process documents `00`–`03`, validated assumptions | Documents reviewed by the sponsor; assumptions `A-01`…`A-10` checked | — | 2026-10-05 → | 4.5–6 days (roll-up of 1.1–1.4) | — | In progress | — |
 | 1.1 | Process status, CA, WBS, SAD (this pack) | `docs/process/00`–`03` | Merged; sponsor feedback addressed | — | 2026-10-05 → | 1 day | — | In progress | — |
 | 1.2 | User interviews | Interview notes per assumption | 3–5 interviews recorded; `01` §7 updated | — | not started | 2–3 days | 1.1 | Not started | — |
 | 1.3 | Real-file import trial | Trial report (rows imported, manual fixes) | `SM-2` measured on a real file | — | not started | 0.5–1 day | 5 | Not started | R-15 |
@@ -32,14 +32,14 @@
 | 4 | Training Records (W3) | List, form, evidence upload, expiry badge, Realtime | PR #10 merged | Week 3 | 2026-09-30 → 2026-10-01 | — | 3 | Done | R-05, R-06, R-08, R-18 |
 | 5 | Import / Export (W4) | Excel import with staging and preview; CSV/Excel export | PR #11 merged; real-file trial pending (1.3) | Week 4 | 2026-10-01 | — | 4 | Done | R-15, R-16 |
 | 6 | Dashboard (W5) | KPIs, breakdowns, ranking | PR #15 merged | Week 5 | 2026-10-04 | — | 4 | Done | R-09, R-10, R-11, NFR-02 |
-| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page; code on branch `feat/week6-notifications` (11 commits), **not merged into `dev`** | Branch reviewed and merged into `dev`; e2e green | Week 6 | 2026-10-04 (branch commits) | 0.5 day to review and merge | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
+| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page; code on branch `feat/week6-notifications` (11 commits), **not merged into `dev`** | Branch reviewed; e2e green | Week 6 | 2026-10-04 (branch commits) | 0.5 day for review fixes | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
 | 8 | Cross-cutting improvements | See 8.1–8.4 | — | — | — | — | — | Not started | — |
-| 8.1 | Page-navigation performance | Measured before/after; region set near the database; loading feedback on every page; fewer sequential auth calls | `SM-4` met on the same measurement method | — | Diagnosed 2026-10-05 (spike) | 0.5–1 day | 6 | Not started | NFR-03 |
+| 8.1 | Page-navigation performance | Measured before/after; region set near the database; loading feedback on every page; fewer sequential auth calls | `SM-4` met on the same measurement method | — | Diagnosed 2026-10-05 (spike) | 0.5–1 day | — | Not started | NFR-03 |
 | 8.2 | Interface language switch (EN/VI) | Own design spec → plan → build | Both languages complete; e-mails follow the recipient's language | — | not started | 4–7 days (needs its own design) | 1.1 | Not started | NFR-04 |
 | 8.3 | Self sign-up with approval | Own design + build | A new user can request access and an admin approves | — | not started | 2–4 days | 6 | Not started | R-31 |
 | 8.4 | Accessibility audit (keyboard and screen reader) | Audit notes + fixes list | Key flows usable by keyboard; headings and labels checked | — | not started | 1–2 days | 6 | Not started | NFR-05 |
 | 9 | Validation and rollout | See 9.1–9.3 | — | — | — | — | — | Not started | — |
-| 9.1 | Merge week 6, push migrations, verify the sending domain | Cloud schema up to date; e-mail domain verified | Production shows all pages; a test e-mail is delivered | — | not started | 0.5–1 day | 7 | Not started | R-12, R-13 |
+| 9.1 | Merge week 6, push migrations, verify the sending domain | Week 6 merged into `dev`; cloud schema up to date; e-mail domain verified | Production shows all pages; a test e-mail is delivered | — | not started | 0.5–1 day | 7 | Not started | R-12, R-13 |
 | 9.2 | Pilot with one real team | Two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 2 calendar weeks | 9.1, 1.3 | Not started | R-12, R-13 |
 | 9.3 | Production hosting decision | Decision record: stay on free tiers or move (e.g. VPS) | Recorded in `decisions.md` | — | not started | 1–2 days | 9.2 | Not started | NFR-07 |
 | G1 | Gate: need confirmed | Sponsor sign-off that the conditions in [00 §3](00-process-status.md) are met (assumptions `A-01`…`A-10` checked, two real Mondays, Phase 2 features ranked) | Written decision to open, re-scope or stop Phase 2 | — | — | — | 1.2, 1.3, 9.2 | Not started | — |
@@ -56,10 +56,10 @@ Notes:
 | | Planned | Actual |
 |---|---|---|
 | Phase 1 (weeks 1–6) | 6 weeks | 2026-09-26 → 2026-10-04 (9 calendar days, 7 with commits; AI-assisted); week 6 is on a branch, not merged |
-| Pull requests merged | — | 14 merges (#1–#13 and #15; #14 does not appear in git): 9 feature/chore PRs (#1, #3, #4, #6, #8, #10, #11, #13, #15) and 5 `dev` → `main` release merges (#2, #5, #7, #9, #12) — see the counting note |
+| Pull requests merged | — | 15 merged (#1–#15): 9 feature/chore PRs (#1, #3, #4, #6, #8, #10, #11, #13, #15) and 6 `dev` → `main` release merges (#2, #5, #7, #9, #12, #14) — see the counting note |
 | Automated tests (week-6 branch) | — | 542 unit, 233 database assertions (10 files), 39 end-to-end — as reported at the end of week 6, not re-run for this document |
 
-Counting note: PRs were counted from `git log --merges`, using the merged branch name in each merge commit (no GitHub access was used). A merge "from `dev`" is a release sync into `main`, not a feature. #4 (`chore/sync-week1-wrapup`) is a documentation/sync PR; #1 and #3 both come from `feat/phase1-week1-foundation`.
+Counting note: PRs were counted from `git log origin/main --merges` and `git log origin/dev --merges`, using the merged branch name in each merge commit (no GitHub access was used; local `main` is stale, so the remote branches were used). A merge "from `dev`" is a release sync into `main`, not a feature; #15 is the only PR so far that is merged into `dev` but not yet released to `main`. #4 (`chore/sync-week1-wrapup`) is a documentation/sync PR; #1 and #3 both come from `feat/phase1-week1-foundation`.
 
 Caveat: being ahead of the original calendar says nothing about whether the right thing was built. That is what gate G1 and work packages 1.2, 1.3 and 9.2 check.
 
