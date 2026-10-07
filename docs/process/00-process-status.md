@@ -23,9 +23,9 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 | WBS | **Missing — backfilled** | [02-wbs.md](02-wbs.md) |
 | SAD | Exists as the design spec | [03-sad.md](03-sad.md) condenses it |
 | Design / Mockup | Partial — as-built documented; proposed mockups awaiting review | Design system and component catalogue exist ([Design system](../design-system.md), the `/design` page, dev only). No screen mockups were reviewed before the build; [04](04-design-and-mockups.md) documents the as-built screens (§3–§4b) and holds proposed mockups for the sponsor to review (§5, checklist in §6) |
-| PoC | Partial | Foundation deployed 2026-09-27 on free tiers ([deploy notes](../deploy/task9-free-tier.md)); no separate PoC phase was run |
-| MVP | Built internally, **not validated** | Weeks 1–4 released to `main`, week 5 in `dev`; week 6 is on a local branch, not pushed or merged (as of 2026-10-05); see notes below the table |
-| Production | Not started | The public Vercel URL is a pilot deployment of `main` on free tiers; see notes below the table |
+| PoC | Partial — reconstructed from tests; see [05](05-poc-and-mvp.md) | Foundation deployed 2026-09-27 on free tiers ([deploy notes](../deploy/task9-free-tier.md)); no separate PoC phase was run. What the build proves technically, and what it does not, is reconstructed in [05](05-poc-and-mvp.md) §2–§3 |
+| MVP | Built internally, **not validated** | Weeks 1–4 released to `main`, week 5 in `dev`; week 6 is on a local branch, not pushed or merged (as of 2026-10-05); see notes below the table. The MVP acceptance criteria in [05](05-poc-and-mvp.md) §5 are not met yet |
+| Production | Not started | The public Vercel URL is a pilot deployment of `main` on free tiers; see notes below the table. What must be true before production: [06](06-production-readiness.md) |
 
 Statements about week 6 and the cloud/e-mail setup are as of 2026-10-05 and must be refreshed when week 6 is merged.
 
@@ -61,5 +61,7 @@ If the interviews show the need is weaker than assumed, the correct outcome is t
 ## 4. What is next
 
 See [02-wbs.md](02-wbs.md): work packages 1 (requirements and validation), 8.1 (performance), 8.4 (accessibility) and 9 (rollout) are expected before G1. 8.2 (interface language) and 8.3 (self sign-up) are not scheduled before G1 unless the sponsor asks for them earlier.
+
+The two-week pilot with one real team (work package 9.2) is planned in [05](05-poc-and-mvp.md) §6 and feeds G1; what must be true before CertTracker becomes a production service is the checklist in [06](06-production-readiness.md) (work package 9.4).
 
 The sponsor is also asked to review the proposed mockups in [04](04-design-and-mockups.md) §5 and answer the checklist in §6 (work package 1.5), including whether 8.2 or 8.3 should be brought forward and which Phase 2 concept matters most for G1 condition 3.

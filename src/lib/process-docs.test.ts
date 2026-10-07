@@ -185,6 +185,8 @@ describe("process documents", () => {
         "02-wbs.md",
         "03-sad.md",
         "04-design-and-mockups.md",
+        "05-poc-and-mvp.md",
+        "06-production-readiness.md",
       ]),
     );
   });
@@ -197,6 +199,8 @@ describe("process documents", () => {
       "02-wbs.md",
       "03-sad.md",
       "04-design-and-mockups.md",
+      "05-poc-and-mvp.md",
+      "06-production-readiness.md",
     ]) {
       expect(readme, `README.md does not link ${name}`).toContain(`](${name})`);
     }
@@ -242,6 +246,57 @@ describe("04-design-and-mockups.md", () => {
       .filter((f) => f.endsWith(".png"))
       .filter((f) => !text.includes(`images/${f}`));
     expect(orphans, `images not referenced by any document: ${orphans.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
+  const LATER_DOCS = ["05-poc-and-mvp.md", "06-production-readiness.md"] as const;
+  const requirementsDoc = read("01-requirements-and-ca.md");
+  const matches = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]);
+
+  const knownIds = new Set([
+    ...requirements.map((r) => r.id),
+    // Assumptions (01 §7) and success criteria (01 §5) are the first cell of their table rows.
+    ...matches(requirementsDoc, /^\| (A-\d+|SM-\d+) \|/gm),
+  ]);
+  const knownWbs = new Set(wbs.map((r) => r.code));
+
+  it.each(LATER_DOCS)("%s cites only requirement, assumption, success-criterion and WBS ids that exist", (file) => {
+    const text = read(file);
+    // `\b` keeps "NFR-01" from also matching as "R-01", and "PRD-01" / "MVP-01" from matching anything here.
+    const ids = matches(text, /\b((?:R|NFR|A|SM)-\d+)\b/g);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) expect(knownIds.has(id), `${file} cites unknown ${id}`).toBe(true);
+
+    const wbsCodes = matches(text, /\bWBS (\d+(?:\.\d+)?)/g);
+    if (file === "06-production-readiness.md") {
+      const checklist = readTable(text, "ID");
+      const column = checklist.header.indexOf("WBS");
+      expect(column, "06 checklist has no WBS column").toBeGreaterThan(0);
+      for (const row of checklist.rows) {
+        expect(row.length, `row "${row[0]}" has ${row.length} cells`).toBe(checklist.header.length);
+        if (row[column] !== "—") wbsCodes.push(...row[column].split(", "));
+      }
+    }
+    expect(wbsCodes.length).toBeGreaterThan(0);
+    for (const code of wbsCodes) expect(knownWbs.has(code), `${file} cites unknown WBS ${code}`).toBe(true);
+  });
+
+  it.each(LATER_DOCS)("%s numbers its P-, MVP- and PRD- rows uniquely", (file) => {
+    const rowIds = matches(read(file), /^\| ((?:P|MVP|PRD)-\d+) \|/gm);
+    expect(rowIds.length).toBeGreaterThan(0);
+    expect(rowIds.filter((id, i) => rowIds.indexOf(id) !== i), `${file} repeats ids`).toEqual([]);
+  });
+
+  it("05 section 2 points only at evidence files that exist", () => {
+    const findings = readTable(read("05-poc-and-mvp.md"), "#");
+    const column = findings.header.indexOf("Evidence");
+    expect(column).toBeGreaterThan(0);
+    for (const row of findings.rows) {
+      const paths = matches(row[column], /`([^`\s]+\/[^`\s]*)`/g);
+      expect(paths.length, `${row[0]} names no evidence path`).toBeGreaterThan(0);
+      for (const path of paths) expect(existsSync(resolve(ROOT, path)), `${row[0]}: ${path} does not exist`).toBe(true);
+    }
   });
 });
 
