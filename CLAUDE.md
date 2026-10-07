@@ -4,7 +4,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 
 ## Trạng thái hiện tại
 
-- Giai đoạn 1, **tuần 1–6 xong** (schema, RLS, đăng nhập, CI, deploy; CRUD tổ chức/danh mục; chứng chỉ + minh chứng + Realtime; Import/Export Excel; Dashboard; cron/email nhắc hạn + báo cáo tháng, `notification_log`, chất lượng dữ liệu), trừ: bước chạy thử với file Excel thật (tuần 4), xác minh domain gửi Resend, UAT với 1 team thật. Tiếp theo: kế hoạch đăng ký tự phục vụ/SSO (riêng), rồi giai đoạn 2 — AI (tuần 7).
+- Giai đoạn 1, **tuần 1–6 xong** (schema, RLS, đăng nhập, CI, deploy; CRUD tổ chức/danh mục; chứng chỉ + minh chứng + Realtime; Import/Export Excel; Dashboard; cron/email nhắc hạn + báo cáo tháng, `notification_log`, chất lượng dữ liệu), trừ: bước chạy thử với file Excel thật (tuần 4), xác minh domain gửi Resend, UAT với 1 team thật. Nhu cầu chưa được xác nhận với người dùng cuối. Tiếp theo (theo `docs/process/02-wbs.md`): hiệu năng chuyển trang (8.1), phỏng vấn người dùng và chạy file Excel thật (1.2, 1.3), sponsor duyệt mockup (1.5), merge/đẩy migration + xác minh domain Resend (9.1), pilot 2 tuần (9.2), rồi **Cổng G1**. Giai đoạn 2 (AI), i18n và đăng ký tự phục vụ chưa làm trước G1 (decisions #46–#48).
 - Cập nhật dòng này khi chuyển tuần/giai đoạn.
 
 ## Nguồn sự thật (đọc khi cần, đừng đọc hết mỗi phiên)
