@@ -1,7 +1,7 @@
 # Process Status
 
 - **Status:** Draft v1 — backfilled after the MVP build
-- **Last updated:** 2026-10-05
+- **Last updated:** 2026-10-07
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), `git log`
 
@@ -22,7 +22,7 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 | CA (Concept/Customer Analysis) | **Missing — backfilled** | [01-requirements-and-ca.md](01-requirements-and-ca.md). The need was **not** validated with end users |
 | WBS | **Missing — backfilled** | [02-wbs.md](02-wbs.md) |
 | SAD | Exists as the design spec | [03-sad.md](03-sad.md) condenses it |
-| Design / Mockup | Partial | Design system and component catalogue exist ([Design system](../design-system.md), the `/design` page, dev only); no screen mockups were reviewed with users before the build |
+| Design / Mockup | Partial — as-built documented; proposed mockups awaiting review | Design system and component catalogue exist ([Design system](../design-system.md), the `/design` page, dev only). No screen mockups were reviewed before the build; [04](04-design-and-mockups.md) documents the as-built screens (§3–§4b) and holds proposed mockups for the sponsor to review (§5, checklist in §6) |
 | PoC | Partial | Foundation deployed 2026-09-27 on free tiers ([deploy notes](../deploy/task9-free-tier.md)); no separate PoC phase was run |
 | MVP | Built internally, **not validated** | Weeks 1–4 released to `main`, week 5 in `dev`; week 6 is on a local branch, not pushed or merged (as of 2026-10-05); see notes below the table |
 | Production | Not started | The public Vercel URL is a pilot deployment of `main` on free tiers; see notes below the table |
@@ -61,3 +61,5 @@ If the interviews show the need is weaker than assumed, the correct outcome is t
 ## 4. What is next
 
 See [02-wbs.md](02-wbs.md): work packages 1 (requirements and validation), 8.1 (performance), 8.4 (accessibility) and 9 (rollout) are expected before G1. 8.2 (interface language) and 8.3 (self sign-up) are not scheduled before G1 unless the sponsor asks for them earlier.
+
+The sponsor is also asked to review the proposed mockups in [04](04-design-and-mockups.md) §5 and answer the checklist in §6 (work package 1.5), including whether 8.2 or 8.3 should be brought forward and which Phase 2 concept matters most for G1 condition 3.

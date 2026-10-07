@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Proposed mockup: language switch in the user menu</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.menu{position:absolute;right:12px;top:44px;width:288px;z-index:30;background:var(--popover);border:1px solid var(--border);border-radius:6px;box-shadow:0 8px 24px rgba(21,33,43,.14);padding:4px}
+.menu .mlabel{padding:6px 8px;font-size:12px;line-height:16px;color:var(--muted-foreground)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:4px -4px}
+.menu .mtitle{display:flex;align-items:center;gap:8px;padding:6px 8px 4px;font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--muted-foreground)}
+.menu .seg{display:flex;margin:0 8px;border:1px solid var(--input);border-radius:4px;overflow:hidden}
+.menu .seg span{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:32px;font-size:13px}
+.menu .seg span+span{border-left:1px solid var(--input)}
+.menu .seg .on{background:var(--accent);color:var(--accent-foreground);font-weight:600}
+.menu .mhelp{padding:6px 8px 8px;font-size:12px;line-height:16px;color:var(--muted-foreground)}
+.menu .mitem{display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:4px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review<span class="lang">Proposed placement: user menu</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="var(--card)" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16L15 19L24.5 9.5" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Cert<b>Tracker</b></span>
+    </div>
+    <a class="nav active"><i class="ic ic-layout-dashboard"></i>Dashboard</a>
+    <a class="nav"><i class="ic ic-users"></i>Members</a>
+    <a class="nav"><i class="ic ic-list-checks"></i>Certificates by person</a>
+    <a class="nav"><i class="ic ic-shield-check"></i>Data quality</a>
+    <a class="nav"><i class="ic ic-book-open"></i>Courses</a>
+    <a class="nav"><i class="ic ic-building-2"></i>Organisation</a>
+    <a class="nav"><i class="ic ic-file-spreadsheet"></i>Import / Export</a>
+    <a class="nav"><i class="ic ic-settings"></i>Settings</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="ic ic-panel-left"></i><span class="sep"></span>
+      <span class="crumb">Dashboard</span>
+      <div class="user open"><span>admin@certtracker.test</span><span class="badge plain">Admin</span><i class="ic ic-chevron-down"></i></div>
+    </header>
+
+    <div class="page" style="gap:20px">
+      <div class="page-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Figures as of 07 Oct 2026, 19:41.</p>
+        </div>
+      </div>
+
+      <section class="section">
+        <h2>Overview</h2>
+        <dl class="kpis">
+          <div class="kpi"><div class="label">Active members</div><div class="value">3</div></div>
+          <div class="kpi"><div class="label">Certificate records</div><div class="value">3</div></div>
+          <div class="kpi"><div class="label">Completed</div><div class="value">1</div><div class="hint">33% of records</div></div>
+          <div class="kpi"><div class="label">In progress</div><div class="value">1</div></div>
+          <div class="kpi"><div class="label">Still valid</div><div class="value">1</div><div class="hint">Includes 0 with no expiry</div></div>
+          <div class="kpi"><div class="label">Expiring soon (≤ 60 days)</div><div class="value">1</div></div>
+          <div class="kpi"><div class="label">Expired</div><div class="value">0</div></div>
+        </dl>
+      </section>
+
+    </div>
+
+    <div class="menu" role="menu">
+      <div class="mlabel">admin@certtracker.test</div>
+      <hr>
+      <div class="mtitle"><i class="ic ic-globe"></i>Language</div>
+      <div class="seg"><span class="on"><i class="ic ic-check"></i>English</span><span>Tiếng Việt</span></div>
+      <div class="mhelp">Saved to your account, so it applies on every device and to the e-mails we send you.</div>
+      <hr>
+      <div class="mitem"><i class="ic ic-log-out"></i>Sign out</div>
+    </div>
+    <div class="pin" style="left:860px;top:13px">1</div>
+    <div class="pin" style="left:856px;top:122px">2</div>
+    <div class="pin" style="left:856px;top:158px">3</div>
+    <div style="position:absolute;left:700px;top:420px;width:380px">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted-foreground);margin-bottom:6px">Signed-out pages, e.g. sign-in</div>
+      <div class="auth-card" style="width:380px;padding:16px;gap:10px">
+        <h1>CertTracker</h1>
+        <p class="sub" style="margin-top:-8px">Sign in with the account you were given</p>
+        <div class="field"><label>Email</label><div class="input lg"></div></div>
+        <div class="field"><label>Password</label><div class="input lg"></div></div>
+        <span class="btn primary lg block">Sign in</span>
+        <div style="text-align:center;font-size:12px;color:var(--muted-foreground)"><b style="color:var(--foreground)">English</b> · <span class="link" style="font-weight:400">Tiếng Việt</span></div>
+      </div>
+    </div>
+    <div class="legend" style="left:24px;top:420px;width:640px">
+      <h4>Reviewer notes — not part of the UI</h4>
+      <p><b>1</b><span>Placement: the existing user menu. The switch is reachable from every page and takes no extra space in the topbar.</span></p>
+      <p><b>2</b><span>Two options, each written in its own language, so someone who cannot read the current language can still find it.</span></p>
+      <p><b>3</b><span>The choice would be stored with the user's account (to be confirmed), so it follows the person across devices and decides the language of the e-mails.</span></p>
+      <p><b>+</b><span>Signed-out pages (sign-in, request access) would get a small “English · Tiếng Việt” link under the form.</span></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

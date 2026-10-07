@@ -244,3 +244,53 @@ describe("04-design-and-mockups.md", () => {
     expect(orphans, `images not referenced by any document: ${orphans.join(", ")}`).toEqual([]);
   });
 });
+
+describe("proposed mockups (docs/process/mockups)", () => {
+  const mockupsDir = resolve(DIR, "mockups");
+  const imagesDir = resolve(DIR, "images");
+  const design = read("04-design-and-mockups.md");
+
+  /** `--name: #HEX` declarations inside the first `:root { ... }` block of a CSS file. */
+  const rootColours = (css: string): Map<string, string> => {
+    const start = css.indexOf(":root {");
+    if (start < 0) throw new Error("no :root block");
+    const end = css.indexOf("\n}", start);
+    const block = css.slice(start, end);
+    return new Map([...block.matchAll(/(--[\w-]+):\s*(#[0-9a-fA-F]{3,8})\s*;/g)].map((m) => [m[1], m[2].toUpperCase()]));
+  };
+
+  it("tokens.css has the same colour values as the app's globals.css (no drift)", () => {
+    const mockup = rootColours(readFileSync(resolve(mockupsDir, "tokens.css"), "utf8"));
+    const app = rootColours(readFileSync(resolve(ROOT, "src/app/globals.css"), "utf8"));
+    expect(mockup.size).toBeGreaterThan(30);
+    for (const [name, value] of mockup) {
+      expect(app.get(name), `${name} is missing from src/app/globals.css`).toBeDefined();
+      expect(value, `${name} differs from src/app/globals.css`).toBe(app.get(name));
+    }
+  });
+
+  const pages = readdirSync(mockupsDir).filter((f) => f.endsWith(".html"));
+
+  it("has the ten proposed pages", () => {
+    expect(pages.length).toBe(10);
+  });
+
+  it.each(pages.map((f) => [f] as const))("%s carries the PROPOSED banner, uses tokens.css and has a rendered image", (file) => {
+    const html = readFileSync(resolve(mockupsDir, file), "utf8");
+    expect(html).toContain("PROPOSED MOCKUP — not built · for review");
+    expect(html).toContain('href="tokens.css"');
+    if (file.startsWith("ai-")) expect(html).toContain("CONCEPT — Phase 2, gated by G1, not a commitment");
+    const image = `proposed-${file.replace(/\.html$/, "")}.png`;
+    expect(existsSync(resolve(imagesDir, image)), `${image} is missing: run render-mockups.mjs`).toBe(true);
+    expect(design, `${image} is not shown in 04`).toContain(`images/${image}`);
+  });
+
+  it("04 section 6 lists exactly the questions asked in section 5", () => {
+    const section5 = design.slice(design.indexOf("## 5. Proposed mockups"), design.indexOf("## 6. Review checklist"));
+    const asked = [...section5.matchAll(/^(\d+)\. /gm)].map((m) => Number(m[1]));
+    const checklist = readTable(design, "#").rows.map((r) => Number(r[0]));
+    expect(asked.length).toBeGreaterThan(0);
+    expect(checklist).toEqual(asked);
+    for (const row of readTable(design, "#").rows) expect(row.length).toBe(4);
+  });
+});

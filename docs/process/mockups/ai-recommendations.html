@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Concept: suggested next certificates</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.panel-head { display: flex; align-items: center; gap: 10px; }
+.panel-head h2 { font-size: 15px; line-height: 22px; font-weight: 600; }
+.panel-head .grow { flex: 1; }
+.sugs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.sug { border: 1px solid var(--border); border-radius: 6px; background: var(--background); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.sug h3 { font-size: 14px; line-height: 20px; font-weight: 600; }
+.sug .prov { font-size: 12px; color: var(--muted-foreground); }
+.sug .why { font-size: 13px; line-height: 18px; min-height: 54px; }
+.sug .why b { font-weight: 600; }
+.sug .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.sug .acts { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+.hours { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted-foreground); }
+.hours .ic { width: 14px; height: 14px; }
+.foot { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+.foot .ic { width: 14px; height: 14px; flex: none; }
+</style>
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review<span class="concept">CONCEPT — Phase 2, gated by G1, not a commitment</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="var(--card)" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16L15 19L24.5 9.5" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Cert<b>Tracker</b></span>
+    </div>
+    <a class="nav"><i class="ic ic-layout-dashboard"></i>Dashboard</a>
+    <a class="nav active"><i class="ic ic-award"></i>My certificates</a>
+    <a class="nav"><i class="ic ic-book-open"></i>Courses</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="ic ic-panel-left"></i><span class="sep"></span>
+      <span class="crumb">My certificates</span>
+      <div class="user"><span>member@certtracker.test</span><span class="badge plain">Member</span><i class="ic ic-chevron-down"></i></div>
+    </header>
+    <div class="page" style="gap:18px">
+      <div class="page-header">
+        <div><h1>My certificates</h1><p>Certificates you have and are studying.</p></div>
+        <div class="actions"><span class="btn ghost">Export CSV</span><span class="btn ghost">Export Excel</span></div>
+      </div>
+
+      <section class="panel" aria-label="Suggested next certificates">
+        <div class="panel-head">
+          <i class="ic ic-sparkles" style="color:var(--primary)"></i>
+          <h2>Suggested next certificates</h2>
+          <span class="badge primary">AI</span>
+          <span class="grow"></span>
+          <span class="muted" style="font-size:12px">Refundable courses first</span>
+        </div>
+        <div class="sugs">
+          <article class="sug">
+            <div><h3>AWS Certified Developer – Associate</h3><div class="prov">AWS</div></div>
+            <p class="why"><b>Why:</b> builds on AWS Solutions Architect Associate, which is on your list, and adds to Team Cloud’s AWS coverage.</p>
+            <div class="meta"><span class="badge active"><i class="ic ic-circle-check"></i>Refundable</span><span class="hours"><i class="ic ic-clock"></i>≈ 40 h (estimate)</span></div>
+            <div class="acts"><span class="link" style="font-size:13px">Course page ↗</span><span class="btn outline">Add to my certificates</span></div>
+          </article>
+          <article class="sug">
+            <div><h3>NVIDIA Generative AI LLMs</h3><div class="prov">NVIDIA</div></div>
+            <p class="why"><b>Why:</b> popular in the organisation (1 learner so far) and nobody in Team Cloud holds it yet.</p>
+            <div class="meta"><span class="badge active"><i class="ic ic-circle-check"></i>Refundable</span><span class="hours"><i class="ic ic-clock"></i>≈ 30 h (estimate)</span></div>
+            <div class="acts"><span class="link" style="font-size:13px">Course page ↗</span><span class="btn outline">Add to my certificates</span></div>
+          </article>
+          <article class="sug">
+            <div><h3>Microsoft Azure Administrator (AZ-104)</h3><div class="prov">Microsoft</div></div>
+            <p class="why"><b>Why:</b> Team Cloud has no Azure holder, and you already work toward cloud certificates.</p>
+            <div class="meta"><span class="badge na"><i class="ic ic-x"></i>Not refundable</span><span class="hours"><i class="ic ic-clock"></i>≈ 60 h (estimate)</span></div>
+            <div class="acts"><span class="link" style="font-size:13px">Course page ↗</span><span class="btn outline">Add to my certificates</span></div>
+          </article>
+        </div>
+        <div class="foot"><i class="ic ic-info"></i>Generated by AI from the course catalogue and your own records. Suggestions are not assignments. E-mail addresses and phone numbers are not sent to the AI service.</div>
+      </section>
+
+      <div class="toolbar">
+        <div class="input" style="width:288px"><i class="ic ic-search"></i>Search by course…</div>
+        <div class="input" style="width:150px">All statuses<i class="ic ic-chevron-down caret"></i></div>
+        <div class="input" style="width:130px">All expiry<i class="ic ic-chevron-down caret"></i></div>
+        <span class="grow"></span><span class="btn primary"><i class="ic ic-plus"></i>Add certificate</span>
+      </div>
+      <div class="table">
+        <table>
+          <thead><tr><th style="width:360px">Course</th><th style="width:190px">Status</th><th style="width:190px">Progress</th><th style="width:170px">Expiry</th><th>Exam date</th></tr></thead>
+          <tbody>
+            <tr><td>AWS Solutions Architect Associate <span class="muted" style="font-size:12px">· AWS</span></td><td><span class="muted">◌</span> Not started</td><td><div class="cell-prog"><span class="pbar"><i style="width:0"></i></span><span>0%</span></div></td><td><span class="badge na"><i class="ic ic-minus"></i>Not issued</span></td><td>—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="pin" style="left:258px;top:168px">1</div>
+  <div class="pin" style="left:258px;top:258px">2</div>
+  <div class="pin" style="left:1222px;top:154px">3</div>
+  <div class="pin" style="left:548px;top:318px">4</div>
+  <div class="legend" style="left:700px;top:600px;width:700px;display:grid;grid-template-columns:1fr 1fr;column-gap:20px">
+    <h4 style="grid-column:1/3">Reviewer notes — not part of the UI</h4>
+    <p><b>1</b><span>R-20: a panel on the page where a member already manages their certificates. Two or three suggestions, not a long list.</span></p>
+    <p><b>2</b><span>Every suggestion explains itself, using data the member can already see.</span></p>
+    <p><b>3</b><span>Refundable courses come first, as in the Feature List. The refund flag already exists in the catalogue.</span></p>
+    <p><b>4</b><span>Study hours do not exist in the catalogue today: this needs a new field or is an AI estimate, labelled as such.</span></p>
+  </div>
+</div>
+</body>
+</html>

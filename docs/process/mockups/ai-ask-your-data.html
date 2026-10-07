@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Concept: ask your data</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.panel-head { display: flex; align-items: center; gap: 10px; }
+.panel-head h2 { font-size: 15px; line-height: 22px; font-weight: 600; }
+.panel-head .grow { flex: 1; }
+.ask { display: flex; gap: 8px; }
+.ask .input { flex: 1; color: var(--foreground); font-size: 15px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12px; color: var(--muted-foreground); }
+.chip { height: 24px; padding: 0 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--background); color: var(--foreground); display: inline-flex; align-items: center; font-size: 12px; }
+.answer { border: 1px solid var(--border); border-radius: 6px; background: var(--background); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.answer .lead { font-size: 14px; line-height: 20px; }
+.how { font-size: 12px; line-height: 16px; color: var(--muted-foreground); display: flex; gap: 6px; align-items: flex-start; }
+.how .ic { width: 14px; height: 14px; flex: none; margin-top: 1px; }
+.guard { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 8px 12px; border-radius: 6px; background: var(--accent); color: var(--accent-foreground); border: 1px solid var(--border); font-weight: 500; }
+.dashed { border: 1px dashed var(--input); border-radius: 6px; padding: 18px; text-align: center; color: var(--muted-foreground); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review<span class="concept">CONCEPT — Phase 2, gated by G1, not a commitment</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="var(--card)" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16L15 19L24.5 9.5" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Cert<b>Tracker</b></span>
+    </div>
+    <a class="nav active"><i class="ic ic-layout-dashboard"></i>Dashboard</a>
+    <a class="nav"><i class="ic ic-users"></i>Members</a>
+    <a class="nav"><i class="ic ic-list-checks"></i>Certificates by person</a>
+    <a class="nav"><i class="ic ic-shield-check"></i>Data quality</a>
+    <a class="nav"><i class="ic ic-book-open"></i>Courses</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="ic ic-panel-left"></i><span class="sep"></span>
+      <span class="crumb">Dashboard</span>
+      <div class="user"><span>manager@certtracker.test</span><span class="badge plain">Manager</span><i class="ic ic-chevron-down"></i></div>
+    </header>
+    <div class="page" style="gap:18px">
+      <div class="page-header">
+        <div><h1>Dashboard</h1><p>Figures as of 07 Oct 2026, 19:41.</p></div>
+      </div>
+
+      <section class="panel" aria-label="Ask your data">
+        <div class="panel-head">
+          <i class="ic ic-message-square" style="color:var(--primary)"></i>
+          <h2>Ask your data</h2>
+          <span class="badge primary">AI</span>
+          <span class="grow"></span>
+        </div>
+        <div class="ask">
+          <div class="input lg"><i class="ic ic-search"></i>Who has a valid Azure certificate?</div>
+          <span class="btn primary lg">Ask</span>
+        </div>
+        <div class="chips"><span>Try:</span><span class="chip">Which AWS certificates expire in the next 60 days?</span><span class="chip">Which courses have no learners yet?</span><span class="chip">How many people in Team AI are studying?</span></div>
+
+        <div class="answer">
+          <p class="lead"><b>2 people</b> in the teams you manage have a valid Azure certificate.</p>
+          <div class="table">
+            <table>
+              <thead><tr><th>Person</th><th>Team</th><th>Certificate</th><th>Expiry</th></tr></thead>
+              <tbody>
+                <tr><td>Nguyễn Văn An</td><td>Team Cloud</td><td>Microsoft Azure Administrator (AZ-104)</td><td><span class="badge active"><i class="ic ic-circle-check"></i>Valid until 14 Mar 2027</span></td></tr>
+                <tr><td>Lê Minh Châu</td><td>Team Cloud</td><td>Microsoft Azure Fundamentals (AZ-900)</td><td><span class="badge na"><i class="ic ic-minus"></i>No expiry</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="how"><i class="ic ic-info"></i><span>How this was answered: the approved query “certificates by provider and status” with provider = Microsoft, status = valid, over Team Cloud and Team AI. The AI chose the query and wrote the sentence; it did not write SQL, and it did not do the counting. Illustrative values.</span></div>
+        </div>
+
+        <div class="guard"><i class="ic ic-lock"></i>Answers use only data you are allowed to see.</div>
+      </section>
+
+      <div class="dashed">The existing Dashboard sections (Overview, certificate expiry, breakdowns) continue here, unchanged.</div>
+    </div>
+  </div>
+
+  <div class="pin" style="left:258px;top:166px">1</div>
+  <div class="pin" style="left:258px;top:363px">2</div>
+  <div class="pin" style="left:258px;top:428px">3</div>
+  <div class="pin" style="left:258px;top:501px">4</div>
+  <div class="legend" style="left:700px;top:630px;width:700px;display:grid;grid-template-columns:1fr 1fr;column-gap:20px;padding:10px 14px">
+    <h4 style="grid-column:1/3">Reviewer notes — not part of the UI</h4>
+    <p><b>1</b><span>R-26: a question box on the Dashboard, for Admins and Managers.</span></p>
+    <p><b>2</b><span>The answer is a short sentence plus a table, never free text about people that cannot be checked.</span></p>
+    <p><b>3</b><span>Decision #9: the AI picks from a fixed list of approved queries instead of writing SQL.</span></p>
+    <p><b>4</b><span>R-28: the same row-level security as every other screen applies, and the panel says so.</span></p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,7 +1,7 @@
 # Work Breakdown Structure (WBS)
 
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
-- **Last updated:** 2026-10-05
+- **Last updated:** 2026-10-07
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Design spec §10](../superpowers/specs/2026-09-26-certtracker-design.md), `git log`, [Plans](../superpowers/plans/), [Requirements and CA](01-requirements-and-ca.md), [Process status](00-process-status.md)
 
@@ -20,11 +20,12 @@
 
 | WBS | Work package | Deliverable | Acceptance | Planned | Actual | Est. remaining | Depends on | Status | Requirements |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Requirements and project governance | Process documents `00`–`03`, validated assumptions | Documents reviewed by the sponsor; assumptions `A-01`…`A-10` checked | — | 2026-10-05 → | 4.5–6 days (roll-up of 1.1–1.4) | — | In progress | — |
+| 1 | Requirements and project governance | Process documents `00`–`03`, validated assumptions | Documents reviewed by the sponsor; assumptions `A-01`…`A-10` checked | — | 2026-10-05 → | 5–6.5 days (roll-up of 1.1–1.5) | — | In progress | — |
 | 1.1 | Process status, CA, WBS, SAD (this pack) | `docs/process/00`–`03` | Merged; sponsor feedback addressed | — | 2026-10-05 → | 1 day | — | In progress | — |
 | 1.2 | User interviews | Interview notes per assumption | 3–5 interviews recorded; `01` §7 updated | — | not started | 2–3 days | 1.1 | Not started | — |
 | 1.3 | Real-file import trial | Trial report (rows imported, manual fixes) | `SM-2` measured on a real file | — | not started | 0.5–1 day | 5 | Not started | R-15 |
 | 1.4 | Build-vs-buy scan | One-page comparison | Sponsor agrees build is still justified | — | not started | 1 day | 1.1 | Not started | — |
+| 1.5 | Mockup review with the sponsor | Reviewed 04 §6 checklist with answers | Answers recorded in 04 §6 and decisions.md where needed | — | 2026-10-07 (mockups drafted) | 0.5 day | 1.1 | In progress | — |
 | 2 | Foundation (W1) | Schema, RLS, sign-in, CI, deployment on free tiers | PRs #1, #3 and #4 merged; pgTAP RLS green | Week 1 | 2026-09-26 → 2026-09-27 | — | — | Done | R-07, R-17, R-30, NFR-07 |
 | 2.5 | Design system | Tokens, components, `/design` page, reference doc | PR #6 merged | — | 2026-09-27 | — | 2 | Done | NFR-05 |
 | 2.6 | UI polish (logo, favicon, dropdown fixes) | Logo, favicon, sidebar brand mark, select fixes | PR #13 merged | — | 2026-10-02 | — | 2.5 | Done | NFR-05 |
@@ -49,7 +50,7 @@ Notes:
 
 - Row `7`: the week-6 commits are all dated 2026-10-04, and none of week 6 is on `dev`, `main` or the GitHub remote (as of 2026-10-05). The cloud database schema is pushed manually (see [00 §2](00-process-status.md)); this document does not claim that any week 3–6 migration has been pushed to production.
 - Rows `2.5` and `2.6` were not in the spec roadmap (hence Planned `—`); they trace to `NFR-05` for the contrast work already done. `NFR-05` is `Partial` in `01`, so the open work is `8.4`.
-- Rows `1`, `1.1`, `1.2`, `1.4`, `8`, `9` and `G1` deliver process results or group other rows, so their Requirements cell is `—`.
+- Rows `1`, `1.1`, `1.2`, `1.4`, `1.5`, `8`, `9` and `G1` deliver process results or group other rows, so their Requirements cell is `—`.
 
 ## 3. Planned vs actual (summary)
 
