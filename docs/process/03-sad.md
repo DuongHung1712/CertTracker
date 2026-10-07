@@ -1,7 +1,7 @@
 # Software Architecture Document (SAD) — condensed
 
 - **Status:** Draft v1 — condensed from the design spec; backfilled
-- **Last updated:** 2026-10-05
+- **Last updated:** 2026-10-07
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), [Design system](../design-system.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), [Requirements and CA](01-requirements-and-ca.md), [WBS](02-wbs.md)
 

@@ -261,6 +261,43 @@ describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
   ]);
   const knownWbs = new Set(wbs.map((r) => r.code));
 
+  /** Every row of `table` has as many cells as its header (a stray "|" in a cell shifts every later column). */
+  const expectRectangular = (name: string, table: Table) => {
+    expect(table.rows.length, `${name} has no rows`).toBeGreaterThan(0);
+    for (const row of table.rows) {
+      expect(row.length, `${name}: row "${row[0]}" has ${row.length} cells, expected ${table.header.length}`).toBe(
+        table.header.length,
+      );
+    }
+  };
+
+  const findings = readTable(read("05-poc-and-mvp.md"), "#");
+  const acceptance = readTable(read("05-poc-and-mvp.md"), "ID");
+  const checklist = readTable(read("06-production-readiness.md"), "ID");
+
+  it("the P- and MVP- tables in 05 and the PRD- table in 06 keep their columns on every row", () => {
+    expect(findings.header).toEqual(["#", "Technical question", "Answer", "Evidence", "Limits"]);
+    expect(acceptance.header).toEqual(["ID", "Criterion", "How it is checked", "Threshold", "Status"]);
+    expect(checklist.header).toEqual(["ID", "Area", "Item", "Why", "Today", "Needed before", "Owner", "WBS"]);
+    expectRectangular("05 findings", findings);
+    expectRectangular("05 acceptance criteria", acceptance);
+    expectRectangular("06 checklist", checklist);
+  });
+
+  it("06 says for every item whether it blocks the pilot (WBS 9.1) or production", () => {
+    const when = checklist.header.indexOf("Needed before");
+    const wbsColumn = checklist.header.indexOf("WBS");
+    for (const row of checklist.rows) {
+      expect(["Pilot", "Production"], `${row[0]} "${row[when]}"`).toContain(row[when]);
+      if (row[when] === "Pilot") expect(row[wbsColumn], `${row[0]} is a pilot item outside 9.1`).toBe("9.1");
+    }
+  });
+
+  it("no MVP acceptance criterion is claimed as met before a pilot has happened", () => {
+    const status = acceptance.header.indexOf("Status");
+    for (const row of acceptance.rows) expect(row[status], `${row[0]}`).toMatch(/^(Not met|Partly met) — /);
+  });
+
   it.each(LATER_DOCS)("%s cites only requirement, assumption, success-criterion and WBS ids that exist", (file) => {
     const text = read(file);
     // `\b` keeps "NFR-01" from also matching as "R-01", and "PRD-01" / "MVP-01" from matching anything here.
@@ -268,15 +305,13 @@ describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) expect(knownIds.has(id), `${file} cites unknown ${id}`).toBe(true);
 
-    const wbsCodes = matches(text, /\bWBS (\d+(?:\.\d+)?)/g);
+    // "WBS 9.1", and every code in lists such as "WBS 9.1, 9.2" or "WBS 8.3 and 8.2".
+    const wbsCodes = matches(text, /\bWBS (\d+(?:\.\d+)?(?:(?:, | and | or )\d+(?:\.\d+)?)*)/g).flatMap((list) =>
+      list.split(/, | and | or /),
+    );
     if (file === "06-production-readiness.md") {
-      const checklist = readTable(text, "ID");
       const column = checklist.header.indexOf("WBS");
-      expect(column, "06 checklist has no WBS column").toBeGreaterThan(0);
-      for (const row of checklist.rows) {
-        expect(row.length, `row "${row[0]}" has ${row.length} cells`).toBe(checklist.header.length);
-        if (row[column] !== "—") wbsCodes.push(...row[column].split(", "));
-      }
+      for (const row of checklist.rows) if (row[column] !== "—") wbsCodes.push(...row[column].split(", "));
     }
     expect(wbsCodes.length).toBeGreaterThan(0);
     for (const code of wbsCodes) expect(knownWbs.has(code), `${file} cites unknown WBS ${code}`).toBe(true);
@@ -289,7 +324,6 @@ describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
   });
 
   it("05 section 2 points only at evidence files that exist", () => {
-    const findings = readTable(read("05-poc-and-mvp.md"), "#");
     const column = findings.header.indexOf("Evidence");
     expect(column).toBeGreaterThan(0);
     for (const row of findings.rows) {

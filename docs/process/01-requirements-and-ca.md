@@ -1,7 +1,7 @@
 # Requirements and Concept/Customer Analysis (CA)
 
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
-- **Last updated:** 2026-10-05
+- **Last updated:** 2026-10-07
 - **Owner:** CertTracker team (DC34)
 - **Sources:** `CertTracker - Feature List.pdf` (internal; not stored in this repository), [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md); context on SkillMatrix: S+ AI Tooling Initiative proposal (internal; not stored in this repository)
 
@@ -21,6 +21,7 @@ Strategic context: CertTracker is built standalone but its data model (Member, C
 | Admin | Person who administers the data (org structure, catalogue, imports, accounts) | Replace the spreadsheet; import legacy data cleanly; keep the catalogue tidy |
 | Manager | Leads one or more teams | See who holds / is studying which certificates, get warned before they expire, report monthly |
 | Member | Employee | Record own certificates and progress with proof; see own status |
+| Data owner | To be named by the sponsor (the person responsible for the personnel data) | Approves storing personnel data in the cloud (`A-05`) and decides its retention |
 
 No end user has been interviewed yet (`A-01`, `A-03`).
 

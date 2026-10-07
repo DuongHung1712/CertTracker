@@ -12,6 +12,6 @@ Read in this order. Documents 00 to 03, 05 and 06 were written **after** the MVP
 | 05 | [PoC and MVP](05-poc-and-mvp.md) | Is the MVP proven, and how do we pilot it? |
 | 06 | [Production readiness](06-production-readiness.md) | What must be true before production? |
 
-Statements marked "as of 2026-10-05" or "(W6, unmerged)" must be refreshed when week 6 is merged and the public deployment is updated.
+Statements marked "as of 2026-10-07" (or an earlier date) or "(W6, unmerged)" must be refreshed when week 6 is merged and the public deployment is updated.
 
 Sources of truth that these documents link to rather than copy: the [design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [decisions log](../decisions.md), [design system](../design-system.md), [deployment notes](../deploy/).

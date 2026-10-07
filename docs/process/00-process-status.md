@@ -27,22 +27,22 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 | MVP | Built internally, **not validated** | Weeks 1–4 released to `main`, week 5 in `dev`; week 6 is in pull request #16, open and not merged (as of 2026-10-07); see notes below the table. The MVP acceptance criteria in [05](05-poc-and-mvp.md) §5 are not met yet |
 | Production | Not started | The public Vercel URL is a pilot deployment of `main` on free tiers; see notes below the table. What must be true before production: [06](06-production-readiness.md) |
 
-Statements about week 6 and the cloud/e-mail setup are as of 2026-10-05 and must be refreshed when week 6 is merged.
+Statements about week 6 and the cloud/e-mail setup are as of 2026-10-07 and must be refreshed when week 6 is merged.
 
-MVP details (as of 2026-10-05):
+MVP details (as of 2026-10-07):
 
 - Weeks 1–5 are merged into `dev` through the feature/chore PRs #1, #3, #4, #6, #8, #10, #11, #13 and #15 (2026-09-26 → 2026-10-04); see the counting note in [02-wbs.md](02-wbs.md).
 - Week 6 (cron, e-mail, data quality) is built and reviewed on branch `feat/week6-notifications`, pushed to GitHub on 2026-10-07 as pull request #16 (open, not merged as of 2026-10-07; see 9.1); last code commit 2026-10-04.
 - The legacy Excel file has not been tried; there has been no UAT with a real team.
 
-What is deployed where (as of 2026-10-05):
+What is deployed where (as of 2026-10-07):
 
 - The public Vercel URL builds from `main` ([deploy notes](../deploy/task9-free-tier.md), section C2: Production Branch = `main`).
 - The last release into `main` is PR #14 (2026-10-02: weeks 1–4 plus UI fixes). `main` has no real Dashboard (only a placeholder page saying the KPIs come in week 5) and no `loading.tsx` at all.
 - `origin/dev` additionally has week 5 (the Dashboard and one `loading.tsx`). Week 6 exists only in the open pull request #16 above.
 - So what a reviewer sees on the public URL is a pilot deployment, not a production service.
 
-Production details (as of 2026-10-05):
+Production details (as of 2026-10-07):
 
 - Hosting is Vercel Hobby + Supabase Free: no automatic backups, the project pauses after 7 idle days, and Hobby is non-commercial ([deploy notes](../deploy/task9-free-tier.md)).
 - Database migrations are pushed to the cloud manually, so the cloud schema can lag behind `main`.
@@ -60,8 +60,8 @@ If the interviews show the need is weaker than assumed, the correct outcome is t
 
 ## 4. What is next
 
-See [02-wbs.md](02-wbs.md): work packages 1 (requirements and validation), 8.1 (performance), 8.4 (accessibility) and 9 (rollout) are expected before G1. 8.2 (interface language) and 8.3 (self sign-up) are not scheduled before G1 unless the sponsor asks for them earlier.
+See [02-wbs.md](02-wbs.md): work packages 1 (requirements and validation), 8.1 (performance), 8.4 (accessibility) and 9.1–9.3 (pilot readiness, pilot, hosting decision) are expected before G1; 9.4 (production readiness) comes after G1 (*proposed* in [06](06-production-readiness.md) §5). 8.2 (interface language) and 8.3 (self sign-up) are not scheduled before G1 unless the sponsor asks for them earlier.
 
-The two-week pilot with one real team (work package 9.2) is planned in [05](05-poc-and-mvp.md) §6 and feeds G1; what must be true before CertTracker becomes a production service is the checklist in [06](06-production-readiness.md) (work package 9.4).
+The two-week pilot with one real team (work package 9.2) is planned in [05](05-poc-and-mvp.md) §6 and feeds G1; its preconditions are work package 9.1 (the `Pilot` items in [06](06-production-readiness.md)). What must be true before CertTracker becomes a production service is the rest of that checklist (the `Production` items, work package 9.4).
 
 The sponsor is also asked to review the proposed mockups in [04](04-design-and-mockups.md) §5 and answer the checklist in §6 (work package 1.5), including whether 8.2 or 8.3 should be brought forward and which Phase 2 concept matters most for G1 condition 3.
