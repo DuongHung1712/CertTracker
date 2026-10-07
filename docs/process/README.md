@@ -1,6 +1,6 @@
 # CertTracker — Process documents
 
-Read in this order. Documents 00 to 03 were written **after** the MVP was built, and 04 documents the screens as they were built (screenshots, not mockups) and holds the proposed mockups that the sponsor reviews before more is built; 05 reconstructs the PoC from the tests and plans the pilot, and 06 lists what must be true before production (which has not started); see [00](00-process-status.md) for why and for the gate before Phase 2.
+Read in this order. Documents 00 to 03, 05 and 06 were written **after** the MVP was built, and 04 documents the screens as they were built (screenshots, not mockups) and holds the proposed mockups that the sponsor reviews before more is built; 05 reconstructs the PoC from the tests and plans the pilot, and 06 lists what must be true before production (which has not started); see [00](00-process-status.md) for why and for the gate before Phase 2.
 
 | # | Document | Question it answers |
 |---|---|---|

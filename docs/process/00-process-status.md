@@ -24,7 +24,7 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 | SAD | Exists as the design spec | [03-sad.md](03-sad.md) condenses it |
 | Design / Mockup | Partial — as-built documented; proposed mockups awaiting review | Design system and component catalogue exist ([Design system](../design-system.md), the `/design` page, dev only). No screen mockups were reviewed before the build; [04](04-design-and-mockups.md) documents the as-built screens (§3–§4b) and holds proposed mockups for the sponsor to review (§5, checklist in §6) |
 | PoC | Partial — reconstructed from tests; see [05](05-poc-and-mvp.md) | Foundation deployed 2026-09-27 on free tiers ([deploy notes](../deploy/task9-free-tier.md)); no separate PoC phase was run. What the build proves technically, and what it does not, is reconstructed in [05](05-poc-and-mvp.md) §2–§3 |
-| MVP | Built internally, **not validated** | Weeks 1–4 released to `main`, week 5 in `dev`; week 6 is on a local branch, not pushed or merged (as of 2026-10-05); see notes below the table. The MVP acceptance criteria in [05](05-poc-and-mvp.md) §5 are not met yet |
+| MVP | Built internally, **not validated** | Weeks 1–4 released to `main`, week 5 in `dev`; week 6 is in pull request #16, open and not merged (as of 2026-10-07); see notes below the table. The MVP acceptance criteria in [05](05-poc-and-mvp.md) §5 are not met yet |
 | Production | Not started | The public Vercel URL is a pilot deployment of `main` on free tiers; see notes below the table. What must be true before production: [06](06-production-readiness.md) |
 
 Statements about week 6 and the cloud/e-mail setup are as of 2026-10-05 and must be refreshed when week 6 is merged.
@@ -32,14 +32,14 @@ Statements about week 6 and the cloud/e-mail setup are as of 2026-10-05 and must
 MVP details (as of 2026-10-05):
 
 - Weeks 1–5 are merged into `dev` through the feature/chore PRs #1, #3, #4, #6, #8, #10, #11, #13 and #15 (2026-09-26 → 2026-10-04); see the counting note in [02-wbs.md](02-wbs.md).
-- Week 6 (cron, e-mail, data quality) is built and reviewed on a local branch `feat/week6-notifications`; not pushed to GitHub, not merged (see 9.1); last commit 2026-10-04.
+- Week 6 (cron, e-mail, data quality) is built and reviewed on branch `feat/week6-notifications`, pushed to GitHub on 2026-10-07 as pull request #16 (open, not merged as of 2026-10-07; see 9.1); last code commit 2026-10-04.
 - The legacy Excel file has not been tried; there has been no UAT with a real team.
 
 What is deployed where (as of 2026-10-05):
 
 - The public Vercel URL builds from `main` ([deploy notes](../deploy/task9-free-tier.md), section C2: Production Branch = `main`).
 - The last release into `main` is PR #14 (2026-10-02: weeks 1–4 plus UI fixes). `main` has no real Dashboard (only a placeholder page saying the KPIs come in week 5) and no `loading.tsx` at all.
-- `origin/dev` additionally has week 5 (the Dashboard and one `loading.tsx`). Week 6 exists only on the local branch above.
+- `origin/dev` additionally has week 5 (the Dashboard and one `loading.tsx`). Week 6 exists only in the open pull request #16 above.
 - So what a reviewer sees on the public URL is a pilot deployment, not a production service.
 
 Production details (as of 2026-10-05):
