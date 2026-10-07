@@ -10,6 +10,7 @@ describe("navForUser (docs/design-system.md §4.5)", () => {
       "/dashboard",
       "/members",
       "/records",
+      "/data-quality",
       "/courses",
       "/org",
       "/import",
@@ -19,7 +20,7 @@ describe("navForUser (docs/design-system.md §4.5)", () => {
   });
 
   it("gives managers team views but no org, import or settings", () => {
-    expect(hrefs("manager", true)).toEqual(["/dashboard", "/me", "/members", "/records", "/courses"]);
+    expect(hrefs("manager", true)).toEqual(["/dashboard", "/me", "/members", "/records", "/data-quality", "/courses"]);
   });
 
   it("gives members only their own views and the catalogue", () => {
@@ -38,6 +39,7 @@ describe("isActivePath", () => {
 describe("labelForPath", () => {
   it("names the current section", () => {
     expect(labelForPath("/members/42")).toBe("Thành viên");
+    expect(labelForPath("/data-quality")).toBe("Chất lượng dữ liệu");
     expect(labelForPath("/unknown")).toBe("CertTracker");
   });
 });
