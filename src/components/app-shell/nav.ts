@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   ListChecks,
   Settings,
+  ShieldCheck,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/me", label: "Chứng chỉ của tôi", icon: Award, roles: ALL, requiresMember: true },
   { href: "/members", label: "Thành viên", icon: Users, roles: ["admin", "manager"] },
   { href: "/records", label: "Chứng chỉ theo người", icon: ListChecks, roles: ["admin", "manager"] },
+  { href: "/data-quality", label: "Chất lượng dữ liệu", icon: ShieldCheck, roles: ["admin", "manager"] },
   { href: "/courses", label: "Khóa học", icon: BookOpen, roles: ALL },
   { href: "/org", label: "Tổ chức", icon: Building2, roles: ["admin"] },
   { href: "/import", label: "Import / Export", icon: FileSpreadsheet, roles: ["admin"] },

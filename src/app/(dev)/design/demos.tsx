@@ -15,6 +15,11 @@ import { ProgressInline } from "@/components/status/progress-inline";
 import { RecordStatusLabel } from "@/components/status/record-status";
 import type { RecordStatus } from "@/components/status/labels";
 import { Button } from "@/components/ui/button";
+import { BreakdownTable } from "@/features/dashboard/components/breakdown-table";
+import { ExpiryChart } from "@/features/dashboard/components/expiry-chart";
+import { RankingTable } from "@/features/dashboard/components/ranking-table";
+import type { ExpiryBucket } from "@/features/dashboard/metrics";
+import type { BreakdownRow, RankingRow } from "@/features/dashboard/schema";
 
 type SampleRow = {
   id: string;
@@ -182,6 +187,59 @@ export function ComboboxDemo() {
         emptyText="Không tìm thấy thành viên"
         disabled
       />
+    </div>
+  );
+}
+
+// Dashboard blocks: the visual test for the Week 5 building blocks.
+const BUCKET_STATUSES = ["Active", "Expiring in 60d", "Expiring Soon", "Expired", "No Expiry"] as const;
+const BUCKET_LABELS = ["Còn > 60 ngày", "Còn 31–60 ngày", "Còn ≤ 30 ngày", "Đã hết hạn", "Không thời hạn"];
+
+function buckets(counts: number[]): ExpiryBucket[] {
+  return BUCKET_STATUSES.map((status, i) => ({ status, label: BUCKET_LABELS[i], count: counts[i] }));
+}
+
+export function ChartDemo() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="rounded-lg border bg-card p-4">
+        <ExpiryChart buckets={buckets([2, 0, 1, 1, 1])} />
+      </div>
+      <div className="rounded-lg border bg-card p-4">
+        <ExpiryChart buckets={buckets([0, 0, 0, 0, 0])} />
+      </div>
+    </div>
+  );
+}
+
+const LONG_LABEL = "Chứng chỉ chuyên gia kiến trúc giải pháp đám mây nâng cao 2026";
+
+function row(i: number, over: Partial<BreakdownRow> = {}): BreakdownRow {
+  return {
+    key: `k${i}`, label: `Team ${String.fromCharCode(65 + i)}`, headcount: 4 + i, people: 3 + i, records: 10 + i,
+    done: 5 + i, inProgress: 3, notStarted: 2, valid: 4 + i, expired: 0, ...over,
+  };
+}
+
+const BREAKDOWN_ROWS: BreakdownRow[] = [
+  ...Array.from({ length: 9 }, (_, i) => row(i)),
+  row(9, { label: LONG_LABEL }),
+  row(10, { label: "Team trống", headcount: 0, people: 0, records: 0, done: 0, inProgress: 0, notStarted: 0, valid: 0 }),
+  row(11, { label: "Team có chứng chỉ hết hạn", expired: 3 }),
+];
+
+const RANKING_ROWS: RankingRow[] = [
+  { memberId: "00000000-0000-0000-0000-000000000001", memberCode: "M001", fullName: "Nguyễn Văn An", teamName: "DC34", validCerts: 4, doneCerts: 5, inProgress: 1, rank: 1 },
+  { memberId: "00000000-0000-0000-0000-000000000002", memberCode: "M002", fullName: "Đặng Gia Huy", teamName: null, validCerts: 3, doneCerts: 3, inProgress: 0, rank: 2 },
+  { memberId: "00000000-0000-0000-0000-000000000003", memberCode: "M003", fullName: "Trần Thị Bình", teamName: "DC34", validCerts: 3, doneCerts: 3, inProgress: 2, rank: 2 },
+];
+
+export function BreakdownDemo() {
+  return (
+    <div className="flex flex-col gap-6">
+      <BreakdownTable rows={BREAKDOWN_ROWS} groupLabel="Team" peopleLabel="Thành viên" />
+      <BreakdownTable rows={[]} groupLabel="Khóa học" peopleLabel="Người học" />
+      <RankingTable rows={RANKING_ROWS} />
     </div>
   );
 }

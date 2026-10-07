@@ -1,0 +1,59 @@
+/* Design tokens copied from src/app/globals.css (:root). Do not edit by hand:
+   src/lib/process-docs.test.ts fails if a colour here differs from the app. */
+:root {
+  --radius: 6px;
+
+  --background: #F6F7F5;
+  --foreground: #15212B;
+  --card: #FFFFFF;
+  --card-foreground: #15212B;
+  --popover: #FFFFFF;
+  --popover-foreground: #15212B;
+  --primary: #0E5C58;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #0A4744;
+  --secondary: #EDF0EE;
+  --secondary-foreground: #15212B;
+  --muted: #EDF0EE;
+  --muted-foreground: #56636C;
+  --accent: #E2EFEC;
+  --accent-foreground: #0E5C58;
+  --destructive: #B42318;
+  --border: #D8DEDB;
+  --input: #83908C;
+  --ring: #1C7C75;
+
+  --chart-1: #0E5C58;
+  --chart-2: #56636C;
+  --chart-3: #83908C;
+  --chart-4: #D8DEDB;
+  --chart-5: #15212B;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #15212B;
+  --sidebar-primary: #0E5C58;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E2EFEC;
+  --sidebar-accent-foreground: #0E5C58;
+  --sidebar-border: #D8DEDB;
+  --sidebar-ring: #1C7C75;
+
+  --status-active-fg: #1D6636;
+  --status-active-bg: #E7F3EB;
+  --status-active-border: #A8D2B4;
+  --status-expiring-60-fg: #7A5200;
+  --status-expiring-60-bg: #FFF5DC;
+  --status-expiring-60-border: #EDCB7E;
+  --status-expiring-soon-fg: #9A3D0B;
+  --status-expiring-soon-bg: #FDEADD;
+  --status-expiring-soon-border: #EFB189;
+  --status-expired-fg: #B42318;
+  --status-expired-bg: #FDE8E6;
+  --status-expired-border: #F0ADA7;
+  --status-no-expiry-fg: #4A5560;
+  --status-no-expiry-bg: #EEF1F0;
+  --status-no-expiry-border: #D3D9D6;
+  --status-na-fg: #4A5560;
+  --status-na-bg: #EEF1F0;
+  --status-na-border: #D3D9D6;
+}

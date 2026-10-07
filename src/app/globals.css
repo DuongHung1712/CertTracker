@@ -114,7 +114,7 @@
   --input: #83908C;
   --ring: #1C7C75;
 
-  /* Chart palette is designed in week 5 (docs/design-system.md §11). */
+  /* Multi-series chart tokens, unused so far — chart rules: docs/design-system.md §2.5. */
   --chart-1: #0E5C58;
   --chart-2: #56636C;
   --chart-3: #83908C;

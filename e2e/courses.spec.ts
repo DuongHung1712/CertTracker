@@ -12,9 +12,11 @@ test("admin adds a course and a member can only read it", async ({ page }) => {
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Tên khóa học").fill(courseName);
   await dialog.getByLabel("Loại chứng chỉ").click();
-  await page.getByRole("option").first().click();
+  // Pick by exact name, not `.first()`: the first select's popup can still be animating out (visible) when the
+  // second one opens, so a bare `getByRole("option").first()` may resolve to an option of the wrong list.
+  await page.getByRole("option", { name: "Cloud", exact: true }).click();
   await dialog.getByLabel("Nhà cung cấp").click();
-  await page.getByRole("option").first().click();
+  await page.getByRole("option", { name: "AWS", exact: true }).click();
   await dialog.getByRole("button", { name: "Lưu" }).click();
   // exact: the row's actions button is aria-labelled "Thao tác cho {course name}", so an
   // unscoped substring match on the course name also matches that cell.
