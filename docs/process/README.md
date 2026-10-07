@@ -1,6 +1,6 @@
 # CertTracker — Process documents
 
-Read in this order. All four were written **after** the MVP was built; see [00](00-process-status.md) for why and for the gate before Phase 2.
+Read in this order. Documents 00 to 03 were written **after** the MVP was built, and 04 documents the screens as they were built (screenshots, not mockups); see [00](00-process-status.md) for why and for the gate before Phase 2.
 
 | # | Document | Question it answers |
 |---|---|---|
@@ -8,6 +8,7 @@ Read in this order. All four were written **after** the MVP was built; see [00](
 | 01 | [Requirements and CA](01-requirements-and-ca.md) | What problem, for whom, what must it do, how do we know we are right? |
 | 02 | [WBS](02-wbs.md) | What work was done and what remains, planned vs actual? |
 | 03 | [SAD](03-sad.md) | How is the system built and why? |
+| 04 | [Design and mockups](04-design-and-mockups.md) | What do the screens look like today, and what do we want to build next? |
 
 Statements marked "as of 2026-10-05" or "(W6, unmerged)" must be refreshed when week 6 is merged and the public deployment is updated.
 

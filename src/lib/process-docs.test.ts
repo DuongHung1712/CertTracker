@@ -178,13 +178,26 @@ describe("process documents", () => {
 
   it("contains the expected files", () => {
     expect(files).toEqual(
-      expect.arrayContaining(["README.md", "00-process-status.md", "01-requirements-and-ca.md", "02-wbs.md", "03-sad.md"]),
+      expect.arrayContaining([
+        "README.md",
+        "00-process-status.md",
+        "01-requirements-and-ca.md",
+        "02-wbs.md",
+        "03-sad.md",
+        "04-design-and-mockups.md",
+      ]),
     );
   });
 
   it("README.md links every numbered document", () => {
     const readme = read("README.md");
-    for (const name of ["00-process-status.md", "01-requirements-and-ca.md", "02-wbs.md", "03-sad.md"]) {
+    for (const name of [
+      "00-process-status.md",
+      "01-requirements-and-ca.md",
+      "02-wbs.md",
+      "03-sad.md",
+      "04-design-and-mockups.md",
+    ]) {
       expect(readme, `README.md does not link ${name}`).toContain(`](${name})`);
     }
   });
@@ -202,5 +215,32 @@ describe("process documents", () => {
   it("03-sad.md has the three mermaid diagrams (context, container, data model)", () => {
     const sad = read("03-sad.md");
     expect((sad.match(/```mermaid/g) ?? []).length).toBe(3);
+  });
+});
+
+describe("04-design-and-mockups.md", () => {
+  const design = read("04-design-and-mockups.md");
+  const imagesDir = resolve(DIR, "images");
+  const markdownFiles = readdirSync(DIR).filter((f) => f.endsWith(".md"));
+
+  it("has the three user-flow diagrams (mermaid is for flows only; mockups are images)", () => {
+    expect((design.match(/```mermaid/g) ?? []).length).toBe(3);
+  });
+
+  it("embeds its screenshots as images that exist (the link check above covers image links too)", () => {
+    const embedded = [...design.matchAll(/!\[[^\]]*\]\(([^)\s]+)\)/g)].map((m) => m[1]);
+    expect(embedded.length).toBeGreaterThan(10);
+    for (const target of embedded) {
+      expect(target, `image link "${target}" must point into images/`).toMatch(/^images\/[\w-]+\.png$/);
+      expect(existsSync(resolve(DIR, target)), `${target} does not exist`).toBe(true);
+    }
+  });
+
+  it("has no orphan images: every .png in images/ is referenced by at least one document", () => {
+    const text = markdownFiles.map(read).join("\n");
+    const orphans = readdirSync(imagesDir)
+      .filter((f) => f.endsWith(".png"))
+      .filter((f) => !text.includes(`images/${f}`));
+    expect(orphans, `images not referenced by any document: ${orphans.join(", ")}`).toEqual([]);
   });
 });
