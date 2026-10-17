@@ -93,7 +93,7 @@ Notes on the table:
 | SM-1 | A real team stops using its spreadsheet | The sponsor and the admin confirm the spreadsheet is no longer updated, after at least two consecutive weeks of real use — *proposed; the sponsor decides the final period* (aligned with gate G1 in `00-process-status.md` §3) | Design spec §1 (phase-1 goal) |
 | SM-2 | Legacy data imports cleanly | A real file imports with zero unresolved error rows after cleaning; manual fixes recorded | Design spec §10 — *proposed numeric target to confirm with the sponsor* |
 | SM-3 | Weekly e-mail works | The Monday e-mail runs correctly on two consecutive Mondays with no failed delivery (Settings history shows Sent > 0, Failed = 0) | Design spec §10 |
-| SM-4 | Navigation feels immediate | Moving between pages shows feedback at once and the 75th-percentile page load stays under 1 second — *proposed; confirm after re-measuring with the same method* | Manager feedback (2026-10-05); measurements in `02-wbs.md` item 8.1 |
+| SM-4 | Navigation feels immediate | Moving between pages shows feedback at once and the 75th-percentile page load stays under 1 second — *proposed; confirm after re-measuring with the same method* | Manager feedback (2026-10-05); measurements in `04-wbs.md` item 8.1 |
 
 ## 6. Scope
 

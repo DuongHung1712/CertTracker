@@ -1,4 +1,4 @@
-// Captures the AS-BUILT screenshots used by docs/process/04-design-and-mockups.md.
+// Captures the AS-BUILT screenshots used by docs/process/06-design-and-mockups.md.
 // These are screenshots of the running application, NOT mockups.
 //
 // How to run (from the repository root):

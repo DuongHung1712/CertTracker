@@ -3,11 +3,11 @@
 - **Status:** Draft v1, parts A (as-built documentation, §1–§4b) and B (proposed mockups for review, §5–§6)
 - **Last updated:** 2026-10-07
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Design system](../design-system.md), [Decisions](../decisions.md), [Requirements and CA](01-requirements-and-ca.md), [WBS](02-wbs.md), [SAD](03-sad.md), the code under `src/app` and `src/components/app-shell/nav.ts`
+- **Sources:** [Design system](../design-system.md), [Decisions](../decisions.md), [Requirements and CA](03-requirements.md), [WBS](04-wbs.md), [SAD](05-sad.md), the code under `src/app` and `src/components/app-shell/nav.ts`
 
 > **Tóm tắt (VI):** Tài liệu này có hai phần tách bạch. Phần A (§1–§4b) ghi lại giao diện **đã được xây** (chụp màn hình thật, dữ liệu seed giả): app được xây trước khi có bất kỳ mockup nào được duyệt. Gồm cơ sở thiết kế, bảng liệt kê màn hình theo vai trò và requirement, ba luồng người dùng (member cập nhật chứng chỉ, manager theo dõi hằng tuần, admin import Excel) và thư viện ảnh theo vai trò. Phần B (§5–§6) là **mockup đề xuất, chưa xây**, để sponsor duyệt **trước khi** tốn công kỹ thuật: phản hồi khi chuyển trang, công tắc ngôn ngữ EN/VI, tự đăng ký có admin duyệt (sẽ thay thế quyết định #12, hoãn đến sau G1 trừ khi sponsor yêu cầu sớm hơn) và ba ý tưởng AI giai đoạn 2 (bị chặn bởi cổng G1, không phải cam kết). Mỗi ảnh đề xuất có biểu ngữ "PROPOSED MOCKUP — not built"; §6 là bảng 14 câu hỏi cần sponsor trả lời.
 
-**Reading note.** Items marked **(W6, unmerged)** are built on the week-6 branch `feat/week6-notifications` and are not yet merged into `dev` (same label as in [01](01-requirements-and-ca.md), [02](02-wbs.md) and [03](03-sad.md)). "Built" means built and tested by the build team, not validated by users.
+**Reading note.** Items marked **(W6, unmerged)** are built on the week-6 branch `feat/week6-notifications` and are not yet merged into `dev` (same label as in [03](03-requirements.md), [04](04-wbs.md) and [05](05-sad.md)). "Built" means built and tested by the build team, not validated by users.
 
 ## 1. Status and how to read this
 
@@ -31,12 +31,12 @@ The design system ([design-system.md](../design-system.md), in Vietnamese) is th
 - **Tokens only:** colours, text sizes and radii are named by role and defined once in `src/app/globals.css`; components never hard-code them, so a dark theme can be added later without touching components.
 - **Components:** shadcn/ui (`base-nova`, Base UI) plus CertTracker's own app shell, data table, filter bar, empty state and status components (see the component table in the design system and the `/design` showcase page).
 - **Status is never colour alone:** every status has a text label and an icon.
-- **Accessibility rules:** text contrast of at least 4.5:1 and control borders, focus rings and meaningful icons at least 3:1, checked by an automated test in CI (`src/app/tokens.test.ts`); keyboard operation, a skip link and landmarks are specified in the design system. A keyboard and screen-reader **audit has not been done** (see [02](02-wbs.md), item 8.4; requirement `NFR-05` is `Partial`).
+- **Accessibility rules:** text contrast of at least 4.5:1 and control borders, focus rings and meaningful icons at least 3:1, checked by an automated test in CI (`src/app/tokens.test.ts`); keyboard operation, a skip link and landmarks are specified in the design system. A keyboard and screen-reader **audit has not been done** (see [04](04-wbs.md), item 8.4; requirement `NFR-05` is `Partial`).
 - **Role-based navigation:** one app shell for every role, with a left sidebar that hides the entries a role cannot use (decision #14, implemented in `src/components/app-shell/nav.ts`). It is a convenience only: access is enforced by Row Level Security.
 
 ## 3. Screen inventory
 
-Every `page.tsx` under `src/app`, as of branch `docs/process-pack` (which includes week 6). "Roles" combines the sidebar entries in `nav.ts` with the redirects inside each page. "Status" uses the wording of [01](01-requirements-and-ca.md) §4 and was checked against the first commit that gave the screen its real content (`git log`); the original placeholder pages of 2026-09-27 are ignored.
+Every `page.tsx` under `src/app`, as of branch `docs/process-pack` (which includes week 6). "Roles" combines the sidebar entries in `nav.ts` with the redirects inside each page. "Status" uses the wording of [03](03-requirements.md) §4 and was checked against the first commit that gave the screen its real content (`git log`); the original placeholder pages of 2026-09-27 are ignored.
 
 | Route | Screen | Roles | Purpose | Requirements | Status | Screenshot |
 |---|---|---|---|---|---|---|
@@ -227,7 +227,7 @@ How to tell a proposal from an as-built screenshot:
 - All people, courses and numbers are fictional. Where a drawing needs data that the seed does not contain (a new requester, Azure certificates, study hours), it is invented, and the image or the text below says so.
 - Text is in English because that is the reviewer's reading language; the Vietnamese version is shown only where it is the point (§5.2).
 
-Sections 5.1 to 5.3 map to the work packages of the same numbers in [02](02-wbs.md); 5.4 is gated by G1 in [00](00-process-status.md). Every question for the reviewer is repeated in §6, so the answers can be returned in one place. The images are produced by `docs/process/mockups/render-mockups.mjs` from the HTML files next to it.
+Sections 5.1 to 5.3 map to the work packages of the same numbers in [04](04-wbs.md); 5.4 is gated by G1 in [00](00-process-status.md). Every question for the reviewer is repeated in §6, so the answers can be returned in one place. The images are produced by `docs/process/mockups/render-mockups.mjs` from the HTML files next to it.
 
 ### 5.1 Loading feedback on page changes (WBS 8.1)
 
@@ -262,7 +262,7 @@ Sections 5.1 to 5.3 map to the work packages of the same numbers in [02](02-wbs.
 
 ![Proposed: Dashboard in English](images/proposed-i18n-dashboard-en.png)
 
-*Proposed.* The top of the Dashboard in English, translated according to the glossary in [01](01-requirements-and-ca.md) §8: for example "Certificates by person", "Expiring soon", "Still valid". "Dashboard" and "Import / Export" stay as they are, because the glossary keeps them in English.
+*Proposed.* The top of the Dashboard in English, translated according to the glossary in [03](03-requirements.md) §8: for example "Certificates by person", "Expiring soon", "Still valid". "Dashboard" and "Import / Export" stay as they are, because the glossary keeps them in English.
 
 ![Proposed: Dashboard in Vietnamese](images/proposed-i18n-dashboard-vi.png)
 
@@ -276,7 +276,7 @@ Sections 5.1 to 5.3 map to the work packages of the same numbers in [02](02-wbs.
 - Dates and numbers follow the language. The English drawing writes "07 Oct 2026, 19:41" where Vietnamese shows "07/10/2026 19:41"; the exact format is for the i18n design.
 - The convention "UI text in Vietnamese" in `CLAUDE.md` is to be reviewed when the i18n spec is approved (decision #48).
 
-**Linked IDs.** WBS 8.2; `NFR-04`; `A-07`; decision #48; glossary in [01](01-requirements-and-ca.md) §8.
+**Linked IDs.** WBS 8.2; `NFR-04`; `A-07`; decision #48; glossary in [03](03-requirements.md) §8.
 
 **Decisions needed from the reviewer.**
 
@@ -306,7 +306,7 @@ Sections 5.1 to 5.3 map to the work packages of the same numbers in [02](02-wbs.
 - A new account starts with no role. A "pending" account sees only the waiting page and no data. This needs a new role value and Row Level Security tests (a schema change, under the project rules). A pending user would receive no e-mails, which decision #42 already prepared for.
 - Only an Admin chooses the role, and the default is the least powerful one (Member). For a Manager, the Admin also picks the teams they manage (the existing team-manager link).
 - Approval connects the account to a member record, using the same link by e-mail address that the system makes today when an admin creates an account.
-- The request stays on record after a decision, with who decided and when. That is a decision record on the request itself, not a general audit log (which is out of scope, see [01](01-requirements-and-ca.md) §6).
+- The request stays on record after a decision, with who decided and when. That is a decision record on the request itself, not a general audit log (which is out of scope, see [03](03-requirements.md) §6).
 - Opening sign-up to the internet creates new risks: spam requests, and a team list visible to anyone who opens the page. The questions below decide how much protection is needed.
 
 **Linked IDs.** WBS 8.3; `R-31`; decisions #12 (to be superseded) and #42.

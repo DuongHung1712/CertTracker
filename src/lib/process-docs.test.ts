@@ -56,8 +56,8 @@ const WBS_HEADER = [
   "Requirements",
 ];
 
-const requirementsTable = readTable(read("01-requirements-and-ca.md"), "ID");
-const wbsTable = readTable(read("02-wbs.md"), "WBS");
+const requirementsTable = readTable(read("03-requirements.md"), "ID");
+const wbsTable = readTable(read("04-wbs.md"), "WBS");
 
 const requirements: Requirement[] = requirementsTable.rows.map((r) => ({
   id: r[0],
@@ -81,7 +81,7 @@ const BUILD = /^(Built \(W[1-6]\)|Built \(W6, unmerged\)|Partial|Planned|Gated \
 const VALIDATION = new Set(["Assumed", "Decided", "Validated"]);
 const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Blocked (G1)"]);
 
-describe("01-requirements-and-ca.md", () => {
+describe("03-requirements.md", () => {
   it("keeps the documented columns and well-formed rows", () => {
     expect(requirementsTable.header).toEqual(REQUIREMENT_HEADER);
     for (const row of requirementsTable.rows) {
@@ -132,7 +132,7 @@ describe("01-requirements-and-ca.md", () => {
   });
 });
 
-describe("02-wbs.md", () => {
+describe("04-wbs.md", () => {
   it("keeps the documented columns and well-formed rows", () => {
     expect(wbsTable.header).toEqual(WBS_HEADER);
     for (const row of wbsTable.rows) {
@@ -181,12 +181,12 @@ describe("process documents", () => {
       expect.arrayContaining([
         "README.md",
         "00-process-status.md",
-        "01-requirements-and-ca.md",
-        "02-wbs.md",
-        "03-sad.md",
-        "04-design-and-mockups.md",
-        "05-poc-and-mvp.md",
-        "06-production-readiness.md",
+        "03-requirements.md",
+        "04-wbs.md",
+        "05-sad.md",
+        "06-design-and-mockups.md",
+        "07-poc-and-mvp.md",
+        "08-production-readiness.md",
       ]),
     );
   });
@@ -195,12 +195,12 @@ describe("process documents", () => {
     const readme = read("README.md");
     for (const name of [
       "00-process-status.md",
-      "01-requirements-and-ca.md",
-      "02-wbs.md",
-      "03-sad.md",
-      "04-design-and-mockups.md",
-      "05-poc-and-mvp.md",
-      "06-production-readiness.md",
+      "03-requirements.md",
+      "04-wbs.md",
+      "05-sad.md",
+      "06-design-and-mockups.md",
+      "07-poc-and-mvp.md",
+      "08-production-readiness.md",
     ]) {
       expect(readme, `README.md does not link ${name}`).toContain(`](${name})`);
     }
@@ -216,14 +216,14 @@ describe("process documents", () => {
     if (file !== "README.md") expect(text).toContain("**Tóm tắt (VI):**");
   });
 
-  it("03-sad.md has the three mermaid diagrams (context, container, data model)", () => {
-    const sad = read("03-sad.md");
+  it("05-sad.md has the three mermaid diagrams (context, container, data model)", () => {
+    const sad = read("05-sad.md");
     expect((sad.match(/```mermaid/g) ?? []).length).toBe(3);
   });
 });
 
-describe("04-design-and-mockups.md", () => {
-  const design = read("04-design-and-mockups.md");
+describe("06-design-and-mockups.md", () => {
+  const design = read("06-design-and-mockups.md");
   const imagesDir = resolve(DIR, "images");
   const markdownFiles = readdirSync(DIR).filter((f) => f.endsWith(".md"));
 
@@ -249,9 +249,9 @@ describe("04-design-and-mockups.md", () => {
   });
 });
 
-describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
-  const LATER_DOCS = ["05-poc-and-mvp.md", "06-production-readiness.md"] as const;
-  const requirementsDoc = read("01-requirements-and-ca.md");
+describe("07-poc-and-mvp.md and 08-production-readiness.md", () => {
+  const LATER_DOCS = ["07-poc-and-mvp.md", "08-production-readiness.md"] as const;
+  const requirementsDoc = read("03-requirements.md");
   const matches = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]);
 
   const knownIds = new Set([
@@ -271,9 +271,9 @@ describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
     }
   };
 
-  const findings = readTable(read("05-poc-and-mvp.md"), "#");
-  const acceptance = readTable(read("05-poc-and-mvp.md"), "ID");
-  const checklist = readTable(read("06-production-readiness.md"), "ID");
+  const findings = readTable(read("07-poc-and-mvp.md"), "#");
+  const acceptance = readTable(read("07-poc-and-mvp.md"), "ID");
+  const checklist = readTable(read("08-production-readiness.md"), "ID");
 
   it("the P- and MVP- tables in 05 and the PRD- table in 06 keep their columns on every row", () => {
     expect(findings.header).toEqual(["#", "Technical question", "Answer", "Evidence", "Limits"]);
@@ -309,7 +309,7 @@ describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
     const wbsCodes = matches(text, /\bWBS (\d+(?:\.\d+)?(?:(?:, | and | or )\d+(?:\.\d+)?)*)/g).flatMap((list) =>
       list.split(/, | and | or /),
     );
-    if (file === "06-production-readiness.md") {
+    if (file === "08-production-readiness.md") {
       const column = checklist.header.indexOf("WBS");
       for (const row of checklist.rows) if (row[column] !== "—") wbsCodes.push(...row[column].split(", "));
     }
@@ -337,7 +337,7 @@ describe("05-poc-and-mvp.md and 06-production-readiness.md", () => {
 describe("proposed mockups (docs/process/mockups)", () => {
   const mockupsDir = resolve(DIR, "mockups");
   const imagesDir = resolve(DIR, "images");
-  const design = read("04-design-and-mockups.md");
+  const design = read("06-design-and-mockups.md");
 
   /** `--name: #HEX` declarations inside the first `:root { ... }` block of a CSS file. */
   const rootColours = (css: string): Map<string, string> => {

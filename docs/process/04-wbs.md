@@ -3,7 +3,7 @@
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
 - **Last updated:** 2026-10-07
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Design spec §10](../superpowers/specs/2026-09-26-certtracker-design.md), `git log`, [Plans](../superpowers/plans/), [Requirements and CA](01-requirements-and-ca.md), [Process status](00-process-status.md)
+- **Sources:** [Design spec §10](../superpowers/specs/2026-09-26-certtracker-design.md), `git log`, [Plans](../superpowers/plans/), [Requirements and CA](03-requirements.md), [Process status](00-process-status.md)
 
 > **Tóm tắt (VI):** Cây công việc có mã, trạng thái, kế hoạch so với thực tế. "Planned" lấy từ lộ trình tuần 1–6 trong spec; "Actual" lấy từ lịch sử git (ngày lịch; giờ công không được theo dõi). Phần chưa làm là ước lượng theo khoảng, cần xem lại và không phải cam kết. Tuần 6 (cron, email, chất lượng dữ liệu) mới có trên nhánh `feat/week6-notifications`, chưa merge vào `dev` và chưa lên production. Cổng G1 chặn Giai đoạn 2 (AI) cho tới khi nhu cầu được xác nhận.
 
@@ -12,7 +12,7 @@
 - **Planned**: the roadmap in the design spec (phase 1 = 6 weeks, phase 2 = 6 weeks). `—` means the item was not in that roadmap.
 - **Actual**: calendar window from `git log` and merged pull requests. Effort in person-hours was **not tracked**, so none is claimed.
 - **Est. remaining**: engineer estimates in working days; ranges, to be reviewed. They are not commitments.
-- **Requirements** column links each work package to [01](01-requirements-and-ca.md). Every `R-xx` and `NFR-xx` in `01` §4 appears in at least one row.
+- **Requirements** column links each work package to [03](03-requirements.md). Every `R-xx` and `NFR-xx` in `01` §4 appears in at least one row.
 - **Status** is one of `Done`, `In progress`, `Not started`, `Blocked (G1)`. `Done` means built and tested by the build team, not validated by users (see `01` §4 notes).
 - Phase 1 was built with AI-assisted development, which is why the calendar time is much shorter than the original 6-week plan; the plan was not re-baselined.
 
@@ -40,10 +40,10 @@
 | 8.3 | Self sign-up with approval | Own design + build | A new user can request access and an admin approves. Unscheduled until after G1 unless the sponsor asks earlier | — | not started | 2–4 days | 6 | Not started | R-31 |
 | 8.4 | Accessibility audit (keyboard and screen reader) | Audit notes + fixes list | Key flows usable by keyboard; headings and labels checked | — | not started | 1–2 days | 6 | Not started | NFR-05 |
 | 9 | Validation and rollout | See 9.1–9.4 | — | — | — | — | — | Not started | — |
-| 9.1 | Pilot readiness: merge week 6, push migrations, verify the sending domain, first backup, data-owner approval | Week 6 merged and released to `main`; cloud schema up to date; sending domain verified and production secrets set; first backup taken and one restore tried; data-owner approval recorded; the account procedure ready (accounts are created in pilot week 0, after the import); i.e. every item marked `Pilot` in [06](06-production-readiness.md) | The public deployment shows all pages; a test e-mail is delivered; all `Pilot` items in 06 are done (they are the preconditions in [05 §6](05-poc-and-mvp.md)) | — | not started | 1–2 days (estimate; the data-owner approval depends on the data owner) | 7 | Not started | R-12, R-13 |
-| 9.2 | Pilot with one real team | Pilot plan in [05 §6](05-poc-and-mvp.md); two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 1 set-up week + 2 calendar weeks (pilot plan in 05 §6) | 9.1, 1.3, 8.1 | Not started | R-12, R-13 |
+| 9.1 | Pilot readiness: merge week 6, push migrations, verify the sending domain, first backup, data-owner approval | Week 6 merged and released to `main`; cloud schema up to date; sending domain verified and production secrets set; first backup taken and one restore tried; data-owner approval recorded; the account procedure ready (accounts are created in pilot week 0, after the import); i.e. every item marked `Pilot` in [08](08-production-readiness.md) | The public deployment shows all pages; a test e-mail is delivered; all `Pilot` items in 06 are done (they are the preconditions in [07 §6](07-poc-and-mvp.md)) | — | not started | 1–2 days (estimate; the data-owner approval depends on the data owner) | 7 | Not started | R-12, R-13 |
+| 9.2 | Pilot with one real team | Pilot plan in [07 §6](07-poc-and-mvp.md); two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 1 set-up week + 2 calendar weeks (pilot plan in 05 §6) | 9.1, 1.3, 8.1 | Not started | R-12, R-13 |
 | 9.3 | Production hosting decision | Decision record: stay on free tiers or move (e.g. VPS) | Recorded in `decisions.md` | — | not started | 1–2 days | 9.2 | Not started | NFR-07 |
-| 9.4 | Production readiness | Checklist in [06](06-production-readiness.md) completed; release checklist adopted | All items marked `Production` in 06 are done; sponsor go decision recorded | — | not started | 3–6 days (estimate; depends on hosting choice) | 9.3, G1 | Not started | NFR-01, NFR-06, NFR-07 |
+| 9.4 | Production readiness | Checklist in [08](08-production-readiness.md) completed; release checklist adopted | All items marked `Production` in 06 are done; sponsor go decision recorded | — | not started | 3–6 days (estimate; depends on hosting choice) | 9.3, G1 | Not started | NFR-01, NFR-06, NFR-07 |
 | G1 | Gate: need confirmed | Sponsor sign-off that the three conditions in [00 §3](00-process-status.md) are met: assumptions `A-01`…`A-10` checked as planned in `01` §7; a real team used the product for at least two consecutive weeks including two Monday e-mails (*proposed period*), with the sponsor confirming it replaces their spreadsheet; the sponsor confirms which Phase 2 features are wanted and in what order | Written decision to open, re-scope or stop Phase 2 | — | — | — | 1.2, 1.3, 9.2 | Not started | — |
 | 10 | Phase 2 — AI features | Weeks 7–12 of the design spec | Re-estimated after G1 | Weeks 7–12 | — | re-estimate after G1 | G1 | Blocked (G1) | R-20, R-21, R-22, R-23, R-24, R-25, R-26, R-27, R-28, R-29 |
 

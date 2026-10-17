@@ -3,11 +3,11 @@
 - **Status:** Draft v1 — condensed from the design spec; backfilled
 - **Last updated:** 2026-10-07
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), [Design system](../design-system.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), [Requirements and CA](01-requirements-and-ca.md), [WBS](02-wbs.md)
+- **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), [Design system](../design-system.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), [Requirements and CA](03-requirements.md), [WBS](04-wbs.md)
 
 > **Tóm tắt (VI):** Bản rút gọn kiến trúc từ spec: bối cảnh, container, mô hình dữ liệu, bảo mật, luồng chính, thuộc tính chất lượng, triển khai. Chi tiết và lý do từng lựa chọn nằm ở spec và decisions.md; tài liệu này chỉ trỏ tới. Phần tuần 6 (cron, e-mail, chất lượng dữ liệu) mới có trên nhánh `feat/week6-notifications`, chưa merge vào `dev`; kiến trúc AI (giai đoạn 2) chưa được xây.
 
-**Reading note.** Items marked **(W6, unmerged)** are built on the week-6 branch `feat/week6-notifications` and are not yet merged into `dev` (same label as in [01](01-requirements-and-ca.md) and [02](02-wbs.md)). "Built" means built and tested by the build team, not validated by users.
+**Reading note.** Items marked **(W6, unmerged)** are built on the week-6 branch `feat/week6-notifications` and are not yet merged into `dev` (same label as in [03](03-requirements.md) and [04](04-wbs.md)). "Built" means built and tested by the build team, not validated by users.
 
 ## 1. Context
 
@@ -99,7 +99,7 @@ Key rules:
 |---|---|---|
 | Security and privacy | RLS tests per role (pgTAP), small-group hiding, no service key in the browser | Built (service-role part: W6, unmerged) |
 | Reliability | Import commit is one transaction; e-mails use an atomic claim and a history table | Import: built (W4); e-mails: W6, unmerged |
-| Performance | Server rendering; loading state on the Dashboard only (on `dev`; none on `main`, which the public deployment builds from). **Known issue, under investigation:** moving between pages feels slow. Candidate causes (function region far from the database, several sequential session calls per navigation, few loading states) are hypotheses and not yet confirmed; see [02](02-wbs.md) §4 | Work package 8.1, not started |
+| Performance | Server rendering; loading state on the Dashboard only (on `dev`; none on `main`, which the public deployment builds from). **Known issue, under investigation:** moving between pages feels slow. Candidate causes (function region far from the database, several sequential session calls per navigation, few loading states) are hypotheses and not yet confirmed; see [04](04-wbs.md) §4 | Work package 8.1, not started |
 | Accessibility | Contrast checked by an automated test; keyboard and screen-reader use not yet audited | Partial (work package 8.4) |
 | Maintainability | Code organised by business feature; decisions logged; tests beside code | Built |
 | Language | Vietnamese interface today; English/Vietnamese switch is planned, not designed | Work package 8.2, not started |
