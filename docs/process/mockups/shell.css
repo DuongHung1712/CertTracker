@@ -1,0 +1,143 @@
+/*
+ * Shared look for the PROPOSED mockups. Mirrors the real app shell (sidebar, topbar, page header, cards, tables)
+ * using only the tokens in tokens.css. Static HTML: no JavaScript, no frameworks.
+ * Viewport: 1440 x 900. The banner takes the first 36 px; the app fills the other 864 px.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap");
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1440px; height: 900px; overflow: hidden; }
+body {
+  font-family: "Be Vietnam Pro", system-ui, "Segoe UI", sans-serif;
+  font-size: 14px; line-height: 20px;
+  color: var(--foreground); background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; text-decoration: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.muted { color: var(--muted-foreground); }
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12px; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ---- "Proposed" banner: must survive in every PNG ---- */
+.banner {
+  height: 36px; display: flex; align-items: center; gap: 10px; padding: 0 16px;
+  background: var(--status-expiring-60-bg); color: var(--status-expiring-60-fg);
+  border-bottom: 2px solid var(--status-expiring-60-border);
+  font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.banner .ic { width: 18px; height: 18px; }
+.banner .concept {
+  margin-left: auto; padding: 2px 10px; border-radius: 4px;
+  background: var(--status-expiring-soon-fg); color: #fff; letter-spacing: 0.04em;
+}
+
+.banner .lang { margin-left: auto; padding: 2px 10px; border-radius: 4px; background: var(--primary); color: var(--primary-foreground); letter-spacing: 0.04em; text-transform: none; }
+
+/* ---- App shell ---- */
+.app { position: relative; display: flex; height: 864px; }
+.sidebar {
+  width: 256px; flex: none; padding: 8px; background: var(--sidebar);
+  border-right: 1px solid var(--sidebar-border); color: var(--sidebar-foreground);
+}
+.brand { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px; margin-bottom: 8px; font-size: 15px; font-weight: 600; }
+.brand b { color: var(--primary); font-weight: 600; }
+.nav { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: 4px; font-size: 14px; }
+.nav .ic { width: 20px; height: 20px; }
+.nav.active { background: var(--sidebar-accent); color: var(--sidebar-accent-foreground); font-weight: 500; }
+.nav .new { margin-left: auto; font-size: 11px; font-weight: 600; padding: 0 6px; border-radius: 4px; background: var(--status-expiring-soon-bg); color: var(--status-expiring-soon-fg); border: 1px solid var(--status-expiring-soon-border); }
+
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+.topbar {
+  height: 48px; flex: none; display: flex; align-items: center; gap: 10px; padding: 0 16px;
+  background: var(--card); border-bottom: 1px solid var(--border);
+}
+.topbar .sep { width: 1px; height: 20px; background: var(--border); }
+.topbar .crumb { font-size: 14px; }
+.topbar .user { margin-left: auto; display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border-radius: 4px; font-weight: 500; }
+.topbar .user.open { background: var(--muted); }
+.page { flex: 1; min-height: 0; overflow: hidden; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.page-header h1 { font-size: 20px; line-height: 28px; font-weight: 600; }
+.page-header p { color: var(--muted-foreground); }
+.page-header .actions { display: flex; gap: 8px; align-items: center; }
+.section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.section h2 { font-size: 15px; line-height: 22px; font-weight: 600; }
+.section .desc { font-size: 12px; line-height: 16px; color: var(--muted-foreground); margin-top: 2px; }
+.cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+/* ---- Cards, KPI tiles ---- */
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 6px; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.kpi { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+.kpi .label { font-size: 12px; line-height: 16px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); }
+.kpi .value { font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kpi .hint { font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+
+/* ---- Buttons, inputs, badges ---- */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 4px; font-size: 13px; font-weight: 500; border: 1px solid transparent; white-space: nowrap; }
+.btn.primary { background: var(--primary); color: var(--primary-foreground); }
+.btn.outline { background: var(--card); border-color: var(--input); color: var(--foreground); }
+.btn.ghost { color: var(--foreground); }
+.btn.danger { background: var(--card); border-color: var(--status-expired-border); color: var(--destructive); }
+.btn.lg { height: 36px; font-size: 14px; }
+.btn.block { width: 100%; }
+.btn .ic { width: 16px; height: 16px; }
+.input { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; background: var(--card); border: 1px solid var(--input); border-radius: 4px; color: var(--muted-foreground); font-size: 14px; }
+.input.lg { height: 36px; }
+.input.filled { color: var(--foreground); }
+.input .ic { width: 16px; height: 16px; }
+.input .caret { margin-left: auto; }
+.toolbar { display: flex; gap: 8px; align-items: center; }
+.toolbar .grow { flex: 1; }
+.badge { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 6px; border: 1px solid; border-radius: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+.badge .ic { width: 12px; height: 12px; }
+.badge.active { color: var(--status-active-fg); background: var(--status-active-bg); border-color: var(--status-active-border); }
+.badge.expiring-60 { color: var(--status-expiring-60-fg); background: var(--status-expiring-60-bg); border-color: var(--status-expiring-60-border); }
+.badge.expiring-soon { color: var(--status-expiring-soon-fg); background: var(--status-expiring-soon-bg); border-color: var(--status-expiring-soon-border); }
+.badge.expired { color: var(--status-expired-fg); background: var(--status-expired-bg); border-color: var(--status-expired-border); font-weight: 600; }
+.badge.na { color: var(--status-na-fg); background: var(--status-na-bg); border-color: var(--status-na-border); }
+.badge.plain { color: var(--secondary-foreground); background: var(--secondary); border-color: transparent; }
+.badge.primary { color: var(--accent-foreground); background: var(--accent); border-color: var(--border); }
+
+/* ---- Tables (compact, 32 px rows) ---- */
+.table { background: var(--card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.table table { width: 100%; border-collapse: collapse; }
+.table th { height: 32px; padding: 0 10px; text-align: left; background: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted-foreground); white-space: nowrap; }
+.table td { height: 32px; padding: 4px 10px; border-top: 1px solid var(--border); font-size: 13px; line-height: 18px; white-space: nowrap; }
+.table.tall td { height: 44px; }
+.pager { display: flex; justify-content: flex-end; align-items: center; gap: 8px; font-size: 12px; color: var(--muted-foreground); margin-top: 8px; }
+.pager i { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 4px; background: var(--card); }
+.pbar { display: inline-block; width: 64px; height: 4px; border-radius: 2px; background: var(--muted); vertical-align: middle; overflow: hidden; }
+.pbar i { display: block; height: 100%; background: var(--primary); }
+.cell-prog { display: flex; align-items: center; gap: 8px; }
+.cell-prog span { font-size: 12px; color: var(--muted-foreground); }
+
+/* ---- Skeleton (same look as src/components/ui/skeleton.tsx; the pulse is left out of the static image) ---- */
+.sk { display: block; background: var(--muted); border-radius: 4px; }
+
+/* ---- Horizontal bar chart (expiry buckets) ---- */
+.bars { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+.bars .row { display: flex; align-items: center; gap: 8px; height: 28px; font-size: 13px; }
+.bars .lab { width: 150px; text-align: right; }
+.bars .bar { height: 26px; border-radius: 4px; }
+
+/* ---- Annotation markers (reviewer aids, not part of the proposed UI) ---- */
+.pin { position: absolute; z-index: 20; width: 22px; height: 22px; border-radius: 11px; background: var(--foreground); color: #fff; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #fff; }
+.legend { position: absolute; z-index: 20; background: var(--foreground); color: #fff; border-radius: 6px; padding: 10px 14px; font-size: 12px; line-height: 17px; width: 360px; }
+.legend h4 { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; opacity: .75; margin-bottom: 6px; }
+.legend p { display: flex; gap: 8px; margin-top: 4px; }
+.legend p b { flex: none; width: 18px; height: 18px; border-radius: 9px; background: #fff; color: var(--foreground); text-align: center; line-height: 18px; font-size: 11px; }
+
+/* ---- Signed-out pages (login style) ---- */
+.auth { height: 864px; display: flex; align-items: center; justify-content: center; }
+.auth-card { width: 420px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.auth-card h1 { font-size: 15px; line-height: 22px; font-weight: 600; }
+.auth-card .sub { color: var(--muted-foreground); margin-top: -10px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 13px; font-weight: 600; }
+.field .help { font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+.notice { display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 18px; background: var(--accent); color: var(--accent-foreground); border: 1px solid var(--border); }
+.notice .ic { margin-top: 1px; }
+.notice.warn { background: var(--status-expiring-60-bg); border-color: var(--status-expiring-60-border); color: var(--status-expiring-60-fg); }
+.link { color: var(--primary); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }

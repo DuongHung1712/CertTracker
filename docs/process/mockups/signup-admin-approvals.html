@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Proposed mockup: access requests for the administrator</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.tab { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; font-size: 14px; color: var(--muted-foreground); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab.on { color: var(--foreground); font-weight: 600; border-bottom-color: var(--primary); }
+.count { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--muted); font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+.tab.on .count { background: var(--status-expiring-60-bg); color: var(--status-expiring-60-fg); border: 1px solid var(--status-expiring-60-border); }
+.scrim { position: absolute; inset: 0; z-index: 15; background: rgba(21, 33, 43, .38); }
+.sheet { position: absolute; z-index: 16; top: 0; right: 0; bottom: 0; width: 460px; background: var(--popover); border-left: 1px solid var(--border); box-shadow: -8px 0 24px rgba(21, 33, 43, .12); padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+.sheet h2 { font-size: 18px; line-height: 26px; font-weight: 600; }
+.radio { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.radio i { flex: none; width: 16px; height: 16px; margin-top: 2px; border: 1px solid var(--input); border-radius: 8px; background: var(--card); }
+.radio.on i { border: 5px solid var(--primary); }
+.radio small { display: block; font-size: 12px; line-height: 16px; color: var(--muted-foreground); }
+.who { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="var(--card)" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16L15 19L24.5 9.5" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Cert<b>Tracker</b></span>
+    </div>
+    <a class="nav"><i class="ic ic-layout-dashboard"></i>Dashboard</a>
+    <a class="nav active"><i class="ic ic-users"></i>Members</a>
+    <a class="nav"><i class="ic ic-list-checks"></i>Certificates by person</a>
+    <a class="nav"><i class="ic ic-shield-check"></i>Data quality</a>
+    <a class="nav"><i class="ic ic-book-open"></i>Courses</a>
+    <a class="nav"><i class="ic ic-building-2"></i>Organisation</a>
+    <a class="nav"><i class="ic ic-file-spreadsheet"></i>Import / Export</a>
+    <a class="nav"><i class="ic ic-settings"></i>Settings</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="ic ic-panel-left"></i><span class="sep"></span>
+      <span class="crumb">Members</span>
+      <div class="user"><span>admin@certtracker.test</span><span class="badge plain">Admin</span><i class="ic ic-chevron-down"></i></div>
+    </header>
+    <div class="page" style="gap:16px">
+      <div class="page-header">
+        <div><h1>Members</h1><p>All members and their teams.</p></div>
+      </div>
+      <div class="tabs">
+        <span class="tab">Members <span class="count">3</span></span>
+        <span class="tab on">Access requests <span class="count">2</span></span>
+      </div>
+      <div class="toolbar">
+        <div class="input" style="width:288px"><i class="ic ic-search"></i>Search by name or e-mail…</div>
+        <div class="input" style="width:150px">Pending<i class="ic ic-chevron-down caret"></i></div>
+      </div>
+      <div class="table tall">
+        <table>
+          <thead><tr><th>Name</th><th>Work e-mail</th><th>Requested team</th><th>Requested</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b style="font-weight:600">Phạm Quốc Dũng</b></td><td>dung.pham@certtracker.test</td><td>Team Cloud</td><td>07 Oct 2026, 19:12</td>
+              <td><span class="badge expiring-60"><i class="ic ic-clock"></i>Pending</span></td>
+              <td style="text-align:right"><span class="btn primary" style="height:28px">Approve…</span> <span class="btn outline" style="height:28px">Reject…</span></td>
+            </tr>
+            <tr>
+              <td colspan="6" style="padding:0;height:auto;background:var(--background)">
+                <div style="display:grid;grid-template-columns:1fr 1.25fr 0.95fr;gap:28px;padding:16px 16px 18px;white-space:normal">
+                  <div class="field">
+                    <label>Role</label>
+                    <div class="input lg filled" style="width:100%">Member<i class="ic ic-chevron-down caret"></i></div>
+                    <span class="help"><b>Member</b>: own certificates and anonymous totals. <b>Manager</b>: also the teams they manage (you then pick the teams). <b>Admin</b>: everything.</span>
+                  </div>
+                  <div class="field">
+                    <label>Member record</label>
+                    <div class="radio on"><i></i><span>Create a new member in Team Cloud<small>Code M004 is generated automatically.</small></span></div>
+                    <div class="radio"><i></i><span>Link to an existing member<small>Chosen from members that have no account yet. A member with the same e-mail is linked automatically.</small></span></div>
+                  </div>
+                  <div class="field" style="gap:8px">
+                    <div class="notice"><i class="ic ic-mail"></i><span>The person receives an e-mail saying they can sign in.</span></div>
+                    <div class="toolbar"><span class="btn primary lg">Approve</span><span class="btn outline lg">Cancel</span><span class="grow"></span><span class="btn danger lg">Reject…</span></div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><b style="font-weight:600">Võ Thị Hoa</b></td><td>hoa.vo@certtracker.test</td><td>Team AI</td><td>06 Oct 2026, 16:40</td>
+              <td><span class="badge expiring-60"><i class="ic ic-clock"></i>Pending</span></td>
+              <td style="text-align:right"><span class="btn primary" style="height:28px">Approve…</span> <span class="btn outline" style="height:28px">Reject…</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted" style="font-size:12px;line-height:16px">Requests are never deleted: approved and rejected ones stay under the other filter values, with who decided and when.</p>
+    </div>
+  </div>
+
+  <div class="pin" style="left:578px;top:142px">1</div>
+  <div class="pin" style="left:262px;top:330px">2</div>
+  <div class="pin" style="left:622px;top:330px">3</div>
+  <div class="pin" style="left:1290px;top:403px">4</div>
+  <div class="legend" style="left:280px;top:600px;width:640px">
+    <h4>Reviewer notes — not part of the UI</h4>
+    <p><b>1</b><span>A second tab on the existing Members page, visible to Admins only. The badge counts pending requests.</span></p>
+    <p><b>2</b><span>The administrator, not the requester, chooses the role. The default is the least powerful role (Member).</span></p>
+    <p><b>3</b><span>Approving also connects the account to a member record, the same link the system already makes by e-mail address today.</span></p>
+    <p><b>4</b><span>Rejecting asks for confirmation and keeps the request for the record. Decisions are visible to Admins only.</span></p>
+  </div>
+</div>
+</body>
+</html>
