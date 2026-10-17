@@ -31,7 +31,7 @@ Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build
 | R-08 | Upload evidence files for a record (private storage) | N-04 | SPEC §6.1 | Should | Built (W3) | src/lib/storage | Assumed |
 | R-09 | Dashboard KPIs: members, records, done and completion %, in progress, expired, still valid | N-03 | FL-4 | Must | Built (W5) | src/features/dashboard | Assumed |
 | R-10 | Statistics by team, CertType and provider | N-03 | FL-4 | Must | Built (W5) | src/features/dashboard | Assumed |
-| R-11 | Personal ranking (managers/admins only), course popularity, completion by provider | — | FL-4 | Should | Built (W5) | src/features/dashboard | Assumed |
+| R-11 | Personal ranking (managers/admins only), course popularity, completion by provider | N-03 | FL-4 | Should | Built (W5) | src/features/dashboard | Assumed |
 | R-12 | Weekly (Monday) e-mail about certificates expiring within 60 days, to members (their own) and managers (their teams) | N-02 | FL-5 | Must | Built (W6, unmerged) | src/app/api/cron/expiry-alerts | Assumed |
 | R-13 | Monthly KPI e-mail to managers and admins (day 1) | N-03 | FL-5 | Must | Built (W6, unmerged) | src/app/api/cron/monthly-report | Assumed |
 | R-14 | Data-quality checks. The Feature List items (bad member/course references, status/progress mismatch, badly formatted dates) are blocked at write time by database constraints and import staging; the report lists what remains: exam date passed but not Done, Done without evidence, member without team, course without validity | N-01, N-10 | FL-5 | Should | Built (W6, unmerged) | supabase/migrations/20261004000001_data_quality_view.sql, src/features/data-quality | Assumed |
@@ -41,11 +41,11 @@ Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build
 | R-18 | Realtime updates on the records list and the Dashboard | — | FL-7 | Should | Built (W3) | src/features/records/components/records-realtime.tsx | Assumed |
 | R-19 | Scheduled jobs for alerts and periodic reports | N-02, N-03 | FL-7 | Must | Built (W6, unmerged) | vercel.json | Assumed |
 | R-20 | AI: Cert Recommendation (next certificate per person, refundable first) | N-09 | FL-8 | Could | Gated (G1) | — | Assumed |
-| R-21 | AI: Training Plan Generator (from a manager goal: who, which cert, timeline, cost) | N-07, N-09 | FL-8 | Could | Gated (G1) | — | Assumed |
+| R-21 | AI: Training Plan Generator (from a manager goal: who, which cert, timeline, cost) | N-08, N-09 | FL-8 | Could | Gated (G1) | — | Assumed |
 | R-22 | AI: Data Assistant (read certificate images/PDF, suggest merging course names, classify CertType/provider) | N-04, N-10 | FL-8 | Could | Gated (G1) | — | Assumed |
 | R-23 | AI: Skill Gap Analysis (team certificates vs project needs; key-person risk) | N-08 | FL-9 | Could | Gated (G1) | — | Assumed |
-| R-24 | AI: Completion Risk Prediction (stalled progress, exam date near) | — | FL-9 | Could | Gated (G1) | — | Assumed |
-| R-25 | AI: Insights (Vietnamese commentary on dashboard trends, included in the monthly e-mail) | — | FL-9 | Could | Gated (G1) | — | Assumed |
+| R-24 | AI: Completion Risk Prediction (stalled progress, exam date near) | N-09 | FL-9 | Could | Gated (G1) | — | Assumed |
+| R-25 | AI: Insights (Vietnamese commentary on dashboard trends, included in the monthly e-mail) | N-03 | FL-9 | Could | Gated (G1) | — | Assumed |
 | R-26 | AI: Ask Your Data (natural-language questions answered through whitelisted queries, not free text-to-SQL; DEC #9) | N-01, N-03 | FL-9 | Could | Gated (G1) | — | Assumed |
 | R-27 | AI calls only from the backend; the API key never reaches the browser | N-06 | FL-9 | Must | Planned | — | Decided |
 | R-28 | AI sees only data the user may see (respects RLS) | N-06 | FL-9 | Must | Planned | — | Decided |
@@ -57,7 +57,7 @@ Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build
 | NFR-03 | Performance: moving between pages feels immediate (loading feedback; on `dev` only the Dashboard has a loading state, and none on `main`, which the public deployment builds from; target set after re-measuring, see `SM-4`) | N-12 | MGR | Must | Partial | src/app/(app)/dashboard/loading.tsx | Assumed |
 | NFR-04 | Language: the interface can be shown in English or Vietnamese (switch); technical terms stay understandable; unscheduled until after G1 unless the sponsor asks earlier | N-11 | MGR | Should | Planned | — | Assumed |
 | NFR-05 | Accessibility: text contrast at WCAG AA (checked by an automated test); keyboard-friendly tables and forms (not yet audited) | — | DEC #14 | Should | Partial | docs/design-system.md, src/app/tokens.test.ts | Decided |
-| NFR-06 | Reliability: scheduled e-mails are never sent twice and failures are visible to the admin | N-02 | SPEC §12 | Must | Built (W6, unmerged) | src/features/notifications/deliver.ts | Decided |
+| NFR-06 | Reliability: scheduled e-mails are never sent twice and failures are visible to the admin | N-02, N-03 | SPEC §12 | Must | Built (W6, unmerged) | src/features/notifications/deliver.ts | Decided |
 | NFR-07 | Cost: free-tier hosting during the pilot (Vercel Hobby, Supabase Free); move before commercial use | — | DEC #13 | Must | Built (W1) | docs/deploy/task9-free-tier.md | Decided |
 
 Notes on the table:
@@ -68,15 +68,14 @@ Notes on the table:
 
 ## 3. Requirements without an identified need
 
-These requirements map to no need in [02](02-concept-analysis.md) §3. They came from the Feature List or from the team, not from a user outcome. Each is a candidate to confirm or cut at the interviews (WBS 1.2) and gate G1; nothing is removed by this note.
+These requirements map to no need in [02](02-concept-analysis.md) §3. They came from the Feature List or from the team, not from a user outcome. Each is a candidate to confirm or cut at the discovery interviews (WBS 1.2) and gate G1; nothing is removed by this note.
 
-- `R-11` — the personal ranking. No need asks for people to be ranked; the only recorded discussion is about hiding it (decision #8, `A-06`). The other two items in the row (course popularity, completion by provider) are close to `N-03` but were listed with the ranking in FL-4.
 - `R-18` — realtime updates. No need requires changes to appear within seconds; `N-01` would be met by data that is correct when the page is opened.
-- `R-24` — AI completion-risk prediction. No need covers stalled study; managers might want it, but nobody has said so.
-- `R-25` — AI insights on dashboard trends. No need asks for commentary, and there is no history to show trends from (decision #33).
 - `R-31` — self sign-up with approval. Proposed by the team (`PROJECT`); no user has asked to request their own account.
 - `NFR-05` — accessibility. Kept as a quality baseline (decision #14) regardless of interviews; it is listed only because no need in 02 names it, not as a candidate to cut.
 - `NFR-07` — free-tier cost. A constraint ([02](02-concept-analysis.md) §9, decision #13), not a user need.
+
+Partly without a need: `R-11` is mapped to `N-03` for its course-popularity and completion-by-provider items, but its **personal-ranking** part has no identified need. No need asks for people to be ranked; the only recorded discussion is about hiding the ranking (decision #8, `A-06`). The ranking is a candidate to confirm or cut in the same way.
 
 ## 4. Scope
 

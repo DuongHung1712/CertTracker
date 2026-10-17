@@ -64,7 +64,7 @@ That is why the concept analysis ([02](02-concept-analysis.md)) and the WBS ([04
 
 - The stated goal: replace the spreadsheet (Feature List; design spec §1).
 - The nine feature groups `FL-1`…`FL-9`, used to derive the needs `N-01`… in [02](02-concept-analysis.md) §3.
-- The Feature List's import-cleaning rules (`FL-6`) and data-quality checks (`FL-5`), the only material that describes the current spreadsheet ([02](02-concept-analysis.md) §2).
+- The Feature List's import-cleaning rules (`FL-6`) and data-quality checks (`FL-5`), the only material that says anything about the current spreadsheet, and only indirectly ([02](02-concept-analysis.md) §2).
 - The roles and constraints from the design spec (§1–§2) and decisions #1–#15.
 - The SkillMatrix context (`A-10`).
 - The manager's feedback of 2026-10-05 (slow navigation, unclear requirements, language).

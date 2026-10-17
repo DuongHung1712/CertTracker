@@ -42,7 +42,7 @@ Each gap names the work package in [04](04-wbs.md) (or the document) that closes
 - **The real legacy Excel file**: never imported; the fixture is synthetic (P-03). Closed by WBS 1.3 (`A-04`, `SM-2`).
 - **Real e-mail delivery** through Resend with a verified sending domain (SPF, DKIM), including inbox placement: never done. Closed by WBS 9.1 (domain and a test e-mail) and WBS 9.2 (two real Mondays, `SM-3`, `A-02`).
 - **Weeks 5–6 on the public deployment** and a cloud schema that matches the code: not done (`main` was last updated by PR #14; week 5 is only on `dev`; pull request #16 is open, not merged; migrations are pushed manually). Closed by WBS 9.1.
-- **Real users updating their own data**: no real user has used the product. Closed by WBS 9.2 (`A-03`) and the interviews in WBS 1.2.
+- **Real users updating their own data**: no real user has used the product. Closed by WBS 9.2 (`A-03`) and the discovery interviews in WBS 1.2.
 - **The need itself** — that teams want to leave their spreadsheet: not validated. Closed by WBS 1.2 and 9.2, decided at gate G1 (`A-01`, `SM-1`).
 - **Data volume**: the parser is unit-tested at the import limit of 2000 rows per file (decision #24; `src/features/import/workbook.test.ts`), but the database and end-to-end tests use a few fictional rows, so committing a large batch and the Dashboard with real volumes were not tested. Real counts are needed (`A-09`); the real file in WBS 1.3 gives a first number.
 - **Keyboard and screen-reader use**: contrast is tested automatically, nothing else is. Closed by WBS 8.4 (`NFR-05`).
@@ -125,7 +125,7 @@ No names are recorded in this document.
 - **Monday:** the second expiry-alert e-mail; the admin checks the history again (`SM-3` needs both Mondays).
 - If the 1st of a month falls inside the pilot, the monthly report is checked the same way.
 - **During the week:** normal use; new changes are still recorded in CertTracker first, and the manager notes whether the spreadsheet still had to be updated (`SM-1`).
-- **End of week:** survey, interviews, measurements, pilot report.
+- **End of week:** survey, post-pilot interviews, measurements, pilot report.
 
 ### What is measured
 
@@ -153,7 +153,17 @@ Only what the application or a simple log can provide:
   8. Managers only: which of the proposed AI features would you actually use, in order? (`A-08`)
   9. Admin only: how many members and certificate records does your unit have? (`A-09`)
   10. Would you stop using the spreadsheet? What is still missing? (`SM-1`)
-- **Interviews** at the end of the pilot, following the interview script in [02 §12](02-concept-analysis.md): about 30 minutes each, 3–5 people (one manager, one admin, two or three members). Answers are recorded per assumption ID. The mid-week check-in is separate and shorter (*proposed*, see Week 1).
+- **Post-pilot interviews** at the end of week 2 (*proposed*): about 20 minutes each, 4–5 people (1 manager, 1 admin, 2–3 members), preferably the same people as in the discovery interviews. These are about **actual use during the pilot**; the discovery interviews before the pilot (WBS 1.2, script in [02](02-concept-analysis.md) Appendix A) are separate. Answers are recorded per ID with the template in 02 Appendix A. The mid-week check-in is separate and shorter (*proposed*, see Week 1). Questions:
+
+  | # | Question | Maps to |
+  |---|---|---|
+  | 1 | Think of the two Monday e-mails. What did you do after each one, if anything? | A-02, N-02 |
+  | 2 | When did you last change your own record in CertTracker, and what led you to do it, or not to? | A-03, N-04 |
+  | 3 | During the pilot, when did you still open the spreadsheet, and for what? | SM-1, N-01 |
+  | 4 | Walk me through the last report or question about certificates you answered during the pilot. Where did the answer come from? | N-03, A-15 |
+  | 5 | Which words or screens were unclear? | A-07, N-11 |
+  | 6 | When did a page feel slow, and what were you trying to do? | N-12 |
+  | 7 | If the pilot ended today, what would you keep using, and what would you go back to? | SM-1, A-01 |
 - `A-10` (SkillMatrix) is not a pilot question: the sponsor confirms it with the SkillMatrix owner.
 
 ### Fallback and rollback
@@ -162,7 +172,7 @@ The spreadsheet stays available as a fallback for the whole pilot; the team is a
 
 ### Exit
 
-The owner writes a pilot report (measurements, survey results, interview notes per assumption, issues and fixes) and presents it to the sponsor. It feeds gate G1 ([00 §3](00-process-status.md)). The sponsor chooses one outcome:
+The owner writes a pilot report (measurements, survey results, post-pilot interview notes per ID, issues and fixes) and presents it to the sponsor. It feeds gate G1 ([00 §3](00-process-status.md)). The sponsor chooses one outcome:
 
 - **Continue to G1** — the criteria in §5 are met (or the sponsor records which gaps are accepted and why), and the team confirms it replaces the spreadsheet.
 - **Fix and repeat** — specific problems must be fixed first, then the pilot is repeated.

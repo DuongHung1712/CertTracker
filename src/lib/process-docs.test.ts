@@ -70,6 +70,7 @@ const NUMBERED_DOCS = [
 
 const REQUIREMENT_HEADER = ["ID", "Requirement", "Need", "Source", "Priority", "Build status", "Evidence", "Validation"];
 const NEEDS_HEADER = ["ID", "Need (as a user outcome)", "Who", "Evidence today", "Linked assumptions", "Status"] as const;
+const ASSUMPTIONS_HEADER = ["ID", "Assumption", "How to validate", "Who", "Status"] as const;
 const WBS_HEADER = [
   "WBS",
   "Work package",
@@ -88,6 +89,7 @@ const requirementsDoc = read("03-requirements.md");
 // The requirements table is the first table in 03 whose header starts with "ID".
 const requirementsTable = readTable(requirementsDoc, "ID");
 const needsTable = readTableWithHeader(conceptDoc, NEEDS_HEADER);
+const assumptionsTable = readTableWithHeader(conceptDoc, ASSUMPTIONS_HEADER);
 const wbsTable = readTable(read("04-wbs.md"), "WBS");
 
 const requirements: Requirement[] = requirementsTable.rows.map((r) => ({
@@ -118,7 +120,12 @@ const SOURCE = /^(FL-[1-9]|SPEC §\S+|DEC #\d+|MGR|PROJECT)$/;
 const PRIORITY = new Set(["Must", "Should", "Could"]);
 const BUILD = /^(Built \(W[1-6]\)|Built \(W6, unmerged\)|Partial|Planned|Gated \(G1\))$/;
 const VALIDATION = new Set(["Assumed", "Decided", "Validated"]);
-const NEED_STATUS = new Set(["Assumed", "Partly evidenced"]);
+// The status vocabulary defined in 02 section 1. `Decided` is allowed for assumptions only (A-05).
+const NEED_STATUS = new Set(["Assumed", "Partly evidenced", "Validated", "Contradicted"]);
+const ASSUMPTION_STATUS = new Set([...NEED_STATUS, "Decided"]);
+const NOT_VALIDATED_YET =
+  "No interview result has been recorded yet, so nothing may be marked Validated. " +
+  "Relax this check deliberately when the first interview result is recorded (02 Appendix A.3).";
 const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Blocked (G1)"]);
 
 describe("02-concept-analysis.md", () => {
@@ -138,7 +145,7 @@ describe("02-concept-analysis.md", () => {
     ).toEqual([]);
   });
 
-  it("no need is claimed as validated, and every linked assumption exists in 02", () => {
+  it("needs use only the status vocabulary of 02 section 1, and every linked assumption exists in 02", () => {
     const status = NEEDS_HEADER.indexOf("Status");
     const linked = NEEDS_HEADER.indexOf("Linked assumptions");
     for (const row of needsTable.rows) {
@@ -147,6 +154,32 @@ describe("02-concept-analysis.md", () => {
         expect(knownAssumptionsAndCriteria.has(id), `${row[0]} links unknown ${id}`).toBe(true);
       }
     }
+  });
+
+  it("assumptions keep their columns and use only the status vocabulary of 02 section 1", () => {
+    expect(assumptionsTable.header).toEqual([...ASSUMPTIONS_HEADER]);
+    expect(assumptionsTable.rows.length).toBeGreaterThan(10);
+    const status = ASSUMPTIONS_HEADER.indexOf("Status");
+    for (const row of assumptionsTable.rows) {
+      expect(row.length, `row "${row[0]}" has ${row.length} cells, expected ${ASSUMPTIONS_HEADER.length}`).toBe(
+        ASSUMPTIONS_HEADER.length,
+      );
+      expect(row[0], `malformed assumption id "${row[0]}"`).toMatch(/^A-\d{2}$/);
+      expect(ASSUMPTION_STATUS.has(row[status]), `${row[0]} status "${row[status]}"`).toBe(true);
+    }
+  });
+
+  it("no need and no assumption is Validated yet (no interview result is recorded)", () => {
+    const needStatus = NEEDS_HEADER.indexOf("Status");
+    const assumptionStatus = ASSUMPTIONS_HEADER.indexOf("Status");
+    expect(
+      needsTable.rows.filter((r) => r[needStatus] === "Validated").map((r) => r[0]),
+      NOT_VALIDATED_YET,
+    ).toEqual([]);
+    expect(
+      assumptionsTable.rows.filter((r) => r[assumptionStatus] === "Validated").map((r) => r[0]),
+      NOT_VALIDATED_YET,
+    ).toEqual([]);
   });
 
   it("numbers its assumption and success-criterion rows uniquely", () => {
@@ -222,7 +255,7 @@ describe("03-requirements.md", () => {
     expect(
       requirements.filter((r) => r.validation === "Validated").map((r) => r.id),
       "No user interviews have been recorded yet, so nothing may be marked Validated. " +
-        "When interviews happen, record them with the kit in 02 section 12 and then relax this check deliberately.",
+        "When interviews happen, record them with the kit in 02 Appendix A and then relax this check deliberately.",
     ).toEqual([]);
   });
 });

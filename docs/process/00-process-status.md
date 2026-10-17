@@ -19,7 +19,7 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 |---|---|---|
 | Idea | Done | [01](01-idea-and-brainstorm.md) §1: `CertTracker - Feature List.pdf` (9 feature groups, DC34; internal, not stored in this repository) |
 | Brainstorm | Done, without customer analysis | [01](01-idea-and-brainstorm.md) §2–§3: [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md) (2026-09-26) and [Decisions](../decisions.md); what the brainstorm did not do is in 01 §3 |
-| CA (Concept/Customer Analysis) | **Backfilled; instruments ready, data missing** | [02](02-concept-analysis.md): needs, as-is process, root-cause hypotheses, alternatives, business case skeleton, assumptions and the validation kit (§12). The need was **not** validated with end users. Requirements, traced to the needs: [03](03-requirements.md) |
+| CA (Concept/Customer Analysis) | **Backfilled; instruments ready, data missing** | [02](02-concept-analysis.md): needs, as-is process, root-cause hypotheses, alternatives, business case skeleton, assumptions and the validation kit (§12 and Appendix A). The need was **not** validated with end users. Requirements, traced to the needs: [03](03-requirements.md) |
 | WBS | **Missing — backfilled** | [04](04-wbs.md) |
 | SAD | Exists as the design spec | [05](05-sad.md) condenses it |
 | Design / Mockup | Partial — as-built documented; proposed mockups awaiting review | Design system and component catalogue exist ([Design system](../design-system.md), the `/design` page, dev only). No screen mockups were reviewed before the build; [06](06-design-and-mockups.md) documents the as-built screens (§3–§4b) and holds proposed mockups for the sponsor to review (§5, checklist in §6) |
@@ -57,6 +57,8 @@ Phase 2 is the largest remaining investment. It is **blocked** until all of thes
 3. The sponsor confirms which Phase 2 features (`R-20`…`R-26`) are wanted and in what order.
 
 If the interviews show the need is weaker than assumed, the correct outcome is to **stop or re-scope**, not to continue.
+
+These three conditions (decision #46) are the official gate. The concept analysis proposes, for the sponsor to confirm, a checkpoint before the pilot and two additional inputs to G1 (the business case and alternatives, and the incentives question): [02](02-concept-analysis.md) §8.
 
 ## 4. What is next
 
