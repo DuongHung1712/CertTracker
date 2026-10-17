@@ -1,10 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isCronPath } from "@/lib/cron-path";
 import type { Database } from "@/types/database";
 
 const PUBLIC_PATHS = ["/login"];
 
 export async function updateSession(request: NextRequest) {
+  // Authenticated by CRON_SECRET inside the handler; no session, no login redirect (and no /dashboard bounce).
+  if (isCronPath(request.nextUrl.pathname)) return NextResponse.next({ request });
+
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient<Database>(

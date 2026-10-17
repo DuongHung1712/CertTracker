@@ -260,6 +260,48 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          attempts: number
+          claimed_at: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          period: string
+          provider_message_id: string | null
+          recipient_email: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          period: string
+          provider_message_id?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          period?: string
+          provider_message_id?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -474,6 +516,24 @@ export type Database = {
       }
     }
     Views: {
+      v_data_quality_issues: {
+        Row: {
+          course_id: string | null
+          course_name: string | null
+          days: number | null
+          issue_type: string | null
+          member_code: string | null
+          member_id: string | null
+          member_name: string | null
+          record_id: string | null
+          severity: string | null
+          since: string | null
+          subject_id: string | null
+          team_id: string | null
+          team_name: string | null
+        }
+        Relationships: []
+      }
       v_training_records: {
         Row: {
           cert_type_id: string | null
@@ -552,7 +612,59 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       can_access_evidence: { Args: { object_name: string }; Returns: boolean }
+      claim_notification: {
+        Args: { p_email: string; p_kind: string; p_period: string }
+        Returns: {
+          claimed: boolean
+          log_attempts: number
+          log_id: string
+          log_status: string
+        }[]
+      }
       commit_import: { Args: { p_batch_id: string }; Returns: Json }
+      dashboard_breakdown: {
+        Args: { p_dimension: string; p_limit?: number }
+        Returns: {
+          done: number
+          expired: number
+          group_key: string
+          group_label: string
+          headcount: number
+          in_progress: number
+          not_started: number
+          people: number
+          records: number
+          valid: number
+        }[]
+      }
+      dashboard_kpis: {
+        Args: never
+        Returns: {
+          active_certs: number
+          done_records: number
+          expired_certs: number
+          expiring_60_certs: number
+          expiring_soon_certs: number
+          in_progress_records: number
+          no_expiry_certs: number
+          not_started_records: number
+          total_members: number
+          total_records: number
+        }[]
+      }
+      dashboard_ranking: {
+        Args: never
+        Returns: {
+          done_certs: number
+          full_name: string
+          in_progress: number
+          member_code: string
+          member_id: string
+          rank: number
+          team_name: string
+          valid_certs: number
+        }[]
+      }
       expiry_status: {
         Args: { p_issued: string; p_today: string; p_validity_months: number }
         Returns: string
@@ -562,6 +674,16 @@ export type Database = {
       managed_team_ids: { Args: never; Returns: string[] }
       my_member_id: { Args: never; Returns: string }
       next_member_code: { Args: never; Returns: string }
+      notification_staff: {
+        Args: never
+        Returns: {
+          email: string
+          member_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          team_ids: string[]
+          user_id: string
+        }[]
+      }
       vn_today: { Args: never; Returns: string }
     }
     Enums: {

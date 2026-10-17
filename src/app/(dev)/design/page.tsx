@@ -7,10 +7,11 @@ import { MemberCode } from "@/components/status/member-code";
 import { ProgressInline } from "@/components/status/progress-inline";
 import { RecordStatusLabel } from "@/components/status/record-status";
 import { RoleBadge } from "@/components/status/role-badge";
+import { KpiTile } from "@/components/data/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ComboboxDemo, ConfirmDemo, LoadingTableDemo, TableDemo, ToastDemo } from "./demos";
+import { BreakdownDemo, ChartDemo, ComboboxDemo, ConfirmDemo, LoadingTableDemo, TableDemo, ToastDemo } from "./demos";
 
 const COLOR_TOKENS = [
   "background", "card", "foreground", "muted", "muted-foreground", "primary",
@@ -49,7 +50,7 @@ export default function DesignPage() {
   if (process.env.NODE_ENV === "production") notFound();
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-10 px-4 py-8 sm:px-6">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-8 sm:px-6">
       <PageHeader title="Design system" description="Trang trưng bày token và component. Chỉ có ở môi trường dev." />
 
       <Section title="Logo & Favicon">
@@ -157,6 +158,23 @@ export default function DesignPage() {
 
       <Section title="Bảng">
         <TableDemo />
+      </Section>
+
+      <Section title="Dashboard: KPI">
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiTile label="Thành viên" value={1248} />
+          <KpiTile label="Chứng chỉ còn hiệu lực" value={86} hint="trong đó 3 sắp hết hạn" />
+          <KpiTile label="Tỉ lệ hoàn thành" value="75%" />
+          <KpiTile label="Đã hết hạn" value={0} />
+        </dl>
+      </Section>
+
+      <Section title="Dashboard: biểu đồ hạn (có dữ liệu, rồi toàn số 0)">
+        <ChartDemo />
+      </Section>
+
+      <Section title="Dashboard: bảng thống kê và xếp hạng">
+        <BreakdownDemo />
       </Section>
 
       <Section title="Bảng đang tải">

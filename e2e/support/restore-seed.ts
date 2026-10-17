@@ -5,6 +5,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { assertLocalSupabaseUrl } from "../../src/lib/assert-local-supabase-url";
 import type { Database } from "../../src/types/database";
 import { SEED_PASSWORD } from "../helpers";
+import { readEnvFile } from "./env";
 
 /**
  * Puts the data the legacy-workbook import touches back to its `supabase/seed.sql` state, so the import spec
@@ -49,16 +50,6 @@ const RECORD_COLUMNS =
 // database instead of being recomputed. The file survives a crashed run; it is removed after a successful restore.
 const SNAPSHOT_FILE = path.join(tmpdir(), "certtracker-e2e-import-seed-snapshot.json");
 
-function readEnvFile(file: string): Record<string, string> {
-  if (!existsSync(file)) return {};
-  const values: Record<string, string> = {};
-  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
-    const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
-    if (match) values[match[1]] = match[2].replace(/^(["'])(.*)\1$/, "$2");
-  }
-  return values;
-}
-
 /** The Playwright process does not load `.env.local` (only Next does), so read it here when the env is not set. */
 function supabaseConfig(): { url: string; anonKey: string } {
   const fromFile = { ...readEnvFile(path.resolve(__dirname, "../../.env.local")), ...readEnvFile(path.resolve(".env.local")) };
@@ -68,14 +59,21 @@ function supabaseConfig(): { url: string; anonKey: string } {
   return { url, anonKey };
 }
 
-export async function signInAsSeedAdmin(): Promise<Client> {
+/**
+ * A client signed in as a seeded user with the anon key — the same access the browser has, so RLS and function
+ * grants apply. Every client the e2e helpers create comes from here, so none is reachable without the local-URL check.
+ */
+export async function signInAsSeedUser(email: string): Promise<Client> {
   const { url, anonKey } = supabaseConfig();
-  // The only way to obtain a client for prepareSeedState/restoreSeed, so no delete is reachable without this check.
   assertLocalSupabaseUrl(url);
   const client = createClient<Database>(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { error } = await client.auth.signInWithPassword({ email: "admin@certtracker.test", password: SEED_PASSWORD });
-  if (error) throw new Error(`Seed admin sign-in failed: ${error.message}`);
+  const { error } = await client.auth.signInWithPassword({ email, password: SEED_PASSWORD });
+  if (error) throw new Error(`Seed sign-in as ${email} failed: ${error.message}`);
   return client;
+}
+
+export function signInAsSeedAdmin(): Promise<Client> {
+  return signInAsSeedUser("admin@certtracker.test");
 }
 
 function check<T>(result: { data: T | null; error: { message: string } | null }, what: string): T {

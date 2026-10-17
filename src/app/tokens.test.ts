@@ -51,6 +51,9 @@ const UI_PAIRS: Array<[string, string]> = [
   ["ring", "card"],
 ];
 
+// Expiry-chart bars are graphic objects drawn straight on the card (WCAG 1.4.11).
+const CHART_STATUS_IDS = ["active", "expiring-60", "expiring-soon", "expired", "no-expiry"];
+
 describe("design tokens", () => {
   it.each(TEXT_PAIRS)("text --%s on --%s reaches 4.5:1", (fg, bg) => {
     expect(contrastRatio(hex(fg), hex(bg))).toBeGreaterThanOrEqual(4.5);
@@ -58,5 +61,9 @@ describe("design tokens", () => {
 
   it.each(UI_PAIRS)("control --%s on --%s reaches 3:1", (fg, bg) => {
     expect(contrastRatio(hex(fg), hex(bg))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(CHART_STATUS_IDS)("chart bar --status-%s-fg on --card reaches 3:1", (id) => {
+    expect(contrastRatio(hex(`status-${id}-fg`), hex("card"))).toBeGreaterThanOrEqual(3);
   });
 });
