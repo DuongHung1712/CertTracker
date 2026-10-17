@@ -1,9 +1,9 @@
 # PoC and MVP
 
 - **Status:** Draft v1 — reconstructed after the MVP build; the pilot plan in §6 is *proposed*
-- **Last updated:** 2026-10-07
+- **Last updated:** 2026-10-17
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Process status](00-process-status.md), [Requirements and CA](03-requirements.md), [WBS](04-wbs.md), [SAD](05-sad.md), [Decisions](../decisions.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), the tests under `supabase/tests/database/`, `src/` and `e2e/`
+- **Sources:** [Process status](00-process-status.md), [Concept analysis](02-concept-analysis.md), [Requirements](03-requirements.md), [WBS](04-wbs.md), [SAD](05-sad.md), [Decisions](../decisions.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), the tests under `supabase/tests/database/`, `src/` and `e2e/`
 
 > **Tóm tắt (VI):** Dự án **không** chạy một giai đoạn PoC riêng. Tài liệu này dựng lại những gì bản build đã chứng minh về mặt kỹ thuật (bằng chứng là test tự động và các lần chạy đã kiểm tra; gần như tất cả chạy trên máy local với dữ liệu seed giả, ngoại trừ lần smoke test bản foundation trên cloud ngày 2026-09-27, xem P-09) và nói rõ những gì **chưa** được chứng minh: hiệu năng trên cloud, file Excel thật, email thật qua Resend, người dùng thật. MVP đã được xây nội bộ nhưng **chưa được xác nhận**: không tiêu chí chấp nhận MVP nào đạt. §6 là kế hoạch pilot hai tuần với một team thật (đề xuất; ngày bắt đầu đặt khi đủ điều kiện), kết quả pilot là đầu vào cho cổng G1.
 
@@ -36,7 +36,7 @@ Test counts below come from the files themselves (pgTAP: the `plan(n)` count in 
 
 ## 3. What is NOT proven yet
 
-Each gap names the work package in [04](04-wbs.md) (or the document) that closes it, and the assumption from [03 §7](03-requirements.md) it relates to.
+Each gap names the work package in [04](04-wbs.md) (or the document) that closes it, and the assumption from [02 §11](02-concept-analysis.md) it relates to.
 
 - **Performance on the cloud deployment** for signed-in pages: never measured; only signed-out requests were timed ([04](04-wbs.md) §4). Closed by WBS 8.1 (`SM-4`, `NFR-03`).
 - **The real legacy Excel file**: never imported; the fixture is synthetic (P-03). Closed by WBS 1.3 (`A-04`, `SM-2`).
@@ -54,7 +54,7 @@ Each gap names the work package in [04](04-wbs.md) (or the document) that closes
 
 ## 4. MVP scope
 
-The MVP is phase 1 as defined in [03 §6](03-requirements.md): `R-01` … `R-19`, `R-30`, `NFR-01` … `NFR-03` and `NFR-05` … `NFR-07`. Of these, `R-12`, `R-13`, `R-14`, `R-19`, `NFR-01` and `NFR-06` are **(W6, unmerged)**, so the MVP is not complete on `dev` until pull request #16 (open, not merged as of 2026-10-07) is merged.
+The MVP is phase 1 as defined in [03 §4](03-requirements.md): `R-01` … `R-19`, `R-30`, `NFR-01` … `NFR-03` and `NFR-05` … `NFR-07`. Of these, `R-12`, `R-13`, `R-14`, `R-19`, `NFR-01` and `NFR-06` are **(W6, unmerged)**, so the MVP is not complete on `dev` until pull request #16 (open, not merged as of 2026-10-07) is merged.
 
 Not part of the MVP:
 
@@ -75,7 +75,7 @@ The MVP counts as accepted only when every criterion below is met **on the publi
 | MVP-06 | Navigation feels immediate (`SM-4`, `NFR-03`; WBS 8.1) | Signed-out pages: the method in [04](04-wbs.md) §4. Signed-in pages cannot be measured that way; their method is defined in WBS 8.1 (*proposed*: browser navigation timings over at least 20 navigations per role, 75th percentile) | `SM-4`: feedback at once and 75th-percentile page load under 1 second — *proposed* | Not met — WBS 8.1 not started; signed-in pages not measured |
 | MVP-07 | Security holds in operation (`R-17`, `NFR-01`, `NFR-02`) | pgTAP RLS tests green in CI; the service-role client imported only by the cron routes (lint rule); secrets set only in Vercel environment variables, none in the repository | All three true for the release in production | Partly met — the RLS tests run in CI; the service-role lint rule is part of week 6 (W6, unmerged); nothing records that the production environment variables for week 6 are set |
 | MVP-08 | Accessibility baseline (`NFR-05`; WBS 8.4) | `src/app/tokens.test.ts` (contrast) in `pnpm test`; keyboard and screen-reader audit | Contrast tests green; *no blocking issue left from the audit* | Partly met — contrast tests exist and run in CI; the audit has not been done |
-| MVP-09 | Usability: pilot members manage on their own (`A-03`; WBS 9.2) | Observe members adding a record with evidence, as planned for `A-03` in [03 §7](03-requirements.md) | *At least two observed members add a record and evidence without help* | Not met — no observation yet |
+| MVP-09 | Usability: pilot members manage on their own (`A-03`; WBS 9.2) | Observe members adding a record with evidence, as planned for `A-03` in [02 §11](02-concept-analysis.md) | *At least two observed members add a record and evidence without help* | Not met — no observation yet |
 | MVP-10 | Adoption: the pilot team stops using its spreadsheet (`SM-1`, `A-01`; WBS 9.2, gate G1) | Sponsor and admin confirmation after the pilot | `SM-1`: spreadsheet no longer updated after at least two consecutive weeks of real use — *proposed period* | Not met — no pilot yet |
 
 ## 6. Pilot plan: two weeks with one real team (WBS 9.2)
@@ -153,7 +153,7 @@ Only what the application or a simple log can provide:
   8. Managers only: which of the proposed AI features would you actually use, in order? (`A-08`)
   9. Admin only: how many members and certificate records does your unit have? (`A-09`)
   10. Would you stop using the spreadsheet? What is still missing? (`SM-1`)
-- **Interviews** at the end of the pilot, following the interview plan in [03 §7](03-requirements.md): about 30 minutes each, 3–5 people (one manager, one admin, two or three members). Answers are recorded per assumption ID. The mid-week check-in is separate and shorter (*proposed*, see Week 1).
+- **Interviews** at the end of the pilot, following the interview script in [02 §12](02-concept-analysis.md): about 30 minutes each, 3–5 people (one manager, one admin, two or three members). Answers are recorded per assumption ID. The mid-week check-in is separate and shorter (*proposed*, see Week 1).
 - `A-10` (SkillMatrix) is not a pilot question: the sponsor confirms it with the SkillMatrix owner.
 
 ### Fallback and rollback

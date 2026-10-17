@@ -1,9 +1,9 @@
 # Work Breakdown Structure (WBS)
 
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
-- **Last updated:** 2026-10-07
+- **Last updated:** 2026-10-17
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Design spec §10](../superpowers/specs/2026-09-26-certtracker-design.md), `git log`, [Plans](../superpowers/plans/), [Requirements and CA](03-requirements.md), [Process status](00-process-status.md)
+- **Sources:** [Design spec §10](../superpowers/specs/2026-09-26-certtracker-design.md), `git log`, [Plans](../superpowers/plans/), [Concept analysis](02-concept-analysis.md), [Requirements](03-requirements.md), [Process status](00-process-status.md)
 
 > **Tóm tắt (VI):** Cây công việc có mã, trạng thái, kế hoạch so với thực tế. "Planned" lấy từ lộ trình tuần 1–6 trong spec; "Actual" lấy từ lịch sử git (ngày lịch; giờ công không được theo dõi). Phần chưa làm là ước lượng theo khoảng, cần xem lại và không phải cam kết. Tuần 6 (cron, email, chất lượng dữ liệu) mới có trên nhánh `feat/week6-notifications`, chưa merge vào `dev` và chưa lên production. Cổng G1 chặn Giai đoạn 2 (AI) cho tới khi nhu cầu được xác nhận.
 
@@ -12,20 +12,21 @@
 - **Planned**: the roadmap in the design spec (phase 1 = 6 weeks, phase 2 = 6 weeks). `—` means the item was not in that roadmap.
 - **Actual**: calendar window from `git log` and merged pull requests. Effort in person-hours was **not tracked**, so none is claimed.
 - **Est. remaining**: engineer estimates in working days; ranges, to be reviewed. They are not commitments.
-- **Requirements** column links each work package to [03](03-requirements.md). Every `R-xx` and `NFR-xx` in `01` §4 appears in at least one row.
-- **Status** is one of `Done`, `In progress`, `Not started`, `Blocked (G1)`. `Done` means built and tested by the build team, not validated by users (see `01` §4 notes).
+- **Requirements** column links each work package to [03](03-requirements.md). Every `R-xx` and `NFR-xx` in `03` §2 appears in at least one row.
+- **Status** is one of `Done`, `In progress`, `Not started`, `Blocked (G1)`. `Done` means built and tested by the build team, not validated by users (see `03` §2 notes).
 - Phase 1 was built with AI-assisted development, which is why the calendar time is much shorter than the original 6-week plan; the plan was not re-baselined.
 
 ## 2. WBS
 
 | WBS | Work package | Deliverable | Acceptance | Planned | Actual | Est. remaining | Depends on | Status | Requirements |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Requirements and project governance | Process documents `00`–`06`, validated assumptions | Documents reviewed by the sponsor; assumptions `A-01`…`A-10` checked | — | 2026-10-05 → | 5–6.5 days (roll-up of 1.1–1.5) | — | In progress | — |
-| 1.1 | Process documents: status, CA, WBS, SAD, design, PoC/MVP, production readiness (this pack) | `docs/process/00`–`06` | Merged; sponsor feedback addressed | — | 2026-10-05 → | 1 day | — | In progress | — |
-| 1.2 | User interviews | Interview notes per assumption | 3–5 interviews recorded; `01` §7 updated | — | not started | 2–3 days | 1.1 | Not started | — |
+| 1 | Requirements and project governance | Process documents `00`–`08`, validated assumptions | Documents reviewed by the sponsor; assumptions `A-01`…`A-10` checked | — | 2026-10-05 → | 6–8.5 days (roll-up of 1.1–1.6) | — | In progress | — |
+| 1.1 | Process documents: status, idea and brainstorm, CA, requirements, WBS, SAD, design, PoC/MVP, production readiness (this pack) | `docs/process/00`–`08` | Merged; sponsor feedback addressed | — | 2026-10-05 → | 1 day | — | In progress | — |
+| 1.2 | User interviews | Interview notes per assumption | 3–5 interviews recorded with the kit in `02` §12; `02` §3 and §11 updated | — | not started | 2–3 days | 1.1, 1.6 | Not started | — |
 | 1.3 | Real-file import trial | Trial report (rows imported, manual fixes) | `SM-2` measured on a real file | — | not started | 0.5–1 day | 5 | Not started | R-15 |
-| 1.4 | Build-vs-buy scan | One-page comparison | Sponsor agrees build is still justified | — | not started | 1 day | 1.1 | Not started | — |
-| 1.5 | Mockup review with the sponsor | Reviewed 04 §6 checklist with answers | Answers recorded in 04 §6 and decisions.md where needed | — | 2026-10-07 (mockups drafted) | 0.5 day | 1.1 | In progress | — |
+| 1.4 | Build-vs-buy scan | One-page comparison of the alternatives in `02` §7 | Sponsor agrees build is still justified | — | not started | 1 day | 1.1 | Not started | — |
+| 1.5 | Mockup review with the sponsor | Reviewed 06 §6 checklist with answers | Answers recorded in 06 §6 and decisions.md where needed | — | 2026-10-07 (mockups drafted) | 0.5 day | 1.1 | In progress | — |
+| 1.6 | CA data collection | Filled 02 §12 checklist; baseline numbers for 02 §8/§10 | Sponsor and admin supplied the numbers; 02 updated | — | not started | 1–2 days (estimate; depends on availability) | 1.1 | Not started | — |
 | 2 | Foundation (W1) | Schema, RLS, sign-in, CI, deployment on free tiers | PRs #1, #3 and #4 merged; pgTAP RLS green | Week 1 | 2026-09-26 → 2026-09-27 | — | — | Done | R-07, R-17, R-30, NFR-07 |
 | 2.5 | Design system | Tokens, components, `/design` page, reference doc | PR #6 merged | — | 2026-09-27 | — | 2 | Done | NFR-05 |
 | 2.6 | UI polish (logo, favicon, dropdown fixes) | Logo, favicon, sidebar brand mark, select fixes | PR #13 merged | — | 2026-10-02 | — | 2.5 | Done | NFR-05 |
@@ -40,18 +41,18 @@
 | 8.3 | Self sign-up with approval | Own design + build | A new user can request access and an admin approves. Unscheduled until after G1 unless the sponsor asks earlier | — | not started | 2–4 days | 6 | Not started | R-31 |
 | 8.4 | Accessibility audit (keyboard and screen reader) | Audit notes + fixes list | Key flows usable by keyboard; headings and labels checked | — | not started | 1–2 days | 6 | Not started | NFR-05 |
 | 9 | Validation and rollout | See 9.1–9.4 | — | — | — | — | — | Not started | — |
-| 9.1 | Pilot readiness: merge week 6, push migrations, verify the sending domain, first backup, data-owner approval | Week 6 merged and released to `main`; cloud schema up to date; sending domain verified and production secrets set; first backup taken and one restore tried; data-owner approval recorded; the account procedure ready (accounts are created in pilot week 0, after the import); i.e. every item marked `Pilot` in [08](08-production-readiness.md) | The public deployment shows all pages; a test e-mail is delivered; all `Pilot` items in 06 are done (they are the preconditions in [07 §6](07-poc-and-mvp.md)) | — | not started | 1–2 days (estimate; the data-owner approval depends on the data owner) | 7 | Not started | R-12, R-13 |
-| 9.2 | Pilot with one real team | Pilot plan in [07 §6](07-poc-and-mvp.md); two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 1 set-up week + 2 calendar weeks (pilot plan in 05 §6) | 9.1, 1.3, 8.1 | Not started | R-12, R-13 |
+| 9.1 | Pilot readiness: merge week 6, push migrations, verify the sending domain, first backup, data-owner approval | Week 6 merged and released to `main`; cloud schema up to date; sending domain verified and production secrets set; first backup taken and one restore tried; data-owner approval recorded; the account procedure ready (accounts are created in pilot week 0, after the import); i.e. every item marked `Pilot` in [08](08-production-readiness.md) | The public deployment shows all pages; a test e-mail is delivered; all `Pilot` items in 08 are done (they are the preconditions in [07 §6](07-poc-and-mvp.md)) | — | not started | 1–2 days (estimate; the data-owner approval depends on the data owner) | 7 | Not started | R-12, R-13 |
+| 9.2 | Pilot with one real team | Pilot plan in [07 §6](07-poc-and-mvp.md); two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 1 set-up week + 2 calendar weeks (pilot plan in 07 §6) | 9.1, 1.3, 8.1 | Not started | R-12, R-13 |
 | 9.3 | Production hosting decision | Decision record: stay on free tiers or move (e.g. VPS) | Recorded in `decisions.md` | — | not started | 1–2 days | 9.2 | Not started | NFR-07 |
-| 9.4 | Production readiness | Checklist in [08](08-production-readiness.md) completed; release checklist adopted | All items marked `Production` in 06 are done; sponsor go decision recorded | — | not started | 3–6 days (estimate; depends on hosting choice) | 9.3, G1 | Not started | NFR-01, NFR-06, NFR-07 |
-| G1 | Gate: need confirmed | Sponsor sign-off that the three conditions in [00 §3](00-process-status.md) are met: assumptions `A-01`…`A-10` checked as planned in `01` §7; a real team used the product for at least two consecutive weeks including two Monday e-mails (*proposed period*), with the sponsor confirming it replaces their spreadsheet; the sponsor confirms which Phase 2 features are wanted and in what order | Written decision to open, re-scope or stop Phase 2 | — | — | — | 1.2, 1.3, 9.2 | Not started | — |
+| 9.4 | Production readiness | Checklist in [08](08-production-readiness.md) completed; release checklist adopted | All items marked `Production` in 08 are done; sponsor go decision recorded | — | not started | 3–6 days (estimate; depends on hosting choice) | 9.3, G1 | Not started | NFR-01, NFR-06, NFR-07 |
+| G1 | Gate: need confirmed | Sponsor sign-off that the three conditions in [00 §3](00-process-status.md) are met: assumptions `A-01`…`A-10` checked as planned in `02` §11; a real team used the product for at least two consecutive weeks including two Monday e-mails (*proposed period*), with the sponsor confirming it replaces their spreadsheet; the sponsor confirms which Phase 2 features are wanted and in what order | Written decision to open, re-scope or stop Phase 2 | — | — | — | 1.2, 1.3, 1.6, 9.2 | Not started | — |
 | 10 | Phase 2 — AI features | Weeks 7–12 of the design spec | Re-estimated after G1 | Weeks 7–12 | — | re-estimate after G1 | G1 | Blocked (G1) | R-20, R-21, R-22, R-23, R-24, R-25, R-26, R-27, R-28, R-29 |
 
 Notes:
 
 - Row `7`: the week-6 commits are all dated 2026-10-04, and none of week 6 is on `dev` or `main`; the branch was pushed on 2026-10-07 as pull request #16, which is open and not merged (as of 2026-10-07). The cloud database schema is pushed manually (see [00 §2](00-process-status.md)); this document does not claim that any week 3–6 migration has been pushed to production.
-- Rows `2.5` and `2.6` were not in the spec roadmap (hence Planned `—`); they trace to `NFR-05` for the contrast work already done. `NFR-05` is `Partial` in `01`, so the open work is `8.4`.
-- Rows `1`, `1.1`, `1.2`, `1.4`, `1.5`, `8`, `9` and `G1` deliver process results or group other rows, so their Requirements cell is `—`.
+- Rows `2.5` and `2.6` were not in the spec roadmap (hence Planned `—`); they trace to `NFR-05` for the contrast work already done. `NFR-05` is `Partial` in `03`, so the open work is `8.4`.
+- Rows `1`, `1.1`, `1.2`, `1.4`, `1.5`, `1.6`, `8`, `9` and `G1` deliver process results or group other rows, so their Requirements cell is `—`.
 
 ## 3. Planned vs actual (summary)
 

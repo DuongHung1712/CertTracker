@@ -1,11 +1,11 @@
 # Process Status
 
 - **Status:** Draft v1 — backfilled after the MVP build
-- **Last updated:** 2026-10-07
+- **Last updated:** 2026-10-17
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), `git log`
 
-> **Tóm tắt (VI):** Đối chiếu chuỗi quy trình của manager với những gì đã làm thật. Dự án đã build MVP nội bộ trước khi có CA và WBS; bộ tài liệu này bù lại và đặt một cổng quyết định (G1) trước Giai đoạn 2 (AI).
+> **Tóm tắt (VI):** Đối chiếu chuỗi quy trình của manager với những gì đã làm thật. Dự án đã build MVP nội bộ trước khi có CA và WBS; bộ tài liệu này bù lại và đặt một cổng quyết định (G1) trước Giai đoạn 2 (AI). Các file được đánh số theo đúng thứ tự quy trình: 01 ý tưởng và brainstorm, 02 CA, 03 requirements, 04 WBS, 05 SAD, 06 thiết kế/mockup, 07 PoC/MVP, 08 sẵn sàng production.
 
 ## 1. Why this document exists
 
@@ -17,11 +17,11 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 
 | Stage | Status | Evidence / gap |
 |---|---|---|
-| Idea | Done | `CertTracker - Feature List.pdf` (9 feature groups, DC34; internal, not stored in this repository) |
-| Brainstorm | Done | [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md) (2026-09-26) and [Decisions](../decisions.md) |
-| CA (Concept/Customer Analysis) | **Missing — backfilled** | [03-requirements-and-ca.md](03-requirements.md). The need was **not** validated with end users |
-| WBS | **Missing — backfilled** | [04-wbs.md](04-wbs.md) |
-| SAD | Exists as the design spec | [05-sad.md](05-sad.md) condenses it |
+| Idea | Done | [01](01-idea-and-brainstorm.md) §1: `CertTracker - Feature List.pdf` (9 feature groups, DC34; internal, not stored in this repository) |
+| Brainstorm | Done, without customer analysis | [01](01-idea-and-brainstorm.md) §2–§3: [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md) (2026-09-26) and [Decisions](../decisions.md); what the brainstorm did not do is in 01 §3 |
+| CA (Concept/Customer Analysis) | **Backfilled; instruments ready, data missing** | [02](02-concept-analysis.md): needs, as-is process, root-cause hypotheses, alternatives, business case skeleton, assumptions and the validation kit (§12). The need was **not** validated with end users. Requirements, traced to the needs: [03](03-requirements.md) |
+| WBS | **Missing — backfilled** | [04](04-wbs.md) |
+| SAD | Exists as the design spec | [05](05-sad.md) condenses it |
 | Design / Mockup | Partial — as-built documented; proposed mockups awaiting review | Design system and component catalogue exist ([Design system](../design-system.md), the `/design` page, dev only). No screen mockups were reviewed before the build; [06](06-design-and-mockups.md) documents the as-built screens (§3–§4b) and holds proposed mockups for the sponsor to review (§5, checklist in §6) |
 | PoC | Partial — reconstructed from tests; see [07](07-poc-and-mvp.md) | Foundation deployed 2026-09-27 on free tiers ([deploy notes](../deploy/task9-free-tier.md)); no separate PoC phase was run. What the build proves technically, and what it does not, is reconstructed in [07](07-poc-and-mvp.md) §2–§3 |
 | MVP | Built internally, **not validated** | Weeks 1–4 released to `main`, week 5 in `dev`; week 6 is in pull request #16, open and not merged (as of 2026-10-07); see notes below the table. The MVP acceptance criteria in [07](07-poc-and-mvp.md) §5 are not met yet |
@@ -31,7 +31,7 @@ Statements about week 6 and the cloud/e-mail setup are as of 2026-10-07 and must
 
 MVP details (as of 2026-10-07):
 
-- Weeks 1–5 are merged into `dev` through the feature/chore PRs #1, #3, #4, #6, #8, #10, #11, #13 and #15 (2026-09-26 → 2026-10-04); see the counting note in [04-wbs.md](04-wbs.md).
+- Weeks 1–5 are merged into `dev` through the feature/chore PRs #1, #3, #4, #6, #8, #10, #11, #13 and #15 (2026-09-26 → 2026-10-04); see the counting note in [04](04-wbs.md) §3.
 - Week 6 (cron, e-mail, data quality) is built and reviewed on branch `feat/week6-notifications`, pushed to GitHub on 2026-10-07 as pull request #16 (open, not merged as of 2026-10-07; see 9.1); last code commit 2026-10-04.
 - The legacy Excel file has not been tried; there has been no UAT with a real team.
 
@@ -52,7 +52,7 @@ Production details (as of 2026-10-07):
 
 Phase 2 is the largest remaining investment. It is **blocked** until all of these are true:
 
-1. The key assumptions in [03 §7](03-requirements.md) (`A-01`…`A-10`) have been checked as planned in 01 §7 (interviews, the real Excel import, the SkillMatrix owner, the data owner).
+1. The key assumptions in [02 §11](02-concept-analysis.md) (`A-01`…`A-10`) have been checked as planned in 02 §11 (interviews, the real Excel import, the SkillMatrix owner, the data owner). The concept analysis adds `A-11`…`A-18`; whether they join this condition is for the sponsor (*proposed* in 02 §11).
 2. A real team has used the product for at least two consecutive weeks (including two Monday e-mails) — *proposed; the sponsor decides the final period* — and the sponsor confirms it replaces their spreadsheet.
 3. The sponsor confirms which Phase 2 features (`R-20`…`R-26`) are wanted and in what order.
 
@@ -60,7 +60,7 @@ If the interviews show the need is weaker than assumed, the correct outcome is t
 
 ## 4. What is next
 
-See [04-wbs.md](04-wbs.md): work packages 1 (requirements and validation), 8.1 (performance), 8.4 (accessibility) and 9.1–9.3 (pilot readiness, pilot, hosting decision) are expected before G1; 9.4 (production readiness) comes after G1 (*proposed* in [08](08-production-readiness.md) §5). 8.2 (interface language) and 8.3 (self sign-up) are not scheduled before G1 unless the sponsor asks for them earlier.
+See [04](04-wbs.md): work packages 1 (requirements and validation, including 1.6, the data collection for the concept analysis), 8.1 (performance), 8.4 (accessibility) and 9.1–9.3 (pilot readiness, pilot, hosting decision) are expected before G1; 9.4 (production readiness) comes after G1 (*proposed* in [08](08-production-readiness.md) §5). 8.2 (interface language) and 8.3 (self sign-up) are not scheduled before G1 unless the sponsor asks for them earlier.
 
 The two-week pilot with one real team (work package 9.2) is planned in [07](07-poc-and-mvp.md) §6 and feeds G1; its preconditions are work package 9.1 (the `Pilot` items in [08](08-production-readiness.md)). What must be true before CertTracker becomes a production service is the rest of that checklist (the `Production` items, work package 9.4).
 

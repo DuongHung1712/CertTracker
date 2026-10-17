@@ -1,9 +1,9 @@
 # Software Architecture Document (SAD) — condensed
 
 - **Status:** Draft v1 — condensed from the design spec; backfilled
-- **Last updated:** 2026-10-07
+- **Last updated:** 2026-10-17
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), [Design system](../design-system.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), [Requirements and CA](03-requirements.md), [WBS](04-wbs.md)
+- **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), [Design system](../design-system.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), [Concept analysis](02-concept-analysis.md), [Requirements](03-requirements.md), [WBS](04-wbs.md)
 
 > **Tóm tắt (VI):** Bản rút gọn kiến trúc từ spec: bối cảnh, container, mô hình dữ liệu, bảo mật, luồng chính, thuộc tính chất lượng, triển khai. Chi tiết và lý do từng lựa chọn nằm ở spec và decisions.md; tài liệu này chỉ trỏ tới. Phần tuần 6 (cron, e-mail, chất lượng dữ liệu) mới có trên nhánh `feat/week6-notifications`, chưa merge vào `dev`; kiến trúc AI (giai đoạn 2) chưa được xây.
 

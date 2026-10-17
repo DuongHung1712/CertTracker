@@ -1,9 +1,9 @@
 # Design and mockups
 
 - **Status:** Draft v1, parts A (as-built documentation, §1–§4b) and B (proposed mockups for review, §5–§6)
-- **Last updated:** 2026-10-07
+- **Last updated:** 2026-10-17
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Design system](../design-system.md), [Decisions](../decisions.md), [Requirements and CA](03-requirements.md), [WBS](04-wbs.md), [SAD](05-sad.md), the code under `src/app` and `src/components/app-shell/nav.ts`
+- **Sources:** [Design system](../design-system.md), [Decisions](../decisions.md), [Concept analysis](02-concept-analysis.md), [Requirements](03-requirements.md), [WBS](04-wbs.md), [SAD](05-sad.md), the code under `src/app` and `src/components/app-shell/nav.ts`
 
 > **Tóm tắt (VI):** Tài liệu này có hai phần tách bạch. Phần A (§1–§4b) ghi lại giao diện **đã được xây** (chụp màn hình thật, dữ liệu seed giả): app được xây trước khi có bất kỳ mockup nào được duyệt. Gồm cơ sở thiết kế, bảng liệt kê màn hình theo vai trò và requirement, ba luồng người dùng (member cập nhật chứng chỉ, manager theo dõi hằng tuần, admin import Excel) và thư viện ảnh theo vai trò. Phần B (§5–§6) là **mockup đề xuất, chưa xây**, để sponsor duyệt **trước khi** tốn công kỹ thuật: phản hồi khi chuyển trang, công tắc ngôn ngữ EN/VI, tự đăng ký có admin duyệt (sẽ thay thế quyết định #12, hoãn đến sau G1 trừ khi sponsor yêu cầu sớm hơn) và ba ý tưởng AI giai đoạn 2 (bị chặn bởi cổng G1, không phải cam kết). Mỗi ảnh đề xuất có biểu ngữ "PROPOSED MOCKUP — not built"; §6 là bảng 14 câu hỏi cần sponsor trả lời.
 
@@ -36,7 +36,7 @@ The design system ([design-system.md](../design-system.md), in Vietnamese) is th
 
 ## 3. Screen inventory
 
-Every `page.tsx` under `src/app`, as of branch `docs/process-pack` (which includes week 6). "Roles" combines the sidebar entries in `nav.ts` with the redirects inside each page. "Status" uses the wording of [03](03-requirements.md) §4 and was checked against the first commit that gave the screen its real content (`git log`); the original placeholder pages of 2026-09-27 are ignored.
+Every `page.tsx` under `src/app`, as of branch `docs/process-pack` (which includes week 6). "Roles" combines the sidebar entries in `nav.ts` with the redirects inside each page. "Status" uses the wording of [03](03-requirements.md) §2 and was checked against the first commit that gave the screen its real content (`git log`); the original placeholder pages of 2026-09-27 are ignored.
 
 | Route | Screen | Roles | Purpose | Requirements | Status | Screenshot |
 |---|---|---|---|---|---|---|
@@ -262,7 +262,7 @@ Sections 5.1 to 5.3 map to the work packages of the same numbers in [04](04-wbs.
 
 ![Proposed: Dashboard in English](images/proposed-i18n-dashboard-en.png)
 
-*Proposed.* The top of the Dashboard in English, translated according to the glossary in [03](03-requirements.md) §8: for example "Certificates by person", "Expiring soon", "Still valid". "Dashboard" and "Import / Export" stay as they are, because the glossary keeps them in English.
+*Proposed.* The top of the Dashboard in English, translated according to the glossary in [03](03-requirements.md) §5: for example "Certificates by person", "Expiring soon", "Still valid". "Dashboard" and "Import / Export" stay as they are, because the glossary keeps them in English.
 
 ![Proposed: Dashboard in Vietnamese](images/proposed-i18n-dashboard-vi.png)
 
@@ -276,7 +276,7 @@ Sections 5.1 to 5.3 map to the work packages of the same numbers in [04](04-wbs.
 - Dates and numbers follow the language. The English drawing writes "07 Oct 2026, 19:41" where Vietnamese shows "07/10/2026 19:41"; the exact format is for the i18n design.
 - The convention "UI text in Vietnamese" in `CLAUDE.md` is to be reviewed when the i18n spec is approved (decision #48).
 
-**Linked IDs.** WBS 8.2; `NFR-04`; `A-07`; decision #48; glossary in [03](03-requirements.md) §8.
+**Linked IDs.** WBS 8.2; `NFR-04`; `A-07`; decision #48; glossary in [03](03-requirements.md) §5.
 
 **Decisions needed from the reviewer.**
 
@@ -287,7 +287,7 @@ Sections 5.1 to 5.3 map to the work packages of the same numbers in [04](04-wbs.
 
 ### 5.3 Self sign-up with administrator approval (WBS 8.3)
 
-**Purpose.** Answers requirement `R-31`: a person can ask for an account and an administrator approves it. **This would supersede decision #12** (e-mail and password sign-in with self sign-up **disabled**, accounts created by an admin). It is a separate plan (decision #42), and it is **deferred to after G1 unless the sponsor asks for it earlier** (02 row 8.3, estimate 2 to 4 days). SSO is not part of it.
+**Purpose.** Answers requirement `R-31`: a person can ask for an account and an administrator approves it. **This would supersede decision #12** (e-mail and password sign-in with self sign-up **disabled**, accounts created by an admin). It is a separate plan (decision #42), and it is **deferred to after G1 unless the sponsor asks for it earlier** (04 row 8.3, estimate 2 to 4 days). SSO is not part of it.
 
 ![Proposed: request access page](images/proposed-signup-request.png)
 
@@ -306,7 +306,7 @@ Sections 5.1 to 5.3 map to the work packages of the same numbers in [04](04-wbs.
 - A new account starts with no role. A "pending" account sees only the waiting page and no data. This needs a new role value and Row Level Security tests (a schema change, under the project rules). A pending user would receive no e-mails, which decision #42 already prepared for.
 - Only an Admin chooses the role, and the default is the least powerful one (Member). For a Manager, the Admin also picks the teams they manage (the existing team-manager link).
 - Approval connects the account to a member record, using the same link by e-mail address that the system makes today when an admin creates an account.
-- The request stays on record after a decision, with who decided and when. That is a decision record on the request itself, not a general audit log (which is out of scope, see [03](03-requirements.md) §6).
+- The request stays on record after a decision, with who decided and when. That is a decision record on the request itself, not a general audit log (which is out of scope, see [03](03-requirements.md) §4).
 - Opening sign-up to the internet creates new risks: spam requests, and a team list visible to anyone who opens the page. The questions below decide how much protection is needed.
 
 **Linked IDs.** WBS 8.3; `R-31`; decisions #12 (to be superseded) and #42.

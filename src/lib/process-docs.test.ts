@@ -14,11 +14,8 @@ const splitRow = (line: string) =>
     .slice(1, -1)
     .map((c) => c.trim());
 
-/** The first Markdown table whose header starts with `firstHeader`: its header cells and data rows. */
-function readTable(markdown: string, firstHeader: string): Table {
-  const lines = markdown.split(/\r?\n/);
-  const start = lines.findIndex((l) => l.startsWith(`| ${firstHeader} |`));
-  if (start < 0) throw new Error(`table starting with "${firstHeader}" not found`);
+/** The data rows of the Markdown table whose header line is `lines[start]`. */
+function tableAt(lines: string[], start: number): Table {
   const rows: string[][] = [];
   for (let i = start + 2; i < lines.length && lines[i].startsWith("|"); i += 1) {
     rows.push(splitRow(lines[i]));
@@ -26,8 +23,25 @@ function readTable(markdown: string, firstHeader: string): Table {
   return { header: splitRow(lines[start]), rows };
 }
 
+/** The first Markdown table whose header starts with `firstHeader`: its header cells and data rows. */
+function readTable(markdown: string, firstHeader: string): Table {
+  const lines = markdown.split(/\r?\n/);
+  const start = lines.findIndex((l) => l.startsWith(`| ${firstHeader} |`));
+  if (start < 0) throw new Error(`table starting with "${firstHeader}" not found`);
+  return tableAt(lines, start);
+}
+
+/** The first Markdown table whose header cells are exactly `header`. */
+function readTableWithHeader(markdown: string, header: readonly string[]): Table {
+  const lines = markdown.split(/\r?\n/);
+  const start = lines.indexOf(`| ${header.join(" | ")} |`);
+  if (start < 0) throw new Error(`table with header "${header.join(" | ")}" not found`);
+  return tableAt(lines, start);
+}
+
 type Requirement = {
   id: string;
+  need: string;
   source: string;
   priority: string;
   build: string;
@@ -42,7 +56,20 @@ type WorkPackage = {
   requirements: string;
 };
 
-const REQUIREMENT_HEADER = ["ID", "Requirement", "Source", "Priority", "Build status", "Evidence", "Validation"];
+const NUMBERED_DOCS = [
+  "00-process-status.md",
+  "01-idea-and-brainstorm.md",
+  "02-concept-analysis.md",
+  "03-requirements.md",
+  "04-wbs.md",
+  "05-sad.md",
+  "06-design-and-mockups.md",
+  "07-poc-and-mvp.md",
+  "08-production-readiness.md",
+] as const;
+
+const REQUIREMENT_HEADER = ["ID", "Requirement", "Need", "Source", "Priority", "Build status", "Evidence", "Validation"];
+const NEEDS_HEADER = ["ID", "Need (as a user outcome)", "Who", "Evidence today", "Linked assumptions", "Status"] as const;
 const WBS_HEADER = [
   "WBS",
   "Work package",
@@ -56,16 +83,21 @@ const WBS_HEADER = [
   "Requirements",
 ];
 
-const requirementsTable = readTable(read("03-requirements.md"), "ID");
+const conceptDoc = read("02-concept-analysis.md");
+const requirementsDoc = read("03-requirements.md");
+// The requirements table is the first table in 03 whose header starts with "ID".
+const requirementsTable = readTable(requirementsDoc, "ID");
+const needsTable = readTableWithHeader(conceptDoc, NEEDS_HEADER);
 const wbsTable = readTable(read("04-wbs.md"), "WBS");
 
 const requirements: Requirement[] = requirementsTable.rows.map((r) => ({
   id: r[0],
-  source: r[2],
-  priority: r[3],
-  build: r[4],
-  evidence: r[5],
-  validation: r[6],
+  need: r[2],
+  source: r[3],
+  priority: r[4],
+  build: r[5],
+  evidence: r[6],
+  validation: r[7],
 }));
 
 const wbs: WorkPackage[] = wbsTable.rows.map((r) => ({
@@ -75,11 +107,56 @@ const wbs: WorkPackage[] = wbsTable.rows.map((r) => ({
   requirements: r[9],
 }));
 
+const matches = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]);
+
+const knownNeeds = new Set(needsTable.rows.map((r) => r[0]));
+// Assumptions (02 §11) and success criteria (02 §10) are the first cell of their table rows in 02.
+const assumptionAndCriterionRows = matches(conceptDoc, /^\| (A-\d+|SM-\d+) \|/gm);
+const knownAssumptionsAndCriteria = new Set(assumptionAndCriterionRows);
+
 const SOURCE = /^(FL-[1-9]|SPEC §\S+|DEC #\d+|MGR|PROJECT)$/;
 const PRIORITY = new Set(["Must", "Should", "Could"]);
 const BUILD = /^(Built \(W[1-6]\)|Built \(W6, unmerged\)|Partial|Planned|Gated \(G1\))$/;
 const VALIDATION = new Set(["Assumed", "Decided", "Validated"]);
+const NEED_STATUS = new Set(["Assumed", "Partly evidenced"]);
 const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Blocked (G1)"]);
+
+describe("02-concept-analysis.md", () => {
+  it("keeps the documented columns in the needs table, with well-formed unique ids", () => {
+    expect(needsTable.header).toEqual([...NEEDS_HEADER]);
+    expect(needsTable.rows.length).toBeGreaterThan(5);
+    for (const row of needsTable.rows) {
+      expect(row.length, `row "${row[0]}" has ${row.length} cells, expected ${NEEDS_HEADER.length}`).toBe(
+        NEEDS_HEADER.length,
+      );
+      expect(row[0], `malformed need id "${row[0]}"`).toMatch(/^N-\d{2}$/);
+    }
+    const ids = needsTable.rows.map((r) => r[0]);
+    expect(
+      ids.filter((id, i) => ids.indexOf(id) !== i),
+      "need ids are repeated",
+    ).toEqual([]);
+  });
+
+  it("no need is claimed as validated, and every linked assumption exists in 02", () => {
+    const status = NEEDS_HEADER.indexOf("Status");
+    const linked = NEEDS_HEADER.indexOf("Linked assumptions");
+    for (const row of needsTable.rows) {
+      expect(NEED_STATUS.has(row[status]), `${row[0]} status "${row[status]}"`).toBe(true);
+      for (const id of row[linked].split(", ")) {
+        expect(knownAssumptionsAndCriteria.has(id), `${row[0]} links unknown ${id}`).toBe(true);
+      }
+    }
+  });
+
+  it("numbers its assumption and success-criterion rows uniquely", () => {
+    expect(assumptionAndCriterionRows.length).toBeGreaterThan(10);
+    expect(
+      assumptionAndCriterionRows.filter((id, i) => assumptionAndCriterionRows.indexOf(id) !== i),
+      "assumption or success-criterion ids are repeated",
+    ).toEqual([]);
+  });
+});
 
 describe("03-requirements.md", () => {
   it("keeps the documented columns and well-formed rows", () => {
@@ -113,6 +190,24 @@ describe("03-requirements.md", () => {
     }
   });
 
+  it("every Need cell is '—' or a list of needs from the needs table in 02", () => {
+    for (const r of requirements) {
+      if (r.need === "—") continue;
+      for (const id of r.need.split(", ")) {
+        expect(id, `${r.id}: malformed need "${id}"`).toMatch(/^N-\d{2}$/);
+        expect(knownNeeds.has(id), `${r.id} cites ${id}, which is not in the needs table of 02`).toBe(true);
+      }
+    }
+  });
+
+  it("section 3 lists exactly the requirements whose Need is '—'", () => {
+    const start = requirementsDoc.indexOf("## 3. Requirements without an identified need");
+    expect(start, "section 3 is missing").toBeGreaterThan(0);
+    const end = requirementsDoc.indexOf("\n## ", start + 1);
+    const listed = matches(requirementsDoc.slice(start, end), /^- `((?:R|NFR)-\d+)`/gm);
+    expect(listed).toEqual(requirements.filter((r) => r.need === "—").map((r) => r.id));
+  });
+
   it("every piece of evidence points at something that exists on this branch unless it is flagged as unmerged", () => {
     for (const r of requirements) {
       if (r.evidence === "—" || r.build.includes("unmerged")) continue;
@@ -127,7 +222,7 @@ describe("03-requirements.md", () => {
     expect(
       requirements.filter((r) => r.validation === "Validated").map((r) => r.id),
       "No user interviews have been recorded yet, so nothing may be marked Validated. " +
-        "When interviews happen, record them in 01 section 7 and then relax this check deliberately.",
+        "When interviews happen, record them with the kit in 02 section 12 and then relax this check deliberately.",
     ).toEqual([]);
   });
 });
@@ -176,34 +271,20 @@ describe("04-wbs.md", () => {
 describe("process documents", () => {
   const files = readdirSync(DIR).filter((f) => f.endsWith(".md"));
 
-  it("contains the expected files", () => {
-    expect(files).toEqual(
-      expect.arrayContaining([
-        "README.md",
-        "00-process-status.md",
-        "03-requirements.md",
-        "04-wbs.md",
-        "05-sad.md",
-        "06-design-and-mockups.md",
-        "07-poc-and-mvp.md",
-        "08-production-readiness.md",
-      ]),
-    );
+  it("contains exactly the numbered documents 00-08 and the README", () => {
+    expect([...files].sort()).toEqual([...NUMBERED_DOCS, "README.md"]);
   });
 
-  it("README.md links every numbered document", () => {
+  it("README.md links every numbered document, in process order", () => {
     const readme = read("README.md");
-    for (const name of [
-      "00-process-status.md",
-      "03-requirements.md",
-      "04-wbs.md",
-      "05-sad.md",
-      "06-design-and-mockups.md",
-      "07-poc-and-mvp.md",
-      "08-production-readiness.md",
-    ]) {
-      expect(readme, `README.md does not link ${name}`).toContain(`](${name})`);
+    const positions = NUMBERED_DOCS.map((name) => readme.indexOf(`](${name})`));
+    for (const [i, name] of NUMBERED_DOCS.entries()) {
+      expect(positions[i], `README.md does not link ${name}`).toBeGreaterThan(0);
     }
+    expect(
+      [...positions].sort((a, b) => a - b),
+      "README.md lists the documents out of process order",
+    ).toEqual(positions);
   });
 
   it.each(files)("%s: relative links resolve and has a Vietnamese summary", (file) => {
@@ -214,6 +295,17 @@ describe("process documents", () => {
       expect(existsSync(resolve(dirname(resolve(DIR, file)), path)), `${file} → ${target}`).toBe(true);
     }
     if (file !== "README.md") expect(text).toContain("**Tóm tắt (VI):**");
+  });
+
+  it.each(files)("%s cites only needs, assumptions and success criteria that exist in 02", (file) => {
+    const text = read(file);
+    for (const id of matches(text, /\b(N-\d+)\b/g)) {
+      expect(knownNeeds.has(id), `${file} cites ${id}, which is not in the needs table of 02`).toBe(true);
+    }
+    // `\b` keeps "NFR-01" from matching here; "A-xx" and "SM-x" placeholders have no digits.
+    for (const id of matches(text, /\b((?:A|SM)-\d+)\b/g)) {
+      expect(knownAssumptionsAndCriteria.has(id), `${file} cites ${id}, which is not defined in 02`).toBe(true);
+    }
   });
 
   it("05-sad.md has the three mermaid diagrams (context, container, data model)", () => {
@@ -251,14 +343,8 @@ describe("06-design-and-mockups.md", () => {
 
 describe("07-poc-and-mvp.md and 08-production-readiness.md", () => {
   const LATER_DOCS = ["07-poc-and-mvp.md", "08-production-readiness.md"] as const;
-  const requirementsDoc = read("03-requirements.md");
-  const matches = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]);
 
-  const knownIds = new Set([
-    ...requirements.map((r) => r.id),
-    // Assumptions (01 §7) and success criteria (01 §5) are the first cell of their table rows.
-    ...matches(requirementsDoc, /^\| (A-\d+|SM-\d+) \|/gm),
-  ]);
+  const knownIds = new Set([...requirements.map((r) => r.id), ...knownAssumptionsAndCriteria]);
   const knownWbs = new Set(wbs.map((r) => r.code));
 
   /** Every row of `table` has as many cells as its header (a stray "|" in a cell shifts every later column). */
@@ -275,16 +361,16 @@ describe("07-poc-and-mvp.md and 08-production-readiness.md", () => {
   const acceptance = readTable(read("07-poc-and-mvp.md"), "ID");
   const checklist = readTable(read("08-production-readiness.md"), "ID");
 
-  it("the P- and MVP- tables in 05 and the PRD- table in 06 keep their columns on every row", () => {
+  it("the P- and MVP- tables in 07 and the PRD- table in 08 keep their columns on every row", () => {
     expect(findings.header).toEqual(["#", "Technical question", "Answer", "Evidence", "Limits"]);
     expect(acceptance.header).toEqual(["ID", "Criterion", "How it is checked", "Threshold", "Status"]);
     expect(checklist.header).toEqual(["ID", "Area", "Item", "Why", "Today", "Needed before", "Owner", "WBS"]);
-    expectRectangular("05 findings", findings);
-    expectRectangular("05 acceptance criteria", acceptance);
-    expectRectangular("06 checklist", checklist);
+    expectRectangular("07 findings", findings);
+    expectRectangular("07 acceptance criteria", acceptance);
+    expectRectangular("08 checklist", checklist);
   });
 
-  it("06 says for every item whether it blocks the pilot (WBS 9.1) or production", () => {
+  it("08 says for every item whether it blocks the pilot (WBS 9.1) or production", () => {
     const when = checklist.header.indexOf("Needed before");
     const wbsColumn = checklist.header.indexOf("WBS");
     for (const row of checklist.rows) {
@@ -323,7 +409,7 @@ describe("07-poc-and-mvp.md and 08-production-readiness.md", () => {
     expect(rowIds.filter((id, i) => rowIds.indexOf(id) !== i), `${file} repeats ids`).toEqual([]);
   });
 
-  it("05 section 2 points only at evidence files that exist", () => {
+  it("07 section 2 points only at evidence files that exist", () => {
     const column = findings.header.indexOf("Evidence");
     expect(column).toBeGreaterThan(0);
     for (const row of findings.rows) {
@@ -371,10 +457,10 @@ describe("proposed mockups (docs/process/mockups)", () => {
     if (file.startsWith("ai-")) expect(html).toContain("CONCEPT — Phase 2, gated by G1, not a commitment");
     const image = `proposed-${file.replace(/\.html$/, "")}.png`;
     expect(existsSync(resolve(imagesDir, image)), `${image} is missing: run render-mockups.mjs`).toBe(true);
-    expect(design, `${image} is not shown in 04`).toContain(`images/${image}`);
+    expect(design, `${image} is not shown in 06`).toContain(`images/${image}`);
   });
 
-  it("04 section 6 lists exactly the questions asked in section 5", () => {
+  it("06 section 6 lists exactly the questions asked in section 5", () => {
     const section5 = design.slice(design.indexOf("## 5. Proposed mockups"), design.indexOf("## 6. Review checklist"));
     const asked = [...section5.matchAll(/^(\d+)\. /gm)].map((m) => Number(m[1]));
     const checklist = readTable(design, "#").rows.map((r) => Number(r[0]));
