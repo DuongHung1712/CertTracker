@@ -1,7 +1,7 @@
 # Production readiness
 
 - **Status:** Draft v1 — checklist written before production work has started; items marked *proposed* need the sponsor's confirmation
-- **Last updated:** 2026-10-17
+- **Last updated:** 2026-10-26
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Process status](00-process-status.md), [Concept analysis](02-concept-analysis.md), [Requirements](03-requirements.md), [WBS](04-wbs.md), [SAD](05-sad.md), [PoC and MVP](07-poc-and-mvp.md), [Decisions](../decisions.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), `.github/workflows/ci.yml`, `package.json`, `vercel.json`, `supabase/config.toml`
 
@@ -22,7 +22,7 @@
 
 "Needed before" says when the item must be done: **Pilot** — before the two-week pilot with one real team ([07 §6](07-poc-and-mvp.md)), as part of work package 9.1 (pilot readiness); **Production** — before CertTracker becomes a production service, mostly work package 9.4.
 
-Owner is a role: **Developer (owner)** = the developer who built CertTracker; **Admin** and **Sponsor** as in [02 §6](02-concept-analysis.md); **Data owner** = the person responsible for the personnel data, to be named by the sponsor (also in [02 §6](02-concept-analysis.md)).
+Owner is a role: **Developer (owner)** = the developer who built CertTracker; **Admin** and **Sponsor** as in [02 §3](02-concept-analysis.md); **Data owner** = the person responsible for the personnel data, to be named by the sponsor (also in [02 §3](02-concept-analysis.md)).
 
 | ID | Area | Item | Why | Today | Needed before | Owner | WBS |
 |---|---|---|---|---|---|---|---|
@@ -40,7 +40,7 @@ Owner is a role: **Developer (owner)** = the developer who built CertTracker; **
 | PRD-12 | Security | A written procedure to rotate the service-role key (rotate in Supabase, update Vercel, redeploy), used once before production and whenever someone with access leaves | The key bypasses RLS (decision #35) | No procedure in the repository | Production | Developer (owner) | 9.4 |
 | PRD-13 | Security | Dependencies updated on a fixed routine (*proposed*: monthly), including a decision on the deprecated `@react-email/components` | Known vulnerabilities; decision #43 kept the deprecated package for now | No automated update configuration in the repository (no `.github/dependabot.yml`); `@react-email/components` still in `package.json` (decision #43); SheetJS installed from its CDN at 0.20.3 (decision #27) | Production | Developer (owner) | 9.4 |
 | PRD-14 | Security | Least privilege: a reviewed list of Admin accounts and of who can open the Supabase, Vercel and Resend dashboards; *proposed*: two-factor sign-in on those dashboards | Admins and dashboard users can read and change everything | Admin role is set by SQL (deployment notes, B4); no list of admins or dashboard users is kept in the repository | Production | Sponsor (approves), Admin | 9.4 |
-| PRD-15 | Data protection | The data owner approves in writing storing the personal data in a cloud service: names, work e-mails, team, certificates with dates, and evidence files (which may show more personal details) | `A-05` is recorded as a project decision (decision #1) but must be confirmed with the data owner ([02 §11](02-concept-analysis.md)); the pilot loads real personal data | Not confirmed | Pilot | Data owner | 9.1 |
+| PRD-15 | Data protection | The data owner approves in writing storing the personal data in a cloud service: names, work e-mails, team, certificates with dates, and evidence files (which may show more personal details) | `A-05` is recorded as a project decision (decision #1) but must be confirmed with the data owner ([02 §7](02-concept-analysis.md)); the pilot loads real personal data | Not confirmed | Pilot | Data owner | 9.1 |
 | PRD-16 | Data protection | A retention rule for people who leave: how long their records and evidence are kept and who deletes them | Personal data should not be kept without a reason | `members.is_active = false` excludes a person from counts and e-mails (decisions #31, #34) but keeps all their data; a member with records cannot be deleted until the records are deleted (`src/features/members/actions.ts`); logins are removed only in the Supabase dashboard; no retention rule exists | Production | Data owner (rule), Admin (applies it) | 9.4 |
 | PRD-17 | Data protection | Evidence stays reachable only through short-lived signed links after a permission check, and the data owner accepts that a link works for 60 seconds if forwarded | Evidence files are the most sensitive data | **Already in place:** private bucket with per-role policies; the download route reads the record under the user's RLS and redirects to a link valid for 60 seconds (`src/app/api/records/[id]/evidence/route.ts`; [07](07-poc-and-mvp.md) P-04). The data owner's acceptance is not recorded | Production | Developer (owner) | — |
 | PRD-18 | E-mail operations | Sending domain verified on Resend (SPF, DKIM; DMARC recommended) and `EMAIL_FROM` on that domain | An unverified sender only delivers to the Resend account owner (decision #40); missing records send mail to spam | No evidence of verification in the repository; who controls the DNS is not recorded | Pilot | Developer (owner), with the DNS holder (to be assigned by the sponsor) | 9.1 |

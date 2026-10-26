@@ -1,7 +1,7 @@
 # PoC and MVP
 
 - **Status:** Draft v1 — reconstructed after the MVP build; the pilot plan in §6 is *proposed*
-- **Last updated:** 2026-10-17
+- **Last updated:** 2026-10-26
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Process status](00-process-status.md), [Concept analysis](02-concept-analysis.md), [Requirements](03-requirements.md), [WBS](04-wbs.md), [SAD](05-sad.md), [Decisions](../decisions.md), [Free-tier deployment](../deploy/task9-free-tier.md), [E-mail and cron runbook](../deploy/cron-email.md), the tests under `supabase/tests/database/`, `src/` and `e2e/`
 
@@ -36,7 +36,7 @@ Test counts below come from the files themselves (pgTAP: the `plan(n)` count in 
 
 ## 3. What is NOT proven yet
 
-Each gap names the work package in [04](04-wbs.md) (or the document) that closes it, and the assumption from [02 §11](02-concept-analysis.md) it relates to.
+Each gap names the work package in [04](04-wbs.md) (or the document) that closes it, and the assumption from [02 §7](02-concept-analysis.md) it relates to.
 
 - **Performance on the cloud deployment** for signed-in pages: never measured; only signed-out requests were timed ([04](04-wbs.md) §4). Closed by WBS 8.1 (`SM-4`, `NFR-03`).
 - **The real legacy Excel file**: never imported; the fixture is synthetic (P-03). Closed by WBS 1.3 (`A-04`, `SM-2`).
@@ -75,7 +75,7 @@ The MVP counts as accepted only when every criterion below is met **on the publi
 | MVP-06 | Navigation feels immediate (`SM-4`, `NFR-03`; WBS 8.1) | Signed-out pages: the method in [04](04-wbs.md) §4. Signed-in pages cannot be measured that way; their method is defined in WBS 8.1 (*proposed*: browser navigation timings over at least 20 navigations per role, 75th percentile) | `SM-4`: feedback at once and 75th-percentile page load under 1 second — *proposed* | Not met — WBS 8.1 not started; signed-in pages not measured |
 | MVP-07 | Security holds in operation (`R-17`, `NFR-01`, `NFR-02`) | pgTAP RLS tests green in CI; the service-role client imported only by the cron routes (lint rule); secrets set only in Vercel environment variables, none in the repository | All three true for the release in production | Partly met — the RLS tests run in CI; the service-role lint rule is part of week 6 (W6, unmerged); nothing records that the production environment variables for week 6 are set |
 | MVP-08 | Accessibility baseline (`NFR-05`; WBS 8.4) | `src/app/tokens.test.ts` (contrast) in `pnpm test`; keyboard and screen-reader audit | Contrast tests green; *no blocking issue left from the audit* | Partly met — contrast tests exist and run in CI; the audit has not been done |
-| MVP-09 | Usability: pilot members manage on their own (`A-03`; WBS 9.2) | Observe members adding a record with evidence, as planned for `A-03` in [02 §11](02-concept-analysis.md) | *At least two observed members add a record and evidence without help* | Not met — no observation yet |
+| MVP-09 | Usability: pilot members manage on their own (`A-03`; WBS 9.2) | Observe members adding a record with evidence (`A-03`, [02 §7](02-concept-analysis.md)) | *At least two observed members add a record and evidence without help* | Not met — no observation yet |
 | MVP-10 | Adoption: the pilot team stops using its spreadsheet (`SM-1`, `A-01`; WBS 9.2, gate G1) | Sponsor and admin confirmation after the pilot | `SM-1`: spreadsheet no longer updated after at least two consecutive weeks of real use — *proposed period* | Not met — no pilot yet |
 
 ## 6. Pilot plan: two weeks with one real team (WBS 9.2)
@@ -153,7 +153,7 @@ Only what the application or a simple log can provide:
   8. Managers only: which of the proposed AI features would you actually use, in order? (`A-08`)
   9. Admin only: how many members and certificate records does your unit have? (`A-09`)
   10. Would you stop using the spreadsheet? What is still missing? (`SM-1`)
-- **Post-pilot interviews** at the end of week 2 (*proposed*): about 20 minutes each, 4–5 people (1 manager, 1 admin, 2–3 members), preferably the same people as in the discovery interviews. These are about **actual use during the pilot**; the discovery interviews before the pilot (WBS 1.2, script in [02](02-concept-analysis.md) Appendix A) are separate. Answers are recorded per ID with the template in 02 Appendix A. The mid-week check-in is separate and shorter (*proposed*, see Week 1). Questions:
+- **Post-pilot interviews** at the end of week 2 (*proposed*): about 20 minutes each, 4–5 people (1 manager, 1 admin, 2–3 members), preferably the same people as in the discovery interviews. These are about **actual use during the pilot**; the discovery interviews before the pilot (WBS 1.2; questions to be prepared) are separate. Answers are recorded per question and ID, quoting the person's words. The mid-week check-in is separate and shorter (*proposed*, see Week 1). Questions:
 
   | # | Question | Maps to |
   |---|---|---|

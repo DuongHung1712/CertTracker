@@ -1,7 +1,7 @@
 # Idea and brainstorm
 
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
-- **Last updated:** 2026-10-17
+- **Last updated:** 2026-10-26
 - **Owner:** CertTracker team (DC34)
 - **Sources:** `CertTracker - Feature List.pdf` (internal; not stored in this repository), S+ AI Tooling Initiative proposal (internal; not stored in this repository), [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md)
 
@@ -11,7 +11,7 @@
 
 **Where it came from.** The idea arrived as a feature list, `CertTracker - Feature List.pdf`, written by the DC34 team lead. It is an internal document and is not stored in this repository, so it cannot be traced from here. It describes a solution (features), not an analysis of the need.
 
-**Stated goal.** The Feature List opens with the goal: an application that manages the team's certifications and **replaces the current Excel / Google Sheets file**. It does not say which of the two is used today, how many people or certificates are involved, or what goes wrong with the file (see [02](02-concept-analysis.md) §4).
+**Stated goal.** The Feature List opens with the goal: an application that manages the team's certifications and **replaces the current Excel / Google Sheets file**. It does not say which of the two is used today, how many people or certificates are involved, or what goes wrong with the file (see the open points in [02](02-concept-analysis.md) §9).
 
 **The nine feature groups** (`FL-1`…`FL-9`; the codes are used in [03](03-requirements.md)):
 
@@ -63,7 +63,7 @@ That is why the concept analysis ([02](02-concept-analysis.md)) and the WBS ([04
 ## 4. Inputs carried into the concept analysis
 
 - The stated goal: replace the spreadsheet (Feature List; design spec §1).
-- The nine feature groups `FL-1`…`FL-9`, used to derive the needs `N-01`… in [02](02-concept-analysis.md) §3.
+- The nine feature groups `FL-1`…`FL-9`, used to derive the needs `N-01`… in [02](02-concept-analysis.md) §4.
 - The Feature List's import-cleaning rules (`FL-6`) and data-quality checks (`FL-5`), the only material that says anything about the current spreadsheet, and only indirectly ([02](02-concept-analysis.md) §2).
 - The roles and constraints from the design spec (§1–§2) and decisions #1–#15.
 - The SkillMatrix context (`A-10`).

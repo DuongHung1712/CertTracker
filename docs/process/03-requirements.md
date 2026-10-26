@@ -1,7 +1,7 @@
 # Requirements
 
 - **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
-- **Last updated:** 2026-10-17
+- **Last updated:** 2026-10-26
 - **Owner:** CertTracker team (DC34)
 - **Sources:** `CertTracker - Feature List.pdf` (internal; not stored in this repository), [Concept analysis](02-concept-analysis.md), [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md)
 
@@ -9,13 +9,13 @@
 
 ## 1. About this document
 
-This document lists **what CertTracker must do**. Why, for whom, and whether it is worth doing are in the concept analysis, [02](02-concept-analysis.md): the problem statement (§2), the needs `N-01`… (§3), the stakeholders (§6), the alternatives (§7), the success criteria `SM-1`… (§10) and the assumptions `A-01`… (§11). Until 2026-10-17 those sections were part of this document; they moved so that the order of the pack follows the process (CA before requirements).
+This document lists **what CertTracker must do**. Why, for whom, and whether it is worth doing are in the concept analysis, [02](02-concept-analysis.md): the problem statement (§2), the stakeholders (§3), the needs `N-01`… (§4), the options considered (§5), the success criteria `SM-1`… (§6) and the assumptions `A-01`… (§7). Until 2026-10-17 those sections were part of this document; they moved so that the order of the pack follows the process (CA before requirements).
 
 ## 2. Requirements
 
 Source codes: `FL-n` = feature group n of the Feature List (`FL-1`…`FL-7` platform, `FL-8` and `FL-9` AI; the AI principles at the end of the list are filed under `FL-9`); `SPEC §x` = design spec section; `DEC #n` = [decisions](../decisions.md) entry; `MGR` = manager feedback of 2026-10-05; `PROJECT` = proposed later by the team.
 
-Need column: the `N-xx` IDs of [02](02-concept-analysis.md) §3 that the requirement serves; `—` means no need has been identified (§3 below).
+Need column: the `N-xx` IDs of [02](02-concept-analysis.md) §4 that the requirement serves; `—` means no need has been identified (§3 below).
 
 Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build team confirmed it), `Decided` (a recorded decision in the design spec or the decision log), `Validated` (confirmed by users). **No requirement is `Validated`.**
 
@@ -68,12 +68,12 @@ Notes on the table:
 
 ## 3. Requirements without an identified need
 
-These requirements map to no need in [02](02-concept-analysis.md) §3. They came from the Feature List or from the team, not from a user outcome. Each is a candidate to confirm or cut at the discovery interviews (WBS 1.2) and gate G1; nothing is removed by this note.
+These requirements map to no need in [02](02-concept-analysis.md) §4. They came from the Feature List or from the team, not from a user outcome. Each is a candidate to confirm or cut at the discovery interviews (WBS 1.2) and gate G1; nothing is removed by this note.
 
 - `R-18` — realtime updates. No need requires changes to appear within seconds; `N-01` would be met by data that is correct when the page is opened.
 - `R-31` — self sign-up with approval. Proposed by the team (`PROJECT`); no user has asked to request their own account.
 - `NFR-05` — accessibility. Kept as a quality baseline (decision #14) regardless of interviews; it is listed only because no need in 02 names it, not as a candidate to cut.
-- `NFR-07` — free-tier cost. A constraint ([02](02-concept-analysis.md) §9, decision #13), not a user need.
+- `NFR-07` — free-tier cost. A constraint ([02](02-concept-analysis.md) §8, decision #13), not a user need.
 
 Partly without a need: `R-11` is mapped to `N-03` for its course-popularity and completion-by-provider items, but its **personal-ranking** part has no identified need. No need asks for people to be ranked; the only recorded discussion is about hiding the ranking (decision #8, `A-06`). The ranking is a candidate to confirm or cut in the same way.
 

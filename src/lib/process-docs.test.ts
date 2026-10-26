@@ -69,8 +69,8 @@ const NUMBERED_DOCS = [
 ] as const;
 
 const REQUIREMENT_HEADER = ["ID", "Requirement", "Need", "Source", "Priority", "Build status", "Evidence", "Validation"];
-const NEEDS_HEADER = ["ID", "Need (as a user outcome)", "Who", "Evidence today", "Linked assumptions", "Status"] as const;
-const ASSUMPTIONS_HEADER = ["ID", "Assumption", "How to validate", "Who", "Status"] as const;
+const NEEDS_HEADER = ["ID", "Need", "Who", "Status"] as const;
+const ASSUMPTIONS_HEADER = ["ID", "Assumption", "Status"] as const;
 const WBS_HEADER = [
   "WBS",
   "Work package",
@@ -112,7 +112,7 @@ const wbs: WorkPackage[] = wbsTable.rows.map((r) => ({
 const matches = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]);
 
 const knownNeeds = new Set(needsTable.rows.map((r) => r[0]));
-// Assumptions (02 §11) and success criteria (02 §10) are the first cell of their table rows in 02.
+// Assumptions (02 §7) and success criteria (02 §6) are the first cell of their table rows in 02.
 const assumptionAndCriterionRows = matches(conceptDoc, /^\| (A-\d+|SM-\d+) \|/gm);
 const knownAssumptionsAndCriteria = new Set(assumptionAndCriterionRows);
 
@@ -125,7 +125,7 @@ const NEED_STATUS = new Set(["Assumed", "Partly evidenced", "Validated", "Contra
 const ASSUMPTION_STATUS = new Set([...NEED_STATUS, "Decided"]);
 const NOT_VALIDATED_YET =
   "No interview result has been recorded yet, so nothing may be marked Validated. " +
-  "Relax this check deliberately when the first interview result is recorded (02 Appendix A.3).";
+  "Relax this check deliberately when the first interview result is recorded (WBS 1.2).";
 const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Blocked (G1)"]);
 
 describe("02-concept-analysis.md", () => {
@@ -145,14 +145,10 @@ describe("02-concept-analysis.md", () => {
     ).toEqual([]);
   });
 
-  it("needs use only the status vocabulary of 02 section 1, and every linked assumption exists in 02", () => {
+  it("needs use only the status vocabulary of 02 section 1", () => {
     const status = NEEDS_HEADER.indexOf("Status");
-    const linked = NEEDS_HEADER.indexOf("Linked assumptions");
     for (const row of needsTable.rows) {
       expect(NEED_STATUS.has(row[status]), `${row[0]} status "${row[status]}"`).toBe(true);
-      for (const id of row[linked].split(", ")) {
-        expect(knownAssumptionsAndCriteria.has(id), `${row[0]} links unknown ${id}`).toBe(true);
-      }
     }
   });
 
@@ -255,7 +251,7 @@ describe("03-requirements.md", () => {
     expect(
       requirements.filter((r) => r.validation === "Validated").map((r) => r.id),
       "No user interviews have been recorded yet, so nothing may be marked Validated. " +
-        "When interviews happen, record them with the kit in 02 Appendix A and then relax this check deliberately.",
+        "When interviews happen (WBS 1.2), record the results in 02 and then relax this check deliberately.",
     ).toEqual([]);
   });
 });

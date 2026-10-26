@@ -1,83 +1,83 @@
 # Work Breakdown Structure (WBS)
 
-- **Status:** Draft v1 — backfilled after the MVP build (see `00-process-status.md`)
-- **Last updated:** 2026-10-17
+- **Status:** Draft v2 — backfilled after the MVP build
+- **Last updated:** 2026-10-26
 - **Owner:** CertTracker team (DC34)
-- **Sources:** [Design spec §10](../superpowers/specs/2026-09-26-certtracker-design.md), `git log`, [Plans](../superpowers/plans/), [Concept analysis](02-concept-analysis.md), [Requirements](03-requirements.md), [Process status](00-process-status.md)
+- **Sources:** [Design spec §10](../superpowers/specs/2026-09-26-certtracker-design.md), `git log`, [Plans](../superpowers/plans/), [Requirements](03-requirements.md)
 
-> **Tóm tắt (VI):** Cây công việc có mã, trạng thái, kế hoạch so với thực tế. "Planned" lấy từ lộ trình tuần 1–6 trong spec; "Actual" lấy từ lịch sử git (ngày lịch; giờ công không được theo dõi). Phần chưa làm là ước lượng theo khoảng, cần xem lại và không phải cam kết. Tuần 6 (cron, email, chất lượng dữ liệu) mới có trên nhánh `feat/week6-notifications`, chưa merge vào `dev` và chưa lên production. Cổng G1 chặn Giai đoạn 2 (AI) cho tới khi nhu cầu được xác nhận.
+> **Tóm tắt (VI):** Cây công việc có mã, kế hoạch so với thực tế và phần việc còn lại. "Planned" lấy từ lộ trình trong spec; "Actual" là ngày lịch lấy từ git (giờ công không được theo dõi). Ước lượng còn lại là khoảng, không phải cam kết. Tuần 6 nằm trong pull request #16, chưa merge; cổng G1 chặn Giai đoạn 2 (AI) cho tới khi nhu cầu được xác nhận.
 
-## 1. How to read this
+## 1. Purpose and how to read
 
-- **Planned**: the roadmap in the design spec (phase 1 = 6 weeks, phase 2 = 6 weeks). `—` means the item was not in that roadmap.
-- **Actual**: calendar window from `git log` and merged pull requests. Effort in person-hours was **not tracked**, so none is claimed.
-- **Est. remaining**: engineer estimates in working days; ranges, to be reviewed. They are not commitments.
-- **Requirements** column links each work package to [03](03-requirements.md). Every `R-xx` and `NFR-xx` in `03` §2 appears in at least one row.
-- **Status** is one of `Done`, `In progress`, `Not started`, `Blocked (G1)`. `Done` means built and tested by the build team, not validated by users (see `03` §2 notes).
-- Phase 1 was built with AI-assisted development, which is why the calendar time is much shorter than the original 6-week plan; the plan was not re-baselined.
+This document lists the work done and the work remaining for CertTracker. It was written after Phase 1 had been built.
+
+- **Planned** is the design-spec roadmap (Phase 1 = weeks 1–6, Phase 2 = weeks 7–12); `—` means the item was not in it.
+- **Actual** is the calendar window from `git log` and merged pull requests. Effort in hours was not tracked, so none is claimed.
+- **Est. remaining** is the developer's estimate in working days: ranges, not commitments.
+- **Status** is `Done` (built and tested by the build team, not validated by users), `In progress`, `Not started` or `Blocked (G1)`. **Requirements** are the IDs in [03](03-requirements.md); each appears in at least one row.
+- **G1** is the gate before Phase 2 (decision #46): the key assumptions are checked; a real team has used the product for two consecutive weeks and the sponsor confirms it replaces their spreadsheet; the sponsor confirms which Phase 2 features are wanted.
 
 ## 2. WBS
 
 | WBS | Work package | Deliverable | Acceptance | Planned | Actual | Est. remaining | Depends on | Status | Requirements |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | Requirements and project governance | Process documents `00`–`08`, validated assumptions | Documents reviewed by the sponsor; assumptions `A-01`…`A-10` checked | — | 2026-10-05 → | 6–8.5 days (roll-up of 1.1–1.6) | — | In progress | — |
-| 1.1 | Process documents: status, idea and brainstorm, CA, requirements, WBS, SAD, design, PoC/MVP, production readiness (this pack) | `docs/process/00`–`08` | Merged; sponsor feedback addressed | — | 2026-10-05 → | 1 day | — | In progress | — |
-| 1.2 | Discovery interviews (before the pilot) | Interview notes per assumption | 4–5 interviews (1 manager, 1 admin, 2–3 members) recorded with the kit in `02` §12 and Appendix A; `02` §3 and §11 updated | — | not started | 2–3 days | 1.1, 1.6 | Not started | — |
-| 1.3 | Real-file import trial | Trial report (rows imported, manual fixes) | `SM-2` measured on a real file | — | not started | 0.5–1 day | 5 | Not started | R-15 |
-| 1.4 | Build-vs-buy scan | One-page comparison of the alternatives in `02` §7 | Sponsor agrees build is still justified | — | not started | 1 day | 1.1 | Not started | — |
-| 1.5 | Mockup review with the sponsor | Reviewed 06 §6 checklist with answers | Answers recorded in 06 §6 and decisions.md where needed | — | 2026-10-07 (mockups drafted) | 0.5 day | 1.1 | In progress | — |
-| 1.6 | CA data collection | Filled 02 §12 checklist; baseline numbers for 02 §8/§10 | Sponsor and admin supplied the numbers; 02 updated | — | not started | 1–2 days (estimate; depends on availability) | 1.1 | Not started | — |
-| 2 | Foundation (W1) | Schema, RLS, sign-in, CI, deployment on free tiers | PRs #1, #3 and #4 merged; pgTAP RLS green | Week 1 | 2026-09-26 → 2026-09-27 | — | — | Done | R-07, R-17, R-30, NFR-07 |
+| 1 | Requirements and project governance | Process documents `00`–`08`; checked assumptions | Sponsor reviewed the documents; `A-01`…`A-10` checked | — | 2026-10-05 → | 6–8.5 days (sum of 1.1–1.6) | — | In progress | — |
+| 1.1 | Process documents (this pack) | `docs/process/00`–`08` | Merged; sponsor feedback addressed | — | 2026-10-05 → | 1 day | — | In progress | — |
+| 1.2 | Discovery interviews (before the pilot) | Notes per assumption | 4–5 people interviewed (1 manager, 1 admin, 2–3 members); CA statuses updated | — | not started | 2–3 days | 1.1, 1.6 | Not started | — |
+| 1.3 | Real-file import trial | Trial report: rows imported, manual fixes | `SM-2` measured on a real file | — | not started | 0.5–1 day | 5 | Not started | R-15 |
+| 1.4 | Build-vs-buy scan | One-page comparison: spreadsheet, company system, SkillMatrix, CertTracker | Sponsor agrees building is still justified | — | not started | 1 day | 1.1 | Not started | — |
+| 1.5 | Mockup review with the sponsor | Answered review checklist ([06](06-design-and-mockups.md) §6) | Answers recorded; decisions logged where needed | — | 2026-10-07 (mockups drafted) | 0.5 day | 1.1 | In progress | — |
+| 1.6 | CA data collection | Baseline numbers and named contacts | Sponsor and admin supplied them; CA updated | — | not started | 1–2 days | 1.1 | Not started | — |
+| 2 | Foundation (W1) | Schema, RLS, sign-in, CI, free-tier deployment | PRs #1, #3, #4 merged; pgTAP RLS green | Week 1 | 2026-09-26 → 2026-09-27 | — | — | Done | R-07, R-17, R-30, NFR-07 |
 | 2.5 | Design system | Tokens, components, `/design` page, reference doc | PR #6 merged | — | 2026-09-27 | — | 2 | Done | NFR-05 |
-| 2.6 | UI polish (logo, favicon, dropdown fixes) | Logo, favicon, sidebar brand mark, select fixes | PR #13 merged | — | 2026-10-02 | — | 2.5 | Done | NFR-05 |
+| 2.6 | UI polish | Logo, favicon, sidebar brand mark, select fixes | PR #13 merged | — | 2026-10-02 | — | 2.5 | Done | NFR-05 |
 | 3 | Org and catalogue CRUD (W2) | Organisation, members, courses | PR #8 merged | Week 2 | 2026-09-29 → 2026-09-30 | — | 2 | Done | R-01, R-02, R-03, R-04 |
-| 4 | Training Records (W3) | List, form, evidence upload, expiry badge, Realtime | PR #10 merged | Week 3 | 2026-09-30 → 2026-10-01 | — | 3 | Done | R-05, R-06, R-08, R-18 |
-| 5 | Import / Export (W4) | Excel import with staging and preview; CSV/Excel export | PR #11 merged; real-file trial pending (1.3) | Week 4 | 2026-10-01 | — | 4 | Done | R-15, R-16 |
-| 6 | Dashboard (W5) | KPIs, breakdowns, ranking | PR #15 merged | Week 5 | 2026-10-04 | — | 4 | Done | R-09, R-10, R-11, NFR-02 |
-| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page; code (built and reviewed on branch `feat/week6-notifications`; pull request #16 open, not merged (see 9.1); as of 2026-10-07) | Branch reviewed; e2e green | Week 6 | 2026-10-04 (branch commits) | 0 (merge and push are in 9.1) | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
+| 4 | Training records (W3) | List, form, evidence upload, expiry badge, Realtime | PR #10 merged | Week 3 | 2026-09-30 → 2026-10-01 | — | 3 | Done | R-05, R-06, R-08, R-18 |
+| 5 | Import / Export (W4) | Excel import with staging and preview; CSV/Excel export | PR #11 merged; real-file trial is 1.3 | Week 4 | 2026-10-01 | — | 4 | Done | R-15, R-16 |
+| 6 | Dashboard (W5) | KPIs, breakdowns, ranking | PR #15 merged into `dev` | Week 5 | 2026-10-04 | — | 4 | Done | R-09, R-10, R-11, NFR-02 |
+| 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page | Branch reviewed, e2e green; PR #16 open, not merged | Week 6 | 2026-10-04 (branch commits) | 0 (merge is in 9.1) | 4, 6 | In progress | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
 | 8 | Cross-cutting improvements | See 8.1–8.4 | — | — | — | — | — | Not started | — |
-| 8.1 | Page-navigation performance | Measured before/after; Supabase region confirmed in the dashboard; function region set near the database; loading feedback on every page; fewer sequential auth calls | `SM-4` met on the same measurement method | — | Diagnosed 2026-10-05 (spike) | 0.5–1 day | — | Not started | NFR-03 |
-| 8.2 | Interface language switch (EN/VI) | Own design spec → plan → build | Both languages complete; e-mails follow the recipient's language. Unscheduled until after G1 unless the sponsor asks earlier (decision #48) | — | not started | 4–7 days (needs its own design) | 1.1 | Not started | NFR-04 |
-| 8.3 | Self sign-up with approval | Own design + build | A new user can request access and an admin approves. Unscheduled until after G1 unless the sponsor asks earlier | — | not started | 2–4 days | 6 | Not started | R-31 |
-| 8.4 | Accessibility audit (keyboard and screen reader) | Audit notes + fixes list | Key flows usable by keyboard; headings and labels checked | — | not started | 1–2 days | 6 | Not started | NFR-05 |
+| 8.1 | Page-navigation performance | Loading feedback on every page; functions near the database; fewer auth calls | `SM-4` met, measured before and after (§4) | — | Diagnosed 2026-10-05 | 0.5–1 day | — | Not started | NFR-03 |
+| 8.2 | Interface language switch (EN/VI) | Own design spec, plan and build | Both languages complete; e-mails in the recipient's language | — | not started | 4–7 days | 1.1 | Not started | NFR-04 |
+| 8.3 | Self sign-up with approval | Own design and build | A user requests access; an admin approves | — | not started | 2–4 days | 6 | Not started | R-31 |
+| 8.4 | Accessibility audit | Keyboard and screen-reader audit; list of fixes | Key flows usable by keyboard; headings and labels checked | — | not started | 1–2 days | 6 | Not started | NFR-05 |
 | 9 | Validation and rollout | See 9.1–9.4 | — | — | — | — | — | Not started | — |
-| 9.1 | Pilot readiness: merge week 6, push migrations, verify the sending domain, first backup, data-owner approval | Week 6 merged and released to `main`; cloud schema up to date; sending domain verified and production secrets set; first backup taken and one restore tried; data-owner approval recorded; the account procedure ready (accounts are created in pilot week 0, after the import); i.e. every item marked `Pilot` in [08](08-production-readiness.md) | The public deployment shows all pages; a test e-mail is delivered; all `Pilot` items in 08 are done (they are the preconditions in [07 §6](07-poc-and-mvp.md)) | — | not started | 1–2 days (estimate; the data-owner approval depends on the data owner) | 7 | Not started | R-12, R-13 |
-| 9.2 | Pilot with one real team | Pilot plan in [07 §6](07-poc-and-mvp.md); two Mondays of e-mails; feedback | `SM-3` met; feedback recorded | — | not started | 1 set-up week + 2 calendar weeks (pilot plan in 07 §6) | 9.1, 1.3, 8.1 | Not started | R-12, R-13 |
-| 9.3 | Production hosting decision | Decision record: stay on free tiers or move (e.g. VPS) | Recorded in `decisions.md` | — | not started | 1–2 days | 9.2 | Not started | NFR-07 |
-| 9.4 | Production readiness | Checklist in [08](08-production-readiness.md) completed; release checklist adopted | All items marked `Production` in 08 are done; sponsor go decision recorded | — | not started | 3–6 days (estimate; depends on hosting choice) | 9.3, G1 | Not started | NFR-01, NFR-06, NFR-07 |
-| G1 | Gate: need confirmed | Sponsor sign-off that the three conditions in [00 §3](00-process-status.md) are met: assumptions `A-01`…`A-10` checked as planned in `02` §11; a real team used the product for at least two consecutive weeks including two Monday e-mails (*proposed period*), with the sponsor confirming it replaces their spreadsheet; the sponsor confirms which Phase 2 features are wanted and in what order | Written decision to open, re-scope or stop Phase 2 | — | — | — | 1.2, 1.3, 1.4, 1.6, 9.2 | Not started | — |
+| 9.1 | Pilot readiness | Week 6 released; migrations pushed; sending domain verified; first backup; data-owner approval | All `Pilot` items in [08](08-production-readiness.md) done; a test e-mail delivered | — | not started | 1–2 days | 7 | Not started | R-12, R-13 |
+| 9.2 | Pilot with one real team | Two-week pilot ([07](07-poc-and-mvp.md) §6) and pilot report | `SM-3` met; feedback recorded | — | not started | 1 set-up week + 2 calendar weeks | 9.1, 1.3, 8.1 | Not started | R-12, R-13 |
+| 9.3 | Production hosting decision | Stay on free tiers or move | Recorded in `decisions.md` | — | not started | 1–2 days | 9.2 | Not started | NFR-07 |
+| 9.4 | Production readiness | Production checklist completed; release checklist adopted | All `Production` items in 08 done; go decision recorded | — | not started | 3–6 days | 9.3, G1 | Not started | NFR-01, NFR-06, NFR-07 |
+| G1 | Gate: need confirmed | Sponsor's written decision: open, re-scope or stop Phase 2 | The three G1 conditions are met (decision #46) | — | — | — | 1.2, 1.3, 1.4, 1.6, 9.2 | Not started | — |
 | 10 | Phase 2 — AI features | Weeks 7–12 of the design spec | Re-estimated after G1 | Weeks 7–12 | — | re-estimate after G1 | G1 | Blocked (G1) | R-20, R-21, R-22, R-23, R-24, R-25, R-26, R-27, R-28, R-29 |
 
-Notes:
+## 3. Summary
 
-- Row `7`: the week-6 commits are all dated 2026-10-04, and none of week 6 is on `dev` or `main`; the branch was pushed on 2026-10-07 as pull request #16, which is open and not merged (as of 2026-10-07). The cloud database schema is pushed manually (see [00 §2](00-process-status.md)); this document does not claim that any week 3–6 migration has been pushed to production.
-- Rows `2.5` and `2.6` were not in the spec roadmap (hence Planned `—`); they trace to `NFR-05` for the contrast work already done. `NFR-05` is `Partial` in `03`, so the open work is `8.4`.
-- Rows `1`, `1.1`, `1.2`, `1.4`, `1.5`, `1.6`, `8`, `9` and `G1` deliver process results or group other rows, so their Requirements cell is `—`.
-
-## 3. Planned vs actual (summary)
-
-| | Planned | Actual |
-|---|---|---|
-| Phase 1 (weeks 1–6) | 6 weeks | 2026-09-26 → 2026-10-04 (9 calendar days, 7 with commits; AI-assisted); week 6 is on a branch, not merged |
-| Pull requests merged | — | 15 merged (#1–#15): 9 feature/chore PRs (#1, #3, #4, #6, #8, #10, #11, #13, #15) and 6 `dev` → `main` release merges (#2, #5, #7, #9, #12, #14) — see the counting note |
-| Automated tests (week-6 branch) | — | 542 unit, 233 database assertions (10 files), 39 end-to-end — as reported at the end of week 6, not re-run for this document. On 2026-10-07 Vitest reports 624 tests on this branch; the difference from 542 is the process-documents consistency tests (`src/lib/process-docs.test.ts`) added later |
-
-Counting note: PRs were counted from `git log origin/main --merges` and `git log origin/dev --merges`, using the merged branch name in each merge commit (no GitHub access was used; local `main` is stale, so the remote branches were used). A merge "from `dev`" is a release sync into `main`, not a feature; #15 is the only PR so far that is merged into `dev` but not yet released to `main`. #4 (`chore/sync-week1-wrapup`) is a documentation/sync PR; #1 and #3 both come from `feat/phase1-week1-foundation`.
-
-Caveat: being ahead of the original calendar says nothing about whether the right thing was built. That is what gate G1 and work packages 1.2, 1.3 and 9.2 check.
+- **Phase 1** (planned: 6 weeks) was built from 2026-09-26 to 2026-10-04 with AI-assisted development; the plan was not re-baselined. 15 pull requests are merged: 9 feature/chore PRs (#1, #3, #4, #6, #8, #10, #11, #13, #15) and 6 `dev` → `main` release merges, counted from the merge commits on `origin/dev` and `origin/main`.
+- **Week 6** is in pull request #16, open and not merged (as of 2026-10-07).
+- **Before G1:** about 9.5–15.5 developer days (1.1–1.6, 8.1, 8.4, 9.1, 9.3) plus the pilot (one set-up week and two calendar weeks). 8.2 and 8.3 are not scheduled before G1 unless the sponsor asks (decision #48); 9.4 follows G1.
+- **Phase 2** (10) is blocked by G1 and re-estimated after it. Being ahead of the calendar says nothing about whether the right thing was built; that is what G1 checks.
 
 ## 4. Performance measurements (work package 8.1)
 
-Spike on 2026-10-05 (read-only):
+Read-only spike on 2026-10-05, signed-out requests only:
 
 | Item | Result |
 |---|---|
-| Edge location | Singapore (`x-vercel-id: sin1::…`) |
-| `/login` (cached) | 0.26–0.45 s (occasionally 1.2–1.9 s on a cold connection) |
-| Redirect for a signed-out user | about 0.25 s |
-| Function region for signed-in pages | not measured — hypothesis: US East while the database is far away. The Supabase region is recorded as Tokyo in the deployment notes (the notes also mention Singapore); confirm in the Supabase dashboard (Project Settings → Infrastructure) |
-| Sequential Supabase calls per navigation | at least 3 (proxy session check, layout session check + profile read, page query) — from code |
-| Pages with a loading state | Dashboard only on `dev`, and none on `main`, which the public deployment builds from (week 6 adds the data-quality page, in the open pull request #16) |
-| Public Vercel deployment | Builds from `main` ([deploy notes](../deploy/task9-free-tier.md)); last release is PR #14 (2026-10-02, weeks 1–4 plus UI fixes); `main` has only a placeholder Dashboard page and no `loading.tsx`; `dev` adds week 5; week 6 is in the open pull request #16 (as of 2026-10-07). It is a pilot deployment, not a production service |
+| `/login` (cached, Singapore edge) | 0.26–0.45 s; 1.2–1.9 s on a cold connection |
+| Redirect for a signed-out user | About 0.25 s |
+| Signed-in pages | Not measured (needs a session); suspected cause of slowness: functions far from the database |
+| Supabase region | Tokyo in the deployment notes, which also mention Singapore; to confirm in the Supabase dashboard |
+| Sequential Supabase calls per navigation | At least 3 (proxy session check, layout session and profile read, page query), from the code |
+| Pages with a loading state | Dashboard only, on `dev`; none on `main`, which the public deployment builds from |
 
-Server-side time for signed-in pages could not be measured without a session; the measurements above are for signed-out requests only. After the fix, repeat the same measurements and add an "after" column here.
+After 8.1, repeat the same measurements and add an "after" column.
+
+## 5. Open points (to be confirmed)
+
+- Remaining estimates, confirmed by the developer and the sponsor (`1`, `8.1`, `8.4`, `9.1`, `9.3`)
+- Who collects the CA data and when the data owner can approve (`1.6`, `9.1`)
+- Which team runs the pilot, and when (`9.2`)
+- Final pilot period required by the gate (`9.2`, G1)
+- Who signs G1 (G1)
+- Whether the hosting decision comes before or after G1 (`9.3`)
+- Whether 8.2 or 8.3 should be brought forward before G1 (`8.2`, `8.3`)
+- Actual Supabase region and function region (`8.1`)

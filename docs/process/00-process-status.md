@@ -1,7 +1,7 @@
 # Process Status
 
 - **Status:** Draft v1 — backfilled after the MVP build
-- **Last updated:** 2026-10-17
+- **Last updated:** 2026-10-26
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), `git log`
 
@@ -19,7 +19,7 @@ CertTracker did **not** follow that order. A feature list (from the DC34 team le
 |---|---|---|
 | Idea | Done | [01](01-idea-and-brainstorm.md) §1: `CertTracker - Feature List.pdf` (9 feature groups, DC34; internal, not stored in this repository) |
 | Brainstorm | Done, without customer analysis | [01](01-idea-and-brainstorm.md) §2–§3: [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md) (2026-09-26) and [Decisions](../decisions.md); what the brainstorm did not do is in 01 §3 |
-| CA (Concept/Customer Analysis) | **Backfilled; instruments ready, data missing** | [02](02-concept-analysis.md): needs, as-is process, root-cause hypotheses, alternatives, business case skeleton, assumptions and the validation kit (§12 and Appendix A). The need was **not** validated with end users. Requirements, traced to the needs: [03](03-requirements.md) |
+| CA (Concept/Customer Analysis) | **Backfilled; needs and assumptions not validated** | [02](02-concept-analysis.md): problem, users, needs, options, success criteria, assumptions, constraints, and the open points still to collect (§9). The need was **not** validated with end users. Requirements, traced to the needs: [03](03-requirements.md) |
 | WBS | **Missing — backfilled** | [04](04-wbs.md) |
 | SAD | Exists as the design spec | [05](05-sad.md) condenses it |
 | Design / Mockup | Partial — as-built documented; proposed mockups awaiting review | Design system and component catalogue exist ([Design system](../design-system.md), the `/design` page, dev only). No screen mockups were reviewed before the build; [06](06-design-and-mockups.md) documents the as-built screens (§3–§4b) and holds proposed mockups for the sponsor to review (§5, checklist in §6) |
@@ -31,7 +31,7 @@ Statements about week 6 and the cloud/e-mail setup are as of 2026-10-07 and must
 
 MVP details (as of 2026-10-07):
 
-- Weeks 1–5 are merged into `dev` through the feature/chore PRs #1, #3, #4, #6, #8, #10, #11, #13 and #15 (2026-09-26 → 2026-10-04); see the counting note in [04](04-wbs.md) §3.
+- Weeks 1–5 are merged into `dev` through the feature/chore PRs #1, #3, #4, #6, #8, #10, #11, #13 and #15 (2026-09-26 → 2026-10-04); see [04](04-wbs.md) §3.
 - Week 6 (cron, e-mail, data quality) is built and reviewed on branch `feat/week6-notifications`, pushed to GitHub on 2026-10-07 as pull request #16 (open, not merged as of 2026-10-07; see 9.1); last code commit 2026-10-04.
 - The legacy Excel file has not been tried; there has been no UAT with a real team.
 
@@ -52,13 +52,13 @@ Production details (as of 2026-10-07):
 
 Phase 2 is the largest remaining investment. It is **blocked** until all of these are true:
 
-1. The key assumptions in [02 §11](02-concept-analysis.md) (`A-01`…`A-10`) have been checked as planned in 02 §11 (interviews, the real Excel import, the SkillMatrix owner, the data owner). The concept analysis adds `A-11`…`A-18`; whether they join this condition is for the sponsor (*proposed* in 02 §11).
+1. The key assumptions in [02 §7](02-concept-analysis.md) (`A-01`…`A-10`) have been checked (interviews, the real Excel import, the SkillMatrix owner, the data owner).
 2. A real team has used the product for at least two consecutive weeks (including two Monday e-mails) — *proposed; the sponsor decides the final period* — and the sponsor confirms it replaces their spreadsheet.
 3. The sponsor confirms which Phase 2 features (`R-20`…`R-26`) are wanted and in what order.
 
 If the interviews show the need is weaker than assumed, the correct outcome is to **stop or re-scope**, not to continue.
 
-These three conditions (decision #46) are the official gate. The concept analysis proposes, for the sponsor to confirm, a checkpoint before the pilot and two additional inputs to G1 (the business case and alternatives, and the incentives question): [02](02-concept-analysis.md) §8.
+These three conditions (decision #46) are the official gate. What is still to be confirmed before it (contacts, baselines, the main cause of stale data, whether a simpler option would do) is listed in [02](02-concept-analysis.md) §9.
 
 ## 4. What is next
 
