@@ -86,8 +86,13 @@ test("admin sees what a manager manages, and that the scopes go inactive when th
     // The admin can clear the inert scopes from the row.
     await row.getByRole("button", { name: "Remove scopes" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Remove scopes" }).click();
+    // While the confirm dialog is open the table is aria-hidden, so `row` matches nothing and a count of 0 would
+    // pass even if the removal failed. Wait for the dialog to close, then check the row is back and really cleared.
+    await expect(page.getByRole("alertdialog")).toHaveCount(0);
+    await expect(row).toBeVisible();
     await expect(row.getByText("Scopes inactive: not a manager")).toHaveCount(0);
     await expect(row.getByText(/^Manages:/)).toHaveCount(0);
+    await expect(row.getByText("—", { exact: true })).toBeVisible();
   } finally {
     await setSeedManagerRole("manager");
     await removeSeedManagerProgramScope();
