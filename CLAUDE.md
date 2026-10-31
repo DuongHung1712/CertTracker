@@ -4,7 +4,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 
 ## Trạng thái hiện tại
 
-- Giai đoạn 1, **tuần 1–6 xong** (schema, RLS, đăng nhập, CI, deploy; CRUD tổ chức/danh mục; chứng chỉ + minh chứng + Realtime; Import/Export Excel; Dashboard; cron/email nhắc hạn + báo cáo tháng, `notification_log`, chất lượng dữ liệu), trừ: bước chạy thử với file Excel thật (tuần 4), xác minh domain gửi Resend, UAT với 1 team thật. Nhu cầu chưa được xác nhận với người dùng cuối. Tiếp theo (theo `docs/process/04-wbs.md`): hiệu năng chuyển trang (8.1), thu thập dữ liệu CA (1.6), phỏng vấn người dùng và chạy file Excel thật (1.2, 1.3), sponsor duyệt mockup (1.5), merge/đẩy migration + xác minh domain Resend (9.1), pilot 2 tuần (9.2), rồi **Cổng G1**. Giai đoạn 2 (AI), i18n và đăng ký tự phục vụ chưa làm trước G1 (decisions #46–#48).
+- **Release 1** (decision #54: không còn Release 2/3; 3 vai trò Admin, Manager phạm vi team/program/DC, Member). Phần chứng chỉ (tuần 1–6) **đã chạy** trên production (PR #16 merge vào `main` 2026-10-17, function ở `hnd1`). Phần còn lại theo BRD v3.0 (`exports/CertTracker-BRD-v3.0-2026-10-31.docx`, ngoài git) và `docs/process/04-wbs.md`: M0 duyệt BRD + trả lời 4 câu hỏi mở + spec/plan → M1 phạm vi manager, role/YoE, chi phí khóa học, UI tiếng Anh → M2 Skill Matrix → M3 mục tiêu theo quý, chọn/giao khóa học → M4 AI (DeepSeek, decision #52) → M5 lộ trình role → M6 pilot, G1 (chỉ là bước duyệt sau pilot), production. Tiếp theo: **M0**.
 - Cập nhật dòng này khi chuyển tuần/giai đoạn.
 
 ## Nguồn sự thật (đọc khi cần, đừng đọc hết mỗi phiên)
@@ -14,6 +14,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 | Data model, RLS, luồng, lộ trình | `docs/superpowers/specs/2026-09-26-certtracker-design.md` |
 | Các quyết định đã chốt + lý do | `docs/decisions.md` |
 | Token, component, pattern UI | `docs/design-system.md` (xem trực quan: `/design` khi chạy dev) |
+| Phạm vi Release 1 (use case, FR/NFR), WBS và mốc M0–M6 | BRD v3.0 `exports/CertTracker-BRD-v3.0-2026-10-31.docx` (ngoài git), `docs/process/04-wbs.md` |
 | Kế hoạch triển khai | `docs/superpowers/plans/` |
 | Yêu cầu gốc | `CertTracker - Feature List.pdf` |
 | Quy trình theo thứ tự (ý tưởng, CA, yêu cầu, WBS, SAD gọn, thiết kế, PoC/MVP, production), cổng G1 | `docs/process/` 00–08 (bắt đầu từ `README.md`) |
@@ -44,7 +45,7 @@ supabase db reset   # chạy lại migrations + seed local
 
 ## Quy ước
 
-- **Ngôn ngữ:** trao đổi với người dùng bằng tiếng Việt; code, tên biến, comment, commit bằng tiếng Anh; text trên UI bằng tiếng Việt.
+- **Ngôn ngữ:** trao đổi với người dùng bằng tiếng Việt; code, tên biến, comment, commit bằng tiếng Anh; text trên UI bằng tiếng Anh (English first; song ngữ Anh–Việt sau Release 1, decision #51).
 - **Tổ chức code theo nghiệp vụ:** `src/features/<feature>/{actions.ts, queries.ts, schema.ts, components/}`.
 - Server Action trả về `Result<T>`; không throw ra UI.
 - Commit: Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`). Branch: `feat/<tên>`, `fix/<tên>`.

@@ -32,39 +32,39 @@ Priority: Must / Should / Could. Validation: `Assumed` (nobody outside the build
 | R-09 | Dashboard KPIs: members, records, done and completion %, in progress, expired, still valid | N-03 | FL-4 | Must | Built (W5) | src/features/dashboard | Assumed |
 | R-10 | Statistics by team, CertType and provider | N-03 | FL-4 | Must | Built (W5) | src/features/dashboard | Assumed |
 | R-11 | Personal ranking (managers/admins only), course popularity, completion by provider | N-03 | FL-4 | Should | Built (W5) | src/features/dashboard | Assumed |
-| R-12 | Weekly (Monday) e-mail about certificates expiring within 60 days, to members (their own) and managers (their teams) | N-02 | FL-5 | Must | Built (W6, unmerged) | src/app/api/cron/expiry-alerts | Assumed |
-| R-13 | Monthly KPI e-mail to managers and admins (day 1) | N-03 | FL-5 | Must | Built (W6, unmerged) | src/app/api/cron/monthly-report | Assumed |
-| R-14 | Data-quality checks. The Feature List items (bad member/course references, status/progress mismatch, badly formatted dates) are blocked at write time by database constraints and import staging; the report lists what remains: exam date passed but not Done, Done without evidence, member without team, course without validity | N-01, N-10 | FL-5 | Should | Built (W6, unmerged) | supabase/migrations/20261004000001_data_quality_view.sql, src/features/data-quality | Assumed |
+| R-12 | Weekly (Monday) e-mail about certificates expiring within 60 days, to members (their own) and managers (their teams) | N-02 | FL-5 | Must | Built (W6) | src/app/api/cron/expiry-alerts | Assumed |
+| R-13 | Monthly KPI e-mail to managers and admins (day 1) | N-03 | FL-5 | Must | Built (W6) | src/app/api/cron/monthly-report | Assumed |
+| R-14 | Data-quality checks. The Feature List items (bad member/course references, status/progress mismatch, badly formatted dates) are blocked at write time by database constraints and import staging; the report lists what remains: exam date passed but not Done, Done without evidence, member without team, course without validity | N-01, N-10 | FL-5 | Should | Built (W6) | supabase/migrations/20261004000001_data_quality_view.sql, src/features/data-quality | Assumed |
 | R-15 | Import the legacy Excel with cleaning: normalise status, trim, progress to %, Excel serial dates, de-duplicate members by e-mail | N-05 | FL-6 | Must | Built (W4) | src/features/import | Assumed |
 | R-16 | Export CSV / Excel in UTF-8 (Vietnamese diacritics) | N-03 | FL-6 | Must | Built (W4) | src/features/export | Assumed |
 | R-17 | Sign-in and role-based access (Admin / Manager / Member) enforced by Row Level Security | N-06 | FL-7 | Must | Built (W1) | supabase/migrations/20260928000004_rls.sql | Decided |
 | R-18 | Realtime updates on the records list and the Dashboard | — | FL-7 | Should | Built (W3) | src/features/records/components/records-realtime.tsx | Assumed |
-| R-19 | Scheduled jobs for alerts and periodic reports | N-02, N-03 | FL-7 | Must | Built (W6, unmerged) | vercel.json | Assumed |
-| R-20 | AI: Cert Recommendation (next certificate per person, refundable first) | N-09 | FL-8 | Could | Gated (G1) | — | Assumed |
-| R-21 | AI: Training Plan Generator (from a manager goal: who, which cert, timeline, cost) | N-08, N-09 | FL-8 | Could | Gated (G1) | — | Assumed |
-| R-22 | AI: Data Assistant (read certificate images/PDF, suggest merging course names, classify CertType/provider) | N-04, N-10 | FL-8 | Could | Gated (G1) | — | Assumed |
-| R-23 | AI: Skill Gap Analysis (team certificates vs project needs; key-person risk) | N-08 | FL-9 | Could | Gated (G1) | — | Assumed |
-| R-24 | AI: Completion Risk Prediction (stalled progress, exam date near) | N-09 | FL-9 | Could | Gated (G1) | — | Assumed |
-| R-25 | AI: Insights (Vietnamese commentary on dashboard trends, included in the monthly e-mail) | N-03 | FL-9 | Could | Gated (G1) | — | Assumed |
-| R-26 | AI: Ask Your Data (natural-language questions answered through whitelisted queries, not free text-to-SQL; DEC #9) | N-01, N-03 | FL-9 | Could | Gated (G1) | — | Assumed |
+| R-19 | Scheduled jobs for alerts and periodic reports | N-02, N-03 | FL-7 | Must | Built (W6) | vercel.json | Assumed |
+| R-20 | AI: Cert Recommendation (next certificate per person, refundable first) | N-09 | FL-8 | Could | Planned | — | Assumed |
+| R-21 | AI: Training Plan Generator (from a manager goal: who, which cert, timeline, cost) | N-08, N-09 | FL-8 | Could | Planned | — | Assumed |
+| R-22 | AI: Data Assistant (read certificate images/PDF, suggest merging course names, classify CertType/provider) | N-04, N-10 | FL-8 | Could | Planned | — | Assumed |
+| R-23 | AI: Skill Gap Analysis (team certificates vs project needs; key-person risk) | N-08 | FL-9 | Could | Planned | — | Assumed |
+| R-24 | AI: Completion Risk Prediction (stalled progress, exam date near) | N-09 | FL-9 | Could | Planned | — | Assumed |
+| R-25 | AI: Insights (Vietnamese commentary on dashboard trends, included in the monthly e-mail) | N-03 | FL-9 | Could | Planned | — | Assumed |
+| R-26 | AI: Ask Your Data (natural-language questions answered through whitelisted queries, not free text-to-SQL; DEC #9) | N-01, N-03 | FL-9 | Could | Planned | — | Assumed |
 | R-27 | AI calls only from the backend; the API key never reaches the browser | N-06 | FL-9 | Must | Planned | — | Decided |
 | R-28 | AI sees only data the user may see (respects RLS) | N-06 | FL-9 | Must | Planned | — | Decided |
 | R-29 | No unnecessary personal data (e-mail, phone) in prompts | N-06 | FL-9 | Must | Planned | — | Decided |
 | R-30 | A member belongs to exactly one team; a manager can manage several teams | N-03, N-06 | DEC #3 | Must | Built (W1) | supabase/migrations/20260928000001_org_and_members.sql | Decided |
-| R-31 | Self sign-up with administrator approval (e-mail + password, no SSO); would supersede DEC #12 (self sign-up disabled, admin creates accounts) and is deferred to a separate plan (DEC #42); unscheduled until after G1 unless the sponsor asks earlier | — | PROJECT | Could | Planned | — | Assumed |
-| NFR-01 | Security: RLS is the main protection; the service-role key is used only by scheduled jobs | N-06 | DEC #35 | Must | Built (W6, unmerged) | src/lib/supabase/admin.ts | Decided |
+| R-31 | Self sign-up with administrator approval (e-mail + password, no SSO); would supersede DEC #12 (self sign-up disabled, admin creates accounts) and is deferred to a separate plan (DEC #42); out of Release 1 (BRD v3.0 §1.3) | — | PROJECT | Could | Planned | — | Assumed |
+| NFR-01 | Security: RLS is the main protection; the service-role key is used only by scheduled jobs | N-06 | DEC #35 | Must | Built (W6) | src/lib/supabase/admin.ts | Decided |
 | NFR-02 | Privacy: personal ranking visible to managers/admins only; members see aggregates with small groups hidden | N-06 | DEC #8 | Must | Built (W5) | supabase/migrations/20261003000001_dashboard_rpc.sql | Decided |
 | NFR-03 | Performance: moving between pages feels immediate (loading feedback; on `dev` only the Dashboard has a loading state, and none on `main`, which the public deployment builds from; target set after re-measuring, see `SM-4`) | N-12 | MGR | Must | Partial | src/app/(app)/dashboard/loading.tsx | Assumed |
-| NFR-04 | Language: the interface can be shown in English or Vietnamese (switch); technical terms stay understandable; unscheduled until after G1 unless the sponsor asks earlier | N-11 | MGR | Should | Planned | — | Assumed |
+| NFR-04 | Language: English-first interface, screens and e-mails (decision #51); an English–Vietnamese switch comes after Release 1; technical terms stay understandable | N-11 | DEC #51 | Must | Planned | — | Assumed |
 | NFR-05 | Accessibility: text contrast at WCAG AA (checked by an automated test); keyboard-friendly tables and forms (not yet audited) | — | DEC #14 | Should | Partial | docs/design-system.md, src/app/tokens.test.ts | Decided |
-| NFR-06 | Reliability: scheduled e-mails are never sent twice and failures are visible to the admin | N-02, N-03 | SPEC §12 | Must | Built (W6, unmerged) | src/features/notifications/deliver.ts | Decided |
+| NFR-06 | Reliability: scheduled e-mails are never sent twice and failures are visible to the admin | N-02, N-03 | SPEC §12 | Must | Built (W6) | src/features/notifications/deliver.ts | Decided |
 | NFR-07 | Cost: free-tier hosting during the pilot (Vercel Hobby, Supabase Free); move before commercial use | — | DEC #13 | Must | Built (W1) | docs/deploy/task9-free-tier.md | Decided |
 
 Notes on the table:
 
-- `Built` means the code exists and was tested by the build team. It does **not** mean a real user has used it. In particular, `R-15` has not been run on the real legacy file (`A-04`), and the `W6, unmerged` rows exist only on branch `feat/week6-notifications`, not on `dev` and not in production.
+- `Built` means the code exists and was tested by the build team. It does **not** mean a real user has used it. In particular, `R-15` has not been run on the real legacy file (`A-04`). The week-6 rows (`W6`) reached production when pull request #16 was merged into `main` on 2026-10-17.
 - `R-27`…`R-29` are design principles for Phase 2 recorded in the Feature List, the design spec (§7.1) and decisions #5, #6 and #9. They are `Decided` as constraints, but nothing is built yet.
-- `NFR-03` is `Partial`: on `dev` only the Dashboard has a loading state, and none on `main`, which the public deployment builds from (the data-quality page's loading state exists only on the unmerged week-6 branch); the diagnosis (partly still a hypothesis) is in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §3, and the slowness is not yet fixed.
+- `NFR-03` is `Partial`: only the Dashboard and the data-quality page have a loading state; the functions moved to Tokyo (`hnd1`) on 2026-10-28, which cut the server response time from about 0.37 s to 0.22 s; the diagnosis (partly still a hypothesis) is in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §3, and the slowness is not yet fixed.
 
 ## 3. Requirements without an identified need
 
@@ -80,8 +80,8 @@ Partly without a need: `R-11` is mapped to `N-03` for its course-popularity and 
 ## 4. Scope
 
 **In scope (phase 1):** R-01 … R-19, R-30, NFR-01 … NFR-03, NFR-05 … NFR-07.
-**Phase 2 (gated by G1):** R-20 … R-29.
-**Planned, not yet designed or dated:** R-31 (self sign-up), NFR-04 (interface language switch; needs its own design cycle). Both are unscheduled until after gate G1 unless the sponsor asks for them earlier (decision #48).
+**Release 1, to build (decision #54):** R-20 … R-29 (WBS 13), plus the Skill Matrix, goals and growth work in BRD v3.0 (WBS 10–14).
+**Planned, not yet designed or dated:** NFR-04 (English-first interface, WBS 8.2; the language switch comes after Release 1, decision #51). R-31 (self sign-up) is out of Release 1 (BRD v3.0 §1.3). All AI requirements (`R-20`…`R-29`) are part of Release 1 and no longer wait for gate G1 (decisions #50 and #54).
 **Out of scope** (design spec §11): a member in several teams, a full audit log, native mobile apps, HRIS / SkillMatrix integration (only a compatible data model is kept).
 
 The design spec §11 also listed "Vietnamese interface only". That item was reversed by the owner on 2026-10-05 after the manager's feedback (see `NFR-04`); the reversal is described in the [2026-10-05 design](../superpowers/specs/2026-10-05-process-docs-and-ux-feedback-design.md) §5 and is recorded as decision #48.

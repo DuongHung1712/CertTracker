@@ -51,6 +51,7 @@ type Requirement = {
 
 type WorkPackage = {
   code: string;
+  milestone: string;
   depends: string;
   status: string;
   requirements: string;
@@ -76,11 +77,13 @@ const WBS_HEADER = [
   "Work package",
   "Deliverable",
   "Acceptance",
-  "Planned",
+  "Milestone",
+  "Priority",
+  "Est. (days)",
   "Actual",
-  "Est. remaining",
   "Depends on",
   "Status",
+  "BRD trace",
   "Requirements",
 ];
 
@@ -104,9 +107,10 @@ const requirements: Requirement[] = requirementsTable.rows.map((r) => ({
 
 const wbs: WorkPackage[] = wbsTable.rows.map((r) => ({
   code: r[0],
-  depends: r[7],
-  status: r[8],
-  requirements: r[9],
+  milestone: r[4],
+  depends: r[8],
+  status: r[9],
+  requirements: r[11],
 }));
 
 const matches = (text: string, pattern: RegExp) => [...text.matchAll(pattern)].map((m) => m[1]);
@@ -118,7 +122,7 @@ const knownAssumptionsAndCriteria = new Set(assumptionAndCriterionRows);
 
 const SOURCE = /^(FL-[1-9]|SPEC §\S+|DEC #\d+|MGR|PROJECT)$/;
 const PRIORITY = new Set(["Must", "Should", "Could"]);
-const BUILD = /^(Built \(W[1-6]\)|Built \(W6, unmerged\)|Partial|Planned|Gated \(G1\))$/;
+const BUILD = /^(Built \(W[1-6]\)|Partial|Planned)$/;
 const VALIDATION = new Set(["Assumed", "Decided", "Validated"]);
 // The status vocabulary defined in 02 section 1. `Decided` is allowed for assumptions only (A-05).
 const NEED_STATUS = new Set(["Assumed", "Partly evidenced", "Validated", "Contradicted"]);
@@ -126,7 +130,9 @@ const ASSUMPTION_STATUS = new Set([...NEED_STATUS, "Decided"]);
 const NOT_VALIDATED_YET =
   "No interview result has been recorded yet, so nothing may be marked Validated. " +
   "Relax this check deliberately when the first interview result is recorded (WBS 1.2).";
-const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Blocked (G1)"]);
+const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Waiting", "Out of scope"]);
+// Build order of Release 1 (decision #54); "—" only for work that is out of scope or a parent row.
+const MILESTONES = new Set(["Built", "M0", "M1", "M2", "M3", "M4", "M5", "M6", "—"]);
 
 describe("02-concept-analysis.md", () => {
   it("keeps the documented columns in the needs table, with well-formed unique ids", () => {
@@ -211,10 +217,10 @@ describe("03-requirements.md", () => {
     expect(VALIDATION.has(r.validation), `${id} validation "${r.validation}"`).toBe(true);
     // Only requirements that are not built yet may have no evidence.
     if (r.evidence === "—") {
-      expect(r.build, `${id} has no evidence but claims to be built`).toMatch(/^(Planned|Gated \(G1\))$/);
+      expect(r.build, `${id} has no evidence but claims to be built`).toBe("Planned");
     }
-    // Anything that is not "Planned" or "Gated (G1)" must name its evidence (never blank).
-    if (!/^(Planned|Gated \(G1\))$/.test(r.build)) {
+    // Anything that is not "Planned" must name its evidence (never blank).
+    if (r.build !== "Planned") {
       expect(r.evidence.length > 0 && r.evidence !== "—", `${id} is "${r.build}" but has empty evidence`).toBe(true);
     }
   });
@@ -290,10 +296,18 @@ describe("04-wbs.md", () => {
     expect(missing, `requirements not covered by any work package: ${missing.join(", ")}`).toEqual([]);
   });
 
-  it("blocks Phase 2 behind gate G1", () => {
-    const phase2 = wbs.find((r) => r.code === "10");
-    expect(phase2?.status).toBe("Blocked (G1)");
-    expect(phase2?.depends).toContain("G1");
+  it("puts all work in Release 1 milestones, with dependencies that exist", () => {
+    const codes = new Set(wbs.map((r) => r.code));
+    for (const r of wbs) {
+      expect(MILESTONES.has(r.milestone), `${r.code} milestone "${r.milestone}"`).toBe(true);
+      if (r.depends === "—") continue;
+      for (const code of r.depends.split(", ")) expect(codes.has(code), `${r.code} depends on unknown ${code}`).toBe(true);
+    }
+  });
+
+  it("lets gate G1 hold back only production readiness, not features (decision #54)", () => {
+    const held = wbs.filter((r) => r.depends.split(", ").includes("G1")).map((r) => r.code);
+    expect(held).toEqual(["9.4"]);
   });
 });
 

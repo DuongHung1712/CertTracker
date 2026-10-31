@@ -1,7 +1,7 @@
 # Process Status
 
 - **Status:** Draft v1 — backfilled after the MVP build
-- **Last updated:** 2026-10-26
+- **Last updated:** 2026-10-31
 - **Owner:** CertTracker team (DC34)
 - **Sources:** [Design spec](../superpowers/specs/2026-09-26-certtracker-design.md), [Decisions](../decisions.md), `git log`
 
@@ -49,6 +49,8 @@ Production details (as of 2026-10-07):
 - There is no evidence in the repository that the sending domain is verified on Resend (it must be verified before real use; [e-mail setup](../deploy/cron-email.md)).
 
 ## 3. Gate G1 — before Phase 2 (AI features, weeks 7–12)
+
+> **Update 2026-10-31 (decisions #50 and #54):** there is no Phase 2 any more. Every feature in BRD v3.0, AI included, is part of Release 1, and G1 no longer blocks any feature. G1 is now the DC manager's review after the pilot, before CertTracker is rolled out beyond the pilot team; it holds back only production readiness (WBS 9.4). The text below is kept as the original gate (decision #46). The current plan is [04](04-wbs.md).
 
 Phase 2 is the largest remaining investment. It is **blocked** until all of these are true:
 
