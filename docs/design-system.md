@@ -181,6 +181,11 @@ Khi DB **chặn** xóa (vd. khóa học đang có bản ghi chứng chỉ dùng 
 - Lỗi nhập liệu → dưới ô, nói sai gì và sửa thế nào: *"Email đã được dùng cho thành viên M002"*.
 - Lỗi hệ thống → toast lỗi + cách xử lý: *"Không lưu được do mất kết nối. Kiểm tra mạng rồi thử lại."*
 - Đang tải → skeleton đúng hình dạng nội dung; không dùng spinner toàn trang.
+- Chuyển trang (chốt 2026-10-31, phương án C) → hai lớp:
+  1. **Thanh teal mảnh** trên cùng (`NavigationProgressBar`, `components/app-shell/navigation-progress.tsx`): cao 3px, `bg-primary`, `aria-hidden`. Thanh hiện từ lúc bấm link đến khi URL đổi; trong lúc đó chiều rộng tăng dần tới khoảng 80%. Xong thì thanh chạy hết 100% rồi mờ dần trong 200ms. Thanh chỉ đổi độ mờ, không gắn/gỡ khỏi DOM, nên không làm xô lệch layout.
+  2. **Skeleton pulse** của `loading.tsx` từ lúc URL đổi đến khi có nội dung (`role="status" aria-busy="true"`).
+
+  Link trong app phải đặt `<LinkPendingReporter />` bên trong để báo trạng thái chờ cho thanh.
 
 ### 4.5 Menu theo vai trò
 
@@ -221,7 +226,7 @@ Khi DB **chặn** xóa (vd. khóa học đang có bản ghi chứng chỉ dùng 
 - Trạng thái luôn có chữ; icon trang trí có `aria-hidden`. Chi tiết chỉ hiện khi hover (như tooltip của `ExpiryBadge`) luôn có thêm một bản sao `sr-only` — tooltip không mở được bằng chạm và không phải trình duyệt nào cũng gắn `aria-describedby`.
 - Landmark: `<nav aria-label="Điều hướng chính">` bọc menu sidebar; `<header>` (Topbar) là anh em của `<main>`, không lồng bên trong — lồng bên trong sẽ mất vai trò "banner". Có link "Bỏ qua đến nội dung" (skip link) đầu mỗi trang trong khung app.
 - Tên hiển thị không được thay thế bằng `aria-label`: nếu một nút đã có chữ nhìn thấy (như tên/vai trò trong menu tài khoản), thêm ngữ cảnh bằng `sr-only` phía trước, không dùng `aria-label` đè lên (WCAG 2.5.3 Label in Name).
-- Tôn trọng `prefers-reduced-motion`: dừng mọi animation ở 1 vòng lặp thay vì lặp vô hạn (skeleton, spinner) để tránh nhấp nháy ngẫu nhiên; tắt chuyển động trượt của sheet/sidebar, chỉ giữ đổi độ mờ.
+- Tôn trọng `prefers-reduced-motion`: dừng mọi animation ở 1 vòng lặp thay vì lặp vô hạn (skeleton, spinner) để tránh nhấp nháy ngẫu nhiên; thanh tiến trình chuyển trang hiện đứng yên ở 100% rộng, không chạy; tắt chuyển động trượt của sheet/sidebar, chỉ giữ đổi độ mờ.
 - Vùng bấm tối thiểu 32×32px (24×24px cho icon trong ô bảng có khoảng trống xung quanh).
 
 ---
