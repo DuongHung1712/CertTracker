@@ -5,10 +5,12 @@ import {
   dcSchema,
   idSchema,
   programSchema,
+  removeScopesSchema,
   scopeManagersSchema,
   teamSchema,
   type DcInput,
   type ProgramInput,
+  type RemoveScopesInput,
   type ScopeManagersInput,
   type TeamInput,
 } from "@/features/organizations/schema";
@@ -186,5 +188,26 @@ export async function setScopeManagers(input: ScopeManagersInput): Promise<Resul
   }
   revalidatePath("/org");
   revalidatePath("/members");
+  return ok(null);
+}
+
+/**
+ * Admin only (RLS): deletes every manager scope of one user. Used to clear the inert scopes of a user who is
+ * no longer a manager; dialog saves keep those rows so an accidental demotion stays easy to undo.
+ */
+export async function removeManagerScopes(input: RemoveScopesInput): Promise<Result<null>> {
+  const parsed = removeScopesSchema.safeParse(input);
+  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("manager_scopes")
+    .delete()
+    .eq("user_id", parsed.data.userId)
+    .select("id");
+  if (error) return err(mapPostgresError(error));
+  const guard = assertAffected(data);
+  if (guard) return guard;
+  revalidatePath("/members");
+  revalidatePath("/org");
   return ok(null);
 }

@@ -19,6 +19,16 @@ function must<T extends { error: { message: string } | null }>(result: T, what: 
   return result;
 }
 
+/** The seed's own scope (Team Cloud). The "Remove scopes" test deletes it, so it is put back when a test starts and ends. */
+async function ensureSeedTeamScope(admin: Admin) {
+  const { data } = must(
+    await admin.from("manager_scopes").select("id").eq("user_id", MANAGER_USER_ID).eq("team_id", SEED_TEAM_CLOUD_ID),
+    "read seed team scope",
+  );
+  if (data && data.length > 0) return;
+  must(await admin.from("manager_scopes").insert({ user_id: MANAGER_USER_ID, team_id: SEED_TEAM_CLOUD_ID }), "restore seed team scope");
+}
+
 async function removeManagerMember(admin: Admin) {
   must(await admin.from("profiles").update({ member_id: null }).eq("user_id", MANAGER_USER_ID), "unlink manager profile");
   must(await admin.from("members").delete().eq("email", MANAGER_EMAIL), "delete manager member");
@@ -27,7 +37,11 @@ async function removeManagerMember(admin: Admin) {
 /** Gives the seeded manager a member row (in Team Cloud) and returns a cleanup that restores the seed state. */
 export async function giveSeedManagerAMember(): Promise<() => Promise<void>> {
   const admin = await signInAsSeedAdmin();
+  // A previous run that timed out can leave its changes behind (cleanup in `finally` is cut short), so start from the seed state.
+  must(await admin.from("profiles").update({ role: "manager" }).eq("user_id", MANAGER_USER_ID), "reset manager role");
+  must(await admin.from("manager_scopes").delete().eq("user_id", MANAGER_USER_ID).eq("program_id", SEED_PROGRAM_ID), "reset program scope");
   await removeManagerMember(admin);
+  await ensureSeedTeamScope(admin);
   const { data } = must(
     await admin
       .from("members")
@@ -39,6 +53,8 @@ export async function giveSeedManagerAMember(): Promise<() => Promise<void>> {
   must(await admin.from("profiles").update({ member_id: data!.id }).eq("user_id", MANAGER_USER_ID), "link manager profile");
   return async () => {
     const cleanupAdmin = await signInAsSeedAdmin();
+    must(await cleanupAdmin.from("profiles").update({ role: "manager" }).eq("user_id", MANAGER_USER_ID), "restore manager role");
+    await ensureSeedTeamScope(cleanupAdmin);
     await removeManagerMember(cleanupAdmin);
   };
 }

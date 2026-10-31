@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dcSchema, programSchema, scopeManagersSchema, teamSchema } from "@/features/organizations/schema";
+import { dcSchema, programSchema, removeScopesSchema, scopeManagersSchema, teamSchema } from "@/features/organizations/schema";
 
 describe("dcSchema", () => {
   it("trims the name and rejects an empty one", () => {
@@ -49,5 +49,13 @@ describe("scopeManagersSchema", () => {
   it("rejects a scope id or manager id that is not a guid", () => {
     expect(scopeManagersSchema.safeParse({ scope: { kind: "team", id: "nope" }, userIds: [] }).success).toBe(false);
     expect(scopeManagersSchema.safeParse({ scope: { kind: "team", id }, userIds: ["nope"] }).success).toBe(false);
+  });
+});
+
+describe("removeScopesSchema", () => {
+  it("accepts a user id and rejects anything else", () => {
+    expect(removeScopesSchema.safeParse({ userId: "00000000-0000-0000-0000-000000000001" }).success).toBe(true);
+    expect(removeScopesSchema.safeParse({ userId: "nope" }).success).toBe(false);
+    expect(removeScopesSchema.safeParse({}).success).toBe(false);
   });
 });

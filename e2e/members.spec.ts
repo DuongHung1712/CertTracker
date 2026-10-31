@@ -28,6 +28,9 @@ test("admin creates and deletes a member", async ({ page }) => {
   await page.getByRole("row", { name: new RegExp(email) }).getByRole("button", { name: /Thao tác/ }).click();
   await page.getByRole("menuitem", { name: "Xóa" }).click();
   await page.getByRole("button", { name: "Xóa thành viên" }).click();
+  // Wait for the confirm dialog to close first: while it is open the table is aria-hidden, so the cell
+  // assertion would pass before the delete finishes and the test could end with the request still in flight.
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(page.getByRole("cell", { name: email })).toHaveCount(0);
 });
 
@@ -79,6 +82,12 @@ test("admin sees what a manager manages, and that the scopes go inactive when th
     await setSeedManagerRole("member");
     await page.reload();
     await expect(row.getByText("Scopes inactive: not a manager")).toBeVisible();
+
+    // The admin can clear the inert scopes from the row.
+    await row.getByRole("button", { name: "Remove scopes" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Remove scopes" }).click();
+    await expect(row.getByText("Scopes inactive: not a manager")).toHaveCount(0);
+    await expect(row.getByText(/^Manages:/)).toHaveCount(0);
   } finally {
     await setSeedManagerRole("manager");
     await removeSeedManagerProgramScope();

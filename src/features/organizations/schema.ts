@@ -38,3 +38,7 @@ export const scopeManagersSchema = z.object({
   userIds: z.array(z.guid("Dữ liệu không hợp lệ")),
 });
 export type ScopeManagersInput = z.infer<typeof scopeManagersSchema>;
+
+/** Input for removing every manager scope of one user. */
+export const removeScopesSchema = z.object({ userId: z.guid("Dữ liệu không hợp lệ") });
+export type RemoveScopesInput = z.infer<typeof removeScopesSchema>;

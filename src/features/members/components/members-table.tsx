@@ -12,6 +12,7 @@ import { MemberCode } from "@/components/status/member-code";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { removeManagerScopes } from "@/features/organizations/actions";
 import { deleteMember } from "@/features/members/actions";
 import { MemberDialog } from "@/features/members/components/member-dialog";
 
@@ -49,6 +50,7 @@ export function MembersTable({
   const [editing, setEditing] = useState<Member | null>(null);
   const [confirming, setConfirming] = useState<Member | null>(null);
   const [pending, setPending] = useState(false);
+  const [clearingScopes, setClearingScopes] = useState<Member | null>(null);
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -67,7 +69,12 @@ export function MembersTable({
             id: "scopes",
             header: "Manages",
             enableSorting: false,
-            cell: ({ row }) => <ScopesCell scopes={row.original.userId ? scopes[row.original.userId] : undefined} />,
+            cell: ({ row }) => (
+              <ScopesCell
+                scopes={row.original.userId ? scopes[row.original.userId] : undefined}
+                onRemove={() => setClearingScopes(row.original)}
+              />
+            ),
           },
         ] satisfies ColumnDef<Member, unknown>[])
       : []),
@@ -126,6 +133,20 @@ export function MembersTable({
     setConfirming(null);
   }
 
+  async function handleRemoveScopes() {
+    if (!clearingScopes?.userId) return;
+    setPending(true);
+    const result = await removeManagerScopes({ userId: clearingScopes.userId });
+    setPending(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      setClearingScopes(null);
+      return;
+    }
+    toast.success(`Removed the manager scopes of ${clearingScopes.fullName}`);
+    setClearingScopes(null);
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <FilterBar
@@ -157,6 +178,18 @@ export function MembersTable({
         empty={<EmptyState title="Không tìm thấy thành viên" description="Thử từ khóa khác hoặc xóa bộ lọc." />}
       />
       <MemberDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} teams={teams} />
+      {showScopes && (
+        <ConfirmDialog
+          open={!!clearingScopes}
+          onOpenChange={(open) => !open && setClearingScopes(null)}
+          title={`Remove the manager scopes of ${clearingScopes?.code} · ${clearingScopes?.fullName}?`}
+          description="They manage no team or program through these scopes now, because their role is not Manager. Removing the scopes cannot be undone."
+          confirmLabel="Remove scopes"
+          pendingLabel="Removing…"
+          pending={pending}
+          onConfirm={handleRemoveScopes}
+        />
+      )}
       {canDelete && (
         <ConfirmDialog
           open={!!confirming}
@@ -173,7 +206,7 @@ export function MembersTable({
   );
 }
 
-function ScopesCell({ scopes }: { scopes: Scope[] | undefined }) {
+function ScopesCell({ scopes, onRemove }: { scopes: Scope[] | undefined; onRemove: () => void }) {
   if (!scopes || scopes.length === 0) return <span className="text-muted-foreground">—</span>;
   const inactive = scopes.every((scope) => !scope.active);
   return (
@@ -181,7 +214,14 @@ function ScopesCell({ scopes }: { scopes: Scope[] | undefined }) {
       <span className={inactive ? "text-muted-foreground" : undefined}>
         Manages: {scopes.map((scope) => scope.label).join(", ")}
       </span>
-      {inactive && <span className="text-caption text-destructive">Scopes inactive: not a manager</span>}
+      {inactive && (
+        <span className="flex items-center gap-2">
+          <span className="text-caption text-destructive">Scopes inactive: not a manager</span>
+          <Button variant="ghost" size="xs" onClick={onRemove}>
+            Remove scopes
+          </Button>
+        </span>
+      )}
     </div>
   );
 }
