@@ -219,6 +219,45 @@ export type Database = {
           },
         ]
       }
+      manager_scopes: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string | null
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id?: string | null
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string | null
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_scopes_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_scopes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
           code: string
@@ -386,29 +425,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      team_managers: {
-        Row: {
-          team_id: string
-          user_id: string
-        }
-        Insert: {
-          team_id: string
-          user_id: string
-        }
-        Update: {
-          team_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_managers_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       teams: {
         Row: {
