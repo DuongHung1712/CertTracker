@@ -10,22 +10,27 @@ import { EmptyState } from "@/components/data/empty-state";
 import { Button } from "@/components/ui/button";
 import { deleteProgram } from "@/features/organizations/actions";
 import { ProgramDialog } from "@/features/organizations/components/program-dialog";
+import { ProgramManagersDialog } from "@/features/organizations/components/program-managers-dialog";
 
-type Program = { id: string; name: string; dcId: string; dcName: string };
+type Program = { id: string; name: string; dcId: string; dcName: string; managerIds: string[] };
 type DcOption = { id: string; name: string };
+type Candidate = { userId: string; fullName: string; email: string };
 
 export function ProgramSection({
   programs,
   dcs,
+  candidates,
   canManage,
 }: {
   programs: Program[];
   dcs: DcOption[];
+  candidates: Candidate[];
   canManage: boolean;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Program | null>(null);
   const [confirming, setConfirming] = useState<Program | null>(null);
+  const [settingManagers, setSettingManagers] = useState<Program | null>(null);
   const [pending, setPending] = useState(false);
 
   const columns: ColumnDef<Program, unknown>[] = [
@@ -39,6 +44,9 @@ export function ProgramSection({
             enableSorting: false,
             cell: ({ row }) => (
               <div className="flex justify-end gap-1">
+                <Button variant="ghost" size="sm" onClick={() => setSettingManagers(row.original)}>
+                  Set managers
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -105,6 +113,11 @@ export function ProgramSection({
       {canManage && (
         <>
           <ProgramDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} dcs={dcs} />
+          <ProgramManagersDialog
+            program={settingManagers}
+            candidates={candidates}
+            onClose={() => setSettingManagers(null)}
+          />
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}

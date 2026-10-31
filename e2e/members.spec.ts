@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { signIn } from "./helpers";
+import {
+  addSeedManagerProgramScope,
+  giveSeedManagerAMember,
+  MANAGER_NAME,
+  removeSeedManagerProgramScope,
+  SEED_PROGRAM_NAME,
+  setSeedManagerRole,
+} from "./support/manager-scopes";
 
 test("admin creates and deletes a member", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
@@ -46,7 +54,7 @@ test("manager cannot create or delete members, and only sees their managed team"
   await expect(page.getByRole("button", { name: "Thêm thành viên" })).toHaveCount(0);
 
   // manager@certtracker.test manages Team Cloud (5eed0000-0000-0000-0000-00000000a001, per
-  // supabase/seed.sql's team_managers row). An is on Team Cloud; Bình is on Team AI, unmanaged.
+  // supabase/seed.sql's manager_scopes row). An is on Team Cloud; Bình is on Team AI, unmanaged.
   await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Trần Thị Bình", exact: true })).toHaveCount(0);
 
@@ -55,4 +63,25 @@ test("manager cannot create or delete members, and only sees their managed team"
     .getByRole("button", { name: /Thao tác/ })
     .click();
   await expect(page.getByRole("menuitem", { name: "Xóa" })).toHaveCount(0);
+});
+
+test("admin sees what a manager manages, and that the scopes go inactive when the role changes", async ({ page }) => {
+  const cleanup = await giveSeedManagerAMember();
+  try {
+    await addSeedManagerProgramScope();
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/members");
+
+    const row = page.getByRole("row", { name: new RegExp(MANAGER_NAME) });
+    await expect(row.getByText(`Manages: Team Cloud, ${SEED_PROGRAM_NAME}`)).toBeVisible();
+    await expect(row.getByText("Scopes inactive: not a manager")).toHaveCount(0);
+
+    await setSeedManagerRole("member");
+    await page.reload();
+    await expect(row.getByText("Scopes inactive: not a manager")).toBeVisible();
+  } finally {
+    await setSeedManagerRole("manager");
+    await removeSeedManagerProgramScope();
+    await cleanup();
+  }
 });

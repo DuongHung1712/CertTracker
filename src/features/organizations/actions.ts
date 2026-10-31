@@ -1,14 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import {
   dcSchema,
   idSchema,
   programSchema,
+  scopeManagersSchema,
   teamSchema,
   type DcInput,
   type ProgramInput,
+  type ScopeManagersInput,
   type TeamInput,
 } from "@/features/organizations/schema";
 import { assertAffected } from "@/lib/assert-affected";
@@ -121,7 +122,7 @@ export async function updateTeam(input: TeamInput & { id: string }): Promise<Res
   return ok(null);
 }
 
-/** Deleting a team is never blocked (members.team_id → NULL, team_managers cascades) — the ConfirmDialog must say so. */
+/** Deleting a team is never blocked (members.team_id → NULL, manager_scopes cascades) — the ConfirmDialog must say so. */
 export async function deleteTeam(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
   if (!parsed.success) return err("Dữ liệu không hợp lệ");
@@ -134,21 +135,22 @@ export async function deleteTeam(input: { id: string }): Promise<Result<null>> {
   return ok(null);
 }
 
-const setTeamManagersSchema = z.object({
-  teamId: idSchema.shape.id,
-  userIds: z.array(idSchema.shape.id),
-});
+const NOT_A_MANAGER_MESSAGE = "scope requires the manager role";
 
-/** Replaces a team's manager set with exactly `userIds` (diff of add/remove against team_managers). */
-export async function setTeamManagers(input: { teamId: string; userIds: string[] }): Promise<Result<null>> {
-  const parsed = setTeamManagersSchema.safeParse(input);
+/**
+ * Replaces the manager set of one team or program with exactly `userIds` (diff of add/remove against
+ * manager_scopes). Only users whose role is "manager" can be added (a DB trigger enforces it).
+ */
+export async function setScopeManagers(input: ScopeManagersInput): Promise<Result<null>> {
+  const parsed = scopeManagersSchema.safeParse(input);
   if (!parsed.success) return err("Dữ liệu không hợp lệ");
-  const { teamId, userIds } = parsed.data;
+  const { scope, userIds } = parsed.data;
+  const column = scope.kind === "team" ? "team_id" : "program_id";
   const supabase = await createClient();
   const { data: current, error: readError } = await supabase
-    .from("team_managers")
+    .from("manager_scopes")
     .select("user_id")
-    .eq("team_id", teamId);
+    .eq(column, scope.id);
   if (readError) return err(mapPostgresError(readError));
 
   const currentIds = new Set(current.map((row) => row.user_id));
@@ -158,15 +160,24 @@ export async function setTeamManagers(input: { teamId: string; userIds: string[]
 
   if (toAdd.length > 0) {
     const { error } = await supabase
-      .from("team_managers")
-      .insert(toAdd.map((userId) => ({ team_id: teamId, user_id: userId })));
-    if (error) return err(mapPostgresError(error));
+      .from("manager_scopes")
+      .insert(
+        toAdd.map((userId) =>
+          scope.kind === "team" ? { user_id: userId, team_id: scope.id } : { user_id: userId, program_id: scope.id },
+        ),
+      );
+    if (error) {
+      if (error.message.includes(NOT_A_MANAGER_MESSAGE)) {
+        return err("Only users with the Manager role can manage a team or program.");
+      }
+      return err(mapPostgresError(error));
+    }
   }
   if (toRemove.length > 0) {
     const { data, error } = await supabase
-      .from("team_managers")
+      .from("manager_scopes")
       .delete()
-      .eq("team_id", teamId)
+      .eq(column, scope.id)
       .in("user_id", toRemove)
       .select("user_id");
     if (error) return err(mapPostgresError(error));
@@ -174,5 +185,6 @@ export async function setTeamManagers(input: { teamId: string; userIds: string[]
     if (guard) return guard;
   }
   revalidatePath("/org");
+  revalidatePath("/members");
   return ok(null);
 }

@@ -4,9 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { createTeam, setTeamManagers, updateTeam } from "@/features/organizations/actions";
+import { createTeam, setScopeManagers, updateTeam } from "@/features/organizations/actions";
 import { teamSchema, type TeamInput } from "@/features/organizations/schema";
-import { TeamManagersField } from "@/features/organizations/components/team-managers-field";
+import { ScopeManagersField } from "@/features/organizations/components/scope-managers-field";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -52,7 +52,7 @@ export function TeamDialog({
       return;
     }
     if (editing) {
-      const managerResult = await setTeamManagers({ teamId: editing.id, userIds: managerIds });
+      const managerResult = await setScopeManagers({ scope: { kind: "team", id: editing.id }, userIds: managerIds });
       if (!managerResult.ok) {
         toast.error(managerResult.error);
         return;
@@ -102,8 +102,8 @@ export function TeamDialog({
           </Field>
           {editing && (
             <Field>
-              <FieldLabel>Quản lý team</FieldLabel>
-              <TeamManagersField candidates={candidates} selected={managerIds} onChange={setManagerIds} />
+              <FieldLabel>Team managers</FieldLabel>
+              <ScopeManagersField candidates={candidates} selected={managerIds} onChange={setManagerIds} />
             </Field>
           )}
           {!editing && (

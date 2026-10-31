@@ -27,3 +27,14 @@ export const teamSchema = z.object({
   programId: z.guid("Vui lòng chọn chương trình"),
 });
 export type TeamInput = z.infer<typeof teamSchema>;
+
+export const scopeKindSchema = z.enum(["team", "program"]);
+export type ScopeKind = z.infer<typeof scopeKindSchema>;
+export type ManagerScope = { kind: ScopeKind; id: string };
+
+/** The manager set of one team or program. `z.guid()`, not `.uuid()`: see the comment on `idSchema` above. */
+export const scopeManagersSchema = z.object({
+  scope: z.object({ kind: scopeKindSchema, id: z.guid("Dữ liệu không hợp lệ") }),
+  userIds: z.array(z.guid("Dữ liệu không hợp lệ")),
+});
+export type ScopeManagersInput = z.infer<typeof scopeManagersSchema>;

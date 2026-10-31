@@ -23,17 +23,24 @@ type Member = {
   teamId: string | null;
   teamName: string | null;
   isActive: boolean;
+  userId: string | null;
 };
+type Scope = { label: string; active: boolean };
 type TeamOption = { id: string; name: string };
 
 export function MembersTable({
   members,
   teams,
+  scopes,
+  showScopes,
   canCreate,
   canDelete,
 }: {
   members: Member[];
   teams: TeamOption[];
+  /** Manager scopes keyed by user id (Admin only; empty otherwise). */
+  scopes: Record<string, Scope[]>;
+  showScopes: boolean;
   canCreate: boolean;
   canDelete: boolean;
 }) {
@@ -54,6 +61,16 @@ export function MembersTable({
     { accessorKey: "fullName", header: "Họ tên" },
     { accessorKey: "email", header: "Email" },
     { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
+    ...(showScopes
+      ? ([
+          {
+            id: "scopes",
+            header: "Manages",
+            enableSorting: false,
+            cell: ({ row }) => <ScopesCell scopes={row.original.userId ? scopes[row.original.userId] : undefined} />,
+          },
+        ] satisfies ColumnDef<Member, unknown>[])
+      : []),
     {
       accessorKey: "isActive",
       header: "Trạng thái",
@@ -152,6 +169,19 @@ export function MembersTable({
           onConfirm={handleDelete}
         />
       )}
+    </div>
+  );
+}
+
+function ScopesCell({ scopes }: { scopes: Scope[] | undefined }) {
+  if (!scopes || scopes.length === 0) return <span className="text-muted-foreground">—</span>;
+  const inactive = scopes.every((scope) => !scope.active);
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className={inactive ? "text-muted-foreground" : undefined}>
+        Manages: {scopes.map((scope) => scope.label).join(", ")}
+      </span>
+      {inactive && <span className="text-caption text-destructive">Scopes inactive: not a manager</span>}
     </div>
   );
 }
