@@ -34,6 +34,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      career_roles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cert_types: {
         Row: {
           created_at: string
@@ -260,6 +284,8 @@ export type Database = {
       }
       members: {
         Row: {
+          career_role_id: string | null
+          career_start: string | null
           code: string
           created_at: string
           email: string
@@ -270,6 +296,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          career_role_id?: string | null
+          career_start?: string | null
           code?: string
           created_at?: string
           email: string
@@ -280,6 +308,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          career_role_id?: string | null
+          career_start?: string | null
           code?: string
           created_at?: string
           email?: string
@@ -290,6 +320,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "members_career_role_id_fkey"
+            columns: ["career_role_id"]
+            isOneToOne: false
+            referencedRelation: "career_roles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "members_team_id_fkey"
             columns: ["team_id"]
@@ -370,6 +407,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_member_profiles"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -528,6 +572,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "training_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_profiles"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
     }
@@ -549,6 +600,24 @@ export type Database = {
           team_name: string | null
         }
         Relationships: []
+      }
+      v_member_profiles: {
+        Row: {
+          career_role_id: string | null
+          career_role_name: string | null
+          career_start: string | null
+          member_id: string | null
+          yoe_years: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_career_role_id_fkey"
+            columns: ["career_role_id"]
+            isOneToOne: false
+            referencedRelation: "career_roles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       v_training_records: {
         Row: {
@@ -618,6 +687,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_profiles"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -700,6 +776,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      set_my_career_start: { Args: { p_start: string }; Returns: undefined }
       vn_today: { Args: never; Returns: string }
     }
     Enums: {
