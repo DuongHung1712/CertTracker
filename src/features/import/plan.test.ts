@@ -5,14 +5,16 @@ import { buildLegacyWorkbook, LEGACY_EXPECTED } from "@/features/import/__fixtur
 import { readImportTable } from "@/features/import/workbook";
 
 const TODAY = "2026-09-30";
-const HEADERS = ["Họ tên", "Email", "Team", "Khóa học", "Nhà cung cấp", "Loại", "Thời hạn", "Trạng thái", "Tiến độ", "Ngày thi", "Ngày cấp", "Ghi chú"];
+const HEADERS = ["Họ tên", "Email", "Team", "Khóa học", "Nhà cung cấp", "Loại", "Thời hạn", "Trạng thái", "Tiến độ", "Ngày thi", "Ngày cấp", "Ghi chú", "Cost", "Currency", "Study hours"];
 
 function table(rows: Cell[][], headers = HEADERS): ImportTable {
   const map = Object.fromEntries(
-    headers.map((h, i) => [({ "Họ tên": "memberName", Email: "email", Team: "team", "Khóa học": "courseName", "Nhà cung cấp": "provider", Loại: "certType", "Thời hạn": "validityMonths", "Trạng thái": "status", "Tiến độ": "progress", "Ngày thi": "plannedExamDate", "Ngày cấp": "issuedDate", "Ghi chú": "notes" } as Record<string, string>)[h], i]),
+    headers.map((h, i) => [({ "Họ tên": "memberName", Email: "email", Team: "team", "Khóa học": "courseName", "Nhà cung cấp": "provider", Loại: "certType", "Thời hạn": "validityMonths", "Trạng thái": "status", "Tiến độ": "progress", "Ngày thi": "plannedExamDate", "Ngày cấp": "issuedDate", "Ghi chú": "notes", Cost: "cost", Currency: "costCurrency", "Study hours": "estHours" } as Record<string, string>)[h], i]),
   );
   return { sheetName: "S", headerRowNumber: 1, headers, map, unknownColumns: [], rows: rows.map((cells, i) => ({ rowNumber: i + 2, cells })), date1904: false };
 }
+
+const NO_COST = { cost: null, costCurrency: null, estHours: null };
 
 const LOOKUPS: ImportLookups = {
   members: [
@@ -23,9 +25,9 @@ const LOOKUPS: ImportLookups = {
   providers: [{ id: "p-aws", name: "AWS" }],
   certTypes: [{ id: "ct-cloud", name: "Cloud" }],
   courses: [
-    { id: "c-saa", name: "AWS SAA", providerId: "p-aws", certTypeId: "ct-cloud", validityMonths: 36 },
-    { id: "c-a", name: "Shared Name", providerId: "p-aws", certTypeId: null, validityMonths: null },
-    { id: "c-b", name: "Shared Name", providerId: "p-other", certTypeId: null, validityMonths: null },
+    { id: "c-saa", name: "AWS SAA", providerId: "p-aws", certTypeId: "ct-cloud", validityMonths: 36, ...NO_COST },
+    { id: "c-a", name: "Shared Name", providerId: "p-aws", certTypeId: null, validityMonths: null, ...NO_COST },
+    { id: "c-b", name: "Shared Name", providerId: "p-other", certTypeId: null, validityMonths: null, ...NO_COST },
   ],
   records: [
     { id: "r-1", memberId: "m-an", courseId: "c-saa", status: "in_progress", progress: 40, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: "cũ" },
@@ -33,7 +35,7 @@ const LOOKUPS: ImportLookups = {
 };
 
 const row = (overrides: Partial<Record<string, Cell>>): Cell[] => {
-  const base: Record<string, Cell> = { "Họ tên": "Nguyễn Văn An", Email: "an@x.vn", Team: "Team Cloud", "Khóa học": "AWS SAA", "Nhà cung cấp": "AWS", Loại: null, "Thời hạn": null, "Trạng thái": "Đang học", "Tiến độ": 50, "Ngày thi": null, "Ngày cấp": null, "Ghi chú": null, ...overrides };
+  const base: Record<string, Cell> = { "Họ tên": "Nguyễn Văn An", Email: "an@x.vn", Team: "Team Cloud", "Khóa học": "AWS SAA", "Nhà cung cấp": "AWS", Loại: null, "Thời hạn": null, "Trạng thái": "Đang học", "Tiến độ": 50, "Ngày thi": null, "Ngày cấp": null, "Ghi chú": null, Cost: null, Currency: null, "Study hours": null, ...overrides };
   return HEADERS.map((h) => base[h] ?? null);
 };
 
@@ -63,7 +65,7 @@ describe("buildImportPlan", () => {
     expect(plan.rows.map((r) => r.action)).toEqual(["create", "skip"]);
     expect(plan.rows[1]!.errors[0]).toMatch(/Trùng với dòng 2/);
     expect(plan.rows[0]!.normalized!.member).toEqual({ email: "ha@x.vn", fullName: "Hà", teamId: "t-ai" });
-    expect(plan.rows[0]!.normalized!.course).toEqual({ name: "Azure Fundamentals", provider: { name: "Microsoft" }, certType: { name: "Security" }, validityMonths: 24 });
+    expect(plan.rows[0]!.normalized!.course).toEqual({ name: "Azure Fundamentals", provider: { name: "Microsoft" }, certType: { name: "Security" }, validityMonths: 24, ...NO_COST });
     expect(plan.newEntities).toEqual({ members: ["Hà"], providers: ["Microsoft"], certTypes: ["Security"], courses: ["Azure Fundamentals"] });
   });
 
@@ -145,7 +147,7 @@ describe("buildImportPlan edge cases", () => {
     const [planned] = buildImportPlan(table([row({ "Khóa học": "aws saa", "Nhà cung cấp": "Microsoft" })]), lookups, TODAY).rows;
     expect(planned!.errors).toEqual([]);
     expect(planned!.action).toBe("create");
-    expect(planned!.normalized!.course).toEqual({ name: "aws saa", provider: { id: "p-ms" }, certType: null, validityMonths: null });
+    expect(planned!.normalized!.course).toEqual({ name: "aws saa", provider: { id: "p-ms" }, certType: null, validityMonths: null, ...NO_COST });
   });
 
   it("warns, but does not move, when an existing member without a team has a team in the file", () => {
@@ -178,7 +180,7 @@ describe("buildImportPlan edge cases", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.normalized!.course).toEqual({ name: "Brand New", provider: { id: "p-aws" }, certType: null, validityMonths: 12 });
+    expect(rows[0]!.normalized!.course).toEqual({ name: "Brand New", provider: { id: "p-aws" }, certType: null, validityMonths: 12, ...NO_COST });
     expect(rows[1]!.normalized!.course).toEqual(rows[0]!.normalized!.course);
     expect(rows[1]!.warnings.join()).toMatch(/Thời hạn/);
   });
@@ -190,6 +192,70 @@ describe("buildImportPlan edge cases", () => {
     expect(planned!.warnings.join()).toMatch(/Thời hạn trong file khác danh mục/);
     const [same] = buildImportPlan(table([row({ Loại: "cloud", "Thời hạn": 36 })]), LOOKUPS, TODAY).rows;
     expect(same!.warnings.join()).not.toMatch(/khác danh mục/);
+  });
+
+  it("carries cost, currency and study hours onto a new course", () => {
+    const [planned] = buildImportPlan(
+      table([row({ "Khóa học": "Priced Course", Cost: "150", Currency: "usd", "Study hours": 40 })]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(planned!.errors).toEqual([]);
+    expect(planned!.normalized!.course).toEqual({
+      name: "Priced Course", provider: { id: "p-aws" }, certType: null, validityMonths: null,
+      cost: 150, costCurrency: "USD", estHours: 40,
+    });
+  });
+
+  it("reports an unknown currency as a row error", () => {
+    const [planned] = buildImportPlan(
+      table([row({ "Khóa học": "Priced Course", Cost: 150, Currency: "EUR" })]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(planned).toMatchObject({ action: "skip", normalized: null });
+    expect(planned!.errors).toContain('Unknown currency "EUR". Use VND or USD.');
+  });
+
+  it("rejects a cost without a currency, or a currency without a cost, on a new course", () => {
+    const [noCurrency, noCost] = buildImportPlan(
+      table([
+        row({ "Khóa học": "Priced A", Cost: 150 }),
+        row({ Email: "old@x.vn", "Họ tên": "Cũ", "Khóa học": "Priced B", Currency: "VND" }),
+      ]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(noCurrency!.errors).toContain("Choose a currency for the cost");
+    expect(noCost!.errors).toContain("Enter a cost or clear the currency");
+  });
+
+  it("warns about a differing cost, currency or hours on an existing course and keeps the catalog", () => {
+    const lookups: ImportLookups = {
+      ...LOOKUPS,
+      courses: LOOKUPS.courses.map((c) => (c.id === "c-saa" ? { ...c, cost: 150, costCurrency: "USD" as const, estHours: 40 } : c)),
+    };
+    const [differs] = buildImportPlan(table([row({ Cost: 200, Currency: "USD", "Study hours": 50 })]), lookups, TODAY).rows;
+    expect(differs!.normalized!.course).toEqual({ id: "c-saa" });
+    expect(differs!.warnings.join()).toMatch(/Cost in the file differs from the catalog/);
+    expect(differs!.warnings.join()).toMatch(/Study hours in the file differ from the catalog/);
+    const [sameValues] = buildImportPlan(table([row({ Cost: 150, Currency: "USD", "Study hours": 40 })]), lookups, TODAY).rows;
+    expect(sameValues!.warnings.join()).not.toMatch(/differ/);
+    const [otherCurrency] = buildImportPlan(table([row({ Cost: 150, Currency: "VND" })]), lookups, TODAY).rows;
+    expect(otherCurrency!.warnings.join()).toMatch(/Cost in the file differs from the catalog/);
+  });
+
+  it("warns when a later row defines the same new course with a different cost", () => {
+    const rows = buildImportPlan(
+      table([
+        row({ "Khóa học": "Brand New", Cost: 100, Currency: "USD" }),
+        row({ Email: "old@x.vn", "Họ tên": "Cũ", "Khóa học": "brand new", Cost: 120, Currency: "USD" }),
+      ]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(rows[1]!.normalized!.course).toEqual(rows[0]!.normalized!.course);
+    expect(rows[1]!.warnings.join()).toMatch(/Cost differs from the new course defined in row 2/);
   });
 
   it("refers to Excel row numbers, never array indexes", () => {
@@ -336,8 +402,8 @@ it("produces the documented plan for the legacy fixture against seed-like lookup
     providers: [{ id: "aws", name: "AWS" }, { id: "nvidia", name: "NVIDIA" }],
     certTypes: [{ id: "tc", name: "Cloud" }, { id: "tai", name: "AI" }],
     courses: [
-      { id: "saa", name: "AWS Solutions Architect Associate", providerId: "aws", certTypeId: "tc", validityMonths: 36 },
-      { id: "nv", name: "NVIDIA Generative AI LLMs", providerId: "nvidia", certTypeId: "tai", validityMonths: 24 },
+      { id: "saa", name: "AWS Solutions Architect Associate", providerId: "aws", certTypeId: "tc", validityMonths: 36, ...NO_COST },
+      { id: "nv", name: "NVIDIA Generative AI LLMs", providerId: "nvidia", certTypeId: "tai", validityMonths: 24, ...NO_COST },
     ],
     records: [
       { id: "r1", memberId: "an", courseId: "saa", status: "done", progress: 100, plannedExamDate: null, issuedDate: "2023-10-26", certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },

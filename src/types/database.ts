@@ -83,6 +83,7 @@ export type Database = {
         Row: {
           cert_type_id: string | null
           cost: number | null
+          cost_currency: string | null
           created_at: string
           est_hours: number | null
           id: string
@@ -97,6 +98,7 @@ export type Database = {
         Insert: {
           cert_type_id?: string | null
           cost?: number | null
+          cost_currency?: string | null
           created_at?: string
           est_hours?: number | null
           id?: string
@@ -111,6 +113,7 @@ export type Database = {
         Update: {
           cert_type_id?: string | null
           cost?: number | null
+          cost_currency?: string | null
           created_at?: string
           est_hours?: number | null
           id?: string
@@ -624,11 +627,14 @@ export type Database = {
           cert_type_id: string | null
           cert_type_name: string | null
           certificate_url: string | null
+          cost: number | null
+          cost_currency: string | null
           course_id: string | null
           course_name: string | null
           created_at: string | null
           created_by: string | null
           days_to_expiry: number | null
+          est_hours: number | null
           evidence_path: string | null
           expiry_date: string | null
           expiry_status: string | null

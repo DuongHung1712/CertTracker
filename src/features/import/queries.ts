@@ -9,6 +9,7 @@ import {
   type ImportSummary,
   type NormalizedRefs,
 } from "@/features/import/schema";
+import { toCurrency } from "@/lib/money";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
 
@@ -56,7 +57,7 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     fetchAllRows((from, to) =>
       supabase
         .from("courses")
-        .select("id, name, provider_id, cert_type_id, validity_months")
+        .select("id, name, provider_id, cert_type_id, validity_months, cost, cost_currency, est_hours")
         .order("name")
         .order("id")
         .range(from, to),
@@ -91,6 +92,9 @@ export async function loadImportLookups(): Promise<ImportLookups> {
       providerId: c.provider_id,
       certTypeId: c.cert_type_id,
       validityMonths: c.validity_months,
+      cost: c.cost,
+      costCurrency: toCurrency(c.cost_currency),
+      estHours: c.est_hours,
     })),
     records: records.map((r) => ({
       id: r.id,

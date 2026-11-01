@@ -1,10 +1,11 @@
 import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
 import {
   cellText, detectProgressMode, IMPORT_FIELDS, normalizeBoolean, normalizeEmail, normalizeName, normalizeNotes, normalizeRefund,
-  normalizeStatus, normalizeUrl, parseImportDate, parseValidityMonths, progressToPercent,
+  normalizeStatus, normalizeUrl, parseCost, parseCurrency, parseImportDate, parseStudyHours, parseValidityMonths, progressToPercent,
   type Cell, type Cleaned, type ImportField, type ImportTable, type ProgressMode,
 } from "@/features/import/clean";
 import { recordRuleIssues, type RefundStatus } from "@/features/records/schema";
+import type { Currency } from "@/lib/money";
 import { foldText } from "@/lib/text";
 
 /* ---------------------------------------------------------------- types */
@@ -20,13 +21,20 @@ export type ImportLookups = {
   teams: { id: string; name: string }[];
   providers: { id: string; name: string }[];
   certTypes: { id: string; name: string }[];
-  courses: { id: string; name: string; providerId: string | null; certTypeId: string | null; validityMonths: number | null }[];
+  courses: {
+    id: string; name: string; providerId: string | null; certTypeId: string | null; validityMonths: number | null;
+    cost: number | null; costCurrency: Currency | null; estHours: number | null;
+  }[];
   records: ExistingRecord[];
 };
 
 export type Ref = { id: string } | { name: string };
 type MemberRef = { id: string } | { email: string; fullName: string; teamId: string | null };
-type CourseRef = { id: string } | { name: string; provider: Ref; certType: Ref | null; validityMonths: number | null };
+type NewCourseRef = {
+  name: string; provider: Ref; certType: Ref | null; validityMonths: number | null;
+  cost: number | null; costCurrency: Currency | null; estHours: number | null;
+};
+type CourseRef = { id: string } | NewCourseRef;
 type NormalizedRecord = {
   status: RecordStatus; progress: number;
   plannedExamDate: string | null; issuedDate: string | null; certificateUrl: string | null;
@@ -118,7 +126,7 @@ function alignWithStatus(
 /* -------------------------------------------------------------- context */
 
 type FirstNewMember = { ref: { email: string; fullName: string; teamId: string | null }; rowNumber: number };
-type FirstNewCourse = { ref: Extract<CourseRef, { name: string }>; rowNumber: number };
+type FirstNewCourse = { ref: NewCourseRef; rowNumber: number };
 
 /** Lookup indexes plus the "first definition wins" state shared by every row of one plan. */
 type PlanContext = {
@@ -262,6 +270,10 @@ function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   const validity = parseValidityMonths(cells.validityMonths);
   if (!validity.ok) issues.errors.push(validity.error);
   const validityMonths = validity.ok ? validity.value : null;
+  const cost = take(parseCost(cells.cost), issues, null);
+  const costCurrency = take(parseCurrency(cells.costCurrency), issues, null);
+  const estHours = take(parseStudyHours(cells.estHours), issues, null);
+  const extras: CourseExtras = { cost, costCurrency, estHours };
 
   const sameName = ctx.coursesByName.get(foldText(name)) ?? [];
   let existing: ImportLookups["courses"][number] | undefined;
@@ -281,21 +293,29 @@ function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   }
 
   if (existing) {
-    warnAboutCatalogDifferences(ctx, existing, certTypeText, validityMonths, issues);
+    warnAboutCatalogDifferences(ctx, existing, { certTypeText, validityMonths, ...extras }, issues);
     return { ref: { id: existing.id }, key: existing.id };
   }
   if (!validity.ok || providerText === null) return NO_COURSE;
-  return defineNewCourse(ctx, { name, providerText, certTypeText, validityMonths }, rowNumber, issues);
+  // A new course is written to the database, where cost and currency must come as a pair.
+  if (cost !== null && costCurrency === null) issues.errors.push("Choose a currency for the cost");
+  if (cost === null && costCurrency !== null) issues.errors.push("Enter a cost or clear the currency");
+  return defineNewCourse(ctx, { name, providerText, certTypeText, validityMonths, ...extras }, rowNumber, issues);
 }
+
+/** Cost, currency and study hours as read from a row; a cost counts only together with its currency. */
+type CourseExtras = { cost: number | null; costCurrency: Currency | null; estHours: number | null };
+const hasCost = (extras: CourseExtras): extras is { cost: number; costCurrency: Currency; estHours: number | null } =>
+  extras.cost !== null && extras.costCurrency !== null;
 
 /** The catalog wins; a non-blank value in the file that disagrees with it is only a warning. */
 function warnAboutCatalogDifferences(
   ctx: PlanContext,
   course: ImportLookups["courses"][number],
-  certTypeText: string | null,
-  validityMonths: number | null,
+  input: { certTypeText: string | null; validityMonths: number | null } & CourseExtras,
   issues: Issues,
 ): void {
+  const { certTypeText, validityMonths } = input;
   if (certTypeText !== null) {
     const catalogName = course.certTypeId === null ? null : ctx.certTypeNameById.get(course.certTypeId) ?? null;
     if (catalogName === null || foldText(catalogName) !== foldText(certTypeText)) {
@@ -304,6 +324,12 @@ function warnAboutCatalogDifferences(
   }
   if (validityMonths !== null && validityMonths !== course.validityMonths) {
     issues.warnings.push("Thời hạn trong file khác danh mục — giữ danh mục");
+  }
+  if (hasCost(input) && (input.cost !== course.cost || input.costCurrency !== course.costCurrency)) {
+    issues.warnings.push("Cost in the file differs from the catalog — keeping the catalog");
+  }
+  if (input.estHours !== null && input.estHours !== course.estHours) {
+    issues.warnings.push("Study hours in the file differ from the catalog — keeping the catalog");
   }
 }
 
@@ -318,7 +344,7 @@ function resolveCatalogRef(existing: Map<string, { id: string }>, created: Map<s
 
 function defineNewCourse(
   ctx: PlanContext,
-  input: { name: string; providerText: string; certTypeText: string | null; validityMonths: number | null },
+  input: { name: string; providerText: string; certTypeText: string | null; validityMonths: number | null } & CourseExtras,
   rowNumber: number,
   issues: Issues,
 ): CourseResolution {
@@ -329,6 +355,12 @@ function defineNewCourse(
     if (input.validityMonths !== null && input.validityMonths !== first.ref.validityMonths) {
       issues.warnings.push(`Thời hạn khác định nghĩa khóa học mới ở dòng ${first.rowNumber} — dùng định nghĩa đầu tiên`);
     }
+    if (hasCost(input) && (input.cost !== first.ref.cost || input.costCurrency !== first.ref.costCurrency)) {
+      issues.warnings.push(`Cost differs from the new course defined in row ${first.rowNumber} — using the first definition`);
+    }
+    if (input.estHours !== null && input.estHours !== first.ref.estHours) {
+      issues.warnings.push(`Study hours differ from the new course defined in row ${first.rowNumber} — using the first definition`);
+    }
     return { ref: first.ref, key };
   }
   const ref = {
@@ -336,6 +368,9 @@ function defineNewCourse(
     provider: resolveCatalogRef(ctx.providersByName, ctx.newProviders, input.providerText),
     certType: input.certTypeText === null ? null : resolveCatalogRef(ctx.certTypesByName, ctx.newCertTypes, input.certTypeText),
     validityMonths: input.validityMonths,
+    cost: input.cost,
+    costCurrency: input.costCurrency,
+    estHours: input.estHours,
   };
   ctx.newCourses.set(courseKey, { ref, rowNumber });
   return { ref, key };

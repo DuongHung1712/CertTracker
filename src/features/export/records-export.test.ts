@@ -10,9 +10,9 @@ const CRLF = String.fromCharCode(13, 10);
 const NOTE ="Dòng một\nDòng hai\n\nDòng bốn";
 
 const RECORDS: RecordRow[] = [
-  { id: "r1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "saa", courseName: "AWS SAA", certTypeName: "Cloud", providerName: "AWS", validityMonths: 36, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2024-02-29", certificateUrl: "https://credly.com/b/1", hasEvidence: false, viaCompany: true, refundStatus: "paid", notes: "=cần kiểm tra", expiryDate: "2027-02-28", daysToExpiry: 150, expiryStatus: "Active" },
-  { id: "r2", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "gcp", courseName: "GCP ACE", certTypeName: null, providerName: "Google", validityMonths: null, status: "in_progress", progress: 1, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry" },
-  { id: "r3", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "az", courseName: "Azure AZ-900", certTypeName: "Cloud", providerName: "AWS", validityMonths: 12, status: "in_progress", progress: 55, plannedExamDate: null, issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "pending", notes: NOTE, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" },
+  { id: "r1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "saa", courseName: "AWS SAA", certTypeName: "Cloud", providerName: "AWS", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2024-02-29", certificateUrl: "https://credly.com/b/1", hasEvidence: false, viaCompany: true, refundStatus: "paid", notes: "=cần kiểm tra", expiryDate: "2027-02-28", daysToExpiry: 150, expiryStatus: "Active" },
+  { id: "r2", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "gcp", courseName: "GCP ACE", certTypeName: null, providerName: "Google", validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null, status: "in_progress", progress: 1, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry" },
+  { id: "r3", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "az", courseName: "Azure AZ-900", certTypeName: "Cloud", providerName: "AWS", validityMonths: 12, cost: null, costCurrency: null, estHours: 12, status: "in_progress", progress: 55, plannedExamDate: null, issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "pending", notes: NOTE, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" },
 ];
 
 const ROWS: ExportRow[] = [
@@ -33,9 +33,9 @@ const LOOKUPS: ImportLookups = {
   providers: [{ id: "aws", name: "AWS" }, { id: "google", name: "Google" }],
   certTypes: [{ id: "tc", name: "Cloud" }],
   courses: [
-    { id: "saa", name: "AWS SAA", providerId: "aws", certTypeId: "tc", validityMonths: 36 },
-    { id: "gcp", name: "GCP ACE", providerId: "google", certTypeId: null, validityMonths: null },
-    { id: "az", name: "Azure AZ-900", providerId: "aws", certTypeId: "tc", validityMonths: 12 },
+    { id: "saa", name: "AWS SAA", providerId: "aws", certTypeId: "tc", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40 },
+    { id: "gcp", name: "GCP ACE", providerId: "google", certTypeId: null, validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null },
+    { id: "az", name: "Azure AZ-900", providerId: "aws", certTypeId: "tc", validityMonths: 12, cost: null, costCurrency: null, estHours: 12 },
   ],
   records: ROWS.map(baseRecord),
 };
@@ -87,7 +87,7 @@ describe("records export", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((c) => c.header));
     expect(duplicates).toEqual([]);
     expect(unknown).toEqual(["Mã", "Career role", "YoE", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn"]);
-    expect(Object.keys(map)).toHaveLength(15);
+    expect(Object.keys(map)).toHaveLength(18);
   });
 
   it("puts Career role and YoE right after Team and writes their values", () => {
@@ -96,6 +96,23 @@ describe("records export", () => {
     const lines = recordsToCsv(ROWS).split(CRLF);
     expect(lines[1]).toContain("Team Cloud,Senior Engineer,3.5,AWS SAA");
     expect(lines[3]).toContain("Team Cloud,,,Azure AZ-900");
+  });
+
+  it("puts Cost, Currency and Study hours right after Validity (months) and writes their values", () => {
+    const headers = EXPORT_COLUMNS.map((c) => c.header);
+    const at = headers.indexOf("Thời hạn (tháng)");
+    expect(headers.slice(at, at + 4)).toEqual(["Thời hạn (tháng)", "Cost", "Currency", "Study hours"]);
+    const lines = recordsToCsv(ROWS).split(CRLF);
+    expect(lines[1]).toContain(",36,150,USD,40,");
+    expect(lines[2]).toContain(",,3500000,VND,,");
+    expect(lines[3]).toContain(",12,,,12,");
+  });
+
+  it("re-imports the cost columns without a single warning or error", () => {
+    const table = readImportTable(recordsToXlsx(ROWS));
+    if (!table.ok) throw new Error(table.error);
+    const planned = buildImportPlan(table.value, LOOKUPS, "2026-09-30").rows;
+    expect(planned.map((row) => [row.action, row.errors, row.warnings])).toEqual([["skip", [], []], ["skip", [], []], ["skip", [], []]]);
   });
 
   it("joins the career profile of each record's member", () => {

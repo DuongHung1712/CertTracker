@@ -1,6 +1,7 @@
 import type { RecordStatus } from "@/components/status/labels";
 import { REFUND_STATUS_LABEL, type RefundStatus } from "@/features/records/schema";
 import { toIsoDate } from "@/lib/dates";
+import type { Currency } from "@/lib/money";
 import { foldText } from "@/lib/text";
 
 export type Cell = string | number | boolean | null;
@@ -13,7 +14,7 @@ export const MAX_IMPORT_ROWS = 2000;
 export const MAX_IMPORT_BYTES = 4 * 1024 * 1024;
 
 export const IMPORT_FIELDS = [
-  "memberName", "email", "team", "courseName", "provider", "certType", "validityMonths", "status", "progress",
+  "memberName", "email", "team", "courseName", "provider", "certType", "validityMonths", "cost", "costCurrency", "estHours", "status", "progress",
   "plannedExamDate", "issuedDate", "certificateUrl", "viaCompany", "refundStatus", "notes",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
@@ -28,6 +29,9 @@ export const HEADER_ALIASES: Record<ImportField, string[]> = {
   provider: ["nha cung cap", "provider", "hang", "vendor", "to chuc cap"],
   certType: ["loai", "loai chung chi", "cert type", "certtype", "type", "linh vuc"],
   validityMonths: ["thoi han", "thoi han (thang)", "validity", "validity months", "validity (months)"],
+  cost: ["cost", "chi phi"],
+  costCurrency: ["currency", "loai tien", "tien te"],
+  estHours: ["study hours", "so gio", "gio hoc"],
   status: ["trang thai", "status", "tinh trang"],
   progress: ["tien do", "tien do (%)", "progress", "progress (%)", "%"],
   plannedExamDate: ["ngay thi du kien", "ngay thi", "planned exam date", "exam date", "du kien thi"],
@@ -232,6 +236,52 @@ export function parseValidityMonths(cell: Cell | undefined): Cleaned<number | nu
   const value = months ? Number(months[1]) : years ? Number(years[1]) * 12 : NaN;
   return Number.isInteger(value) && value > 0 && value <= 600 ? ok(value) : fail(`Thời hạn "${text}" không hợp lệ`);
 }
+
+const MAX_COST = 9_999_999_999.99; // numeric(12,2)
+
+/** An amount such as `150`, `1,234.50`, `$150` or `3.500.000 ₫`; `null` = blank. Currency is read separately. */
+export function parseCost(cell: Cell | undefined): Cleaned<number | null> {
+  const text = cellText(cell);
+  if (text === null) return ok(null);
+  const bare = text.replace(/[$₫đĐ\s]|vnd|usd/gi, "");
+  const normalized = /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(bare)
+    ? bare.replace(/,/g, "")
+    : /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(bare)
+      ? bare.replace(/\./g, "").replace(",", ".")
+      : bare;
+  const value = typeof cell === "number" ? cell : parseNumber(normalized);
+  return value !== null && value >= 0 && value <= MAX_COST ? ok(value) : fail(`Cost "${text}" is not a valid amount.`);
+}
+
+const CURRENCY_ALIASES: Record<Currency, string[]> = {
+  VND: ["vnd", "d", "₫", "dong", "viet nam dong"],
+  USD: ["usd", "$", "us$", "dollar", "dollars", "us dollar", "do la", "do la my", "do"],
+};
+const CURRENCY_LOOKUP = new Map<string, Currency>(
+  (Object.entries(CURRENCY_ALIASES) as [Currency, string[]][]).flatMap(([currency, aliases]) =>
+    aliases.map((alias) => [alias, currency] as const),
+  ),
+);
+
+/** `null` = blank. Anything that is not VND or USD (or a known spelling of them) is a row error. */
+export function parseCurrency(cell: Cell | undefined): Cleaned<Currency | null> {
+  const text = cellText(cell);
+  if (text === null) return ok(null);
+  const currency = CURRENCY_LOOKUP.get(foldText(text));
+  return currency ? ok(currency) : fail(`Unknown currency "${text}". Use VND or USD.`);
+}
+
+/** A positive whole number of hours, optionally followed by `h` / `hours` / `giờ`; `null` = blank. */
+export function parseStudyHours(cell: Cell | undefined): Cleaned<number | null> {
+  const text = cellText(cell);
+  if (text === null) return ok(null);
+  const match = /^(\d+)\s*(h|hours?|gio)?$/.exec(foldText(text));
+  const value = match ? Number(match[1]) : NaN;
+  return Number.isInteger(value) && value > 0 && value <= MAX_HOURS
+    ? ok(value)
+    : fail(`Study hours "${text}" must be a whole number above 0.`);
+}
+const MAX_HOURS = 10_000;
 
 export function mapHeaders(row: (Cell | undefined)[]): { map: HeaderMap; unknown: string[]; duplicates: string[] } {
   const map: HeaderMap = {};

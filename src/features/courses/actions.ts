@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   certTypeSchema,
   courseSchema,
+  courseWithIdSchema,
   idSchema,
   providerSchema,
   type CertTypeInput,
@@ -94,6 +95,7 @@ function toCourseRow(data: CourseInput) {
     validity_months: data.validityMonths,
     refundable: data.refundable,
     cost: data.cost,
+    cost_currency: data.costCurrency,
     est_hours: data.estHours,
     url: data.url,
   };
@@ -110,7 +112,7 @@ export async function createCourse(input: CourseInput): Promise<Result<null>> {
 }
 
 export async function updateCourse(input: CourseInput & { id: string }): Promise<Result<null>> {
-  const parsed = courseSchema.extend({ id: idSchema.shape.id }).safeParse(input);
+  const parsed = courseWithIdSchema.safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
   const { id, ...data } = parsed.data;
   const supabase = await createClient();

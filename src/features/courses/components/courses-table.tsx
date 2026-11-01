@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteCourse } from "@/features/courses/actions";
 import { CourseSheet } from "@/features/courses/components/course-sheet";
-import { formatVnd } from "@/lib/format";
+import { formatMoney, type Currency } from "@/lib/money";
 
 type Course = {
   id: string;
@@ -29,6 +29,7 @@ type Course = {
   validityMonths: number | null;
   refundable: boolean;
   cost: number | null;
+  costCurrency: Currency | null;
   estHours: number | null;
   url: string | null;
 };
@@ -81,9 +82,11 @@ export function CoursesTable({
     },
     {
       accessorKey: "cost",
-      header: "Chi phí",
-      cell: ({ row }) => (row.original.cost != null ? formatVnd(row.original.cost) : "—"),
+      header: "Cost",
+      cell: ({ row }) =>
+        row.original.cost != null && row.original.costCurrency ? formatMoney(row.original.cost, row.original.costCurrency) : "—",
     },
+    { accessorKey: "estHours", header: "Study hours", cell: ({ row }) => row.original.estHours ?? "—" },
     ...(canManage
       ? ([
           {
@@ -177,6 +180,7 @@ export function CoursesTable({
                     validityMonths: editing.validityMonths,
                     refundable: editing.refundable,
                     cost: editing.cost,
+                    costCurrency: editing.costCurrency,
                     estHours: editing.estHours,
                     url: editing.url,
                   }

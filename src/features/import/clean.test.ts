@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cellText, normalizeNotes, detectProgressMode, excelSerialToDate, findHeaderRow, isoToExcelSerial, mapHeaders, normalizeBoolean,
   normalizeEmail, normalizeName, normalizeRefund, normalizeStatus, normalizeUrl, parseImportDate, parseNumber,
-  parseValidityMonths, progressToPercent,
+  parseCost, parseCurrency, parseStudyHours, parseValidityMonths, progressToPercent,
 } from "@/features/import/clean";
 
 describe("cellText / normalizeName (spec: trimCertType)", () => {
@@ -155,7 +155,47 @@ describe("other fields", () => {
   });
 });
 
+describe("cost, currency and study hours", () => {
+  it("reads an amount from a number or text, with optional symbols and thousands separators", () => {
+    expect(parseCost(150)).toEqual({ ok: true, value: 150 });
+    expect(parseCost("1234.5")).toEqual({ ok: true, value: 1234.5 });
+    expect(parseCost("3,500,000")).toEqual({ ok: true, value: 3_500_000 });
+    expect(parseCost("$1,200.50")).toEqual({ ok: true, value: 1200.5 });
+    expect(parseCost("3.500.000 ₫")).toEqual({ ok: true, value: 3_500_000 });
+    expect(parseCost(0)).toEqual({ ok: true, value: 0 });
+    expect(parseCost("")).toEqual({ ok: true, value: null });
+  });
+  it("rejects a cost that is not a non-negative amount", () => {
+    expect(parseCost("free")).toEqual({ ok: false, error: 'Cost "free" is not a valid amount.' });
+    expect(parseCost(-5).ok).toBe(false);
+  });
+  it.each([
+    ["VND", "VND"], ["vnd", "VND"], ["VNĐ", "VND"], ["₫", "VND"], ["đ", "VND"], ["Đồng", "VND"],
+    ["USD", "USD"], ["usd", "USD"], ["$", "USD"], ["US$", "USD"], ["Dollar", "USD"], ["Đô la", "USD"],
+  ])("maps the currency %s", (input, expected) => {
+    expect(parseCurrency(input)).toEqual({ ok: true, value: expected });
+  });
+  it("leaves a blank currency empty and rejects an unknown one with the documented message", () => {
+    expect(parseCurrency("  ")).toEqual({ ok: true, value: null });
+    expect(parseCurrency("EUR")).toEqual({ ok: false, error: 'Unknown currency "EUR". Use VND or USD.' });
+  });
+  it("reads study hours as a positive whole number", () => {
+    expect(parseStudyHours(40)).toEqual({ ok: true, value: 40 });
+    expect(parseStudyHours("40 giờ")).toEqual({ ok: true, value: 40 });
+    expect(parseStudyHours("12h")).toEqual({ ok: true, value: 12 });
+    expect(parseStudyHours("")).toEqual({ ok: true, value: null });
+    expect(parseStudyHours(0).ok).toBe(false);
+    expect(parseStudyHours(2.5).ok).toBe(false);
+    expect(parseStudyHours("lots")).toEqual({ ok: false, error: 'Study hours "lots" must be a whole number above 0.' });
+  });
+});
+
 describe("headers", () => {
+  it("maps the cost, currency and study hours headers in English and Vietnamese", () => {
+    expect(mapHeaders(["Cost", "Currency", "Study hours"]).map).toEqual({ cost: 0, costCurrency: 1, estHours: 2 });
+    expect(mapHeaders(["Chi phí", "Loại tiền", "Số giờ"]).map).toEqual({ cost: 0, costCurrency: 1, estHours: 2 });
+    expect(mapHeaders(["Tiền tệ", "Giờ học"]).map).toEqual({ costCurrency: 0, estHours: 1 });
+  });
   it("maps Vietnamese and English headers exactly, ignoring case and diacritics", () => {
     const { map, unknown, duplicates } = mapHeaders(["STT", "Họ và tên", "EMAIL", "Chứng chỉ", "Trạng thái", "Trạng thái hạn"]);
     expect(map).toEqual({ memberName: 1, email: 2, courseName: 3, status: 4 });

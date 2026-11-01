@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { CURRENCIES, toCurrency } from "@/lib/money";
 
 type Option = { id: string; name: string };
 type Editing = (CourseInput & { id: string }) | null;
@@ -37,6 +38,7 @@ export function CourseSheet({
     validityMonths: null,
     refundable: false,
     cost: null,
+    costCurrency: null,
     estHours: null,
     url: null,
   };
@@ -146,19 +148,54 @@ export function CourseSheet({
               render={({ field }) => <Switch id="course-refundable" checked={field.value} onCheckedChange={field.onChange} />}
             />
           </Field>
+          <div className="grid grid-cols-[1fr_8rem] gap-3">
+            <Field>
+              <FieldLabel htmlFor="course-cost">Cost</FieldLabel>
+              <Input
+                id="course-cost"
+                type="number"
+                min={0}
+                step="any"
+                {...form.register("cost")}
+                aria-invalid={!!form.formState.errors.cost}
+              />
+              <FieldError errors={[form.formState.errors.cost]} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="course-currency">Currency</FieldLabel>
+              <Controller
+                control={form.control}
+                name="costCurrency"
+                render={({ field }) => (
+                  <>
+                    <Select
+                      value={toCurrency(typeof field.value === "string" ? field.value : null)}
+                      onValueChange={(value) => field.onChange(toCurrency(value))}
+                    >
+                      <SelectTrigger id="course-currency" aria-invalid={!!form.formState.errors.costCurrency}>
+                        <SelectValue placeholder="Currency">{(value: string | null) => value ?? "Currency"}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((currency) => (
+                          <SelectItem key={currency} value={currency}>
+                            {currency}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.value ? (
+                      <Button type="button" variant="ghost" size="xs" className="self-start" onClick={() => field.onChange(null)}>
+                        Clear currency
+                      </Button>
+                    ) : null}
+                  </>
+                )}
+              />
+              <FieldError errors={[form.formState.errors.costCurrency]} />
+            </Field>
+          </div>
           <Field>
-            <FieldLabel htmlFor="course-cost">Chi phí (VNĐ)</FieldLabel>
-            <Input
-              id="course-cost"
-              type="number"
-              min={0}
-              {...form.register("cost")}
-              aria-invalid={!!form.formState.errors.cost}
-            />
-            <FieldError errors={[form.formState.errors.cost]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="course-hours">Thời gian học ước tính (giờ)</FieldLabel>
+            <FieldLabel htmlFor="course-hours">Study hours (estimate)</FieldLabel>
             <Input
               id="course-hours"
               type="number"
