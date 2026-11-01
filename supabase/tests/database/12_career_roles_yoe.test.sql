@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(43);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -107,20 +107,50 @@ select lives_ok(
 select lives_ok(
   $$delete from public.career_roles where name = 'Architect'$$,
   'the admin can delete an unused role');
+select throws_ok(
+  format($$update public.members set career_start = %L where id = 'c1000000-0000-0000-0000-00000000c001'$$,
+    pg_temp.vn_month_back(-1)),
+  'P0001', 'career start is in the future', 'the admin cannot set next month either');
+select lives_ok(
+  format($$update public.members set career_start = %L where id = 'c1000000-0000-0000-0000-00000000c001'$$,
+    pg_temp.vn_month_back(0)),
+  'the admin can set the current month');
 select pg_temp.logout();
-update public.members set career_role_id = null, career_start = null
+select throws_ok(
+  format($$update public.members set career_start = %L where id = 'c1000000-0000-0000-0000-00000000c001'$$,
+    pg_temp.vn_month_back(-1)),
+  'P0001', 'career start is in the future', 'a JWT-less caller (service role) cannot set a future month');
+select throws_ok(
+  format($$insert into public.members (full_name, email, career_start) values ('CR Future', 'cr-f@test.local', %L)$$,
+    pg_temp.vn_month_back(-2)),
+  'P0001', 'career start is in the future', 'an insert with a future career start is rejected');
+update public.members set career_role_id = (select id from public.career_roles where name = 'Team Lead'),
+  career_start = null
   where id = 'c1000000-0000-0000-0000-00000000c001';
+-- Snapshot of every other row, compared after the member's calls.
+create temp table cr_snap as
+  select id, career_start, career_role_id from public.members where id <> 'c1000000-0000-0000-0000-00000000c001';
 
 -- ===== member sets their own career start =====
 select pg_temp.login_as('c1000000-0000-0000-0000-00000000f00c');
 select lives_ok($$select public.set_my_career_start('2020-03-17')$$, 'a member sets their career start');
 select is((select career_start from public.members where id = 'c1000000-0000-0000-0000-00000000c001'),
   '2020-03-01'::date, 'the date is normalised to the first of the month');
+select is(
+  (select career_role_id from public.members where id = 'c1000000-0000-0000-0000-00000000c001'),
+  (select id from public.career_roles where name = 'Team Lead'),
+  'set_my_career_start leaves career_role_id untouched');
 -- No update policy for members: a direct update matches no row.
 update public.members set career_start = '2021-01-01' where id = 'c1000000-0000-0000-0000-00000000c001';
 select is(
   (select career_start from public.members where id = 'c1000000-0000-0000-0000-00000000c001'),
-  '2020-03-01'::date, 'a direct update by the member changes nothing');
+  '2020-03-01'::date, 'a direct update of career_start by the member changes nothing');
+update public.members set career_role_id = (select id from public.career_roles where name = 'Engineer')
+  where id = 'c1000000-0000-0000-0000-00000000c001';
+select is(
+  (select career_role_id from public.members where id = 'c1000000-0000-0000-0000-00000000c001'),
+  (select id from public.career_roles where name = 'Team Lead'),
+  'a direct update of career_role_id by the member changes nothing');
 select throws_ok(
   format($$select public.set_my_career_start(%L)$$, pg_temp.vn_month_back(-1)),
   'P0001', 'career start is in the future', 'next month is rejected');
@@ -128,13 +158,27 @@ select lives_ok(
   format($$select public.set_my_career_start(%L)$$, pg_temp.vn_month_back(0) + 14),
   'the current Vietnam month is accepted');
 select pg_temp.logout();
-select is((select career_start from public.members where id = 'c1000000-0000-0000-0000-00000000c002'),
-  null, 'no other member row changed');
+select is(
+  (select count(*) from public.members m join cr_snap s using (id)
+   where m.career_start is distinct from s.career_start or m.career_role_id is distinct from s.career_role_id),
+  0::bigint, 'no other member row changed (career_start and career_role_id compared on every row)');
 
 select pg_temp.login_as('c1000000-0000-0000-0000-00000000f00d');
 select throws_ok($$select public.set_my_career_start('2020-01-01')$$,
-  'P0001', null, 'a user without a member row cannot set a career start');
+  'P0001', 'no member profile for this user', 'a user without a member row cannot set a career start');
 select pg_temp.logout();
+
+-- ===== vn_today and the pure YoE function =====
+select is(public.vn_today(), (now() at time zone 'Asia/Ho_Chi_Minh')::date,
+  'vn_today() is the Vietnam date');
+select is(public.yoe_years('2020-03-01', '2026-10-31'), 6.5::numeric, 'March 2020 to 31 Oct 2026 is 6.5 years');
+select is(public.yoe_years('2020-03-01', '2026-11-01'), 6.5::numeric, 'March 2020 to 1 Nov 2026 is 6.5 years');
+select is(public.yoe_years('2020-05-01', '2026-10-31'), 6.0::numeric, 'May 2020 to 31 Oct 2026 is 6.0 years');
+select is(public.yoe_years('2020-04-01', '2026-09-30'), 6.0::numeric, 'April 2020 to 30 Sep 2026 is 6.0 years');
+select is(public.yoe_years('2020-04-01', '2026-10-01'), 6.5::numeric,
+  'one day later, across the month boundary, April 2020 to 1 Oct 2026 is 6.5 years');
+select is(public.yoe_years(null, '2026-10-01'), null, 'no start gives null');
+select is(public.yoe_years('2026-12-01', '2026-10-01'), 0::numeric, 'a start after today never goes negative');
 
 -- ===== YoE view =====
 update public.members set career_start = pg_temp.vn_month_back(42) where id = 'c1000000-0000-0000-0000-00000000c001';

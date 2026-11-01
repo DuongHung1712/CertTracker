@@ -37,32 +37,28 @@ alter table public.members
 create index members_career_role_id_idx on public.members (career_role_id);
 
 -- Only the admin changes career_role_id / career_start. Exceptions: no JWT (postgres / service role:
--- migrations, seed, import, cron) and set_my_career_start(), which raises a transaction-local flag.
--- Managers may still update the other columns of members in their scope (existing RLS policy).
+-- migrations, seed, import, cron) and set_my_career_start() for the caller's own row, which raises a
+-- transaction-local flag (the flag never lets anyone touch the role). Managers may still update the other
+-- columns of members in their scope (existing RLS policy).
 create function public.guard_member_career_fields()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
+declare
+  v_non_admin_with_jwt boolean :=
+    auth.uid() is not null and public.app_role() is distinct from 'admin';
 begin
-  if new.career_role_id is not distinct from old.career_role_id
-     and new.career_start is not distinct from old.career_start then
-    return new;
+  if v_non_admin_with_jwt then
+    if new.career_role_id is distinct from old.career_role_id then
+      raise exception 'only the admin can change this field' using errcode = 'P0001';
+    end if;
+    if new.career_start is distinct from old.career_start
+       and not (coalesce(current_setting('app.career_start_self', true), '') = 'on'
+                and new.id = public.my_member_id()) then
+      raise exception 'only the admin can change this field' using errcode = 'P0001';
+    end if;
   end if;
-
-  if auth.uid() is not null
-     and public.app_role() is distinct from 'admin'
-     and coalesce(current_setting('app.career_start_self', true), '') <> 'on' then
-    raise exception 'only the admin can change this field' using errcode = 'P0001';
-  end if;
-
-  -- The flag covers career_start only; it never lets a member touch the role.
-  if new.career_role_id is distinct from old.career_role_id
-     and auth.uid() is not null
-     and public.app_role() is distinct from 'admin' then
-    raise exception 'only the admin can change this field' using errcode = 'P0001';
-  end if;
-
   return new;
 end;
 $$;
@@ -70,6 +66,27 @@ $$;
 create trigger members_guard_career_fields
   before update on public.members
   for each row execute function public.guard_member_career_fields();
+
+-- No caller, admin and service role included, may set a career start after the current Vietnam month.
+-- On update only a changed value is checked, so an old row never blocks unrelated updates.
+create function public.reject_future_career_start()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.career_start is not null
+     and (tg_op = 'INSERT' or new.career_start is distinct from old.career_start)
+     and new.career_start > date_trunc('month', public.vn_today())::date then
+    raise exception 'career start is in the future' using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger members_reject_future_career_start
+  before insert or update on public.members
+  for each row execute function public.reject_future_career_start();
 
 -- A member sets only their own career start. Any date is normalised to the first of its month; a month
 -- after the current Vietnam month is rejected.
@@ -82,7 +99,7 @@ as $$
 declare
   v_member_id uuid := public.my_member_id();
   v_month date := date_trunc('month', p_start)::date;
-  v_this_month date := date_trunc('month', now() at time zone 'Asia/Ho_Chi_Minh')::date;
+  v_this_month date := date_trunc('month', public.vn_today())::date;
 begin
   if v_member_id is null then
     raise exception 'no member profile for this user' using errcode = 'P0001';
@@ -102,8 +119,27 @@ $$;
 revoke execute on function public.set_my_career_start(date) from public, anon;
 grant execute on function public.set_my_career_start(date) to authenticated;
 
--- YoE = whole months from career_start to the current Vietnam month, in years rounded down to 0.5.
--- Null without a career start. security_invoker: members RLS applies to the caller.
+-- Pure YoE: whole months between the month of p_start and the month of p_today, in years rounded down to 0.5.
+-- Null without a start; never negative.
+create function public.yoe_years(p_start date, p_today date)
+returns numeric
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when p_start is null then null
+    else floor(
+      greatest(
+        0,
+        (extract(year from p_today) - extract(year from p_start)) * 12
+          + (extract(month from p_today) - extract(month from p_start))
+      ) / 6
+    ) / 2
+  end;
+$$;
+
+-- security_invoker: members RLS applies to the caller. "Today" is the Vietnam date (vn_today()).
 create view public.v_member_profiles
 with (security_invoker = true)
 as
@@ -112,19 +148,9 @@ select
   m.career_role_id,
   cr.name as career_role_name,
   m.career_start,
-  case
-    when m.career_start is null then null
-    else floor(
-      greatest(
-        0,
-        (extract(year from vn.today) - extract(year from m.career_start)) * 12
-          + (extract(month from vn.today) - extract(month from m.career_start))
-      ) / 6
-    ) / 2
-  end::numeric as yoe_years
+  public.yoe_years(m.career_start, public.vn_today())::numeric(4, 1) as yoe_years
 from public.members m
-left join public.career_roles cr on cr.id = m.career_role_id
-cross join (select (now() at time zone 'Asia/Ho_Chi_Minh')::date as today) vn;
+left join public.career_roles cr on cr.id = m.career_role_id;
 
 revoke all on public.v_member_profiles from anon;
 grant select on public.v_member_profiles to authenticated;

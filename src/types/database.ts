@@ -778,6 +778,7 @@ export type Database = {
       }
       set_my_career_start: { Args: { p_start: string }; Returns: undefined }
       vn_today: { Args: never; Returns: string }
+      yoe_years: { Args: { p_start: string; p_today: string }; Returns: number }
     }
     Enums: {
       import_action: "create" | "update" | "skip"
