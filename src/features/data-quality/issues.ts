@@ -1,3 +1,4 @@
+import { NO_TEAM_LABEL } from "@/components/status/labels";
 import { formatDate } from "@/lib/format";
 import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-quality/schema";
 
@@ -5,7 +6,7 @@ import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-qual
 export const ISSUE_META: Record<IssueType, { label: string; href: string }> = {
   overdue_exam: { label: "Exam overdue", href: "/records" },
   done_no_evidence: { label: "Missing evidence", href: "/records" },
-  member_no_team: { label: "No team", href: "/members" },
+  member_no_team: { label: NO_TEAM_LABEL, href: "/members" },
   course_no_validity: { label: "Validity not set", href: "/courses" },
 };
 

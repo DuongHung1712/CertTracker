@@ -19,13 +19,13 @@ const COLOR_TOKENS = [
 ];
 
 const TEXT_STYLES = [
-  ["text-page-title", "Tiêu đề trang · 20/28"],
-  ["text-section-title", "Tiêu đề khối · 15/22"],
-  ["text-body", "Nội dung · 14/20"],
-  ["text-table", "Ô bảng · 13/18"],
-  ["text-label uppercase", "Nhãn cột · 12/16"],
-  ["text-caption", "Chú thích · 12/16"],
-  ["text-kpi tabular-nums", "1.248"],
+  ["text-page-title", "Page title · 20/28"],
+  ["text-section-title", "Section title · 15/22"],
+  ["text-body", "Body · 14/20"],
+  ["text-table", "Table cell · 13/18"],
+  ["text-label uppercase", "Column label · 12/16"],
+  ["text-caption", "Caption · 12/16"],
+  ["text-kpi tabular-nums", "1,248"],
 ] as const;
 
 const SAMPLE_DAYS: Record<(typeof EXPIRY_STATUSES)[number], [number | null, string | null]> = {
@@ -51,7 +51,7 @@ export default function DesignPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-8 sm:px-6">
-      <PageHeader title="Design system" description="Trang trưng bày token và component. Chỉ có ở môi trường dev." />
+      <PageHeader title="Design system" description="Showcase of design tokens and components. Available in development only." />
 
       <Section title="Logo & Favicon">
         <div className="flex flex-wrap items-center gap-6 rounded-lg border bg-card p-4">
@@ -86,7 +86,7 @@ export default function DesignPage() {
         </div>
       </Section>
 
-      <Section title="Màu">
+      <Section title="Colours">
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {COLOR_TOKENS.map((name) => (
             <div key={name} className="flex flex-col gap-1">
@@ -97,7 +97,7 @@ export default function DesignPage() {
         </div>
       </Section>
 
-      <Section title="Chữ">
+      <Section title="Typography">
         <div className="flex flex-col gap-2 rounded-lg border bg-card p-4">
           {TEXT_STYLES.map(([className, sample]) => (
             <p key={className} className={className}>
@@ -107,7 +107,7 @@ export default function DesignPage() {
         </div>
       </Section>
 
-      <Section title="Trạng thái hết hạn">
+      <Section title="Expiry status">
         <div className="flex flex-wrap gap-2">
           {EXPIRY_STATUSES.map((status) => (
             <ExpiryBadge
@@ -120,7 +120,7 @@ export default function DesignPage() {
         </div>
       </Section>
 
-      <Section title="Trạng thái học, tiến độ, vai trò">
+      <Section title="Study status, progress, roles">
         <div className="flex flex-wrap items-center gap-6">
           <RecordStatusLabel status="done" />
           <RecordStatusLabel status="in_progress" />
@@ -133,55 +133,55 @@ export default function DesignPage() {
         </div>
       </Section>
 
-      <Section title="Nút">
+      <Section title="Buttons">
         <div className="flex flex-wrap gap-2">
-          <Button>Thêm thành viên</Button>
-          <Button variant="secondary">Xuất Excel</Button>
-          <Button variant="outline">Hủy</Button>
-          <Button variant="ghost">Xóa lọc</Button>
-          <Button variant="destructive">Xóa khóa học</Button>
-          <Button disabled>Đang lưu…</Button>
+          <Button>Add member</Button>
+          <Button variant="secondary">Export Excel</Button>
+          <Button variant="outline">Cancel</Button>
+          <Button variant="ghost">Clear filters</Button>
+          <Button variant="destructive">Delete course</Button>
+          <Button disabled>Saving…</Button>
         </div>
       </Section>
 
       <Section title="Form">
         <div className="flex max-w-md flex-col gap-2">
           <Label htmlFor="design-email">Email</Label>
-          <Input id="design-email" type="email" placeholder="ten@congty.com" />
-          <p className="text-caption text-muted-foreground">Dùng email công ty.</p>
+          <Input id="design-email" type="email" placeholder="name@company.com" />
+          <p className="text-caption text-muted-foreground">Use your company email.</p>
         </div>
       </Section>
 
-      <Section title="Chọn có tìm kiếm">
+      <Section title="Searchable select">
         <ComboboxDemo />
       </Section>
 
-      <Section title="Bảng">
+      <Section title="Table">
         <TableDemo />
       </Section>
 
       <Section title="Dashboard: KPI">
         <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <KpiTile label="Thành viên" value={1248} />
-          <KpiTile label="Chứng chỉ còn hiệu lực" value={86} hint="trong đó 3 sắp hết hạn" />
-          <KpiTile label="Tỉ lệ hoàn thành" value="75%" />
-          <KpiTile label="Đã hết hạn" value={0} />
+          <KpiTile label="Active members" value={1248} />
+          <KpiTile label="Valid certificates" value={86} hint="3 of them expiring soon" />
+          <KpiTile label="Completion rate" value="75%" />
+          <KpiTile label="Expired" value={0} />
         </dl>
       </Section>
 
-      <Section title="Dashboard: biểu đồ hạn (có dữ liệu, rồi toàn số 0)">
+      <Section title="Dashboard: expiry chart (with data, then all zeros)">
         <ChartDemo />
       </Section>
 
-      <Section title="Dashboard: bảng thống kê và xếp hạng">
+      <Section title="Dashboard: breakdown tables and ranking">
         <BreakdownDemo />
       </Section>
 
-      <Section title="Bảng đang tải">
+      <Section title="Loading table">
         <LoadingTableDemo />
       </Section>
 
-      <Section title="Hộp thoại và thông báo">
+      <Section title="Dialogs and notifications">
         <div className="flex flex-wrap gap-2">
           <ConfirmDemo />
           <ToastDemo />

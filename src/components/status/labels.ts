@@ -15,6 +15,9 @@ export const ROLE_LABEL: Record<Role, string> = {
   member: "Member",
 };
 
+/** Label for rows without a team; shared by the records filter, data quality and the monthly report. */
+export const NO_TEAM_LABEL = "No team";
+
 export function clampPercent(value: number): number {
   return Math.min(100, Math.max(0, Math.round(value)));
 }

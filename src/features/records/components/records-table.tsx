@@ -11,7 +11,7 @@ import { FilterBar } from "@/components/data/filter-bar";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import { EXPIRY_STATUSES, expiryMeta } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
-import { RECORD_STATUS_LABEL } from "@/components/status/labels";
+import { NO_TEAM_LABEL, RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { MemberCode } from "@/components/status/member-code";
 import { ProgressInline } from "@/components/status/progress-inline";
 import { RecordStatusLabel } from "@/components/status/record-status";
@@ -29,8 +29,6 @@ import { foldText } from "@/lib/text";
 const ALL = "all";
 /** Team filter value for rows without a team (`teamId === null`). */
 const NO_TEAM = "__no_team__";
-/** Label for rows without a team; the same wording as the dashboard and the monthly plan. */
-const NO_TEAM_LABEL = "No team";
 
 /** Ascending by days left; a record with no expiry date (`null`) always sorts after the dated ones. */
 function byDaysToExpiry(
