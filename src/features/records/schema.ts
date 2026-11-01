@@ -47,7 +47,7 @@ export function recordRuleIssues(
     issues.push({ path: "progress", message: "A record that has not started must have progress 0%" });
   }
   if (value.status === "in_progress" && value.progress > 99) {
-    issues.push({ path: "progress", message: "Progress 100% needs the status Completed" });
+    issues.push({ path: "progress", message: "Set the status to Completed when progress is 100%" });
   }
   // ISO dates compare correctly as strings.
   if (value.issuedDate && value.issuedDate > today) {

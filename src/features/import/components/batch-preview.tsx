@@ -15,10 +15,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { commitImport, discardImport } from "@/features/import/actions";
-import { countRows, describeNewEntities, plural, ROW_OUTCOME_LABEL, rowOutcome, type RowOutcome } from "@/features/import/preview";
+import { countRows, describeNewEntities, ROW_OUTCOME_LABEL, rowOutcome, type RowOutcome } from "@/features/import/preview";
 import type { ImportBatchDetail, ImportRowView } from "@/features/import/queries";
 import { runBatchAction } from "@/features/import/run-batch-action";
 import { formatDateTimeVn } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 import type { Result } from "@/lib/result";
 import { foldText } from "@/lib/text";
 
@@ -54,10 +55,11 @@ function RowMessages({ row }: { row: ImportRowView }) {
 }
 
 function committedMessage(batch: ImportBatchDetail): string {
-  const when = batch.committedAt ? formatDateTimeVn(batch.committedAt) : "—";
-  if (!batch.summary) return `Imported on ${when}.`;
+  const [date, time] = batch.committedAt ? formatDateTimeVn(batch.committedAt).split(" ") : [];
+  const when = date && time ? `Imported ${date} at ${time}` : "Imported";
+  if (!batch.summary) return `${when}.`;
   const { created, updated, skipped } = batch.summary;
-  return `Imported on ${when}: created ${created}, updated ${updated}, skipped ${skipped}.`;
+  return `${when}: created ${created}, updated ${updated}, skipped ${skipped}.`;
 }
 
 export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: ImportRowView[] }) {
@@ -155,7 +157,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
                 Discard batch
               </Button>
               <Button disabled={importable === 0 || incomplete} onClick={() => setConfirming("commit")}>
-                {`Import ${plural(importable, "row")}`}
+                {`Import ${pluralize(importable, "row")}`}
               </Button>
             </>
           )
@@ -249,8 +251,8 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
       <ConfirmDialog
         open={confirming === "commit"}
         onOpenChange={(open) => !open && setConfirming(null)}
-        title={`Import ${plural(importable, "row")} from ${batch.fileName}?`}
-        description={`Creates ${counts.create}, updates ${counts.update}. ${plural(counts.error, "row")} with errors will be skipped. Everything runs in one transaction: an error in any row cancels the whole import.`}
+        title={`Import ${pluralize(importable, "row")} from ${batch.fileName}?`}
+        description={`Creates ${counts.create}, updates ${counts.update}. ${pluralize(counts.error, "row")} with errors will be skipped. Everything runs in one transaction: an error in any row cancels the whole import.`}
         confirmLabel="Import data"
         pendingLabel="Importing…"
         pending={pending}

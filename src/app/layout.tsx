@@ -35,7 +35,7 @@ export default function RootLayout({
           theme="light"
           position="bottom-right"
           closeButton
-          toastOptions={{ closeButtonAriaLabel: "Dismiss notification" }}
+          toastOptions={{ closeButtonAriaLabel: "Close notification" }}
         />
       </body>
     </html>

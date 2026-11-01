@@ -1,4 +1,5 @@
 import type { ImportRowView } from "@/features/import/queries";
+import { pluralize } from "@/lib/plural";
 import { foldText } from "@/lib/text";
 
 export type RowOutcome = "create" | "update" | "unchanged" | "error";
@@ -25,8 +26,6 @@ export function countRows(rows: ImportRowView[]): Record<RowOutcome, number> {
 }
 
 const MAX_LISTED_NAMES = 3;
-
-export const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
 
 type CatalogRef = { id: string } | { name: string };
 
@@ -69,10 +68,10 @@ export function describeNewEntities(rows: ImportRowView[]): string | null {
     const names = [...members.values()];
     const listed = names.slice(0, MAX_LISTED_NAMES).join(", ");
     const rest = names.length - MAX_LISTED_NAMES;
-    groups.push(`${plural(members.size, "member")} (${rest > 0 ? `${listed} and ${rest} more` : listed})`);
+    groups.push(`${pluralize(members.size, "member")} (${rest > 0 ? `${listed} and ${rest} more` : listed})`);
   }
-  if (providers.size > 0) groups.push(plural(providers.size, "provider"));
-  if (certTypes.size > 0) groups.push(plural(certTypes.size, "certificate type"));
-  if (courses.size > 0) groups.push(plural(courses.size, "course"));
+  if (providers.size > 0) groups.push(pluralize(providers.size, "provider"));
+  if (certTypes.size > 0) groups.push(pluralize(certTypes.size, "certificate type"));
+  if (courses.size > 0) groups.push(pluralize(courses.size, "course"));
   return groups.length > 0 ? `Will create: ${groups.join(", ")}` : null;
 }

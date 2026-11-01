@@ -135,10 +135,10 @@ export function RecordSheet({
       if (!uploaded.ok) uploadError = uploaded.error;
     }
 
-    // The record is saved either way: staying open on "create" would hit the duplicate error on retry.
+    // The certificate is saved either way: staying open on "create" would hit the duplicate error on retry.
     handleOpenChange(false);
     if (uploadError) {
-      toast.error(`The record is saved, but the evidence could not be uploaded: ${uploadError} Open "Edit" to try again.`, {
+      toast.error(`The certificate is saved, but the evidence could not be uploaded: ${uploadError} Open "Edit" to try again.`, {
         duration: Infinity,
       });
     } else {

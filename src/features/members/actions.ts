@@ -83,14 +83,14 @@ export async function deleteMember(input: { id: string }): Promise<Result<null>>
     .eq("member_id", id);
   if (countError) return err(mapPostgresError(countError));
   if (count && count > 0) {
-    return err("This member still has certificates. Delete their certificate records first.");
+    return err("This member still has certificates. Delete their certificates first.");
   }
 
   const { data, error } = await supabase.from("members").delete().eq("id", id).select("id");
   if (error) {
     // Other Postgres errors only — the FK is cascade, so 23503 for the "has records" case can't
     // fire here anymore (the count check above already caught it).
-    return err(mapPostgresError(error, { restricted: "This member still has certificates. Delete their certificate records first." }));
+    return err(mapPostgresError(error, { restricted: "This member still has certificates. Delete their certificates first." }));
   }
   const guard = assertAffected(data);
   if (guard) return guard;

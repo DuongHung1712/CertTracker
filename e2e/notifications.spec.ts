@@ -198,7 +198,7 @@ test("a real run sends once and a second call sends nothing; /settings shows the
 
     // The configuration block reports presence only; the value of the secret never reaches the page.
     const config = admin.page.getByRole("region", { name: "Email configuration", exact: true });
-    await expect(config.getByRole("listitem").filter({ hasText: "CRON_SECRET" })).toContainText("Configured");
+    await expect(config.getByRole("listitem").filter({ hasText: "CRON_SECRET" })).toHaveText(/^CRON_SECRET[\s\S]*Configured$/);
     await expect(admin.page.locator("body")).not.toContainText(SECRET);
   } finally {
     await admin.close();

@@ -1,5 +1,6 @@
 import { NO_TEAM_LABEL } from "@/components/status/labels";
 import { formatDate } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-quality/schema";
 
 /** `href` is the screen where the finding is fixed; the list pages have no deep link to a single row. */
@@ -10,12 +11,10 @@ export const ISSUE_META: Record<IssueType, { label: string; href: string }> = {
   course_no_validity: { label: "Validity not set", href: "/courses" },
 };
 
-const days = (count: number) => `${count} ${count === 1 ? "day" : "days"}`;
-
 export function describeIssue(row: IssueRow): string {
   switch (row.type) {
     case "overdue_exam":
-      return `Exam planned for ${formatDate(row.since)} — ${days(row.days)} overdue.`;
+      return `Exam planned for ${formatDate(row.since)} — ${pluralize(row.days, "day")} overdue.`;
     case "done_no_evidence":
       return `Completed on ${formatDate(row.since)} but there is no evidence file or link.`;
     case "member_no_team":

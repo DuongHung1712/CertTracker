@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { capItems, MAX_LINES, type ExpiryBucket, type ExpiryItem } from "@/features/notifications/expiry-plan";
 import { formatDate } from "@/lib/format";
 import { EMAIL_THEME as c } from "@/lib/email/theme";
+import { pluralize } from "@/lib/plural";
 
 const FONT = '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
@@ -71,9 +72,6 @@ const BUCKET_STYLE: Record<ExpiryBucket, CSSProperties> = {
   in60: { backgroundColor: c.expiring60Bg, color: c.expiring60Fg },
 };
 
-/** `1 certificate`, `3 certificates`; pass `plural` for an irregular form. */
-export const pluralize = (n: number, singular: string, plural = `${singular}s`): string => `${n} ${n === 1 ? singular : plural}`;
-
 export function bucketText(item: Pick<ExpiryItem, "bucket" | "daysToExpiry">): string {
   if (item.bucket === "expired") return `Expired ${pluralize(-item.daysToExpiry, "day")} ago`;
   return `${pluralize(item.daysToExpiry, "day")} left`;
@@ -119,7 +117,7 @@ export function ExpiryTable({
         {hidden > 0 ? (
           <tr>
             <td colSpan={columns} style={{ ...styles.td, color: c.mutedForeground }}>
-              {`and ${hidden} more ${hidden === 1 ? "certificate" : "certificates"}`}
+              {`and ${pluralize(hidden, "more certificate")}`}
               {moreHref ? (
                 <>
                   {" — "}

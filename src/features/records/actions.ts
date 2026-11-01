@@ -5,12 +5,12 @@ import { idSchema, recordSchema, type RecordInput } from "@/features/records/sch
 import { assertAffected } from "@/lib/assert-affected";
 import { mapPostgresError } from "@/lib/postgres-error";
 import { err, ok, type Result } from "@/lib/result";
-import { evidencePath, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
+import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE, evidencePath, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
 import { createSupabaseStorage } from "@/lib/storage/supabase-storage";
 import { createClient } from "@/lib/supabase/server";
 
 const MESSAGES = {
-  duplicate: "This member already has a record for this course. Edit the existing record instead of creating a new one.",
+  duplicate: "This member already has a certificate for this course. Edit the existing certificate instead of creating a new one.",
   restricted: "The member or the course no longer exists. Reload the page and try again.",
   invalid: "Status, progress and issue date do not match.",
 };
@@ -89,9 +89,10 @@ export async function deleteRecord(input: { id: string }): Promise<Result<null>>
 export async function uploadEvidence(formData: FormData): Promise<Result<null>> {
   const parsed = idSchema.safeParse({ id: formData.get("recordId") });
   const file = formData.get("file");
-  if (!parsed.success || !(file instanceof File)) return err("Invalid data");
-  if (file.size === 0) return err("The file is empty.");
-  if (file.size > MAX_EVIDENCE_BYTES) return err("The file is larger than 4 MB. Compress it or take the photo again, then retry.");
+  if (!parsed.success) return err("Invalid data");
+  if (!(file instanceof File)) return err("Choose a file to upload.");
+  if (file.size === 0) return err(EVIDENCE_EMPTY_MESSAGE);
+  if (file.size > MAX_EVIDENCE_BYTES) return err(EVIDENCE_TOO_LARGE_MESSAGE);
   const mime = sniffEvidenceType(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
   if (!mime) return err("Only PDF, JPG, PNG or WebP files are accepted.");
 

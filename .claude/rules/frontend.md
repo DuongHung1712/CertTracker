@@ -11,7 +11,7 @@ paths:
 - Đọc dữ liệu trong Server Component qua `features/<x>/queries.ts`; ghi qua Server Action trong `features/<x>/actions.ts`.
 - Form: React Hook Form + `zodResolver` với schema từ `features/<x>/schema.ts` (dùng chung với server); dựng bằng shadcn `field` (`Field`, `FieldLabel`, `FieldError`).
 - UI dùng shadcn/ui trong `src/components/ui`; bảng dùng TanStack Table; biểu đồ dùng Recharts.
-- Text hiển thị bằng tiếng Việt; ngày hiển thị `dd/MM/yyyy`.
+- Text hiển thị bằng tiếng Anh (English first; song ngữ Anh–Việt sau Release 1, decision #51); ngày hiển thị `dd/MM/yyyy`.
 - Ẩn/hiện theo vai trò chỉ là UX — quyền thật do RLS quyết định.
 - Realtime chỉ bật ở trang danh sách record và Dashboard; nhớ unsubscribe khi unmount.
 - Trước khi dựng UI: đọc `docs/design-system.md`. Chỉ dùng token (class `bg-primary`, `text-table`, `rounded-lg`…); không hex, không `bg-teal-*`, không `text-[13px]`.

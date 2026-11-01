@@ -6,7 +6,7 @@ test("design showcase renders tokens and components", async ({ page }) => {
 
   await page.goto("/design");
   await expect(page.getByRole("heading", { name: "Expiry status" })).toBeVisible();
-  await expect(page.getByText("Expired").first()).toBeVisible();
+  await expect(page.getByText("Expired", { exact: true }).first()).toBeVisible();
 
   const table = page.getByRole("table").first();
   await expect(table.getByRole("row")).toHaveCount(7); // header + 6 sample rows

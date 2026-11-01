@@ -8,8 +8,8 @@ describe("mapPostgresError", () => {
 
   it("prefers a caller-supplied duplicate message", () => {
     expect(
-      mapPostgresError({ code: "23505", message: "duplicate key" }, { duplicate: 'Data centre "HN" already exists.' }),
-    ).toBe('Data centre "HN" already exists.');
+      mapPostgresError({ code: "23505", message: "duplicate key" }, { duplicate: 'Centre "HN" already exists.' }),
+    ).toBe('Centre "HN" already exists.');
   });
 
   it("maps a foreign key violation to a restricted-delete message", () => {

@@ -303,7 +303,7 @@ describe("buildImportPlan edge cases", () => {
     const t = { ...table([row({})]), unknownColumns: ["STT", "Ảnh"] };
     const notes = buildImportPlan(t, LOOKUPS, TODAY).notes;
     expect(notes[0]).toBe('Sheet "S", headers in row 1.');
-    expect(notes.join()).toMatch(/Ignored columns: STT, Ảnh./);
+    expect(notes.join()).toMatch(/Ignored columns: STT, Ảnh\./);
   });
 
   it("applies decision #22 inside a plan: 100% without an issue date is capped at 99% with a warning", () => {

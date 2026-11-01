@@ -79,7 +79,7 @@ export function TeamSection({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-section-title">Team</h2>
+        <h2 className="text-section-title">Teams</h2>
         {canManage && (
           <Button
             size="sm"
@@ -118,7 +118,7 @@ export function TeamSection({
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
             title={`Delete team ${confirming?.name}?`}
-            description="Members of this team are kept but will have no team; the managers of this team lose it from their scope."
+            description="Members of this team are kept but will have no team; managers of this team will no longer manage it."
             confirmLabel="Delete team"
             pendingLabel="Deleting…"
             pending={pending}

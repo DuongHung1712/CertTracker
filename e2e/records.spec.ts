@@ -134,7 +134,7 @@ test("a second record for the same member and course is refused", async ({ page 
   await dialog.getByRole("button", { name: "Save" }).click();
 
   await expect(
-    dialog.getByText("This member already has a record for this course. Edit the existing record instead of creating a new one."),
+    dialog.getByText("This member already has a certificate for this course. Edit the existing certificate instead of creating a new one."),
   ).toBeVisible();
   await expect(dialog).toBeVisible();
 });

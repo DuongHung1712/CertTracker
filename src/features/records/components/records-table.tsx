@@ -264,7 +264,7 @@ export function RecordsTable({
             <SelectValue>
               {(value: string) =>
                 value === ALL
-                  ? "All expiry"
+                  ? "All expiry statuses"
                   : (EXPIRY_STATUSES.find((status) => status === value) ?? null) !== null
                     ? expiryMeta(value as (typeof EXPIRY_STATUSES)[number]).label
                     : value
@@ -272,7 +272,7 @@ export function RecordsTable({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>All expiry</SelectItem>
+            <SelectItem value={ALL}>All expiry statuses</SelectItem>
             {EXPIRY_STATUSES.map((status) => (
               <SelectItem key={status} value={status}>
                 {expiryMeta(status).label}
@@ -319,7 +319,7 @@ export function RecordsTable({
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
           title={`Delete the ${confirming?.courseName} certificate of ${confirming?.memberName}?`}
-          description="The record and its evidence file will be deleted. This cannot be undone."
+          description="The certificate and its evidence file will be deleted. This cannot be undone."
           confirmLabel="Delete certificate"
           pendingLabel="Deleting…"
           pending={pending}

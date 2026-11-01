@@ -54,7 +54,7 @@ test("admin imports the legacy workbook", async ({ page }) => {
   await page.getByRole("button", { name: "Import 5 rows" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Import data" }).click();
   await expect(page.getByText("Imported: created 3, updated 2")).toBeVisible();
-  await expect(page.getByRole("alert").filter({ hasText: "Imported on" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: /Imported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}/ })).toBeVisible();
 
   await page.goto("/records");
   await expect(page.getByRole("cell", { name: "Phạm Thu Hà", exact: true })).toBeVisible();

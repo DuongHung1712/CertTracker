@@ -47,7 +47,7 @@ test("admin cannot delete a member who has training records", async ({ page }) =
     .click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete member" }).click();
-  await expect(page.getByText("This member still has certificates. Delete their certificate records first.")).toBeVisible();
+  await expect(page.getByText("This member still has certificates. Delete their certificates first.")).toBeVisible();
   await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toBeVisible();
 });
 
@@ -65,6 +65,7 @@ test("manager cannot create or delete members, and only sees their managed team"
     .getByRole("row", { name: /Nguyễn Văn An/ })
     .getByRole("button", { name: /Actions for/ })
     .click();
+  await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
 });
 

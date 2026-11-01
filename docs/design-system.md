@@ -25,17 +25,17 @@ Token names follow the **role** a colour plays, as in shadcn/ui. Only a light th
 
 | Token | Value | Used for | Contrast |
 |---|---|---|---|
-| `background` | `#F6F7F5` | Page background | n/a |
+| `background` | `#F6F7F5` | Page background | — |
 | `foreground` | `#15212B` | Main text | 15.2:1 on `background` |
-| `card`, `popover` | `#FFFFFF` | Tables, cards, dialogs, menus | n/a |
+| `card`, `popover` | `#FFFFFF` | Tables, cards, dialogs, menus | — |
 | `card-foreground`, `popover-foreground` | `#15212B` | Text on cards | 16.4:1 |
-| `muted`, `secondary` | `#EDF0EE` | Table header, secondary background, secondary button | n/a |
+| `muted`, `secondary` | `#EDF0EE` | Table header, secondary background, secondary button | — |
 | `muted-foreground` | `#56636C` | Secondary text, labels, placeholders | 5.4:1 on `muted`, 5.8:1 on `background` |
 | `secondary-foreground` | `#15212B` | Text on the secondary button | 14.2:1 |
 | `primary` | `#0E5C58` | Primary button, links, selected item, progress bar | 7.3:1 on `background` |
 | `primary-foreground` | `#FFFFFF` | Text on `primary` | 7.8:1 |
 | `primary-hover` | `#0A4744` | Primary button hover | 10.5:1 with white text |
-| `accent` | `#E2EFEC` | Selected table row, active sidebar item, row hover | n/a |
+| `accent` | `#E2EFEC` | Selected table row, active sidebar item, row hover | — |
 | `accent-foreground` | `#0E5C58` | Text on `accent` | 6.6:1 |
 | `destructive` | `#B42318` | Delete button, form error text | 6.6:1 on white, in both directions |
 | `border` | `#D8DEDB` | Table rules, card borders, separators (decorative) | 1.27:1 on `background`, 1.36:1 on `card`; not used as a control boundary |
@@ -120,6 +120,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | App shell | `AppSidebar` | `components/app-shell/` | shadcn `sidebar`; collapses to an icon column; a drawer below 1024px; items filtered by role (§4.5) | ✓ |
 | | `Topbar`, `UserMenu` | `components/app-shell/` | Breadcrumb on the left; user menu on the right (email, `RoleBadge`, Sign out) | ✓ |
 | | `PageHeader` | `components/app-shell/` | `page-title`, a one-line description, an action-button area on the right | ✓ |
+| | `Logo`, `LogoMark` | `components/app-shell/logo.tsx` | Monogram or seal mark, optionally with the "CertTracker" wordmark (`showText`); used in the sidebar, favicon `src/app/icon.svg`; shown on `/design` | ✓ |
 | Data | `DataTable` | `components/data/` | TanStack Table v8; compact; sorting (by default with the Vietnamese collation via `Intl.Collator`, because names are Vietnamese; a column declares its own `sortingFn` when "sorted" means something else, e.g. expiry by days left, not by the status string); 25-row pagination; empty / loading (5-row skeleton, respects `prefers-reduced-motion`) / error states | ✓ (multi-row selection: with the first bulk action) |
 | | `FilterBar` | `components/data/` | Search box + filters (children) + "Clear filters" (shown only when a filter is active) | ✓ |
 | | `EmptyState` | `components/data/` | One sentence of explanation + one action button; no illustration | ✓ |
@@ -193,13 +194,13 @@ When the database **blocks** the delete (for example a course that certificate r
 |---|---|---|---|
 | Dashboard | ✓ | ✓ | ✓ |
 | My certificates¹ | ✓ | ✓ | ✓ |
-| Members | ✓ | ✓ (own teams) | n/a |
-| Records (by person) | ✓ | ✓ (own teams) | n/a |
-| Data quality | ✓ | ✓ (own teams) | n/a |
+| Members | ✓ | ✓ (own teams) | Hidden |
+| Records (by person) | ✓ | ✓ (own teams) | Hidden |
+| Data quality | ✓ | ✓ (own teams) | Hidden |
 | Courses | ✓ | ✓ (view only) | ✓ (view only) |
-| Organisation (DC / Program / Team) | ✓ | n/a | n/a |
-| Import / Export | ✓ | n/a | n/a |
-| Settings | ✓ | n/a | n/a |
+| Organisation (DC / Program / Team) | ✓ | Hidden | Hidden |
+| Import / Export | ✓ | Hidden | Hidden |
+| Settings | ✓ | Hidden | Hidden |
 
 ¹ Shown only when the account is linked to a member (`profiles.member_id` is not null).
 
@@ -265,4 +266,3 @@ The page never scrolls horizontally; only a table scrolls inside its own frame (
 ## 10. Not done yet
 
 - **Dark mode**: tokens are already named by role; when it is built, only the values are redeclared.
-- **Logo**: not designed yet; use the text "CertTracker" (600, `foreground`).

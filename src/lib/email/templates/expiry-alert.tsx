@@ -1,7 +1,8 @@
 import { Heading, Text } from "@react-email/components";
 import type { ExpiryAlert } from "@/features/notifications/expiry-plan";
 import { weekLabel } from "@/features/notifications/period";
-import { appLink, EmailLayout, ExpiryTable, pluralize, styles } from "@/lib/email/templates/layout";
+import { appLink, EmailLayout, ExpiryTable, styles } from "@/lib/email/templates/layout";
+import { pluralize } from "@/lib/plural";
 
 /** Subject and preview line: counts and the period label only, never a name. */
 export function expiryHeadline(total: number, period: string): string {

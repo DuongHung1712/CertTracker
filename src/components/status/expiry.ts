@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 
 export const EXPIRY_STATUSES = ["Active", "Expiring in 60d", "Expiring Soon", "Expired", "No Expiry", "N/A"] as const;
 
@@ -23,8 +24,6 @@ export function expiryMeta(status: ExpiryStatus): { tone: ExpiryTone; label: str
   return META[status];
 }
 
-const days = (count: number) => `${count} ${count === 1 ? "day" : "days"}`;
-
 export function expiryDetail({
   status,
   daysToExpiry,
@@ -37,7 +36,7 @@ export function expiryDetail({
   if (status === "No Expiry") return "This certificate does not expire";
   if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "No issue date yet";
   const date = formatDate(expiryDate);
-  if (daysToExpiry < 0) return `Expired ${days(-daysToExpiry)} ago · ${date}`;
+  if (daysToExpiry < 0) return `Expired ${pluralize(-daysToExpiry, "day")} ago · ${date}`;
   if (daysToExpiry === 0) return `Expires today · ${date}`;
-  return `${days(daysToExpiry)} left · expires ${date}`;
+  return `${pluralize(daysToExpiry, "day")} left · expires ${date}`;
 }
