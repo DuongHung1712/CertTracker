@@ -14,20 +14,20 @@ test("admin creates and deletes a member", async ({ page }) => {
   await page.goto("/members");
 
   const email = `e2e-${Date.now()}@certtracker.test`;
-  await page.getByRole("button", { name: "Thêm thành viên" }).click();
-  // Scoped to the dialog: the table's FilterBar search box has aria-label "Tìm theo tên, mã, email…",
+  await page.getByRole("button", { name: "Add member" }).click();
+  // Scoped to the dialog: the table's FilterBar search box has aria-label "Search by name, code or email…",
   // whose substring match on "Email" collides with the dialog's own field under an unscoped getByLabel.
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Họ tên").fill("Người Dùng E2E");
+  await dialog.getByLabel("Full name").fill("Người Dùng E2E");
   await dialog.getByLabel("Email").fill(email);
   await dialog.getByLabel("Team").click();
   await page.getByRole("option").first().click();
-  await dialog.getByRole("button", { name: "Lưu" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("cell", { name: email })).toBeVisible();
 
-  await page.getByRole("row", { name: new RegExp(email) }).getByRole("button", { name: /Thao tác/ }).click();
-  await page.getByRole("menuitem", { name: "Xóa" }).click();
-  await page.getByRole("button", { name: "Xóa thành viên" }).click();
+  await page.getByRole("row", { name: new RegExp(email) }).getByRole("button", { name: /Actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete member" }).click();
   // Wait for the confirm dialog to close first: while it is open the table is aria-hidden, so the cell
   // assertion would pass before the delete finishes and the test could end with the request still in flight.
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
@@ -43,18 +43,18 @@ test("admin cannot delete a member who has training records", async ({ page }) =
   // silently cascade-delete their certification history.
   await page
     .getByRole("row", { name: /Nguyễn Văn An/ })
-    .getByRole("button", { name: /Thao tác/ })
+    .getByRole("button", { name: /Actions for/ })
     .click();
-  await page.getByRole("menuitem", { name: "Xóa" }).click();
-  await page.getByRole("button", { name: "Xóa thành viên" }).click();
-  await expect(page.getByText("Thành viên đang có chứng chỉ. Xóa các bản ghi chứng chỉ trước.")).toBeVisible();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete member" }).click();
+  await expect(page.getByText("This member still has certificates. Delete their certificate records first.")).toBeVisible();
   await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toBeVisible();
 });
 
 test("manager cannot create or delete members, and only sees their managed team", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
   await page.goto("/members");
-  await expect(page.getByRole("button", { name: "Thêm thành viên" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add member" })).toHaveCount(0);
 
   // manager@certtracker.test manages Team Cloud (5eed0000-0000-0000-0000-00000000a001, per
   // supabase/seed.sql's manager_scopes row). An is on Team Cloud; Bình is on Team AI, unmanaged.
@@ -63,9 +63,9 @@ test("manager cannot create or delete members, and only sees their managed team"
 
   await page
     .getByRole("row", { name: /Nguyễn Văn An/ })
-    .getByRole("button", { name: /Thao tác/ })
+    .getByRole("button", { name: /Actions for/ })
     .click();
-  await expect(page.getByRole("menuitem", { name: "Xóa" })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
 });
 
 test("admin sees what a manager manages, and that the scopes go inactive when the role changes", async ({ page }) => {

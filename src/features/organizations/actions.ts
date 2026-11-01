@@ -21,21 +21,21 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function createDc(input: DcInput): Promise<Result<null>> {
   const parsed = dcSchema.safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const supabase = await createClient();
   const { error } = await supabase.from("dcs").insert(parsed.data);
-  if (error) return err(mapPostgresError(error, { duplicate: `Trung tâm "${parsed.data.name}" đã tồn tại.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `A centre named "${parsed.data.name}" already exists.` }));
   revalidatePath("/org");
   return ok(null);
 }
 
 export async function updateDc(input: DcInput & { id: string }): Promise<Result<null>> {
   const parsed = dcSchema.extend({ id: idSchema.shape.id }).safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, ...data } = parsed.data;
   const supabase = await createClient();
   const { data: rows, error } = await supabase.from("dcs").update(data).eq("id", id).select("id");
-  if (error) return err(mapPostgresError(error, { duplicate: `Trung tâm "${data.name}" đã tồn tại.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `A centre named "${data.name}" already exists.` }));
   const guard = assertAffected(rows);
   if (guard) return guard;
   revalidatePath("/org");
@@ -44,11 +44,11 @@ export async function updateDc(input: DcInput & { id: string }): Promise<Result<
 
 export async function deleteDc(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("dcs").delete().eq("id", parsed.data.id).select("id");
   if (error) {
-    return err(mapPostgresError(error, { restricted: "Trung tâm đang có chương trình. Xóa các chương trình trước." }));
+    return err(mapPostgresError(error, { restricted: "This centre still has programs. Delete its programs first." }));
   }
   const guard = assertAffected(data);
   if (guard) return guard;
@@ -58,17 +58,17 @@ export async function deleteDc(input: { id: string }): Promise<Result<null>> {
 
 export async function createProgram(input: ProgramInput): Promise<Result<null>> {
   const parsed = programSchema.safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const supabase = await createClient();
   const { error } = await supabase.from("programs").insert({ name: parsed.data.name, dc_id: parsed.data.dcId });
-  if (error) return err(mapPostgresError(error, { duplicate: `Chương trình "${parsed.data.name}" đã tồn tại trong trung tâm này.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `A program named "${parsed.data.name}" already exists in this centre.` }));
   revalidatePath("/org");
   return ok(null);
 }
 
 export async function updateProgram(input: ProgramInput & { id: string }): Promise<Result<null>> {
   const parsed = programSchema.extend({ id: idSchema.shape.id }).safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, name, dcId } = parsed.data;
   const supabase = await createClient();
   const { data: rows, error } = await supabase
@@ -76,7 +76,7 @@ export async function updateProgram(input: ProgramInput & { id: string }): Promi
     .update({ name, dc_id: dcId })
     .eq("id", id)
     .select("id");
-  if (error) return err(mapPostgresError(error, { duplicate: `Chương trình "${name}" đã tồn tại trong trung tâm này.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `A program named "${name}" already exists in this centre.` }));
   const guard = assertAffected(rows);
   if (guard) return guard;
   revalidatePath("/org");
@@ -85,11 +85,11 @@ export async function updateProgram(input: ProgramInput & { id: string }): Promi
 
 export async function deleteProgram(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("programs").delete().eq("id", parsed.data.id).select("id");
   if (error) {
-    return err(mapPostgresError(error, { restricted: "Chương trình đang có team. Xóa các team trước." }));
+    return err(mapPostgresError(error, { restricted: "This program still has teams. Delete its teams first." }));
   }
   const guard = assertAffected(data);
   if (guard) return guard;
@@ -99,17 +99,17 @@ export async function deleteProgram(input: { id: string }): Promise<Result<null>
 
 export async function createTeam(input: TeamInput): Promise<Result<null>> {
   const parsed = teamSchema.safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const supabase = await createClient();
   const { error } = await supabase.from("teams").insert({ name: parsed.data.name, program_id: parsed.data.programId });
-  if (error) return err(mapPostgresError(error, { duplicate: `Team "${parsed.data.name}" đã tồn tại trong chương trình này.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `A team named "${parsed.data.name}" already exists in this program.` }));
   revalidatePath("/org");
   return ok(null);
 }
 
 export async function updateTeam(input: TeamInput & { id: string }): Promise<Result<null>> {
   const parsed = teamSchema.extend({ id: idSchema.shape.id }).safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, name, programId } = parsed.data;
   const supabase = await createClient();
   const { data: rows, error } = await supabase
@@ -117,7 +117,7 @@ export async function updateTeam(input: TeamInput & { id: string }): Promise<Res
     .update({ name, program_id: programId })
     .eq("id", id)
     .select("id");
-  if (error) return err(mapPostgresError(error, { duplicate: `Team "${name}" đã tồn tại trong chương trình này.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `A team named "${name}" already exists in this program.` }));
   const guard = assertAffected(rows);
   if (guard) return guard;
   revalidatePath("/org");
@@ -127,7 +127,7 @@ export async function updateTeam(input: TeamInput & { id: string }): Promise<Res
 /** Deleting a team is never blocked (members.team_id → NULL, manager_scopes cascades) — the ConfirmDialog must say so. */
 export async function deleteTeam(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("teams").delete().eq("id", parsed.data.id).select("id");
   if (error) return err(mapPostgresError(error));
@@ -145,7 +145,7 @@ const NOT_A_MANAGER_MESSAGE = "scope requires the manager role";
  */
 export async function setScopeManagers(input: ScopeManagersInput): Promise<Result<null>> {
   const parsed = scopeManagersSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const { scope, userIds } = parsed.data;
   const column = scope.kind === "team" ? "team_id" : "program_id";
   const supabase = await createClient();
@@ -197,7 +197,7 @@ export async function setScopeManagers(input: ScopeManagersInput): Promise<Resul
  */
 export async function removeManagerScopes(input: RemoveScopesInput): Promise<Result<null>> {
   const parsed = removeScopesSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("manager_scopes")

@@ -201,11 +201,11 @@ export function normalizeBoolean(cell: Cell | undefined, label: string): Cleaned
 
 const REFUND_LOOKUP = new Map<string, RefundStatus>([
   ...(Object.entries(REFUND_STATUS_LABEL) as [RefundStatus, string][]).map(([status, label]) => [foldText(label), status] as const),
-  ...(["n a", "na", "n/a", "khong", "n_a"] as const).map((alias) => [alias, "n_a" as const] as const),
-  ...(["pending", "cho", "dang cho"] as const).map((alias) => [alias, "pending" as const] as const),
-  ...(["approved", "duyet"] as const).map((alias) => [alias, "approved" as const] as const),
+  ...(["n a", "na", "n/a", "khong", "khong ap dung", "n_a"] as const).map((alias) => [alias, "n_a" as const] as const),
+  ...(["pending", "cho", "dang cho", "cho duyet"] as const).map((alias) => [alias, "pending" as const] as const),
+  ...(["approved", "duyet", "da duyet"] as const).map((alias) => [alias, "approved" as const] as const),
   ...(["rejected", "tu choi"] as const).map((alias) => [alias, "rejected" as const] as const),
-  ...(["paid", "da hoan", "da tra"] as const).map((alias) => [alias, "paid" as const] as const),
+  ...(["paid", "da hoan", "da hoan tien", "da tra"] as const).map((alias) => [alias, "paid" as const] as const),
 ]);
 
 export function normalizeRefund(cell: Cell | undefined): Cleaned<RefundStatus | null> {

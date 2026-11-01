@@ -12,29 +12,29 @@ test("admin manages the org tree end to end", async ({ page }) => {
   await page.goto("/org");
 
   const dcName = `DC E2E ${Date.now()}`;
-  await page.getByRole("button", { name: "Thêm trung tâm" }).click();
-  await page.getByLabel("Tên trung tâm").fill(dcName);
-  await page.getByRole("button", { name: "Lưu" }).click();
+  await page.getByRole("button", { name: "Add centre" }).click();
+  await page.getByLabel("Centre name").fill(dcName);
+  await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("cell", { name: dcName })).toBeVisible();
 
   const programName = `Program E2E ${Date.now()}`;
-  await page.getByRole("button", { name: "Thêm chương trình" }).click();
-  await page.getByLabel("Tên chương trình").fill(programName);
-  await page.getByLabel("Trung tâm").click();
+  await page.getByRole("button", { name: "Add program" }).click();
+  await page.getByLabel("Program name").fill(programName);
+  await page.getByLabel("Centre").click();
   await page.getByRole("option", { name: dcName }).click();
-  await page.getByRole("button", { name: "Lưu" }).click();
+  await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("cell", { name: programName })).toBeVisible();
 
   // The DC now has a Program: deleting it must fail with the restricted message, not a raw Postgres error.
-  // Scoped to the "Trung tâm (DC)" section: the Program table also has a "Trung tâm" column showing
+  // Scoped to the "Centres (DC)" section: the Program table also has a "Centre" column showing
   // this same DC name, so an unscoped `tr` filter on the page would match both tables' rows.
-  const dcSection = page.locator("section", { has: page.getByRole("heading", { name: "Trung tâm (DC)" }) });
+  const dcSection = page.locator("section", { has: page.getByRole("heading", { name: "Centres (DC)" }) });
   await dcSection
     .locator("tr", { has: page.getByRole("cell", { name: dcName, exact: true }) })
-    .getByRole("button", { name: "Xóa" })
+    .getByRole("button", { name: "Delete" })
     .click();
-  await page.getByRole("button", { name: "Xóa trung tâm" }).click();
-  await expect(page.getByText("Trung tâm đang có chương trình")).toBeVisible();
+  await page.getByRole("button", { name: "Delete centre" }).click();
+  await expect(page.getByText("This centre still has programs")).toBeVisible();
 });
 
 test("member has no write access to the org tree", async ({ page }) => {
@@ -45,12 +45,12 @@ test("member has no write access to the org tree", async ({ page }) => {
   // must still land on a read-only page with no write controls (server-gated via canManage, not
   // just a client-side hide).
   await page.goto("/org");
-  await expect(page.getByRole("heading", { name: "Tổ chức" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Thêm trung tâm" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Thêm chương trình" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Thêm team" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Sửa" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Xóa" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Organisation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add centre" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add program" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Add team" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
 });
 
 test("admin assigns a manager to a program and the manager sees every team of that program", async ({ page, browser }) => {
@@ -59,7 +59,7 @@ test("admin assigns a manager to a program and the manager sees every team of th
     await signIn(page, "admin@certtracker.test");
     await page.goto("/org");
 
-    const programSection = page.locator("section", { has: page.getByRole("heading", { name: "Chương trình" }) });
+    const programSection = page.locator("section", { has: page.getByRole("heading", { name: "Programs" }) });
     await programSection
       .locator("tr", { has: page.getByRole("cell", { name: SEED_PROGRAM_NAME, exact: true }) })
       .getByRole("button", { name: "Set managers" })

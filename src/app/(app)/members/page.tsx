@@ -17,8 +17,8 @@ export default async function MembersPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Thành viên"
-        description={isAdmin ? "Toàn bộ thành viên và team của họ." : "Thành viên trong team bạn quản lý."}
+        title="Members"
+        description={isAdmin ? "Everyone, with their teams." : "Members of the teams in your scope."}
       />
       <MembersTable members={members} teams={teams} roles={roles} canEditCareer={isAdmin} scopes={Object.fromEntries(scopes)} showScopes={isAdmin} canCreate={isAdmin} canDelete={isAdmin} />
     </div>

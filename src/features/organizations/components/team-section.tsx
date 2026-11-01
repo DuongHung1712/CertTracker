@@ -32,8 +32,8 @@ export function TeamSection({
   const [pending, setPending] = useState(false);
 
   const columns: ColumnDef<Team, unknown>[] = [
-    { accessorKey: "name", header: "Tên team" },
-    { accessorKey: "programName", header: "Chương trình" },
+    { accessorKey: "name", header: "Team name" },
+    { accessorKey: "programName", header: "Program" },
     ...(canManage
       ? ([
           {
@@ -50,10 +50,10 @@ export function TeamSection({
                     setDialogOpen(true);
                   }}
                 >
-                  Sửa
+                  Edit
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
-                  Xóa
+                  Delete
                 </Button>
               </div>
             ),
@@ -72,7 +72,7 @@ export function TeamSection({
       setConfirming(null);
       return;
     }
-    toast.success(`Đã xóa team ${confirming.name}`);
+    toast.success(`Deleted team ${confirming.name}`);
     setConfirming(null);
   }
 
@@ -90,7 +90,7 @@ export function TeamSection({
             }}
           >
             <Plus aria-hidden className="size-4" />
-            Thêm team
+            Add team
           </Button>
         )}
       </div>
@@ -100,8 +100,8 @@ export function TeamSection({
         getRowId={(row) => row.id}
         empty={
           <EmptyState
-            title="Chưa có team nào"
-            description={programs.length === 0 ? "Thêm chương trình trước." : "Thêm team đầu tiên."}
+            title="No teams yet"
+            description={programs.length === 0 ? "Add a program first." : "Add the first team."}
           />
         }
       />
@@ -117,10 +117,10 @@ export function TeamSection({
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Xóa team ${confirming?.name}?`}
-            description="Thành viên trong team sẽ mất gán team (không bị xóa); người quản lý team này sẽ bị gỡ."
-            confirmLabel="Xóa team"
-            pendingLabel="Đang xóa…"
+            title={`Delete team ${confirming?.name}?`}
+            description="Members of this team are kept but will have no team; the managers of this team lose it from their scope."
+            confirmLabel="Delete team"
+            pendingLabel="Deleting…"
             pending={pending}
             onConfirm={handleDelete}
           />

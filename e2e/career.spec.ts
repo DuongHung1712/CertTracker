@@ -49,13 +49,13 @@ test("admin sets a member's role and career start in /members and sees the Role 
   const row = page.getByRole("row", { name: new RegExp(CAREER_MEMBER_NAME) });
   await expect(row.getByRole("cell", { name: "Not set" })).toHaveCount(2);
 
-  await row.getByRole("button", { name: /Thao tác/ }).click();
-  await page.getByRole("menuitem", { name: "Sửa" }).click();
+  await row.getByRole("button", { name: /Actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Career role").click();
   await page.getByRole("option", { name: "Senior Engineer" }).click();
   await dialog.getByLabel("Year").fill("2021");
-  await dialog.getByRole("button", { name: "Lưu" }).click();
+  await dialog.getByRole("button", { name: "Save" }).click();
   // While the dialog is open the table is aria-hidden: wait for it to close before asserting on the row.
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
@@ -73,8 +73,8 @@ test("manager sees a member's role and career start read-only", async ({ page })
 
   const row = page.getByRole("row", { name: new RegExp(CAREER_MEMBER_NAME) });
   await expect(row.getByRole("cell", { name: "Senior Engineer" })).toBeVisible();
-  await row.getByRole("button", { name: /Thao tác/ }).click();
-  await page.getByRole("menuitem", { name: "Sửa" }).click();
+  await row.getByRole("button", { name: /Actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
 
   const dialog = page.getByRole("dialog");
   const readOnly = dialog.getByTestId("career-readonly");

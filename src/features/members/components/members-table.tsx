@@ -70,8 +70,8 @@ export function MembersTable({
   }, [members, search]);
 
   const columns: ColumnDef<Member, unknown>[] = [
-    { accessorKey: "code", header: "Mã", cell: ({ row }) => <MemberCode code={row.original.code} /> },
-    { accessorKey: "fullName", header: "Họ tên" },
+    { accessorKey: "code", header: "Code", cell: ({ row }) => <MemberCode code={row.original.code} /> },
+    { accessorKey: "fullName", header: "Full name" },
     { accessorKey: "email", header: "Email" },
     { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
     { accessorKey: "careerRoleName", header: "Role", cell: ({ row }) => row.original.careerRoleName ?? "Not set" },
@@ -99,14 +99,14 @@ export function MembersTable({
       : []),
     {
       accessorKey: "isActive",
-      header: "Trạng thái",
+      header: "Status",
       cell: ({ row }) =>
         row.original.isActive ? (
           <Badge variant="secondary" className="rounded-sm">
-            Đang hoạt động
+            Active
           </Badge>
         ) : (
-          <span className="text-caption text-muted-foreground">Ngừng hoạt động</span>
+          <span className="text-caption text-muted-foreground">Inactive</span>
         ),
     },
     {
@@ -115,7 +115,7 @@ export function MembersTable({
       enableSorting: false,
       cell: ({ row }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" aria-label={`Thao tác cho ${row.original.fullName}`} />}>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" aria-label={`Actions for ${row.original.fullName}`} />}>
             <MoreHorizontal aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -125,11 +125,11 @@ export function MembersTable({
                 setDialogOpen(true);
               }}
             >
-              Sửa
+              Edit
             </DropdownMenuItem>
             {canDelete && (
               <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
-                Xóa
+                Delete
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
@@ -148,7 +148,7 @@ export function MembersTable({
       setConfirming(null);
       return;
     }
-    toast.success(`Đã xóa thành viên ${confirming.fullName}`);
+    toast.success(`Deleted member ${confirming.fullName}`);
     setConfirming(null);
   }
 
@@ -171,7 +171,7 @@ export function MembersTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Tìm theo tên, mã, email…"
+        searchPlaceholder="Search by name, code or email…"
         hasActiveFilters={search.length > 0}
         onClear={() => setSearch("")}
       >
@@ -186,7 +186,7 @@ export function MembersTable({
             }}
           >
             <Plus aria-hidden className="size-4" />
-            Thêm thành viên
+            Add member
           </Button>
         )}
       </FilterBar>
@@ -194,7 +194,7 @@ export function MembersTable({
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="Không tìm thấy thành viên" description="Thử từ khóa khác hoặc xóa bộ lọc." />}
+        empty={<EmptyState title="No members found" description="Try a different search or clear the filters." />}
       />
       <MemberDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} teams={teams} roles={roles} canEditCareer={canEditCareer} />
       {showScopes && (
@@ -213,10 +213,10 @@ export function MembersTable({
         <ConfirmDialog
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
-          title={`Xóa thành viên ${confirming?.code} · ${confirming?.fullName}?`}
-          description="Chỉ xóa được khi thành viên chưa có bản ghi chứng chỉ nào. Không thể hoàn tác."
-          confirmLabel="Xóa thành viên"
-          pendingLabel="Đang xóa…"
+          title={`Delete member ${confirming?.code} · ${confirming?.fullName}?`}
+          description="A member can only be deleted when they have no certificate records. This cannot be undone."
+          confirmLabel="Delete member"
+          pendingLabel="Deleting…"
           pending={pending}
           onConfirm={handleDelete}
         />

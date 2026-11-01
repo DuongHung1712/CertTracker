@@ -2,10 +2,10 @@ import { z } from "zod";
 import { careerStartShape, makeCareerStartSchema } from "@/features/career/schema";
 
 export const memberSchema = z.object({
-  fullName: z.string().trim().min(1, "Vui lòng nhập họ tên"),
-  email: z.string().trim().email("Email không hợp lệ"),
+  fullName: z.string().trim().min(1, "Enter the full name"),
+  email: z.string().trim().email("Enter a valid e-mail address"),
   // z.guid(), not .uuid(): see the comment on `idSchema` below.
-  teamId: z.guid("Vui lòng chọn team"),
+  teamId: z.guid("Choose a team"),
   isActive: z.boolean().default(true),
   // Admin only (the database trigger rejects anyone else). `undefined` = leave as is, `null` = clear.
   careerRoleId: z.guid("Invalid data").nullable().optional(),
@@ -25,4 +25,4 @@ export function makeMemberSchema(now: Date) {
  * requires, which the local seed data's crafted `5eed…` ids don't have; it still rejects garbage
  * strings, and the FK constraint in Postgres enforces the id actually exists.
  */
-export const idSchema = z.object({ id: z.guid("Dữ liệu không hợp lệ") });
+export const idSchema = z.object({ id: z.guid("Invalid data") });

@@ -10,9 +10,9 @@ import { createSupabaseStorage } from "@/lib/storage/supabase-storage";
 import { createClient } from "@/lib/supabase/server";
 
 const MESSAGES = {
-  duplicate: "Thành viên này đã có bản ghi cho khóa học này. Sửa bản ghi hiện có thay vì tạo mới.",
-  restricted: "Thành viên hoặc khóa học không còn tồn tại. Tải lại trang rồi thử lại.",
-  invalid: "Trạng thái, tiến độ và ngày cấp không khớp nhau.",
+  duplicate: "This member already has a record for this course. Edit the existing record instead of creating a new one.",
+  restricted: "The member or the course no longer exists. Reload the page and try again.",
+  invalid: "Status, progress and issue date do not match.",
 };
 
 function revalidate() {
@@ -37,7 +37,7 @@ function toRow(data: RecordInput) {
 
 export async function createRecord(input: RecordInput): Promise<Result<{ id: string }>> {
   const parsed = recordSchema.safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("training_records")
@@ -52,7 +52,7 @@ export async function createRecord(input: RecordInput): Promise<Result<{ id: str
 /** `member_id` is never updated: a record belongs to one member for life (delete and re-create to move it). */
 export async function updateRecord(input: RecordInput & { id: string }): Promise<Result<null>> {
   const parsed = recordSchema.safeExtend({ id: idSchema.shape.id }).safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, ...data } = parsed.data;
   const supabase = await createClient();
   const { data: rows, error } = await supabase.from("training_records").update(toRow(data)).eq("id", id).select("id");
@@ -65,7 +65,7 @@ export async function updateRecord(input: RecordInput & { id: string }): Promise
 
 export async function deleteRecord(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("training_records")
@@ -89,11 +89,11 @@ export async function deleteRecord(input: { id: string }): Promise<Result<null>>
 export async function uploadEvidence(formData: FormData): Promise<Result<null>> {
   const parsed = idSchema.safeParse({ id: formData.get("recordId") });
   const file = formData.get("file");
-  if (!parsed.success || !(file instanceof File)) return err("Dữ liệu không hợp lệ");
-  if (file.size === 0) return err("Tệp rỗng.");
-  if (file.size > MAX_EVIDENCE_BYTES) return err("Tệp lớn hơn 4 MB. Nén hoặc chụp lại rồi thử lại.");
+  if (!parsed.success || !(file instanceof File)) return err("Invalid data");
+  if (file.size === 0) return err("The file is empty.");
+  if (file.size > MAX_EVIDENCE_BYTES) return err("The file is larger than 4 MB. Compress it or take the photo again, then retry.");
   const mime = sniffEvidenceType(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
-  if (!mime) return err("Chỉ nhận tệp PDF, JPG, PNG hoặc WebP.");
+  if (!mime) return err("Only PDF, JPG, PNG or WebP files are accepted.");
 
   const supabase = await createClient();
   // The member id comes from the row RLS lets this user see — never from the client — so the
@@ -104,14 +104,14 @@ export async function uploadEvidence(formData: FormData): Promise<Result<null>> 
     .eq("id", parsed.data.id)
     .maybeSingle();
   if (readError) return err(mapPostgresError(readError));
-  if (!record) return err("Không tìm thấy bản ghi hoặc bạn không có quyền.");
+  if (!record) return err("Record not found, or you do not have permission.");
 
   const storage = createSupabaseStorage(supabase);
   const path = evidencePath(record.member_id, record.id, mime, Date.now());
   try {
     await storage.upload(path, file, mime);
   } catch {
-    return err("Không tải được tệp lên. Kiểm tra mạng rồi thử lại.");
+    return err("The file could not be uploaded. Check your connection and try again.");
   }
 
   const { data: rows, error } = await supabase
@@ -131,7 +131,7 @@ export async function uploadEvidence(formData: FormData): Promise<Result<null>> 
 
 export async function removeEvidence(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data: record, error: readError } = await supabase
     .from("training_records")
@@ -139,7 +139,7 @@ export async function removeEvidence(input: { id: string }): Promise<Result<null
     .eq("id", parsed.data.id)
     .maybeSingle();
   if (readError) return err(mapPostgresError(readError));
-  if (!record) return err("Không tìm thấy bản ghi hoặc bạn không có quyền.");
+  if (!record) return err("Record not found, or you do not have permission.");
   if (!record.evidence_path) return ok(null);
 
   const { data: rows, error } = await supabase

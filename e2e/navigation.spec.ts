@@ -22,7 +22,7 @@ test("sidebar link navigates, marks the breadcrumb and the active item", async (
   const link = page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Courses" });
   await link.click();
   await expect(page).toHaveURL(/\/courses$/);
-  await expect(page.getByRole("heading", { name: "Khóa học" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Courses" })).toBeVisible();
   await expect(page.locator('[data-slot="breadcrumb-page"]')).toHaveText("Courses");
   await expect(link).toHaveAttribute("aria-current", "page");
 });

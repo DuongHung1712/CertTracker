@@ -137,6 +137,12 @@ describe("other fields", () => {
   it("reads refund statuses including the export labels", () => {
     expect(normalizeRefund("Đã hoàn tiền")).toEqual({ ok: true, value: "paid" });
     expect(normalizeRefund("Không áp dụng")).toEqual({ ok: true, value: "n_a" });
+    expect(normalizeRefund("Chờ duyệt")).toEqual({ ok: true, value: "pending" });
+    expect(normalizeRefund("Đã duyệt")).toEqual({ ok: true, value: "approved" });
+    expect(normalizeRefund("Từ chối")).toEqual({ ok: true, value: "rejected" });
+    expect(normalizeRefund("Refunded")).toEqual({ ok: true, value: "paid" });
+    expect(normalizeRefund("Not applicable")).toEqual({ ok: true, value: "n_a" });
+    expect(normalizeRefund("Pending")).toEqual({ ok: true, value: "pending" });
     expect(normalizeRefund("pending")).toEqual({ ok: true, value: "pending" });
     expect(normalizeRefund("?").ok).toBe(false);
   });

@@ -27,7 +27,7 @@ export function ProviderDialog({
       form.setError("name", { message: result.error });
       return;
     }
-    toast.success(editing ? `Đã lưu nhà cung cấp ${values.name}` : `Đã thêm nhà cung cấp ${values.name}`);
+    toast.success(editing ? `Saved provider ${values.name}` : `Added provider ${values.name}`);
     onOpenChange(false);
     form.reset({ name: "" });
   }
@@ -36,20 +36,20 @@ export function ProviderDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-section-title">{editing ? "Sửa nhà cung cấp" : "Thêm nhà cung cấp"}</DialogTitle>
+          <DialogTitle className="text-section-title">{editing ? "Edit provider" : "Add provider"}</DialogTitle>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="provider-name">Tên nhà cung cấp</FieldLabel>
+            <FieldLabel htmlFor="provider-name">Provider name</FieldLabel>
             <Input id="provider-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

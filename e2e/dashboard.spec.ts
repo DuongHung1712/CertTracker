@@ -49,13 +49,13 @@ async function pickSelect(page: Page, dialog: Locator, label: string, optionName
 
 /** Admin edit of a record's status + progress through the row menu; waits for the save toast. */
 async function editStatus(page: Page, row: Locator, status: string, progress: string) {
-  await row.getByRole("button", { name: /Thao tác/ }).click();
-  await page.getByRole("menuitem", { name: "Sửa" }).click();
+  await row.getByRole("button", { name: /Actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
-  await pickSelect(page, dialog, "Trạng thái", status);
-  await dialog.getByLabel("Tiến độ (%)").fill(progress);
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+  await pickSelect(page, dialog, "Status", status);
+  await dialog.getByLabel("Progress (%)").fill(progress);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Saved certificate").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
 }
 

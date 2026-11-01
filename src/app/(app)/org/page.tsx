@@ -31,7 +31,7 @@ export default async function OrgPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Tổ chức" description="Trung tâm, chương trình và team." />
+      <PageHeader title="Organisation" description="Centres, programs and teams." />
       <DcSection dcs={dcs} canManage={isAdmin} />
       <ProgramSection programs={programs} dcs={dcs} candidates={candidates} canManage={isAdmin} />
       <TeamSection teams={teams} programs={programs} candidates={candidates} canManage={isAdmin} />

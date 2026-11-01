@@ -409,8 +409,8 @@ describe("reconcileRecord (decision #22)", () => {
   });
   it("errors when nothing can be derived, when done lacks an issue date, or when it is in the future", () => {
     expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Thiếu trạng thái và tiến độ"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["Hoàn thành thì cần ngày cấp"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["Ngày cấp không được ở tương lai"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed record needs an issue date"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The issue date cannot be in the future"]);
   });
   it("accepts a done record whose issue date already exists in the database", () => {
     const existing = { id: "r", memberId: "m", courseId: "c", status: "done" as const, progress: 100, plannedExamDate: null, issuedDate: "2024-05-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };

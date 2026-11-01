@@ -34,8 +34,8 @@ export function ProgramSection({
   const [pending, setPending] = useState(false);
 
   const columns: ColumnDef<Program, unknown>[] = [
-    { accessorKey: "name", header: "Tên chương trình" },
-    { accessorKey: "dcName", header: "Trung tâm" },
+    { accessorKey: "name", header: "Program name" },
+    { accessorKey: "dcName", header: "Centre" },
     ...(canManage
       ? ([
           {
@@ -55,10 +55,10 @@ export function ProgramSection({
                     setDialogOpen(true);
                   }}
                 >
-                  Sửa
+                  Edit
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
-                  Xóa
+                  Delete
                 </Button>
               </div>
             ),
@@ -77,14 +77,14 @@ export function ProgramSection({
       setConfirming(null);
       return;
     }
-    toast.success(`Đã xóa chương trình ${confirming.name}`);
+    toast.success(`Deleted program ${confirming.name}`);
     setConfirming(null);
   }
 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-section-title">Chương trình</h2>
+        <h2 className="text-section-title">Programs</h2>
         {canManage && (
           <Button
             size="sm"
@@ -95,7 +95,7 @@ export function ProgramSection({
             }}
           >
             <Plus aria-hidden className="size-4" />
-            Thêm chương trình
+            Add program
           </Button>
         )}
       </div>
@@ -105,8 +105,8 @@ export function ProgramSection({
         getRowId={(row) => row.id}
         empty={
           <EmptyState
-            title="Chưa có chương trình nào"
-            description={dcs.length === 0 ? "Thêm trung tâm trước." : "Thêm chương trình đầu tiên."}
+            title="No programs yet"
+            description={dcs.length === 0 ? "Add a centre first." : "Add the first program."}
           />
         }
       />
@@ -121,10 +121,10 @@ export function ProgramSection({
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Xóa chương trình ${confirming?.name}?`}
-            description="Chỉ xóa được khi chương trình chưa có team nào."
-            confirmLabel="Xóa chương trình"
-            pendingLabel="Đang xóa…"
+            title={`Delete program ${confirming?.name}?`}
+            description="A program can only be deleted when it has no teams."
+            confirmLabel="Delete program"
+            pendingLabel="Deleting…"
             pending={pending}
             onConfirm={handleDelete}
           />

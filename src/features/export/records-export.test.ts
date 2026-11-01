@@ -126,7 +126,7 @@ describe("records export", () => {
     expect(csv.startsWith("\uFEFFMã,Họ tên,Email,Team,Career role,YoE,Khóa học")).toBe(true);
     expect(csv).toContain("29/02/2024");
     expect(csv).toContain("Completed");
-    expect(csv).toContain("Đã hoàn tiền");
+    expect(csv).toContain("Refunded");
     expect(csv).toContain("'=cần kiểm tra");
     expect(csv).toContain("1%");
     expect(csv).toContain("Có");

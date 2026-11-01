@@ -7,15 +7,15 @@ export const REFUND_STATUSES = ["n_a", "pending", "approved", "rejected", "paid"
 export type RefundStatus = (typeof REFUND_STATUSES)[number];
 
 export const REFUND_STATUS_LABEL: Record<RefundStatus, string> = {
-  n_a: "Không áp dụng",
-  pending: "Chờ duyệt",
-  approved: "Đã duyệt",
-  rejected: "Từ chối",
-  paid: "Đã hoàn tiền",
+  n_a: "Not applicable",
+  pending: "Pending",
+  approved: "Approved",
+  rejected: "Rejected",
+  paid: "Refunded",
 };
 
 /** `z.guid()`, not `.uuid()`: seed ids are not RFC 4122 (see src/features/members/schema.ts). */
-export const idSchema = z.object({ id: z.guid("Dữ liệu không hợp lệ") });
+export const idSchema = z.object({ id: z.guid("Invalid data") });
 
 const blankToNull = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess(
@@ -38,49 +38,49 @@ export function recordRuleIssues(
 ): { path: "progress" | "issuedDate"; message: string }[] {
   const issues: { path: "progress" | "issuedDate"; message: string }[] = [];
   if (value.status === "done" && value.progress !== 100) {
-    issues.push({ path: "progress", message: "Hoàn thành thì tiến độ phải là 100%" });
+    issues.push({ path: "progress", message: "A completed record must have progress 100%" });
   }
   if (value.status === "done" && !value.issuedDate) {
-    issues.push({ path: "issuedDate", message: "Hoàn thành thì cần ngày cấp" });
+    issues.push({ path: "issuedDate", message: "A completed record needs an issue date" });
   }
   if (value.status === "not_started" && value.progress !== 0) {
-    issues.push({ path: "progress", message: "Chưa bắt đầu thì tiến độ phải là 0%" });
+    issues.push({ path: "progress", message: "A record that has not started must have progress 0%" });
   }
   if (value.status === "in_progress" && value.progress > 99) {
-    issues.push({ path: "progress", message: "Tiến độ 100% thì chọn trạng thái Hoàn thành" });
+    issues.push({ path: "progress", message: "Progress 100% needs the status Completed" });
   }
   // ISO dates compare correctly as strings.
   if (value.issuedDate && value.issuedDate > today) {
-    issues.push({ path: "issuedDate", message: "Ngày cấp không được ở tương lai" });
+    issues.push({ path: "issuedDate", message: "The issue date cannot be in the future" });
   }
   return issues;
 }
 
 export const recordSchema = z
   .object({
-    memberId: z.guid("Vui lòng chọn thành viên"),
-    courseId: z.guid("Vui lòng chọn khóa học"),
-    status: z.enum(RECORD_STATUSES, "Vui lòng chọn trạng thái"),
+    memberId: z.guid("Choose a member"),
+    courseId: z.guid("Choose a course"),
+    status: z.enum(RECORD_STATUSES, "Choose a status"),
     progress: z.coerce
-      .number("Tiến độ phải là số")
-      .int("Tiến độ phải là số nguyên")
-      .min(0, "Tiến độ từ 0 đến 100")
-      .max(100, "Tiến độ từ 0 đến 100"),
-    plannedExamDate: optionalDate("Ngày thi dự kiến không hợp lệ (dd/mm/yyyy)"),
-    issuedDate: optionalDate("Ngày cấp không hợp lệ (dd/mm/yyyy)"),
+      .number("Progress must be a number")
+      .int("Progress must be a whole number")
+      .min(0, "Progress must be between 0 and 100")
+      .max(100, "Progress must be between 0 and 100"),
+    plannedExamDate: optionalDate("Enter a valid planned exam date (dd/mm/yyyy)"),
+    issuedDate: optionalDate("Enter a valid issue date (dd/mm/yyyy)"),
     certificateUrl: blankToNull(
       z
         .string()
         .trim()
-        .url("Đường dẫn không hợp lệ")
-        .refine((value) => /^https?:\/\//i.test(value), "Đường dẫn phải bắt đầu bằng http:// hoặc https://"),
+        .url("Enter a valid link")
+        .refine((value) => /^https?:\/\//i.test(value), "The link must start with http:// or https://"),
     ),
     // Optional on purpose: a Member's form does not render these. `undefined` means "leave the
     // column alone" — sending a default would make the column-guard trigger raise 42501 whenever
     // an admin had set a different value.
     viaCompany: z.boolean().optional(),
     refundStatus: z.enum(REFUND_STATUSES).optional(),
-    notes: blankToNull(z.string().trim().max(2000, "Ghi chú tối đa 2000 ký tự")),
+    notes: blankToNull(z.string().trim().max(2000, "Notes can have at most 2000 characters")),
   })
   .superRefine((value, ctx) => {
     for (const issue of recordRuleIssues(value, todayVn())) {

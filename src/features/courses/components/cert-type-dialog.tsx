@@ -27,7 +27,7 @@ export function CertTypeDialog({
       form.setError("name", { message: result.error });
       return;
     }
-    toast.success(editing ? `Đã lưu loại chứng chỉ ${values.name}` : `Đã thêm loại chứng chỉ ${values.name}`);
+    toast.success(editing ? `Saved certificate type ${values.name}` : `Added certificate type ${values.name}`);
     onOpenChange(false);
     form.reset({ name: "" });
   }
@@ -36,20 +36,20 @@ export function CertTypeDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-section-title">{editing ? "Sửa loại chứng chỉ" : "Thêm loại chứng chỉ"}</DialogTitle>
+          <DialogTitle className="text-section-title">{editing ? "Edit certificate type" : "Add certificate type"}</DialogTitle>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="cert-type-name">Tên loại chứng chỉ</FieldLabel>
+            <FieldLabel htmlFor="cert-type-name">Certificate type name</FieldLabel>
             <Input id="cert-type-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

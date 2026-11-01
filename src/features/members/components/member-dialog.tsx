@@ -110,7 +110,7 @@ export function MemberDialog({
       form.setError("root", { message: result.error });
       return;
     }
-    toast.success(editing ? `Đã lưu thành viên ${values.fullName}` : `Đã thêm thành viên ${values.fullName}`);
+    toast.success(editing ? `Saved member ${values.fullName}` : `Added member ${values.fullName}`);
     onOpenChange(false);
     form.reset({ fullName: "", email: "", teamId: "", isActive: true });
     setCareer(careerDraftFor(null));
@@ -120,11 +120,11 @@ export function MemberDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-section-title">{editing ? "Sửa thành viên" : "Thêm thành viên"}</DialogTitle>
+          <DialogTitle className="text-section-title">{editing ? "Edit member" : "Add member"}</DialogTitle>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="member-name">Họ tên</FieldLabel>
+            <FieldLabel htmlFor="member-name">Full name</FieldLabel>
             <Input id="member-name" {...form.register("fullName")} aria-invalid={!!form.formState.errors.fullName} />
             <FieldError errors={[form.formState.errors.fullName]} />
           </Field>
@@ -142,8 +142,8 @@ export function MemberDialog({
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="member-team" aria-invalid={!!form.formState.errors.teamId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the team name. */}
-                    <SelectValue placeholder="Chọn team">
-                      {(value: string) => teams.find((team) => team.id === value)?.name ?? "Chọn team"}
+                    <SelectValue placeholder="Choose a team">
+                      {(value: string) => teams.find((team) => team.id === value)?.name ?? "Choose a team"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -203,7 +203,7 @@ export function MemberDialog({
             )
           )}
           <Field orientation="horizontal">
-            <FieldLabel htmlFor="member-active">Đang hoạt động</FieldLabel>
+            <FieldLabel htmlFor="member-active">Active</FieldLabel>
             <Controller
               control={form.control}
               name="isActive"
@@ -217,10 +217,10 @@ export function MemberDialog({
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

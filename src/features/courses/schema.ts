@@ -2,12 +2,12 @@ import { z } from "zod";
 import { CURRENCIES } from "@/lib/money";
 
 export const certTypeSchema = z.object({
-  name: z.string().trim().min(1, "Vui lòng nhập tên loại chứng chỉ"),
+  name: z.string().trim().min(1, "Enter the certificate type name"),
 });
 export type CertTypeInput = z.infer<typeof certTypeSchema>;
 
 export const providerSchema = z.object({
-  name: z.string().trim().min(1, "Vui lòng nhập tên nhà cung cấp"),
+  name: z.string().trim().min(1, "Enter the provider name"),
 });
 export type ProviderInput = z.infer<typeof providerSchema>;
 
@@ -18,24 +18,24 @@ export type ProviderInput = z.infer<typeof providerSchema>;
  * requires, which the local seed data's crafted `5eed…` ids don't have; it still rejects garbage
  * strings, and the FK constraint in Postgres enforces the id actually exists.
  */
-export const idSchema = z.object({ id: z.guid("Dữ liệu không hợp lệ") });
+export const idSchema = z.object({ id: z.guid("Invalid data") });
 
 const emptyToNull = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => (value === "" || value === undefined ? null : value), schema.nullable());
 
 /** The course fields without the cross-field rule, so a caller can `.extend()` them (e.g. with an id) and re-apply the rule. */
 export const courseFields = z.object({
-  name: z.string().trim().min(1, "Vui lòng nhập tên khóa học"),
+  name: z.string().trim().min(1, "Enter the course name"),
   // z.guid(), not .uuid(): see the comment on `idSchema` above.
-  certTypeId: z.guid("Vui lòng chọn loại chứng chỉ"),
-  providerId: z.guid("Vui lòng chọn nhà cung cấp"),
+  certTypeId: z.guid("Choose a certificate type"),
+  providerId: z.guid("Choose a provider"),
   level: z.string().trim().optional().default(""),
-  validityMonths: emptyToNull(z.coerce.number().int().positive("Thời hạn phải lớn hơn 0")),
+  validityMonths: emptyToNull(z.coerce.number().int().positive("Validity must be greater than 0")),
   refundable: z.boolean().default(false),
-  cost: emptyToNull(z.coerce.number().nonnegative("Chi phí không được âm")),
+  cost: emptyToNull(z.coerce.number().nonnegative("Cost cannot be negative")),
   costCurrency: emptyToNull(z.enum(CURRENCIES)),
-  estHours: emptyToNull(z.coerce.number().int().positive("Số giờ phải lớn hơn 0")),
-  url: emptyToNull(z.string().trim().url("Đường dẫn không hợp lệ")),
+  estHours: emptyToNull(z.coerce.number().int().positive("Study hours must be greater than 0")),
+  url: emptyToNull(z.string().trim().url("Enter a valid link")),
 });
 
 /** A cost needs a currency and a currency needs a cost (the database enforces the same with a check constraint). */
