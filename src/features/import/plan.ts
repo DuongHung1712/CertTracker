@@ -270,6 +270,7 @@ function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   const validity = parseValidityMonths(cells.validityMonths);
   if (!validity.ok) issues.errors.push(validity.error);
   const validityMonths = validity.ok ? validity.value : null;
+  const errorsBeforeExtras = issues.errors.length;
   const cost = take(parseCost(cells.cost), issues, null);
   const costCurrency = take(parseCurrency(cells.costCurrency), issues, null);
   const estHours = take(parseStudyHours(cells.estHours), issues, null);
@@ -300,6 +301,8 @@ function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   // A new course is written to the database, where cost and currency must come as a pair.
   if (cost !== null && costCurrency === null) issues.errors.push("Choose a currency for the cost");
   if (cost === null && costCurrency !== null) issues.errors.push("Enter a cost or clear the currency");
+  // Never register an invalid definition: a later row for the same new course would reuse it and fail the commit.
+  if (issues.errors.length > errorsBeforeExtras) return NO_COURSE;
   return defineNewCourse(ctx, { name, providerText, certTypeText, validityMonths, ...extras }, rowNumber, issues);
 }
 

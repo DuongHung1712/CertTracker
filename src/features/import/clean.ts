@@ -243,7 +243,7 @@ const MAX_COST = 9_999_999_999.99; // numeric(12,2)
 export function parseCost(cell: Cell | undefined): Cleaned<number | null> {
   const text = cellText(cell);
   if (text === null) return ok(null);
-  const bare = text.replace(/[$₫đĐ\s]|vnd|usd/gi, "");
+  const bare = foldText(text).replace(/[$₫\s]|vnd|usd|d$/g, "");
   const normalized = /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(bare)
     ? bare.replace(/,/g, "")
     : /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(bare)

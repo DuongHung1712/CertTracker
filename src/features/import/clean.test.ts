@@ -162,6 +162,10 @@ describe("cost, currency and study hours", () => {
     expect(parseCost("3,500,000")).toEqual({ ok: true, value: 3_500_000 });
     expect(parseCost("$1,200.50")).toEqual({ ok: true, value: 1200.5 });
     expect(parseCost("3.500.000 ₫")).toEqual({ ok: true, value: 3_500_000 });
+    expect(parseCost("150 VNĐ")).toEqual({ ok: true, value: 150 });
+    expect(parseCost("150 vnđ")).toEqual({ ok: true, value: 150 });
+    expect(parseCost("2.000.000đ")).toEqual({ ok: true, value: 2_000_000 });
+    expect(parseCost("99 USD")).toEqual({ ok: true, value: 99 });
     expect(parseCost(0)).toEqual({ ok: true, value: 0 });
     expect(parseCost("")).toEqual({ ok: true, value: null });
   });

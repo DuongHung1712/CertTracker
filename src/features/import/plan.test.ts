@@ -230,6 +230,33 @@ describe("buildImportPlan edge cases", () => {
     expect(noCost!.errors).toContain("Enter a cost or clear the currency");
   });
 
+  it.each([
+    ["a cost without a currency", { Cost: 150 }],
+    ["an unknown currency", { Cost: 150, Currency: "EUR" }],
+    ["a currency without a cost", { Currency: "USD" }],
+    ["an unparseable cost", { Cost: "free", Currency: "USD" }],
+  ])("does not register a new course from a row with %s, so a later row cannot reuse it", (_label, bad) => {
+    const rows = buildImportPlan(
+      table([
+        row({ "Khóa học": "Brand New", ...bad }),
+        row({ Email: "old@x.vn", "Họ tên": "Cũ", "Khóa học": "brand new", Cost: 150, Currency: "USD" }),
+        row({ Email: "ha@x.vn", "Họ tên": "Hà", Team: "Team AI", "Khóa học": "Brand New" }),
+      ]),
+      LOOKUPS,
+      TODAY,
+    );
+    expect(rows.rows[0]).toMatchObject({ action: "skip", normalized: null });
+    expect(rows.rows[0]!.errors.length).toBeGreaterThan(0);
+    // The later rows define the course on their own; none inherits a half-pair from the rejected row.
+    expect(rows.rows[1]!.normalized!.course).toMatchObject({ cost: 150, costCurrency: "USD" });
+    expect(rows.rows[1]!.warnings.join()).not.toMatch(/Cost differs/);
+    expect(rows.rows[2]!.normalized!.course).toEqual(rows.rows[1]!.normalized!.course);
+    for (const planned of rows.rows) {
+      const course = planned.normalized?.course as { cost?: number | null; costCurrency?: string | null } | undefined;
+      if (course && "cost" in course) expect(course.cost === null).toBe(course.costCurrency === null);
+    }
+  });
+
   it("warns about a differing cost, currency or hours on an existing course and keeps the catalog", () => {
     const lookups: ImportLookups = {
       ...LOOKUPS,

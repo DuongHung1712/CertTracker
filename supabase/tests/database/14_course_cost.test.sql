@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(11);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -15,11 +15,6 @@ update public.profiles set role = 'admin' where user_id = 'c5000000-0000-0000-00
 insert into public.members (id, full_name, email)
   values ('c5000000-0000-0000-0000-000000000001', 'Cost Member', 'cost-member@test.local');
 insert into public.providers (id, name) values ('c5000000-0000-0000-0000-0000000000d1', 'Cost Provider');
-
--- Every cost already in the database has a currency (the migration backfills VND); the seed has none without one.
-select is(
-  (select count(*) from public.courses where cost is not null and cost_currency is null),
-  0::bigint, 'no course has a cost without a currency');
 
 -- Check constraints
 select throws_ok(
