@@ -119,7 +119,28 @@ Read-only spike on 2026-10-05, signed-out requests only:
 | Sequential Supabase calls per navigation | At least 3 (proxy session check, layout session and profile read, page query), from the code |
 | Pages with a loading state | Dashboard only, on `dev`; none on `main`, which the public deployment builds from |
 
-After 8.1, repeat the same measurements and add an "after" column.
+### After 8.1 (M1 Task 8, 2026-11-01)
+
+The production URL cannot be reached from the feature branch, so the signed-in pages were measured on a **local production build** (`pnpm build`, `pnpm start`) against the local Supabase stack. The local database is not the seed (58 courses and extra records), the server and database are on the same machine, and the pages are Chromium on one laptop: the numbers show the *direction* of the change and are **not comparable** with production. Method: signed in as the seed manager (admin for Organisation, Import / Export and Settings; the seed member for My certificates), each page opened 10 times by a click on its sidebar link from another page, 75th percentile (nearest rank). "Content" is the time from the click until the page heading shows; "feedback" is the time until the first thing shows (the skeleton, or the heading when the page has no skeleton). The original production figures above stay as they are; a production run is still to be done after deployment.
+
+| Page | Before: feedback | Before: content | After: feedback | After: content | Server time (RSC response end) before to after |
+|---|---|---|---|---|---|
+| Dashboard | 80 | 397 | 30 | 339 | 157 to 89 |
+| My certificates | 174 | 174 | 30 | 335 | 149 to 102 |
+| Members | 180 | 180 | 30 | 332 | 161 to 86 |
+| Records | 171 | 171 | 30 | 334 | 153 to 91 |
+| Data quality | 30 | 332 | 30 | 332 | 162 to 103 |
+| Courses | 170 | 170 | 31 | 335 | 151 to 93 |
+| Organisation | 170 | 170 | 30 | 332 | 167 to 112 |
+| Import / Export | 152 | 152 | 30 | 332 | 166 to 86 |
+| Settings | 183 | 183 | 30 | 333 | 169 to 85 |
+
+All values are local prod build, p75 in ms. The last column isolates the auth change: "before" is the same build with the proxy's `getUser()` restored, "after" is the committed code.
+
+- **Feedback** now appears about 30 ms after the click on every page (it was 150 to 180 ms where the page had no skeleton), and the top bar starts at the click.
+- **Content** on pages whose data arrives in under 300 ms now shows at about 330 ms, not at 150 to 180 ms. This is React: once a Suspense fallback (the `loading.tsx` skeleton) has been shown, React holds the reveal of the content until 300 ms after the fallback (`FALLBACK_THROTTLE_MS`), to avoid a flash. The server answers in 85 to 112 ms (down from 150 to 170 ms because the second auth round trip is gone); the rest is that throttle. On production the pages take longer than 300 ms to produce, so the throttle costs nothing there; it only matters on this fast local setup.
+- No page is above 1 s, so there is no follow-up item from this run. The production run after deployment decides whether `SM-4` is met.
+
 
 ## 5. Open points (to be confirmed)
 

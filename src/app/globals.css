@@ -4,6 +4,20 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Top navigation bar (components/app-shell/navigation-progress.tsx): eases to ~80% and holds. */
+@theme {
+  --animate-nav-progress: nav-progress-crawl 2s cubic-bezier(0.1, 0.6, 0.3, 1) forwards;
+
+  @keyframes nav-progress-crawl {
+    from {
+      width: 0;
+    }
+    to {
+      width: 80%;
+    }
+  }
+}
+
 /* Tokens are documented in docs/design-system.md §2 — change both together. */
 @theme inline {
   --color-background: var(--background);

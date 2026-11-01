@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar";
 import { isActivePath, navForUser } from "@/components/app-shell/nav";
 import { Logo } from "@/components/app-shell/logo";
+import { LinkPendingReporter } from "@/components/app-shell/navigation-progress";
 import type { Role } from "@/components/status/labels";
 
 export function AppSidebar({ role, hasMember }: { role: Role; hasMember: boolean }) {
@@ -58,6 +59,7 @@ export function AppSidebar({ role, hasMember }: { role: Role; hasMember: boolean
                     >
                       <item.icon aria-hidden className="size-5" />
                       <span>{item.label}</span>
+                      <LinkPendingReporter />
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

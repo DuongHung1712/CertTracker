@@ -28,9 +28,13 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verifies the JWT signature (and expiry) against the project's JWKS and refreshes an expiring
+  // session into the cookies, without a round trip to the Auth server. The one authoritative
+  // `auth.getUser()` per navigation is in `getCurrentUser()` (layout), so the server still
+  // confirms the session before any data is read. Falls back to `getUser()` for a project
+  // that signs with a symmetric (HS256) secret.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? { id: data.claims.sub } : null;
 
   const isPublic = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
 

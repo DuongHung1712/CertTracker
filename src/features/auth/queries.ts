@@ -14,6 +14,11 @@ export type CurrentUser = {
  * Component that reads it (layout, pages) shares one query instead of each
  * re-querying `profiles`.
  *
+ * This is the one call per navigation that contacts the Supabase Auth server
+ * (`getUser()` is authoritative: it rejects a revoked session). The proxy only
+ * verifies the JWT locally (`getClaims()`), so do not add another `getUser()`
+ * elsewhere on a page's path.
+ *
  * Returns `null` when there is no session. Throws when the profile row
  * itself fails to load (RLS/network error) instead of silently defaulting
  * to "member" — a broken read should surface as an error page, not quietly
