@@ -14,9 +14,6 @@ const VIETNAMESE = /[À-ỹĐđ]/u;
 // to English. Each area removes its prefixes in its own commit; the final area
 // leaves the list empty and deletes this constant.
 const PENDING_AREAS: string[] = [
-  // (d) notifications and e-mail templates
-  "src/features/notifications",
-  "src/lib/email",
   // (e) /design page and the final sweep
   "src/app/(dev)",
 ];

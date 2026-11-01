@@ -16,7 +16,7 @@ export type ExpiryAlert = { email: string; name: string | null; own: ExpiryItem[
 
 /** Decisions #37: a certificate that died more than this many days ago is not nagged about forever. */
 export const RECENTLY_EXPIRED_DAYS = 30;
-/** Decisions #37: longest list shown per section before "và N chứng chỉ khác". */
+/** Decisions #37: longest list shown per section before "and N more certificates". */
 export const MAX_LINES = 25;
 
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

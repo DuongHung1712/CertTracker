@@ -1,5 +1,19 @@
 const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 const MONTH_KEY = /^(\d{4})-(\d{2})$/;
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
 const pad = (n: number) => String(n).padStart(2, "0");
 
 function parseIsoDate(iso: string): Date {
@@ -42,10 +56,10 @@ export function monthRange(key: string): { start: string; end: string } {
 export const weekLabel = (key: string): string => {
   const m = /^(\d{4})-W(\d{2})$/.exec(key);
   if (!m) throw new Error(`Expected YYYY-Www, got "${key}"`);
-  return `tuần ${m[2]}/${m[1]}`;
+  return `Week ${Number(m[2])}, ${m[1]}`;
 };
 
 export const monthLabel = (key: string): string => {
   const { start } = monthRange(key);
-  return `tháng ${start.slice(5, 7)}/${start.slice(0, 4)}`;
+  return `${MONTH_NAMES[Number(start.slice(5, 7)) - 1]} ${start.slice(0, 4)}`;
 };

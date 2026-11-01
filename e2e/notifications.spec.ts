@@ -124,7 +124,7 @@ test("dry runs list the seed's recipients and write nothing to the log", async (
   try {
     await admin.page.goto("/settings");
     await expect(admin.page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
-    const history = admin.page.getByRole("region", { name: "Lịch sử gửi email", exact: true });
+    const history = admin.page.getByRole("region", { name: "Email history", exact: true });
     await expect(history).toBeVisible();
     const rowsBefore = await history.getByRole("row").count();
     const logBefore = await (await signInAsSeedUser("admin@certtracker.test")).from("notification_log").select("id");
@@ -183,22 +183,22 @@ test("a real run sends once and a second call sends nothing; /settings shows the
   try {
     await admin.page.goto("/settings");
     await expect(admin.page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
-    const history = admin.page.getByRole("region", { name: "Lịch sử gửi email", exact: true });
+    const history = admin.page.getByRole("region", { name: "Email history", exact: true });
 
-    // Columns: Loại · Kỳ · Đã gửi · Lỗi · Đang gửi · Hoạt động cuối.
-    const expiryRow = rowWith(history, "Nhắc hạn chứng chỉ", weekLabel(isoWeekKey(today)));
+    // Columns: Type · Period · Sent · Failed · Sending · Stalled · Latest error · Last activity.
+    const expiryRow = rowWith(history, "Expiry alert", weekLabel(isoWeekKey(today)));
     await expect(expiryRow).toBeVisible();
     const sent = Number(await expiryRow.getByRole("cell").nth(2).innerText());
     expect(sent).toBeGreaterThanOrEqual(1);
     await expect(expiryRow.getByRole("cell").nth(3)).toHaveText("0");
 
-    const monthlyRow = rowWith(history, "Báo cáo tháng", monthLabel(previousMonthKey(today)));
+    const monthlyRow = rowWith(history, "Monthly report", monthLabel(previousMonthKey(today)));
     await expect(monthlyRow).toBeVisible();
     await expect(monthlyRow.getByRole("cell").nth(3)).toHaveText("0");
 
     // The configuration block reports presence only; the value of the secret never reaches the page.
-    const config = admin.page.getByRole("region", { name: "Cấu hình email", exact: true });
-    await expect(config.getByRole("listitem").filter({ hasText: "CRON_SECRET" })).toContainText("Đã cấu hình");
+    const config = admin.page.getByRole("region", { name: "Email configuration", exact: true });
+    await expect(config.getByRole("listitem").filter({ hasText: "CRON_SECRET" })).toContainText("Configured");
     await expect(admin.page.locator("body")).not.toContainText(SECRET);
   } finally {
     await admin.close();

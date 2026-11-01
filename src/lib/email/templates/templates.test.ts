@@ -68,7 +68,7 @@ describe("ExpiryAlertEmail", () => {
   it("caps a section at 25 rows and says how many are hidden (edge #25)", async () => {
     const items = Array.from({ length: 30 }, (_, i) => item(i + 1));
     const { html } = await renderAlert(alertOf({ own: items }));
-    expect(html).toContain("và 5 chứng chỉ khác");
+    expect(html).toContain("and 5 more certificates");
     // "Course N" appears once per rendered row; the first 25 are shown and the last 5 are not.
     expect(new Set(html.match(/Course \d+/g)).size).toBe(25);
     expect(html).toContain("Course 25");
@@ -78,13 +78,13 @@ describe("ExpiryAlertEmail", () => {
 
   it("shows no overflow line for exactly 25 rows", async () => {
     const { html } = await renderAlert(alertOf({ own: Array.from({ length: 25 }, (_, i) => item(i + 1)) }));
-    expect(html).not.toContain("chứng chỉ khác");
+    expect(html).not.toContain("more certificate");
   });
 
   it("caps each team table on its own", async () => {
     const big = Array.from({ length: 27 }, (_, i) => item(i + 1));
     const { html } = await renderAlert(alertOf({ teams: [{ teamId: "t", teamName: "T", items: big }] }));
-    expect(html).toContain("và 2 chứng chỉ khác");
+    expect(html).toContain("and 2 more certificates");
     expect(new Set(html.match(/MC\d{3}/g)).size).toBe(25);
   });
 
@@ -93,12 +93,12 @@ describe("ExpiryAlertEmail", () => {
     const teams = [{ teamId: "t", teamName: "T", items: own }];
     const without = await renderAlert(alertOf({ own, teams }), null);
     expect(without.html).not.toContain("href=");
-    expect(without.html).not.toContain("Mở CertTracker");
-    expect(without.html).not.toContain("Xem đầy đủ");
+    expect(without.html).not.toContain("Open CertTracker");
+    expect(without.html).not.toContain("View all");
 
     const withUrl = await renderAlert(alertOf({ own, teams }), "https://x.test/");
     expect(withUrl.html).toContain('href="https://x.test/"');
-    expect(withUrl.html).toContain("Mở CertTracker");
+    expect(withUrl.html).toContain("Open CertTracker");
     expect(withUrl.html).toContain('href="https://x.test/me"');
     expect(withUrl.html).toContain('href="https://x.test/records"');
   });
@@ -113,11 +113,22 @@ describe("ExpiryAlertEmail", () => {
         ],
       }),
     );
-    expect(html).toContain("Đã hết hạn 3 ngày");
-    expect(html).toContain("Còn 25 ngày");
-    expect(html).toContain("Còn 45 ngày");
+    expect(html).toContain("Expired 3 days ago");
+    expect(html).toContain("25 days left");
+    expect(html).toContain("45 days left");
     expect(html).toContain("01/10/2026");
     expect(html).toContain("05/11/2026");
+  });
+
+  it("uses singular wording for exactly one day or one hidden certificate", async () => {
+    const own = Array.from({ length: 26 }, (_, i) => item(i + 1));
+    own[0] = item(1, { bucket: "expired", daysToExpiry: -1 });
+    own[1] = item(2, { bucket: "soon", daysToExpiry: 1 });
+    const { html } = await renderAlert(alertOf({ own }));
+    expect(html).toContain("Expired 1 day ago");
+    expect(html).toContain("1 day left");
+    expect(html).toContain("and 1 more certificate");
+    expect(html).not.toContain("1 more certificates");
   });
 
   it("colours each bucket from the theme", async () => {
@@ -140,25 +151,25 @@ describe("ExpiryAlertEmail", () => {
 
   it("shows only the sections that have rows", async () => {
     const ownOnly = await renderAlert(alertOf({ own: [item(1)] }));
-    expect(ownOnly.html).toContain("Của bạn");
+    expect(ownOnly.html).toContain("Your certificates");
     expect(ownOnly.html).not.toMatch(/Team /);
 
     const teamsOnly = await renderAlert(alertOf({ teams: [{ teamId: "t", teamName: "Alpha", items: [item(1)] }] }));
     expect(teamsOnly.html).toContain("Team Alpha");
-    expect(teamsOnly.html).not.toContain("Của bạn");
+    expect(teamsOnly.html).not.toContain("Your certificates");
   });
 
   it("greets by name, or plainly when the name is unknown", async () => {
-    expect((await renderAlert(alertOf({ name: "An", own: [item(1)] }))).html).toContain("Xin chào An");
+    expect((await renderAlert(alertOf({ name: "An", own: [item(1)] }))).html).toContain("Hello An,");
     const anonymous = (await renderAlert(alertOf({ name: null, own: [item(1)] }))).html;
-    expect(anonymous).toContain("Xin chào");
-    expect(anonymous).not.toContain("Xin chào null");
+    expect(anonymous).toContain("Hello,");
+    expect(anonymous).not.toContain("Hello null");
   });
 
   it("explains the window and the period", async () => {
     const { html } = await renderAlert(alertOf({ own: [item(1)] }));
-    expect(html).toContain("sắp hết hạn trong 60 ngày tới và vừa hết hạn trong 30 ngày qua (tuần 41/2026)");
-    expect(html).toContain('lang="vi"');
+    expect(html).toContain("expire within the next 60 days or expired within the last 30 days (Week 41, 2026)");
+    expect(html).toContain('lang="en"');
   });
 
   it("renders a plain-text alternative without HTML tags", async () => {
@@ -171,22 +182,22 @@ describe("ExpiryAlertEmail", () => {
 describe("MonthlyReportEmail", () => {
   it("shows the month title, the scope note and the Dashboard KPI labels", async () => {
     const { html } = await renderReport(reportOf());
-    expect(html).toContain("Báo cáo tháng 09/2026");
-    expect(html).toContain("Số liệu toàn đơn vị.");
-    for (const label of ["Hoàn thành", "Đang học", "Còn hiệu lực", "Sắp hết hạn (≤ 60 ngày)", "Đã hết hạn", "Cấp mới trong tháng", "Hết hạn trong tháng"]) {
+    expect(html).toContain("Monthly report for September 2026");
+    expect(html).toContain("Figures for the whole organisation.");
+    for (const label of ["Active members", "Certificate records", "Completed", "In progress", "Valid", "Expiring (≤ 60 days)", "Expired", "Issued this month", "Expired this month"]) {
       expect(html).toContain(label);
     }
   });
 
   it("states the date the figures are as of, and follows it", async () => {
-    expect((await renderReport(reportOf())).html).toContain("Số liệu tính đến 01/10/2026");
-    expect((await renderReport(reportOf(), null, "2026-10-02")).html).toContain("Số liệu tính đến 02/10/2026");
+    expect((await renderReport(reportOf())).html).toContain("Figures as of 01/10/2026");
+    expect((await renderReport(reportOf(), null, "2026-10-02")).html).toContain("Figures as of 02/10/2026");
   });
 
   it("uses the managed-teams note for a manager report", async () => {
     const { html } = await renderReport(reportOf({ scope: "teams" }));
-    expect(html).toContain("Số liệu của các team bạn quản lý.");
-    expect(html).not.toContain("Số liệu toàn đơn vị.");
+    expect(html).toContain("Figures for the teams you manage.");
+    expect(html).not.toContain("Figures for the whole organisation.");
   });
 
   it("shows — for an unknown completion rate and a percentage otherwise", async () => {
@@ -200,18 +211,18 @@ describe("MonthlyReportEmail", () => {
   it("lists teams and upcoming items, and drops those sections when empty", async () => {
     const full = await renderReport(reportOf());
     expect(full.html).toContain("Team Alpha");
-    expect(full.html).toContain("Sắp hết hạn trong 60 ngày");
+    expect(full.html).toContain("Expiring in the next 60 days");
     expect(full.html).toContain("Course 1");
 
     const empty = await renderReport(reportOf({ teams: [], upcoming: [] }));
-    expect(empty.html).not.toContain("Theo team");
-    expect(empty.html).not.toContain("Sắp hết hạn trong 60 ngày");
+    expect(empty.html).not.toContain("By team");
+    expect(empty.html).not.toContain("Expiring in the next 60 days");
   });
 
   it("caps the upcoming list at 25 rows", async () => {
     const upcoming = Array.from({ length: 30 }, (_, i) => item(i + 1));
     const { html } = await renderReport(reportOf({ upcoming }), "https://x.test");
-    expect(html).toContain("và 5 chứng chỉ khác");
+    expect(html).toContain("and 5 more certificates");
     expect(html).toContain('href="https://x.test/records"');
   });
 
@@ -227,7 +238,7 @@ describe("MonthlyReportEmail", () => {
   it("renders a plain-text alternative without HTML tags", async () => {
     const { text } = await renderReport(reportOf());
     expect(text).not.toMatch(/<[a-z][\s\S]*>/i);
-    expect(text).toContain("Còn hiệu lực");
+    expect(text).toContain("Valid");
     expect(text).toContain("Team Alpha");
   });
 });

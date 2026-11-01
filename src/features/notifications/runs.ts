@@ -18,7 +18,7 @@ export const STALE_PENDING_MS = 15 * 60_000;
 export type RunRow = {
   kind: NotificationKind;
   period: string;
-  /** Vietnamese label of the period, e.g. "tuần 41/2026" or "tháng 09/2026". */
+  /** English label of the period, e.g. "Week 41, 2026" or "September 2026". */
   label: string;
   sent: number;
   failed: number;
@@ -95,9 +95,9 @@ export function emailSetupStatus(env: Record<string, string | undefined>): Setup
     { id: "resend-key", label: "RESEND_API_KEY", ok: Boolean(env.RESEND_API_KEY) },
     { id: "email-from", label: "EMAIL_FROM", ok: Boolean(env.EMAIL_FROM) },
     // Same rule as checkCronAuth: a shorter secret makes the cron routes refuse every request.
-    { id: "cron-secret", label: "CRON_SECRET (từ 16 ký tự)", ok: (env.CRON_SECRET?.length ?? 0) >= 16 },
+    { id: "cron-secret", label: "CRON_SECRET (at least 16 characters)", ok: (env.CRON_SECRET?.length ?? 0) >= 16 },
     { id: "service-role-key", label: "SUPABASE_SERVICE_ROLE_KEY", ok: Boolean(env.SUPABASE_SERVICE_ROLE_KEY) },
     // Present but unusable (not https, no scheme…) counts as not configured: the mails would go out without links.
-    { id: "app-url", label: "APP_URL (https://…, dùng cho liên kết trong email)", ok: normalizeAppUrl(env.APP_URL) !== null },
+    { id: "app-url", label: "APP_URL (https://…, used for links in e-mails)", ok: normalizeAppUrl(env.APP_URL) !== null },
   ];
 }
