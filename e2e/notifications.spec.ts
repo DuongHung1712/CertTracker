@@ -251,7 +251,7 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
       await expect(rowWith(body, /Trần Thị Bình/)).toHaveCount(0);
       await expect(manager.page.getByRole("button", { name: "Quá hạn thi (1)" })).toBeVisible();
       // Member- and course-level findings are for admins only.
-      await expect(manager.page.getByRole("button", { name: /^Chưa có team/ })).toHaveCount(0);
+      await expect(manager.page.getByRole("button", { name: /^No team/ })).toHaveCount(0);
       await expect(manager.page.getByRole("button", { name: /^Chưa khai báo thời hạn/ })).toHaveCount(0);
     } finally {
       await manager.close();

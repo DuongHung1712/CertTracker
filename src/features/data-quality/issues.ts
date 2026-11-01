@@ -5,7 +5,7 @@ import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-qual
 export const ISSUE_META: Record<IssueType, { label: string; href: string }> = {
   overdue_exam: { label: "Quá hạn thi", href: "/records" },
   done_no_evidence: { label: "Thiếu minh chứng", href: "/records" },
-  member_no_team: { label: "Chưa có team", href: "/members" },
+  member_no_team: { label: "No team", href: "/members" },
   course_no_validity: { label: "Chưa khai báo thời hạn", href: "/courses" },
 };
 

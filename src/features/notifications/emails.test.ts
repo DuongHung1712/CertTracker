@@ -58,7 +58,7 @@ describe("buildMonthlyEmail", () => {
     scope: "org",
     month: "2026-09",
     overall: kpi,
-    teams: [{ teamId: null, teamName: "Chưa có team", kpi }],
+    teams: [{ teamId: null, teamName: "No team", kpi }],
     upcoming: [item(1)],
   };
 
@@ -67,7 +67,7 @@ describe("buildMonthlyEmail", () => {
     expect(mail.subject).toBe("[CertTracker] Báo cáo tháng 09/2026");
     expect(mail.html).toContain("Số liệu tính đến 01/10/2026");
     expect(mail.html).toContain("Báo cáo tháng 09/2026");
-    expect(mail.html).toContain("Chưa có team");
+    expect(mail.html).toContain("No team");
     expect(mail.text).toContain("Còn hiệu lực");
   });
 

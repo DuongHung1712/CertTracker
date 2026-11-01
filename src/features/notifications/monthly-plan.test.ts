@@ -61,7 +61,7 @@ describe("planMonthlyReports scope", () => {
     record("r5", "m2", { expiryStatus: "Expiring Soon", daysToExpiry: 12, expiryDate: "2026-10-16" }),
   ];
 
-  it("#27 an admin gets an org-wide report with one row per team that has members, plus 'Chưa có team'", () => {
+  it("#27 an admin gets an org-wide report with one row per team that has members, plus 'No team'", () => {
     const { reports, undeliverable } = planMonthlyReports(snap({ members, records, staff: [admin()] }), MONTH);
     expect(undeliverable).toEqual([]);
     expect(reports).toHaveLength(1);
@@ -74,11 +74,11 @@ describe("planMonthlyReports scope", () => {
     expect(r.teams.map((t) => [t.teamId, t.teamName, t.kpi.members])).toEqual([
       ["t1", "Team 1", 1],
       ["t2", "Team 2", 1],
-      [null, "Chưa có team", 1],
+      [null, "No team", 1],
     ]); // t3 has no active members: no row
   });
 
-  it("#27 no 'Chưa có team' row when nobody lacks a team", () => {
+  it("#27 no 'No team' row when nobody lacks a team", () => {
     const { reports } = planMonthlyReports(
       snap({ members: [member("m1"), member("m2", { teamId: "t2" })], staff: [admin()] }),
       MONTH,
@@ -86,7 +86,7 @@ describe("planMonthlyReports scope", () => {
     expect(reports[0]?.teams.map((t) => t.teamId)).toEqual(["t1", "t2"]);
   });
 
-  it("#27 team rows are ordered by name, 'Chưa có team' last", () => {
+  it("#27 team rows are ordered by name, 'No team' last", () => {
     const { reports } = planMonthlyReports(
       snap({
         teams: [
@@ -98,7 +98,7 @@ describe("planMonthlyReports scope", () => {
       }),
       MONTH,
     );
-    expect(reports[0]?.teams.map((t) => t.teamName)).toEqual(["Ánh", "Zeta", "Chưa có team"]);
+    expect(reports[0]?.teams.map((t) => t.teamName)).toEqual(["Ánh", "Zeta", "No team"]);
   });
 
   it("#28 a manager only sees their teams: no scope, KPI or upcoming leak from other teams", () => {
@@ -132,7 +132,7 @@ describe("planMonthlyReports scope", () => {
     expect(reports).toEqual([]);
   });
 
-  it("#27 a member whose team id matches no known team is counted under 'Chưa có team', so team rows add up to overall", () => {
+  it("#27 a member whose team id matches no known team is counted under 'No team', so team rows add up to overall", () => {
     const { reports } = planMonthlyReports(
       snap({
         members: [member("m1", { teamId: "t1" }), member("m2", { teamId: "ghost" }), member("m3", { teamId: null })],

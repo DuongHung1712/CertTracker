@@ -35,7 +35,7 @@ export type MonthlyReport = {
   upcoming: ExpiryItem[];
 };
 
-export const NO_TEAM_LABEL = "Chưa có team";
+export const NO_TEAM_LABEL = "No team";
 
 const viCollator = new Intl.Collator("vi", { numeric: true, sensitivity: "base" });
 const within = (date: string | null, start: string, end: string) => date !== null && date >= start && date <= end;

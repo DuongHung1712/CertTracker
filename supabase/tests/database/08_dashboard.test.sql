@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(37);
+select plan(38);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -101,8 +101,8 @@ select results_eq(
   $$values (3, 3, 7, 5, 1, 1, 3, 2)$$, 'team A: 3 active members (the inactive one is excluded), expired certs are not valid');
 select results_eq(
   $$select headcount, people, records, done, in_progress, not_started, valid, expired
-      from public.dashboard_breakdown('team') where group_label = 'Chưa có team'$$,
-  $$values (1, 1, 1, 1, 0, 0, 1, 0)$$, 'members without a team form one "Chưa có team" group');
+      from public.dashboard_breakdown('team') where group_label = 'No team'$$,
+  $$values (1, 1, 1, 1, 0, 0, 1, 0)$$, 'members without a team form one "No team" group');
 select results_eq(
   $$select headcount, people, records, done, in_progress, not_started, valid, expired
       from public.dashboard_breakdown('team') where group_label = 'Team B'$$,
@@ -125,8 +125,8 @@ select results_eq(
   $$values (4, 6, 4, 1, 1, 3, 1)$$, 'cert type one');
 select results_eq(
   $$select people, records, done, in_progress, not_started, valid, expired
-      from public.dashboard_breakdown('cert_type') where group_label = 'Chưa phân loại'$$,
-  $$values (3, 3, 3, 0, 0, 2, 1)$$, 'a course without a cert type lands in "Chưa phân loại"');
+      from public.dashboard_breakdown('cert_type') where group_label = 'Uncategorised'$$,
+  $$values (3, 3, 3, 0, 0, 2, 1)$$, 'a course without a cert type lands in "Uncategorised"');
 select results_eq(
   $$select people, records, done, in_progress, not_started, valid, expired
       from public.dashboard_breakdown('course') where group_label = 'Course One'$$,
@@ -148,7 +148,7 @@ select results_eq(
   $$values ('Provider One')$$, 'member: only the provider with at least 3 learners');
 select results_eq(
   $$select group_label from public.dashboard_breakdown('cert_type')$$,
-  $$values ('Type One'), ('Chưa phân loại')$$, 'member: a group with exactly 3 learners ("Chưa phân loại") is shown');
+  $$values ('Type One'), ('Uncategorised')$$, 'member: a group with exactly 3 learners ("Uncategorised") is shown');
 select results_eq(
   $$select group_label from public.dashboard_breakdown('course')$$,
   $$values ('Course One'), ('Course Two')$$, 'member: Course Two (exactly 3 learners) is shown, Course Three (2 learners) is hidden');
@@ -202,6 +202,17 @@ select ok(
   and has_function_privilege('authenticated', 'public.dashboard_breakdown(text, integer)', 'execute')
   and has_function_privilege('authenticated', 'public.dashboard_ranking()', 'execute'),
   'authenticated may execute all three');
+
+-- ============ A course without a provider is grouped under "Unknown provider" ============
+insert into public.courses (id, name, cert_type_id, provider_id, validity_months)
+  values ('99999999-0000-0000-0000-000000000004', 'Course Four', null, null, 12);
+insert into public.training_records (member_id, course_id, status, progress, issued_date)
+  values ('bbbbbbbb-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000004', 'done', 100, public.vn_today() - 10);
+select pg_temp.login_as('a0000000-0000-0000-0000-00000000000a');
+select results_eq(
+  $$select people, records from public.dashboard_breakdown('provider') where group_label = 'Unknown provider'$$,
+  $$values (1, 1)$$, 'a course without a provider lands in "Unknown provider"');
+reset role;
 
 select * from finish();
 rollback;

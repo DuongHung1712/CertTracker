@@ -228,7 +228,7 @@ export function RecordsTable({
           <Select value={teamFilter} onValueChange={(value) => setTeamFilter(value ?? ALL)}>
             <SelectTrigger aria-label="Team">
               <SelectValue>
-                {(value: string) => (value === ALL ? "Tất cả team" : value === NO_TEAM ? "Chưa có team" : value)}
+                {(value: string) => (value === ALL ? "Tất cả team" : value === NO_TEAM ? "No team" : value)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -238,7 +238,7 @@ export function RecordsTable({
                   {name}
                 </SelectItem>
               ))}
-              {hasTeamless && <SelectItem value={NO_TEAM}>Chưa có team</SelectItem>}
+              {hasTeamless && <SelectItem value={NO_TEAM}>No team</SelectItem>}
             </SelectContent>
           </Select>
         )}
