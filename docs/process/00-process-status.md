@@ -64,7 +64,7 @@ These three conditions (decision #46) are the official gate. What is still to be
 
 ## 4. What is next
 
-See [04](04-wbs.md): work packages 1 (requirements and validation, including 1.6, the data collection for the concept analysis), 8.1 (performance), 8.4 (accessibility) and 9.1–9.3 (pilot readiness, pilot, hosting decision) are expected before G1; 9.4 (production readiness) comes after G1 (*proposed* in [08](08-production-readiness.md) §5). 8.2 (interface language) and 8.3 (self sign-up) are not scheduled before G1 unless the sponsor asks for them earlier.
+See [04](04-wbs.md): work packages 1 (requirements and validation, including 1.6, the data collection for the concept analysis), 8.1 (performance), 8.4 (accessibility) and 9.1–9.3 (pilot readiness, pilot, hosting decision) are expected before G1; 9.4 (production readiness) comes after G1 (*proposed* in [08](08-production-readiness.md) §5). 8.2 (interface language) was built in M1 (2026-11-01); 8.3 (self sign-up) is not scheduled before G1 unless the sponsor asks for it earlier.
 
 The two-week pilot with one real team (work package 9.2) is planned in [07](07-poc-and-mvp.md) §6 and feeds G1; its preconditions are work package 9.1 (the `Pilot` items in [08](08-production-readiness.md)). What must be true before CertTracker becomes a production service is the rest of that checklist (the `Production` items, work package 9.4).
 

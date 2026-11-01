@@ -43,8 +43,8 @@ This document lists the work done and the work remaining for CertTracker Release
 | 6 | Dashboard (W5) | KPIs, breakdowns, ranking | PR #15 merged | Built | Must | — | 2026-10-04 | 4 | Done | FR-12 | R-09, R-10, R-11, NFR-02 |
 | 7 | Cron, e-mail and data quality (W6) | Expiry alerts, monthly report, notification log, data-quality page | PR #16 merged into `main`; migrations pushed; cron returns 401 without the secret | Built | Must | — | 2026-10-04 → 2026-10-17 | 4, 6 | Done | FR-10, FR-12, NFR-06 | R-12, R-13, R-14, R-19, NFR-01, NFR-06 |
 | 8 | **Cross-cutting improvements** | See 8.1–8.4 | — | — | — | 3.5–6 (sum) | — | — | Not started | — | — |
-| 8.1 | Page-navigation performance | Loading feedback on every page; fewer auth calls (functions already moved to Tokyo, hnd1) | `SM-4` met, measured before and after (§4) | M1 | Should | 0.5–1 | Diagnosed 2026-10-05 | — | Not started | NFR-03 | NFR-03 |
-| 8.2 | English-first interface | Existing Vietnamese screens and e-mails rewritten in English; switch to Vietnamese later (decision #51) | No Vietnamese UI text left; e2e updated | M1 | Must | 2–3 | — | 1.9 | Not started | NFR-04 | NFR-04 |
+| 8.1 | Page-navigation performance | Loading feedback on every page; fewer auth calls (functions already moved to Tokyo, hnd1) | `SM-4` met, measured before and after (§4) | M1 | Should | 0.5–1 | 2026-11-01 (code; production p75 pending) | — | In progress | NFR-03 | NFR-03 |
+| 8.2 | English-first interface | Existing Vietnamese screens and e-mails rewritten in English; switch to Vietnamese later (decision #51) | No Vietnamese UI text left; e2e updated | M1 | Must | 2–3 | 2026-11-01 | 1.9 | Done | NFR-04 | NFR-04 |
 | 8.3 | Self sign-up with approval | Not in Release 1 (BRD §1.3: the admin creates every account) | — | — | Could | — | — | — | Out of scope | — | R-31 |
 | 8.4 | Accessibility check | Keyboard and screen-reader audit of old and new screens; list of fixes | BRD Appendix B.2 items met | M6 | Must | 1–2 | — | 11.4, 12.1 | Not started | NFR-05 | NFR-05 |
 | 9 | **Validation and rollout** | See 9.1–G1 | — | — | — | 6–11 (sum) | — | — | Not started | — | — |
@@ -54,9 +54,9 @@ This document lists the work done and the work remaining for CertTracker Release
 | 9.4 | Production readiness | Production checklist completed; release checklist adopted | All `Production` items in 08 done; go decision recorded | M6 | Must | 2–4 | — | 9.3, G1 | Not started | NFR-13 | NFR-01, NFR-06, NFR-07 |
 | G1 | Gate: pilot review | DC manager's decision to roll out beyond the pilot team | Pilot report accepted; no longer blocks any feature (decision #54) | M6 | Must | — | — | 1.2, 1.3, 1.6, 9.2 | Not started | BO-1 | — |
 | 10 | **Platform changes** | See 10.1–10.3 | — | — | — | 3–4.5 (sum) | — | — | Not started | — | — |
-| 10.1 | Manager scope (team, program, DC) | Scope table replacing `team_managers`; RLS helpers; scope admin screen | pgTAP: each scope sees exactly its people; new teams included | M1 | Must | 2–3 | — | 1.9 | Not started | FR-02, BRD §4.1 | R-30 |
-| 10.2 | Current role and YoE | Role (set by admin) and YoE (set by member) on the member record | Shown on the profile and in exports | M1 | Must | 0.5–1 | — | 1.9 | Not started | FR-03 | — |
-| 10.3 | Course cost and study hours | Two new course fields in forms, import and export | Values editable and exported | M1 | Must | 0.5 | — | 1.9 | Not started | FR-04 | R-03 |
+| 10.1 | Manager scope (team, program, DC) | Scope table replacing `team_managers`; RLS helpers; scope admin screen | pgTAP: each scope sees exactly its people; new teams included | M1 | Must | 2–3 | 2026-11-01 | 1.9 | Done | FR-02, BRD §4.1 | R-30 |
+| 10.2 | Current role and YoE | Role (set by admin) and YoE (set by member) on the member record | Shown on the profile and in exports | M1 | Must | 0.5–1 | 2026-11-01 | 1.9 | Done | FR-03 | — |
+| 10.3 | Course cost and study hours | Two new course fields in forms, import and export | Values editable and exported | M1 | Must | 0.5 | 2026-11-01 | 1.9 | Done | FR-04 | R-03 |
 | 11 | **Skill Matrix** | See 11.1–11.7 | — | — | — | 14–20.5 (sum) | — | — | Not started | — | — |
 | 11.1 | Skill list | Fields (incl. General), skills, sub-skills, shared skills, level scale 0–5; seeded from BRD Appendix A | Seed loads; admin can edit; one entry per shared skill | M2 | Must | 2–3 | — | 10.1 | Not started | FR-14, UC-06 | — |
 | 11.2 | Course–skill links | Link a course to skills and the level it proves; list of unlinked courses | Labels update when a link changes | M2 | Must | 1–2 | — | 11.1 | Not started | FR-15, UC-06 | — |
@@ -94,7 +94,7 @@ Milestones in build order (open work only):
 |---|---|---|---|
 | Built | Certificates: W1–W6, live at https://cert-tracker-three.vercel.app | — | — |
 | M0 | Approval and plans: BRD signed off, open questions answered, mockups reviewed, plans written | 3.5–5 | 1.0 |
-| M1 | Platform changes: manager scope, role and YoE, course cost, English UI, page speed | 5.5–8.5 | 2.7 |
+| M1 | Platform changes: manager scope, role and YoE, course cost, English UI, page speed (built 2026-11-01; 8.1 production p75 run pending) | 5.5–8.5 | 2.7 |
 | M2 | Skill Matrix: skill list, links, ratings, matrix view, project search, review cycle, import | 14–20.5 | 6.8 |
 | M3 | Goals and courses: quarterly goals, pick or assign, risk and key-person alerts | 7–10 | 8.8 |
 | M4 | AI (core): AI platform and the Must / Should AI features | 13.5–20.5 | 12.9 |
