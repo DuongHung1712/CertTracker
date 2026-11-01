@@ -1,7 +1,7 @@
 "use client";
 
 import { useLinkStatus } from "next/link";
-import { createContext, useCallback, useContext, useEffect, useId, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type Report = (id: string, pending: boolean) => void;
@@ -27,7 +27,7 @@ export function NavigationProgressProvider({ children }: { children: React.React
     });
   }, []);
 
-  const loading = useMemo(() => pendingIds.size > 0, [pendingIds]);
+  const loading = pendingIds.size > 0;
 
   return (
     <ReportContext.Provider value={report}>

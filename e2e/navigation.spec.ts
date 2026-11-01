@@ -78,6 +78,8 @@ for (const route of ROUTES) {
       .or(page.getByRole("heading", { level: 1, name: route.heading, exact: true }))
       .first();
     await expect(feedback).toBeVisible({ timeout: 300 });
+    // Let the navigation finish so the test does not end with a request in flight.
+    await expect(page.getByRole("heading", { level: 1, name: route.heading, exact: true })).toBeVisible();
   });
 }
 

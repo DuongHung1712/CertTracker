@@ -6,13 +6,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // always does; `getClaims()` verifies an ES256/RS256 JWT locally against the cached JWKS (the
 // mock below models such a project, like the local stack).
 const authServerCalls = vi.fn();
+const claimsCalls = vi.fn();
+let claimsError: Error | null = null;
 let claims: { sub: string } | null = null;
 let serverUser: { id: string; email: string } | null = null;
 
 vi.mock("@supabase/ssr", () => ({
   createServerClient: () => ({
     auth: {
-      getClaims: async () => ({ data: claims ? { claims } : null, error: null }),
+      getClaims: async () => {
+        claimsCalls();
+        if (claimsError) throw claimsError;
+        return { data: claims ? { claims } : null, error: null };
+      },
       getUser: async () => {
         authServerCalls();
         return { data: { user: serverUser }, error: null };
@@ -31,7 +37,7 @@ vi.mock("next/headers", () => ({
 }));
 
 // React's server build memoises `cache()` per request; plain Node has no request, so emulate it
-// (one module registry per test = one request).
+// (one module registry per test = one request). This proves the proxy/`cache()` wiring, not a real page render.
 vi.mock("react", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react")>()),
   cache: <T extends (...args: never[]) => unknown>(fn: T): T => {
@@ -47,9 +53,11 @@ vi.mock("react", async (importOriginal) => ({
   },
 }));
 
-function request(path: string) {
-  return new NextRequest(new URL(path, "http://localhost:3000"));
+function request(path: string, init?: { method?: string; headers?: Record<string, string> }) {
+  return new NextRequest(new URL(path, "http://localhost:3000"), init);
 }
+
+const redirectPath = (response: Response) => new URL(response.headers.get("location")!).pathname;
 
 async function loadModules() {
   vi.resetModules();
@@ -60,6 +68,8 @@ async function loadModules() {
 
 beforeEach(() => {
   authServerCalls.mockClear();
+  claimsCalls.mockClear();
+  claimsError = null;
   claims = { sub: "user-1" };
   serverUser = { id: "user-1", email: "manager@certtracker.test" };
   process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
@@ -90,29 +100,89 @@ describe("auth round trips per navigation", () => {
 });
 
 describe("proxy", () => {
-  it("redirects a request without a verifiable session to /login", async () => {
+  it("redirects a page request without a verifiable session to /login", async () => {
     claims = null;
     const { updateSession } = await loadModules();
 
     const response = await updateSession(request("/members"));
 
-    expect(new URL(response.headers.get("location")!).pathname).toBe("/login");
+    expect(redirectPath(response)).toBe("/login");
   });
 
-  it("sends a signed-in user away from /login", async () => {
+  it("treats a getClaims() that throws (crafted cookie) as signed out, not a 500", async () => {
+    claimsError = new Error("malformed cookie");
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/members"));
+
+    expect(redirectPath(response)).toBe("/login");
+  });
+
+  it("sends a user the Auth server confirms away from /login", async () => {
     const { updateSession } = await loadModules();
 
     const response = await updateSession(request("/login"));
 
-    expect(new URL(response.headers.get("location")!).pathname).toBe("/dashboard");
+    expect(redirectPath(response)).toBe("/dashboard");
+    expect(authServerCalls).toHaveBeenCalledTimes(1);
   });
 
-  it("does not contact the Auth server for a session check on its own", async () => {
+  it("serves /login when the JWT still verifies but the server revoked the session (no redirect loop)", async () => {
+    serverUser = null;
     const { updateSession } = await loadModules();
 
-    await updateSession(request("/records"));
+    const response = await updateSession(request("/login"));
 
+    expect(response.headers.get("location")).toBeNull();
+    expect(authServerCalls).toHaveBeenCalledTimes(1);
+  });
+
+  it("checks a GET page navigation locally: the Auth server is left to the layout", async () => {
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/dashboard"));
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(claimsCalls).toHaveBeenCalledTimes(1);
     expect(authServerCalls).not.toHaveBeenCalled();
+  });
+
+  it("keeps the authoritative check for a Server Action POST", async () => {
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/members", { method: "POST", headers: { "next-action": "abc123" } }));
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(authServerCalls).toHaveBeenCalledTimes(1);
+    expect(claimsCalls).not.toHaveBeenCalled();
+  });
+
+  it("rejects a Server Action POST from a revoked session", async () => {
+    serverUser = null;
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/members", { method: "POST", headers: { "next-action": "abc123" } }));
+
+    expect(redirectPath(response)).toBe("/login");
+  });
+
+  it("keeps the authoritative check for API routes", async () => {
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/api/records/00000000-0000-0000-0000-000000000001/evidence"));
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(authServerCalls).toHaveBeenCalledTimes(1);
+    expect(claimsCalls).not.toHaveBeenCalled();
+  });
+
+  it("rejects an API request from a revoked session", async () => {
+    serverUser = null;
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/api/export/records"));
+
+    expect(redirectPath(response)).toBe("/login");
   });
 
   it("skips auth entirely for cron routes", async () => {
@@ -123,5 +193,6 @@ describe("proxy", () => {
 
     expect(response.headers.get("location")).toBeNull();
     expect(authServerCalls).not.toHaveBeenCalled();
+    expect(claimsCalls).not.toHaveBeenCalled();
   });
 });

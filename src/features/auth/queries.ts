@@ -15,9 +15,9 @@ export type CurrentUser = {
  * re-querying `profiles`.
  *
  * This is the one call per navigation that contacts the Supabase Auth server
- * (`getUser()` is authoritative: it rejects a revoked session). The proxy only
- * verifies the JWT locally (`getClaims()`), so do not add another `getUser()`
- * elsewhere on a page's path.
+ * (`getUser()` is authoritative: it rejects a revoked session). For a GET page
+ * navigation the proxy only verifies the JWT locally (`getClaims()`), so do not
+ * add another `getUser()` on a page's path (see decision #57).
  *
  * Returns `null` when there is no session. Throws when the profile row
  * itself fails to load (RLS/network error) instead of silently defaulting

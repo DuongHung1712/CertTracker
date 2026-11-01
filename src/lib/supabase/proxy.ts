@@ -28,15 +28,32 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Verifies the JWT signature (and expiry) against the project's JWKS and refreshes an expiring
-  // session into the cookies, without a round trip to the Auth server. The one authoritative
-  // `auth.getUser()` per navigation is in `getCurrentUser()` (layout), so the server still
-  // confirms the session before any data is read. Falls back to `getUser()` for a project
-  // that signs with a symmetric (HS256) secret.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims?.sub ? { id: data.claims.sub } : null;
+  const { pathname } = request.nextUrl;
+  const isPublic = PUBLIC_PATHS.some((path) => pathname.startsWith(path));
 
-  const isPublic = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
+  // Two ways to check the session:
+  // - `getUser()` asks the Auth server and rejects a revoked/signed-out/deleted session. It is used
+  //   wherever no page render follows to do that check: /login (a revoked session is served the
+  //   login page instead of bouncing /dashboard <-> /login in a loop), Server Action POSTs and /api routes.
+  // - `getClaims()` verifies the JWT signature and expiry locally against the cached JWKS (no Auth
+  //   round trip) and refreshes an expiring session into the cookies. It is used for GET page
+  //   navigations and prefetches, whose layout calls `getCurrentUser()` -> `getUser()` once, so a
+  //   navigation still contacts the Auth server exactly once. A symmetric (HS256) project makes
+  //   `getClaims()` fall back to `getUser()`.
+  // Any error (e.g. a crafted cookie) counts as signed out.
+  const needsServerCheck = isPublic || request.method !== "GET" || pathname.startsWith("/api/");
+  let user: { id: string } | null = null;
+  try {
+    if (needsServerCheck) {
+      const { data } = await supabase.auth.getUser();
+      user = data.user ? { id: data.user.id } : null;
+    } else {
+      const { data } = await supabase.auth.getClaims();
+      user = data?.claims?.sub ? { id: data.claims.sub } : null;
+    }
+  } catch {
+    user = null;
+  }
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

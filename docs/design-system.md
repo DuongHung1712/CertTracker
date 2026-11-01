@@ -188,6 +188,8 @@ When the database **blocks** the delete (for example a course that certificate r
 
   An in-app link must contain `<LinkPendingReporter />` to report the pending state to the bar.
 
+  In a production build links are usually prefetched, which skips the pending state, so the bar mostly shows on navigations that are not prefetched or are slow; otherwise the skeleton takes over straight away.
+
 ### 4.5 Menu by role
 
 | Item | Admin | Manager | Member |
