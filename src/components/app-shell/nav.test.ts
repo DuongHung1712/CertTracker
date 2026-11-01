@@ -38,8 +38,8 @@ describe("isActivePath", () => {
 
 describe("labelForPath", () => {
   it("names the current section", () => {
-    expect(labelForPath("/members/42")).toBe("Thành viên");
-    expect(labelForPath("/data-quality")).toBe("Chất lượng dữ liệu");
+    expect(labelForPath("/members/42")).toBe("Members");
+    expect(labelForPath("/data-quality")).toBe("Data quality");
     expect(labelForPath("/unknown")).toBe("CertTracker");
   });
 });

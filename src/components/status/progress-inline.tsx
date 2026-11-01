@@ -7,7 +7,7 @@ export function ProgressInline({ value }: { value: number }) {
     <div className="flex items-center gap-2">
       <div
         role="progressbar"
-        aria-label="Tiến độ học"
+        aria-label="Study progress"
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}

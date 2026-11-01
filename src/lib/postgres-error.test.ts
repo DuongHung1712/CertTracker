@@ -2,19 +2,19 @@ import { describe, expect, it } from "vitest";
 import { mapPostgresError } from "@/lib/postgres-error";
 
 describe("mapPostgresError", () => {
-  it("maps a unique violation to a Vietnamese duplicate message", () => {
-    expect(mapPostgresError({ code: "23505", message: "duplicate key" })).toBe("Dữ liệu này đã tồn tại.");
+  it("maps a unique violation to a duplicate message", () => {
+    expect(mapPostgresError({ code: "23505", message: "duplicate key" })).toBe("This already exists.");
   });
 
   it("prefers a caller-supplied duplicate message", () => {
     expect(
-      mapPostgresError({ code: "23505", message: "duplicate key" }, { duplicate: 'Tên trung tâm "HN" đã tồn tại.' }),
-    ).toBe('Tên trung tâm "HN" đã tồn tại.');
+      mapPostgresError({ code: "23505", message: "duplicate key" }, { duplicate: 'Data centre "HN" already exists.' }),
+    ).toBe('Data centre "HN" already exists.');
   });
 
   it("maps a foreign key violation to a restricted-delete message", () => {
     expect(mapPostgresError({ code: "23503", message: "violates foreign key" })).toBe(
-      "Không thể xóa vì đang được dữ liệu khác sử dụng.",
+      "This cannot be deleted because other data still uses it.",
     );
   });
 
@@ -22,28 +22,28 @@ describe("mapPostgresError", () => {
     expect(
       mapPostgresError(
         { code: "23503", message: "violates foreign key" },
-        { restricted: "Trung tâm đang có chương trình sử dụng. Xóa các chương trình trước." },
+        { restricted: "This data centre has programs. Delete the programs first." },
       ),
-    ).toBe("Trung tâm đang có chương trình sử dụng. Xóa các chương trình trước.");
+    ).toBe("This data centre has programs. Delete the programs first.");
   });
 
   it("maps an RLS violation to a permission message", () => {
     expect(mapPostgresError({ code: "42501", message: "row-level security" })).toBe(
-      "Bạn không có quyền thực hiện thao tác này.",
+      "You do not have permission to do this.",
     );
   });
 
   it("falls back to a generic message for anything else", () => {
-    expect(mapPostgresError({ code: "XX000", message: "boom" })).toBe("Có lỗi xảy ra. Vui lòng thử lại.");
-    expect(mapPostgresError({ message: "boom" })).toBe("Có lỗi xảy ra. Vui lòng thử lại.");
+    expect(mapPostgresError({ code: "XX000", message: "boom" })).toBe("Something went wrong. Try again.");
+    expect(mapPostgresError({ message: "boom" })).toBe("Something went wrong. Try again.");
   });
 
   it("maps a check violation to a rule message", () => {
     expect(mapPostgresError({ code: "23514", message: "violates check constraint" })).toBe(
-      "Dữ liệu không khớp quy tắc của hệ thống.",
+      "These values break a rule of the system. Check them and try again.",
     );
-    expect(mapPostgresError({ code: "23514", message: "x" }, { invalid: "Trạng thái và tiến độ không khớp." })).toBe(
-      "Trạng thái và tiến độ không khớp.",
+    expect(mapPostgresError({ code: "23514", message: "x" }, { invalid: "Status and progress do not match." })).toBe(
+      "Status and progress do not match.",
     );
   });
 });

@@ -12,7 +12,7 @@ import { foldText } from "@/lib/text";
 
 export type ComboboxOption = { id: string; label: string; hint?: string };
 
-/** Diacritic-insensitive match on label + hint, so `nguyen` finds `Nguyễn`. */
+/** Diacritic-insensitive match on label + hint, so a search for `nguyen` finds a name with accents. */
 function matches(option: ComboboxOption, query: string): boolean {
   return foldText(`${option.label} ${option.hint ?? ""}`).includes(foldText(query));
 }

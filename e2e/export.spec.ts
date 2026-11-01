@@ -18,7 +18,7 @@ test("admin exports CSV with a BOM and Vietnamese text", async ({ page }) => {
   expect([...bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
   const text = bytes.toString("utf8");
   expect(text).toContain("Trần Thị Bình");
-  expect(text).toContain("Hoàn thành");
+  expect(text).toContain("Completed");
   expect(filename).toMatch(/^certtracker-chung-chi-\d{4}-\d{2}-\d{2}\.csv$/);
 });
 

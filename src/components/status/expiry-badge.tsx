@@ -55,8 +55,8 @@ export function ExpiryBadge({
        * The detail (`sr-only` span below) is always in the accessible tree,
        * not only on hover/focus: Base UI's tooltip doesn't wire up
        * aria-describedby, and tooltips don't open on touch, so a
-       * screen-reader or mobile user would otherwise never get "Còn 23
-       * ngày…". No `tabIndex` — the badge no longer depends on being
+       * screen-reader or mobile user would otherwise never get "23 days
+       * left…". No `tabIndex` — the badge no longer depends on being
        * focusable to expose that text; the tooltip stays a mouse-only
        * visual extra.
        */}

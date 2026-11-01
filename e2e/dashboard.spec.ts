@@ -147,12 +147,12 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
     await expect(row).toBeVisible();
 
     try {
-      await editStatus(editor, row, "Đang học", "55");
+      await editStatus(editor, row, "In progress", "55");
       // No reload on the dashboard: Realtime must trigger the refresh.
       await expect(tileValue(viewer, "Đang học")).toHaveText("2", { timeout: 10_000 });
     } finally {
       await editor.keyboard.press("Escape");
-      await editStatus(editor, row, "Chưa bắt đầu", "0");
+      await editStatus(editor, row, "Not started", "0");
     }
     await expect(tileValue(viewer, "Đang học")).toHaveText("1", { timeout: 10_000 });
   } finally {

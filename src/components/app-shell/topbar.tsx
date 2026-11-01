@@ -12,7 +12,7 @@ export function Topbar({ email, role }: { email: string; role: Role }) {
   const pathname = usePathname();
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 border-b bg-card px-4">
-      <SidebarTrigger aria-label="Mở hoặc thu gọn menu" />
+      <SidebarTrigger aria-label="Toggle sidebar" />
       <Separator orientation="vertical" className="h-5" />
       <Breadcrumb>
         <BreadcrumbList>

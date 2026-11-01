@@ -4,15 +4,15 @@ export type RecordStatus = Database["public"]["Enums"]["record_status"];
 export type Role = Database["public"]["Enums"]["user_role"];
 
 export const RECORD_STATUS_LABEL: Record<RecordStatus, string> = {
-  done: "Hoàn thành",
-  in_progress: "Đang học",
-  not_started: "Chưa bắt đầu",
+  done: "Completed",
+  in_progress: "In progress",
+  not_started: "Not started",
 };
 
 export const ROLE_LABEL: Record<Role, string> = {
-  admin: "Quản trị",
-  manager: "Quản lý",
-  member: "Thành viên",
+  admin: "Admin",
+  manager: "Manager",
+  member: "Member",
 };
 
 export function clampPercent(value: number): number {

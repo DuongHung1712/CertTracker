@@ -32,13 +32,13 @@ describe("mapCommitError", () => {
 
   it("never leaks the raw database message", () => {
     const text = mapCommitError({ code: "XX000", message: "import row 9: secret_table detail" });
-    expect(text).toBe("Dòng 9: Có lỗi xảy ra. Vui lòng thử lại. Không có dữ liệu nào được nhập.");
+    expect(text).toBe("Dòng 9: Something went wrong. Try again. Không có dữ liệu nào được nhập.");
     expect(text).not.toContain("secret_table");
   });
 
   it("has no row prefix for an error without one", () => {
     expect(mapCommitError({ code: "42501", message: "only admins can commit an import" })).toBe(
-      "Bạn không có quyền thực hiện thao tác này. Không có dữ liệu nào được nhập.",
+      "You do not have permission to do this. Không có dữ liệu nào được nhập.",
     );
   });
 });

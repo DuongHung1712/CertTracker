@@ -45,7 +45,7 @@ export function AppSidebar({ role, hasMember }: { role: Role; hasMember: boolean
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <nav aria-label="Điều hướng chính">
+          <nav aria-label="Main navigation">
             <SidebarMenu>
               {items.map((item) => {
                 const active = isActivePath(pathname, item.href);

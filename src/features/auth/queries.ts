@@ -33,7 +33,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Không tải được hồ sơ người dùng: ${error.message}`);
+    throw new Error(`Could not load the user profile: ${error.message}`);
   }
 
   return {

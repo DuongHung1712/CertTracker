@@ -16,10 +16,10 @@ export default async function MePage() {
   if (!user.memberId) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="Chứng chỉ của tôi" description="Chứng chỉ bạn đã có và đang học." />
+        <PageHeader title="My certificates" description="Certificates you hold and courses you are studying." />
         <EmptyState
-          title="Tài khoản chưa liên kết với thành viên nào"
-          description="Liên hệ quản trị viên để được gắn vào danh sách thành viên."
+          title="Your account is not linked to a member"
+          description="Ask an admin to link your account to a member so your certificates show here."
         />
       </div>
     );
@@ -34,8 +34,8 @@ export default async function MePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Chứng chỉ của tôi"
-        description="Chứng chỉ bạn đã có và đang học."
+        title="My certificates"
+        description="Certificates you hold and courses you are studying."
         // The export is everything the caller's RLS shows; only for a Member is that exactly "my records".
         actions={user.role === "member" ? <ExportLinks /> : undefined}
       />

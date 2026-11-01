@@ -22,9 +22,9 @@ test("admin adds a course and a member can only read it", async ({ page }) => {
   // unscoped substring match on the course name also matches that cell.
   await expect(page.getByRole("cell", { name: courseName, exact: true })).toBeVisible();
 
-  // "Đăng xuất" is a menu item behind the "Tài khoản" trigger (src/components/app-shell/user-menu.tsx), not a plain button — see e2e/auth.spec.ts for the same two-step pattern.
-  await page.getByRole("button", { name: "Tài khoản" }).click();
-  await page.getByRole("menuitem", { name: "Đăng xuất" }).click();
+  // "Sign out" is a menu item behind the "Account" trigger (src/components/app-shell/user-menu.tsx), not a plain button — see e2e/auth.spec.ts for the same two-step pattern.
+  await page.getByRole("button", { name: "Account" }).click();
+  await page.getByRole("menuitem", { name: "Sign out" }).click();
   await signIn(page, "member@certtracker.test");
   await page.goto("/courses");
   await expect(page.getByRole("cell", { name: courseName, exact: true })).toBeVisible();

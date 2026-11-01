@@ -9,5 +9,5 @@ import { err, type Result } from "@/lib/result";
  */
 export function assertAffected(data: unknown[] | null): Result<null> | null {
   if (data && data.length > 0) return null;
-  return err("Bạn không có quyền thực hiện thao tác này hoặc dữ liệu không còn tồn tại.");
+  return err("You do not have permission to do this, or the item no longer exists.");
 }

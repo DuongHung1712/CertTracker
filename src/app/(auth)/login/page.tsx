@@ -7,7 +7,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>CertTracker</CardTitle>
-          <CardDescription>Đăng nhập bằng tài khoản được cấp</CardDescription>
+          <CardDescription>Sign in with the account you were given</CardDescription>
         </CardHeader>
         <CardContent>
           <LoginForm />

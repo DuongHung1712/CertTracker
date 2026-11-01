@@ -1,6 +1,6 @@
 import { formatNumber } from "@/lib/format";
 
-/** One KPI. Render inside a `<dl>`; `hint` is a second line of context (e.g. "trong đó 3 sắp hết hạn"). */
+/** One KPI. Render inside a `<dl>`; `hint` is a second line of context (e.g. "3 of them expiring soon"). */
 export function KpiTile({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card p-4">

@@ -63,7 +63,7 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   // "tran" (no diacritics) must find "Trần Thị Bình".
   await pickOption(page, dialog, "Thành viên", "tran", "Trần Thị Bình");
   await pickOption(page, dialog, "Khóa học", "aws", AWS);
-  await pickSelect(page, dialog, "Trạng thái", "Hoàn thành");
+  await pickSelect(page, dialog, "Trạng thái", "Completed");
   await expect(dialog.getByLabel("Tiến độ (%)")).toHaveValue("100");
   await dialog.getByLabel("Ngày cấp").fill("01/06/2026");
   await dialog.getByLabel("Minh chứng").setInputFiles("e2e/fixtures/evidence.pdf");
@@ -71,7 +71,7 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   await expect(page.getByText("Đã thêm chứng chỉ")).toBeVisible();
 
   const row = recordRow(page, "Trần Thị Bình", AWS);
-  await expect(row).toContainText("Còn hiệu lực");
+  await expect(row).toContainText("Valid");
 
   try {
     // The evidence upload revalidates the list after the record itself appears, so retry until the link exists.
@@ -148,7 +148,7 @@ test("status rules are enforced in the form", async ({ page }) => {
   // An has no NVIDIA record, so a stray successful save would be visible as a new row (and would fail the count below).
   await pickOption(page, dialog, "Thành viên", "nguyen", "Nguyễn Văn An");
   await pickOption(page, dialog, "Khóa học", "nvidia", "NVIDIA Generative AI LLMs");
-  await pickSelect(page, dialog, "Trạng thái", "Hoàn thành");
+  await pickSelect(page, dialog, "Trạng thái", "Completed");
 
   await dialog.getByRole("button", { name: "Lưu" }).click();
   await expect(dialog.getByText("Hoàn thành thì cần ngày cấp")).toBeVisible();
@@ -203,15 +203,15 @@ test("member updates own progress and cannot see company fields", async ({ page 
     await expect(dialog.getByLabel("Trạng thái hoàn tiền")).toHaveCount(0);
     await expect(dialog.getByLabel("Thành viên", { exact: true })).toHaveCount(0);
 
-    await pickSelect(page, dialog, "Trạng thái", "Đang học");
+    await pickSelect(page, dialog, "Trạng thái", "In progress");
     await dialog.getByLabel("Tiến độ (%)").fill("40");
     await dialog.getByRole("button", { name: "Lưu" }).click();
     await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
     await expect(row).toContainText("40%");
   } finally {
-    // Restore the seed state (Chưa bắt đầu / 0) so the suite can run again on the same database.
+    // Restore the seed state (Not started / 0) so the suite can run again on the same database.
     await page.keyboard.press("Escape");
-    await editStatus(page, row, "Chưa bắt đầu", "0");
+    await editStatus(page, row, "Not started", "0");
     await expect(row).toContainText("0%");
   }
 });
@@ -300,12 +300,12 @@ test("the list updates live for another user", async ({ browser }) => {
     await expect(adminRow).toBeVisible();
 
     try {
-      await editStatus(adminPage, adminRow, "Đang học", "55");
+      await editStatus(adminPage, adminRow, "In progress", "55");
       // No reload on the manager page: Realtime must trigger the refresh.
       await expect(managerRow).toContainText("55%", { timeout: 10_000 });
     } finally {
       await adminPage.keyboard.press("Escape");
-      await editStatus(adminPage, adminRow, "Chưa bắt đầu", "0");
+      await editStatus(adminPage, adminRow, "Not started", "0");
     }
     await expect(managerRow).toContainText("0%", { timeout: 10_000 });
   } finally {

@@ -33,9 +33,9 @@ export function FileDropzone({
   function pick(candidate: File | undefined) {
     if (!candidate) return;
     const allowed = accept.split(",").map((type) => type.trim());
-    if (candidate.size === 0) return onReject("Tệp rỗng.");
-    if (candidate.size > maxBytes) return onReject("Tệp lớn hơn 4 MB. Nén hoặc chụp lại rồi thử lại.");
-    if (!allowed.includes(candidate.type)) return onReject("Chỉ nhận tệp PDF, JPG, PNG hoặc WebP.");
+    if (candidate.size === 0) return onReject("That file is empty. Choose another file.");
+    if (candidate.size > maxBytes) return onReject("That file is larger than 4 MB. Compress it or take a smaller photo, then try again.");
+    if (!allowed.includes(candidate.type)) return onReject("Only PDF, JPG, PNG or WebP files are accepted.");
     onChange(candidate);
   }
 
@@ -87,12 +87,12 @@ export function FileDropzone({
             </span>
           </span>
           <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={clear}>
-            Bỏ tệp
+            Remove file
           </Button>
         </>
       ) : (
         <label htmlFor={id} className="flex-1 cursor-pointer text-muted-foreground">
-          Kéo thả hoặc chọn tệp PDF, JPG, PNG, WebP (tối đa 4 MB)
+          Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB
         </label>
       )}
     </div>

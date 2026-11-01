@@ -123,7 +123,7 @@ test("dry runs list the seed's recipients and write nothing to the log", async (
   const admin = await signedInPage(browser, "admin@certtracker.test");
   try {
     await admin.page.goto("/settings");
-    await expect(admin.page.getByRole("heading", { name: "Cài đặt", level: 1 })).toBeVisible();
+    await expect(admin.page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
     const history = admin.page.getByRole("region", { name: "Lịch sử gửi email", exact: true });
     await expect(history).toBeVisible();
     const rowsBefore = await history.getByRole("row").count();
@@ -182,7 +182,7 @@ test("a real run sends once and a second call sends nothing; /settings shows the
   const admin = await signedInPage(browser, "admin@certtracker.test");
   try {
     await admin.page.goto("/settings");
-    await expect(admin.page.getByRole("heading", { name: "Cài đặt", level: 1 })).toBeVisible();
+    await expect(admin.page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
     const history = admin.page.getByRole("region", { name: "Lịch sử gửi email", exact: true });
 
     // Columns: Loại · Kỳ · Đã gửi · Lỗi · Đang gửi · Hoạt động cuối.
@@ -259,9 +259,9 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
 
     const member = await signedInPage(browser, "member@certtracker.test");
     try {
-      const nav = member.page.getByRole("navigation", { name: "Điều hướng chính" });
-      await expect(nav.getByRole("link", { name: "Chứng chỉ của tôi" })).toBeVisible();
-      await expect(nav.getByRole("link", { name: /^Chất lượng dữ liệu$/ })).toHaveCount(0);
+      const nav = member.page.getByRole("navigation", { name: "Main navigation" });
+      await expect(nav.getByRole("link", { name: "My certificates" })).toBeVisible();
+      await expect(nav.getByRole("link", { name: /^Data quality$/ })).toHaveCount(0);
       await member.page.goto("/data-quality");
       await expect(member.page).toHaveURL(/\/me$/);
     } finally {
@@ -280,14 +280,14 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
 test("settings is for admins only", async ({ browser }) => {
   const manager = await signedInPage(browser, "manager@certtracker.test");
   try {
-    const nav = manager.page.getByRole("navigation", { name: "Điều hướng chính" });
-    await expect(nav.getByRole("link", { name: "Chất lượng dữ liệu" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: /^Cài đặt$/ })).toHaveCount(0);
+    const nav = manager.page.getByRole("navigation", { name: "Main navigation" });
+    await expect(nav.getByRole("link", { name: "Data quality" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: /^Settings$/ })).toHaveCount(0);
 
     await manager.page.goto("/settings");
     await expect(manager.page).toHaveURL(/\/dashboard$/);
     await expect(manager.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-    await expect(manager.page.getByRole("heading", { name: /^Cài đặt$/ })).toHaveCount(0);
+    await expect(manager.page.getByRole("heading", { name: /^Settings$/ })).toHaveCount(0);
   } finally {
     await manager.close();
   }

@@ -21,7 +21,7 @@ test.describe("app shell", () => {
       wrap.className = "overflow-x-auto";
       wrap.innerHTML =
         '<table style="white-space:nowrap"><tr>' +
-        Array.from({ length: 12 }, (_, i) => `<td style="padding:0 40px">Cột dữ liệu rất dài số ${i}</td>`).join("") +
+        Array.from({ length: 12 }, (_, i) => `<td style="padding:0 40px">A very long data column number ${i}</td>`).join("") +
         "</tr></table>";
       host?.appendChild(wrap);
     });
@@ -33,11 +33,11 @@ test.describe("app shell", () => {
   test("closes the mobile drawer after navigating to another page", async ({ page }) => {
     await signIn(page, "admin@certtracker.test");
 
-    await page.getByRole("button", { name: "Mở hoặc thu gọn menu" }).click();
+    await page.getByRole("button", { name: "Toggle sidebar" }).click();
     const drawer = page.locator('[data-mobile="true"]');
     await expect(drawer).toBeVisible();
 
-    await drawer.getByRole("link", { name: "Khóa học" }).click();
+    await drawer.getByRole("link", { name: "Courses" }).click();
     await expect(page).toHaveURL(/\/courses$/);
     await expect(drawer).toHaveCount(0);
   });

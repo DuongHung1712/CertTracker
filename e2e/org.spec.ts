@@ -39,7 +39,7 @@ test("admin manages the org tree end to end", async ({ page }) => {
 
 test("member has no write access to the org tree", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
-  await expect(page.getByRole("link", { name: "Tổ chức" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Organisation" })).toHaveCount(0);
 
   // The nav link is hidden, but /org has no route guard — a Member who types the URL directly
   // must still land on a read-only page with no write controls (server-gated via canManage, not
