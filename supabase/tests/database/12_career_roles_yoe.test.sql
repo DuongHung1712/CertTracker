@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(43);
+select plan(48);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -87,6 +87,16 @@ select throws_ok(
 select throws_ok(
   $$update public.members set career_start = '2020-03-01' where id = 'c1000000-0000-0000-0000-00000000c001'$$,
   'P0001', 'only the admin can change this field', 'a manager cannot change career_start');
+-- The self flag alone never opens the career fields: not the role, and not another member's start.
+select set_config('app.career_start_self', 'on', true);
+select throws_ok(
+  $$update public.members set career_role_id = (select id from public.career_roles where name = 'Team Lead')
+    where id = 'c1000000-0000-0000-0000-00000000c001'$$,
+  'P0001', 'only the admin can change this field', 'the self flag does not let a manager change career_role_id');
+select throws_ok(
+  $$update public.members set career_start = '2020-03-01' where id = 'c1000000-0000-0000-0000-00000000c001'$$,
+  'P0001', 'only the admin can change this field', 'the self flag does not cover a row that is not the caller''s own');
+select set_config('app.career_start_self', 'off', true);
 select is((select count(*) from public.career_roles), 4::bigint, 'a manager reads the roles');
 select throws_ok(
   $$insert into public.career_roles (name, sort_order) values ('Architect', 5)$$,
@@ -171,6 +181,13 @@ select pg_temp.logout();
 -- ===== vn_today and the pure YoE function =====
 select is(public.vn_today(), (now() at time zone 'Asia/Ho_Chi_Minh')::date,
   'vn_today() is the Vietnam date');
+set local timezone = 'Etc/GMT-14';
+select is(public.vn_today(), (now() at time zone 'Asia/Ho_Chi_Minh')::date,
+  'vn_today() ignores the session time zone (UTC+14)');
+set local timezone = 'Etc/GMT+12';
+select is(public.vn_today(), (now() at time zone 'Asia/Ho_Chi_Minh')::date,
+  'vn_today() ignores the session time zone (UTC-12)');
+reset timezone;
 select is(public.yoe_years('2020-03-01', '2026-10-31'), 6.5::numeric, 'March 2020 to 31 Oct 2026 is 6.5 years');
 select is(public.yoe_years('2020-03-01', '2026-11-01'), 6.5::numeric, 'March 2020 to 1 Nov 2026 is 6.5 years');
 select is(public.yoe_years('2020-05-01', '2026-10-31'), 6.0::numeric, 'May 2020 to 31 Oct 2026 is 6.0 years');
@@ -178,6 +195,7 @@ select is(public.yoe_years('2020-04-01', '2026-09-30'), 6.0::numeric, 'April 202
 select is(public.yoe_years('2020-04-01', '2026-10-01'), 6.5::numeric,
   'one day later, across the month boundary, April 2020 to 1 Oct 2026 is 6.5 years');
 select is(public.yoe_years(null, '2026-10-01'), null, 'no start gives null');
+select is(public.yoe_years('2020-03-01', null), null, 'no today gives null');
 select is(public.yoe_years('2026-12-01', '2026-10-01'), 0::numeric, 'a start after today never goes negative');
 
 -- ===== YoE view =====

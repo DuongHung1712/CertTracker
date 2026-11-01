@@ -37,7 +37,7 @@ alter table public.members
 create index members_career_role_id_idx on public.members (career_role_id);
 
 -- Only the admin changes career_role_id / career_start. Exceptions: no JWT (postgres / service role:
--- migrations, seed, import, cron) and set_my_career_start() for the caller's own row, which raises a
+-- migrations, seed, cron; the import runs with the admin's JWT, decisions #20) and set_my_career_start() for the caller's own row, which raises a
 -- transaction-local flag (the flag never lets anyone touch the role). Managers may still update the other
 -- columns of members in their scope (existing RLS policy).
 create function public.guard_member_career_fields()
@@ -55,7 +55,7 @@ begin
     end if;
     if new.career_start is distinct from old.career_start
        and not (coalesce(current_setting('app.career_start_self', true), '') = 'on'
-                and new.id = public.my_member_id()) then
+                and coalesce(new.id = public.my_member_id(), false)) then
       raise exception 'only the admin can change this field' using errcode = 'P0001';
     end if;
   end if;
@@ -120,11 +120,12 @@ revoke execute on function public.set_my_career_start(date) from public, anon;
 grant execute on function public.set_my_career_start(date) to authenticated;
 
 -- Pure YoE: whole months between the month of p_start and the month of p_today, in years rounded down to 0.5.
--- Null without a start; never negative.
+-- Null without a start or without a date for today (strict); never negative.
 create function public.yoe_years(p_start date, p_today date)
 returns numeric
 language sql
 immutable
+strict
 set search_path = ''
 as $$
   select case
