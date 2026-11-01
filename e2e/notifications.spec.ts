@@ -226,16 +226,16 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
     const admin = await signedInPage(browser, "admin@certtracker.test");
     try {
       await admin.page.goto("/data-quality");
-      await expect(admin.page.getByRole("heading", { name: "Chất lượng dữ liệu", level: 1 })).toBeVisible();
+      await expect(admin.page.getByRole("heading", { name: "Data quality", level: 1 })).toBeVisible();
       const body = admin.page.locator("body");
-      await expect(rowWith(body, "Thiếu minh chứng", "Nguyễn Văn An")).toBeVisible();
-      await expect(rowWith(body, "Quá hạn thi", "Lê Minh Châu")).toBeVisible();
-      await expect(rowWith(body, "Quá hạn thi", "Trần Thị Bình")).toBeVisible();
+      await expect(rowWith(body, "Missing evidence", "Nguyễn Văn An")).toBeVisible();
+      await expect(rowWith(body, "Exam overdue", "Lê Minh Châu")).toBeVisible();
+      await expect(rowWith(body, "Exam overdue", "Trần Thị Bình")).toBeVisible();
 
-      await admin.page.getByRole("button", { name: "Quá hạn thi (2)" }).click();
-      await expect(admin.page.getByRole("button", { name: "Quá hạn thi (2)" })).toHaveAttribute("aria-pressed", "true");
-      await expect(rowWith(body, /Quá hạn thi/)).toHaveCount(2);
-      await expect(rowWith(body, /Thiếu minh chứng/)).toHaveCount(0);
+      await admin.page.getByRole("button", { name: "Exam overdue (2)" }).click();
+      await expect(admin.page.getByRole("button", { name: "Exam overdue (2)" })).toHaveAttribute("aria-pressed", "true");
+      await expect(rowWith(body, /Exam overdue/)).toHaveCount(2);
+      await expect(rowWith(body, /Missing evidence/)).toHaveCount(0);
     } finally {
       await admin.close();
     }
@@ -243,16 +243,16 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
     const manager = await signedInPage(browser, "manager@certtracker.test");
     try {
       await manager.page.goto("/data-quality");
-      await expect(manager.page.getByRole("heading", { name: "Chất lượng dữ liệu", level: 1 })).toBeVisible();
+      await expect(manager.page.getByRole("heading", { name: "Data quality", level: 1 })).toBeVisible();
       const body = manager.page.locator("body");
-      await expect(rowWith(body, "Thiếu minh chứng", "Nguyễn Văn An")).toBeVisible();
-      await expect(rowWith(body, "Quá hạn thi", "Lê Minh Châu")).toBeVisible();
+      await expect(rowWith(body, "Missing evidence", "Nguyễn Văn An")).toBeVisible();
+      await expect(rowWith(body, "Exam overdue", "Lê Minh Châu")).toBeVisible();
       // Absence is only meaningful once the page has rendered what the manager may see.
       await expect(rowWith(body, /Trần Thị Bình/)).toHaveCount(0);
-      await expect(manager.page.getByRole("button", { name: "Quá hạn thi (1)" })).toBeVisible();
+      await expect(manager.page.getByRole("button", { name: "Exam overdue (1)" })).toBeVisible();
       // Member- and course-level findings are for admins only.
       await expect(manager.page.getByRole("button", { name: /^No team/ })).toHaveCount(0);
-      await expect(manager.page.getByRole("button", { name: /^Chưa khai báo thời hạn/ })).toHaveCount(0);
+      await expect(manager.page.getByRole("button", { name: /^Validity not set/ })).toHaveCount(0);
     } finally {
       await manager.close();
     }

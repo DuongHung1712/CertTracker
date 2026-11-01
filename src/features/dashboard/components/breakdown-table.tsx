@@ -45,10 +45,10 @@ export function BreakdownTable({
         accessorFn: (row) => row.headcount ?? row.people,
         cell: ({ getValue }) => formatNumber(getValue<number>()),
       },
-      { accessorKey: "records", header: "Bản ghi", cell: ({ row }) => formatNumber(row.original.records) },
+      { accessorKey: "records", header: "Records", cell: ({ row }) => formatNumber(row.original.records) },
       {
         id: "rate",
-        header: "Hoàn thành",
+        header: "Completed",
         accessorFn: (row) => rateOf(row) ?? NO_RATE,
         cell: ({ row }) => {
           const rate = rateOf(row.original);
@@ -63,11 +63,11 @@ export function BreakdownTable({
           );
         },
       },
-      { accessorKey: "inProgress", header: "Đang học", cell: ({ row }) => formatNumber(row.original.inProgress) },
-      { accessorKey: "valid", header: "Còn hiệu lực", cell: ({ row }) => formatNumber(row.original.valid) },
+      { accessorKey: "inProgress", header: "In progress", cell: ({ row }) => formatNumber(row.original.inProgress) },
+      { accessorKey: "valid", header: "Valid", cell: ({ row }) => formatNumber(row.original.valid) },
       {
         accessorKey: "expired",
-        header: "Đã hết hạn",
+        header: "Expired",
         // The number stays visible: colour alone must not carry the warning.
         cell: ({ row }) => (
           <span className={cn(row.original.expired > 0 && "font-medium text-destructive")}>
@@ -85,7 +85,7 @@ export function BreakdownTable({
       data={rows}
       pageSize={10}
       getRowId={(row) => row.key}
-      empty={<EmptyState title="Chưa có dữ liệu" description={emptyHint ?? "Chưa có bản ghi nào để thống kê."} />}
+      empty={<EmptyState title="No data yet" description={emptyHint ?? "There are no records to count yet."} />}
     />
   );
 }

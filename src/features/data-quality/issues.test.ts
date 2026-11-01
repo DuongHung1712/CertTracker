@@ -9,19 +9,19 @@ const row = (over: Partial<IssueRow>): IssueRow => ({
 
 describe("describeIssue", () => {
   it("states the exam date and how late it is", () => {
-    expect(describeIssue(row({ type: "overdue_exam", since: "2026-10-01", days: 3 }))).toBe("Dự kiến thi 01/10/2026 — quá 3 ngày.");
+    expect(describeIssue(row({ type: "overdue_exam", since: "2026-10-01", days: 3 }))).toBe("Exam planned for 01/10/2026 — 3 days overdue.");
   });
   it("says what is missing for a done record", () => {
     expect(describeIssue(row({ type: "done_no_evidence", since: "2026-09-20" }))).toBe(
-      "Hoàn thành 20/09/2026 nhưng chưa có file hay đường dẫn minh chứng.",
+      "Completed on 20/09/2026 but there is no evidence file or link.",
     );
   });
   it("explains a member without a team", () => {
-    expect(describeIssue(row({ type: "member_no_team", since: "2026-08-01" }))).toBe("Chưa thuộc team nào (thêm từ 01/08/2026).");
+    expect(describeIssue(row({ type: "member_no_team", since: "2026-08-01" }))).toBe("Not in any team (added on 01/08/2026).");
   });
   it("tells the admin when a missing validity can be ignored", () => {
     expect(describeIssue(row({ type: "course_no_validity" }))).toBe(
-      "Chưa khai báo thời hạn hiệu lực. Bỏ qua nếu chứng chỉ này không hết hạn.",
+      "No validity period is set. Ignore this if the certificate does not expire.",
     );
   });
 });

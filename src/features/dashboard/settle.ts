@@ -10,6 +10,6 @@ export async function settle<T>(promise: Promise<T>): Promise<Result<T>> {
     return ok(await promise);
   } catch (error) {
     console.error("dashboard section failed", error instanceof Error ? error.message : error);
-    return err("Không tải được dữ liệu.");
+    return err("Could not load the data.");
   }
 }

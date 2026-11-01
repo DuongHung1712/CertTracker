@@ -22,8 +22,8 @@ describe("runBatchAction", () => {
 
   it("calls onError with the server message, then onSettled", async () => {
     const h = handlers();
-    await runBatchAction(async () => err("Lô đã được nhập"), h);
-    expect(h.calls).toEqual(["error:Lô đã được nhập", "settled"]);
+    await runBatchAction(async () => err("Batch already imported"), h);
+    expect(h.calls).toEqual(["error:Batch already imported", "settled"]);
   });
 
   it("calls onRejected and still onSettled when the action rejects", async () => {

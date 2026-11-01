@@ -15,7 +15,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { commitImport, discardImport } from "@/features/import/actions";
-import { countRows, describeNewEntities, ROW_OUTCOME_LABEL, rowOutcome, type RowOutcome } from "@/features/import/preview";
+import { countRows, describeNewEntities, plural, ROW_OUTCOME_LABEL, rowOutcome, type RowOutcome } from "@/features/import/preview";
 import type { ImportBatchDetail, ImportRowView } from "@/features/import/queries";
 import { runBatchAction } from "@/features/import/run-batch-action";
 import { formatDateTimeVn } from "@/lib/format";
@@ -38,14 +38,14 @@ function RowMessages({ row }: { row: ImportRowView }) {
       {row.errors.map((message, index) => (
         <li key={`e${index}`} className="flex items-start gap-1.5 text-destructive">
           <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-          <span className="sr-only">Lỗi: </span>
+          <span className="sr-only">Error: </span>
           <span>{message}</span>
         </li>
       ))}
       {row.warnings.map((message, index) => (
         <li key={`w${index}`} className="flex items-start gap-1.5 text-caption text-muted-foreground">
           <TriangleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
-          <span className="sr-only">Cảnh báo: </span>
+          <span className="sr-only">Warning: </span>
           <span>{message}</span>
         </li>
       ))}
@@ -55,9 +55,9 @@ function RowMessages({ row }: { row: ImportRowView }) {
 
 function committedMessage(batch: ImportBatchDetail): string {
   const when = batch.committedAt ? formatDateTimeVn(batch.committedAt) : "—";
-  if (!batch.summary) return `Đã nhập lúc ${when}.`;
+  if (!batch.summary) return `Imported on ${when}.`;
   const { created, updated, skipped } = batch.summary;
-  return `Đã nhập lúc ${when}: tạo mới ${created}, cập nhật ${updated}, bỏ qua ${skipped}.`;
+  return `Imported on ${when}: created ${created}, updated ${updated}, skipped ${skipped}.`;
 }
 
 export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: ImportRowView[] }) {
@@ -89,16 +89,16 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
   // Memoised: rebuilding columns on every render would remount cells.
   const columns = useMemo<ColumnDef<ImportRowView, unknown>[]>(
     () => [
-      { id: "rowNo", header: "Dòng", accessorFn: (row) => row.rowNo },
+      { id: "rowNo", header: "Row", accessorFn: (row) => row.rowNo },
       { id: "email", header: "Email", accessorFn: (row) => row.raw.email ?? "", cell: ({ row }) => row.original.raw.email ?? "—" },
       {
         id: "course",
-        header: "Khóa học",
+        header: "Course",
         accessorFn: (row) => row.raw.course ?? "",
         cell: ({ row }) => <span className="whitespace-normal">{row.original.raw.course ?? "—"}</span>,
       },
-      { id: "outcome", header: "Kết quả", accessorFn: (row) => ROW_OUTCOME_LABEL[rowOutcome(row)] },
-      { id: "details", header: "Chi tiết", enableSorting: false, cell: ({ row }) => <RowMessages row={row.original} /> },
+      { id: "outcome", header: "Result", accessorFn: (row) => ROW_OUTCOME_LABEL[rowOutcome(row)] },
+      { id: "details", header: "Details", enableSorting: false, cell: ({ row }) => <RowMessages row={row.original} /> },
     ],
     [],
   );
@@ -127,35 +127,35 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
 
   function handleCommit() {
     return runAction(() => commitImport({ batchId: batch.id }), {
-      onOk: (summary) => toast.success(`Đã nhập: tạo mới ${summary.created}, cập nhật ${summary.updated}`),
-      rejectedMessage: "Không nhận được phản hồi từ máy chủ. Tải lại trang để kiểm tra lô này đã được nhập chưa.",
+      onOk: (summary) => toast.success(`Imported: created ${summary.created}, updated ${summary.updated}`),
+      rejectedMessage: "No response from the server. Reload the page to see whether this batch was imported.",
     });
   }
 
   function handleDiscard() {
     return runAction(() => discardImport({ batchId: batch.id }), {
-      onOk: () => toast.success("Đã hủy lô nhập"),
-      rejectedMessage: "Không hủy được lô. Tải lại trang rồi thử lại.",
+      onOk: () => toast.success("Batch discarded"),
+      rejectedMessage: "Could not discard the batch. Reload the page and try again.",
     });
   }
 
-  const description = [batch.sheetName ? `Sheet ${batch.sheetName}` : null, `tải lên lúc ${formatDateTimeVn(batch.createdAt)}`]
+  const description = [batch.sheetName ? `Sheet ${batch.sheetName}` : null, `uploaded on ${formatDateTimeVn(batch.createdAt)}`]
     .filter((part) => part !== null)
     .join(" · ");
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={`Lô nhập: ${batch.fileName}`}
+        title={`Import batch: ${batch.fileName}`}
         description={description}
         actions={
           actionable && (
             <>
               <Button variant="outline" onClick={() => setConfirming("discard")}>
-                Hủy lô
+                Discard batch
               </Button>
               <Button disabled={importable === 0 || incomplete} onClick={() => setConfirming("commit")}>
-                {`Nhập ${importable} dòng`}
+                {`Import ${plural(importable, "row")}`}
               </Button>
             </>
           )
@@ -168,7 +168,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
           <AlertDescription className="text-foreground">
             {committedMessage(batch)}{" "}
             <Link href="/records" className="font-medium">
-              Xem chứng chỉ
+              View records
             </Link>
           </AlertDescription>
         </Alert>
@@ -177,14 +177,14 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         <Alert variant="destructive">
           <CircleAlert aria-hidden />
           <AlertDescription>
-            Lô chưa tải lên đủ dữ liệu (đã lưu {rows.length}/{batch.expectedRows} dòng) nên không nhập được. Hủy lô rồi tải file lên lại.
+            The batch was not fully uploaded ({rows.length} of {batch.expectedRows} rows saved), so it cannot be imported. Discard the batch and upload the file again.
           </AlertDescription>
         </Alert>
       )}
       {batch.status === "discarded" && (
         <Alert>
           <Info aria-hidden />
-          <AlertDescription className="text-foreground">Lô đã hủy.</AlertDescription>
+          <AlertDescription className="text-foreground">This batch was discarded.</AlertDescription>
         </Alert>
       )}
       {batch.notes.length > 0 && (
@@ -208,7 +208,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Tìm theo email, khóa học, số dòng…"
+        searchPlaceholder="Search by email, course or row number…"
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -216,13 +216,13 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         }}
       >
         <Select value={outcomeFilter} onValueChange={(value) => setOutcomeFilter(value ?? ALL)}>
-          <SelectTrigger aria-label="Kết quả">
+          <SelectTrigger aria-label="Result">
             <SelectValue>
-              {(value: string) => (value === ALL ? "Tất cả" : isOutcome(value) ? ROW_OUTCOME_LABEL[value] : value)}
+              {(value: string) => (value === ALL ? "All" : isOutcome(value) ? ROW_OUTCOME_LABEL[value] : value)}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tất cả</SelectItem>
+            <SelectItem value={ALL}>All</SelectItem>
             {OUTCOMES.map((outcome) => (
               <SelectItem key={outcome} value={outcome}>
                 {ROW_OUTCOME_LABEL[outcome]}
@@ -239,9 +239,9 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         pageSize={50}
         empty={
           rows.length === 0 ? (
-            <EmptyState title="Lô này không có dòng nào" />
+            <EmptyState title="This batch has no rows" />
           ) : (
-            <EmptyState title="Không tìm thấy dòng" description="Thử từ khóa khác hoặc xóa bộ lọc." />
+            <EmptyState title="No rows found" description="Try another search or clear the filters." />
           )
         }
       />
@@ -249,19 +249,19 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
       <ConfirmDialog
         open={confirming === "commit"}
         onOpenChange={(open) => !open && setConfirming(null)}
-        title={`Nhập ${importable} dòng từ ${batch.fileName}?`}
-        description={`Tạo mới ${counts.create}, cập nhật ${counts.update}. ${counts.error} dòng lỗi sẽ bị bỏ qua. Chạy trong một giao dịch: lỗi ở bất kỳ dòng nào sẽ hủy toàn bộ.`}
-        confirmLabel="Nhập dữ liệu"
-        pendingLabel="Đang nhập…"
+        title={`Import ${plural(importable, "row")} from ${batch.fileName}?`}
+        description={`Creates ${counts.create}, updates ${counts.update}. ${plural(counts.error, "row")} with errors will be skipped. Everything runs in one transaction: an error in any row cancels the whole import.`}
+        confirmLabel="Import data"
+        pendingLabel="Importing…"
         pending={pending}
         onConfirm={handleCommit}
       />
       <ConfirmDialog
         open={confirming === "discard"}
         onOpenChange={(open) => !open && setConfirming(null)}
-        title="Hủy lô nhập này?"
-        description="Dữ liệu trong lô sẽ không được nhập. Bạn vẫn xem lại được lô này."
-        confirmLabel="Hủy lô"
+        title="Discard this import batch?"
+        description="The data in this batch will not be imported. You can still look at the batch afterwards."
+        confirmLabel="Discard batch"
         pending={pending}
         onConfirm={handleDiscard}
       />

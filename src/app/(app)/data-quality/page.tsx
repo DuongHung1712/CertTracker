@@ -13,8 +13,8 @@ export default async function DataQualityPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Chất lượng dữ liệu"
-        description="Những bản ghi cần được rà soát và sửa. Constraint trong DB đã chặn dữ liệu sai; đây là phần còn lại."
+        title="Data quality"
+        description="Records that need a review or a fix. Database constraints already block invalid data; this is what remains."
       />
       <DataQualityTable issues={issues} />
     </div>

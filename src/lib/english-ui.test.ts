@@ -14,16 +14,6 @@ const VIETNAMESE = /[À-ỹĐđ]/u;
 // to English. Each area removes its prefixes in its own commit; the final area
 // leaves the list empty and deletes this constant.
 const PENDING_AREAS: string[] = [
-  // (c) import, export, dashboard, data quality
-  "src/features/import",
-  "src/features/export",
-  "src/features/dashboard",
-  "src/features/data-quality",
-  "src/app/(app)/import",
-  "src/app/(app)/dashboard",
-  "src/app/(app)/data-quality",
-  "src/app/api/export",
-  "src/app/api/import",
   // (d) notifications and e-mail templates
   "src/features/notifications",
   "src/lib/email",

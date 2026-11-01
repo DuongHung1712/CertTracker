@@ -3,22 +3,24 @@ import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-qual
 
 /** `href` is the screen where the finding is fixed; the list pages have no deep link to a single row. */
 export const ISSUE_META: Record<IssueType, { label: string; href: string }> = {
-  overdue_exam: { label: "Quá hạn thi", href: "/records" },
-  done_no_evidence: { label: "Thiếu minh chứng", href: "/records" },
+  overdue_exam: { label: "Exam overdue", href: "/records" },
+  done_no_evidence: { label: "Missing evidence", href: "/records" },
   member_no_team: { label: "No team", href: "/members" },
-  course_no_validity: { label: "Chưa khai báo thời hạn", href: "/courses" },
+  course_no_validity: { label: "Validity not set", href: "/courses" },
 };
+
+const days = (count: number) => `${count} ${count === 1 ? "day" : "days"}`;
 
 export function describeIssue(row: IssueRow): string {
   switch (row.type) {
     case "overdue_exam":
-      return `Dự kiến thi ${formatDate(row.since)} — quá ${row.days} ngày.`;
+      return `Exam planned for ${formatDate(row.since)} — ${days(row.days)} overdue.`;
     case "done_no_evidence":
-      return `Hoàn thành ${formatDate(row.since)} nhưng chưa có file hay đường dẫn minh chứng.`;
+      return `Completed on ${formatDate(row.since)} but there is no evidence file or link.`;
     case "member_no_team":
-      return `Chưa thuộc team nào (thêm từ ${formatDate(row.since)}).`;
+      return `Not in any team (added on ${formatDate(row.since)}).`;
     case "course_no_validity":
-      return "Chưa khai báo thời hạn hiệu lực. Bỏ qua nếu chứng chỉ này không hết hạn.";
+      return "No validity period is set. Ignore this if the certificate does not expire.";
   }
 }
 

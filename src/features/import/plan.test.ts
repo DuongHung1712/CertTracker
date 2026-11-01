@@ -63,7 +63,7 @@ describe("buildImportPlan", () => {
       TODAY,
     );
     expect(plan.rows.map((r) => r.action)).toEqual(["create", "skip"]);
-    expect(plan.rows[1]!.errors[0]).toMatch(/Trùng với dòng 2/);
+    expect(plan.rows[1]!.errors[0]).toMatch(/Duplicate of row 2 /);
     expect(plan.rows[0]!.normalized!.member).toEqual({ email: "ha@x.vn", fullName: "Hà", teamId: "t-ai" });
     expect(plan.rows[0]!.normalized!.course).toEqual({ name: "Azure Fundamentals", provider: { name: "Microsoft" }, certType: { name: "Security" }, validityMonths: 24, ...NO_COST });
     expect(plan.newEntities).toEqual({ members: ["Hà"], providers: ["Microsoft"], certTypes: ["Security"], courses: ["Azure Fundamentals"] });
@@ -79,7 +79,7 @@ describe("buildImportPlan", () => {
       TODAY,
     );
     expect(plan.rows[1]!.normalized!.member).toEqual({ email: "ha@x.vn", fullName: "Hà", teamId: "t-ai" });
-    expect(plan.rows[1]!.warnings.join()).toMatch(/dòng 2/);
+    expect(plan.rows[1]!.warnings.join()).toMatch(/using the name from row 2/);
   });
 
   it("errors on unknown or ambiguous teams for new members, and on missing names", () => {
@@ -92,22 +92,22 @@ describe("buildImportPlan", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.errors.join()).toMatch(/Không tìm thấy team "Team Ghost"/);
-    expect(rows[1]!.errors.join()).toMatch(/Có nhiều team tên "Team X"/);
-    expect(rows[2]!.errors.join()).toMatch(/Thiếu họ tên/);
+    expect(rows[0]!.errors.join()).toMatch(/Team "Team Ghost" not found/);
+    expect(rows[1]!.errors.join()).toMatch(/More than one team is named "Team X"/);
+    expect(rows[2]!.errors.join()).toMatch(/Full name is missing/);
   });
 
   it("never moves or renames an existing member, but warns", () => {
     const [planned] = buildImportPlan(table([row({ "Họ tên": "An Nguyễn", Team: "Team AI" })]), LOOKUPS, TODAY).rows;
     expect(planned!.normalized!.member).toEqual({ id: "m-an" });
-    expect(planned!.warnings.join()).toMatch(/giữ tên hiện có/);
-    expect(planned!.warnings.join()).toMatch(/không chuyển team/);
+    expect(planned!.warnings.join()).toMatch(/keeping the existing name/);
+    expect(planned!.warnings.join()).toMatch(/import does not move members/);
   });
 
   it("warns for an inactive member but still imports", () => {
     const [planned] = buildImportPlan(table([row({ Email: "old@x.vn", "Họ tên": "Cũ" })]), LOOKUPS, TODAY).rows;
     expect(planned!.action).toBe("create");
-    expect(planned!.warnings.join()).toMatch(/ngừng hoạt động/);
+    expect(planned!.warnings.join()).toMatch(/This member is inactive/);
   });
 
   it("needs a provider to disambiguate or to create a course", () => {
@@ -116,8 +116,8 @@ describe("buildImportPlan", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.errors.join()).toMatch(/Có nhiều khóa học tên/);
-    expect(rows[1]!.errors.join()).toMatch(/cần Nhà cung cấp/);
+    expect(rows[0]!.errors.join()).toMatch(/More than one course is named/);
+    expect(rows[1]!.errors.join()).toMatch(/a provider is needed/);
     expect(rows[2]!.normalized!.course).toEqual({ id: "c-saa" });
   });
 
@@ -130,7 +130,7 @@ describe("buildImportPlan", () => {
   it("uses fraction mode for the whole column and says so in the notes", () => {
     const plan = buildImportPlan(table([row({ "Tiến độ": 0.5 }), row({ Email: "x@x.vn", "Họ tên": "X", "Tiến độ": 1, "Trạng thái": "Đang học" })]), LOOKUPS, TODAY);
     expect(plan.rows[0]!.normalized!.record.progress).toBe(50);
-    expect(plan.notes.join()).toMatch(/0–1/);
+    expect(plan.notes.join()).toMatch(/fraction from 0 to 1/);
   });
 
   it("keeps raw cells and display fields for the preview, even on error rows", () => {
@@ -153,7 +153,7 @@ describe("buildImportPlan edge cases", () => {
   it("warns, but does not move, when an existing member without a team has a team in the file", () => {
     const [planned] = buildImportPlan(table([row({ Email: "old@x.vn", "Họ tên": "Cũ", Team: "Team Cloud" })]), LOOKUPS, TODAY).rows;
     expect(planned!.normalized!.member).toEqual({ id: "m-old" });
-    expect(planned!.warnings.join()).toMatch(/không chuyển team/);
+    expect(planned!.warnings.join()).toMatch(/import does not move members/);
   });
 
   it("does not warn about the team when it matches the member's current team", () => {
@@ -182,16 +182,16 @@ describe("buildImportPlan edge cases", () => {
     ).rows;
     expect(rows[0]!.normalized!.course).toEqual({ name: "Brand New", provider: { id: "p-aws" }, certType: null, validityMonths: 12, ...NO_COST });
     expect(rows[1]!.normalized!.course).toEqual(rows[0]!.normalized!.course);
-    expect(rows[1]!.warnings.join()).toMatch(/Thời hạn/);
+    expect(rows[1]!.warnings.join()).toMatch(/Validity differs from the new course defined in row 2/);
   });
 
   it("warns when a non-blank cert type or validity differs from an existing course, and keeps the catalog", () => {
     const [planned] = buildImportPlan(table([row({ Loại: "AI", "Thời hạn": 12 })]), LOOKUPS, TODAY).rows;
     expect(planned!.normalized!.course).toEqual({ id: "c-saa" });
-    expect(planned!.warnings.join()).toMatch(/Loại chứng chỉ trong file khác danh mục/);
-    expect(planned!.warnings.join()).toMatch(/Thời hạn trong file khác danh mục/);
+    expect(planned!.warnings.join()).toMatch(/Certificate type in the file differs from the catalog/);
+    expect(planned!.warnings.join()).toMatch(/Validity in the file differs from the catalog/);
     const [same] = buildImportPlan(table([row({ Loại: "cloud", "Thời hạn": 36 })]), LOOKUPS, TODAY).rows;
-    expect(same!.warnings.join()).not.toMatch(/khác danh mục/);
+    expect(same!.warnings.join()).not.toMatch(/differs from the catalog/);
   });
 
   it("carries cost, currency and study hours onto a new course", () => {
@@ -296,14 +296,14 @@ describe("buildImportPlan edge cases", () => {
     t.rows[2]!.rowNumber = 20;
     const plan = buildImportPlan(t, LOOKUPS, TODAY);
     expect(plan.rows.map((r) => r.rowNumber)).toEqual([10, 14, 20]);
-    expect(plan.rows[1]!.errors[0]).toMatch(/Trùng với dòng 10 /);
+    expect(plan.rows[1]!.errors[0]).toMatch(/Duplicate of row 10 /);
   });
 
   it("reports the sheet and unused columns in the notes", () => {
     const t = { ...table([row({})]), unknownColumns: ["STT", "Ảnh"] };
     const notes = buildImportPlan(t, LOOKUPS, TODAY).notes;
-    expect(notes[0]).toBe('Sheet "S", tiêu đề ở dòng 1.');
-    expect(notes.join()).toMatch(/Bỏ qua các cột không dùng: STT, Ảnh\./);
+    expect(notes[0]).toBe('Sheet "S", headers in row 1.');
+    expect(notes.join()).toMatch(/Ignored columns: STT, Ảnh./);
   });
 
   it("applies decision #22 inside a plan: 100% without an issue date is capped at 99% with a warning", () => {
@@ -408,7 +408,7 @@ describe("reconcileRecord (decision #22)", () => {
     expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, existing, TODAY)).toMatchObject({ status: "in_progress", progress: 40, errors: [] });
   });
   it("errors when nothing can be derived, when done lacks an issue date, or when it is in the future", () => {
-    expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Thiếu trạng thái và tiến độ"]);
+    expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Status and progress are missing"]);
     expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed record needs an issue date"]);
     expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The issue date cannot be in the future"]);
   });

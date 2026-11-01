@@ -16,8 +16,8 @@ import { formatDateTimeVn } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const RANKING_DESCRIPTION =
-  "Xếp theo số chứng chỉ còn hiệu lực, rồi tổng số đã hoàn thành. Cùng số liệu thì cùng hạng.";
-const MEMBER_EMPTY_HINT = "Chưa đủ dữ liệu để hiển thị (cần từ 3 người học trở lên).";
+  "Ranked by valid certificates, then by total completed. Equal numbers share a rank.";
+const MEMBER_EMPTY_HINT = "Not enough data to show (at least 3 learners are needed).";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -42,103 +42,103 @@ export default async function DashboardPage() {
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title="Dashboard"
-        description={`Số liệu tính đến ${formatDateTimeVn(new Date().toISOString())}.`}
+        description={`Figures as of ${formatDateTimeVn(new Date().toISOString())}.`}
       />
       <RecordsRealtime />
 
-      <Section title="Tổng quan">
+      <Section title="Overview">
         {kpis.ok ? (
           <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <KpiTile label="Thành viên đang hoạt động" value={kpis.data.totalMembers} />
-            <KpiTile label="Bản ghi chứng chỉ" value={kpis.data.totalRecords} />
+            <KpiTile label="Active members" value={kpis.data.totalMembers} />
+            <KpiTile label="Certificate records" value={kpis.data.totalRecords} />
             <KpiTile
-              label="Hoàn thành"
+              label="Completed"
               value={kpis.data.doneRecords}
-              hint={`${formatRate(ratePercent(kpis.data.doneRecords, kpis.data.totalRecords))} số bản ghi`}
+              hint={`${formatRate(ratePercent(kpis.data.doneRecords, kpis.data.totalRecords))} of records`}
             />
-            <KpiTile label="Đang học" value={kpis.data.inProgressRecords} />
+            <KpiTile label="In progress" value={kpis.data.inProgressRecords} />
             <KpiTile
-              label="Còn hiệu lực"
+              label="Valid"
               value={validCerts(kpis.data)}
-              hint={`Gồm ${kpis.data.noExpiryCerts} không thời hạn`}
+              hint={`Includes ${kpis.data.noExpiryCerts} with no expiry`}
             />
-            <KpiTile label="Sắp hết hạn (≤ 60 ngày)" value={expiringCerts(kpis.data)} />
-            <KpiTile label="Đã hết hạn" value={kpis.data.expiredCerts} />
+            <KpiTile label="Expiring (≤ 60 days)" value={expiringCerts(kpis.data)} />
+            <KpiTile label="Expired" value={kpis.data.expiredCerts} />
           </dl>
         ) : (
-          <SectionError title="Tổng quan" />
+          <SectionError title="Overview" />
         )}
       </Section>
 
       {noRecords ? (
         <EmptyState
-          title="Chưa có chứng chỉ nào"
-          description="Thêm chứng chỉ để thống kê xuất hiện ở đây."
+          title="No certificates yet"
+          description="Add certificates and the statistics will appear here."
           action={emptyAction(role, user?.memberId ?? null)}
         />
       ) : (
         <>
           <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
-            <Section title="Hạn chứng chỉ" description="Chứng chỉ đã hoàn thành, theo thời hạn">
-              {kpis.ok ? <ExpiryChart buckets={expiryBuckets(kpis.data)} /> : <SectionError title="Hạn chứng chỉ" />}
+            <Section title="Certificate expiry" description="Completed certificates, by time left">
+              {kpis.ok ? <ExpiryChart buckets={expiryBuckets(kpis.data)} /> : <SectionError title="Certificate expiry" />}
             </Section>
-            <Section title="Khóa học phổ biến" description="10 khóa học có nhiều người học nhất">
+            <Section title="Popular courses" description="The 10 courses with the most learners">
               {courses.ok ? (
-                <BreakdownTable rows={courses.data} groupLabel="Khóa học" peopleLabel="Người học" emptyHint={emptyHint} />
+                <BreakdownTable rows={courses.data} groupLabel="Course" peopleLabel="Learners" emptyHint={emptyHint} />
               ) : (
-                <SectionError title="Khóa học phổ biến" />
+                <SectionError title="Popular courses" />
               )}
             </Section>
           </div>
 
           {teams && (
-            <Section title="Theo team">
+            <Section title="By team">
               {teams.ok ? (
-                <BreakdownTable rows={teams.data} groupLabel="Team" peopleLabel="Thành viên" />
+                <BreakdownTable rows={teams.data} groupLabel="Team" peopleLabel="Members" />
               ) : (
-                <SectionError title="Theo team" />
+                <SectionError title="By team" />
               )}
             </Section>
           )}
 
-          <Section title="Theo loại chứng chỉ">
+          <Section title="By certificate type">
             {certTypes.ok ? (
               <BreakdownTable
                 rows={certTypes.data}
-                groupLabel="Loại chứng chỉ"
-                peopleLabel="Người học"
+                groupLabel="Certificate type"
+                peopleLabel="Learners"
                 emptyHint={emptyHint}
               />
             ) : (
-              <SectionError title="Theo loại chứng chỉ" />
+              <SectionError title="By certificate type" />
             )}
           </Section>
 
-          <Section title="Theo nhà cung cấp">
+          <Section title="By provider">
             {providers.ok ? (
               <BreakdownTable
                 rows={providers.data}
-                groupLabel="Nhà cung cấp"
-                peopleLabel="Người học"
+                groupLabel="Provider"
+                peopleLabel="Learners"
                 emptyHint={emptyHint}
               />
             ) : (
-              <SectionError title="Theo nhà cung cấp" />
+              <SectionError title="By provider" />
             )}
           </Section>
 
           {isMember && (
-            <p className="text-caption text-muted-foreground">Chỉ hiển thị nhóm có từ 3 người học trở lên.</p>
+            <p className="text-caption text-muted-foreground">Only groups with at least 3 learners are shown.</p>
           )}
         </>
       )}
 
       {ranking && (
         <Section
-          title="Xếp hạng cá nhân"
-          description={role === "manager" ? `${RANKING_DESCRIPTION} Chỉ gồm thành viên trong team bạn quản lý.` : RANKING_DESCRIPTION}
+          title="Individual ranking"
+          description={role === "manager" ? `${RANKING_DESCRIPTION} Only members of the teams you manage are included.` : RANKING_DESCRIPTION}
         >
-          {ranking.ok ? <RankingTable rows={ranking.data} /> : <SectionError title="Xếp hạng cá nhân" />}
+          {ranking.ok ? <RankingTable rows={ranking.data} /> : <SectionError title="Individual ranking" />}
         </Section>
       )}
     </div>
@@ -149,14 +149,14 @@ function emptyAction(role: string | undefined, memberId: string | null) {
   if (role === "admin" || role === "manager") {
     return (
       <Link href="/records" className={cn(buttonVariants())}>
-        Đi tới chứng chỉ
+        Go to records
       </Link>
     );
   }
   if (role === "member" && memberId) {
     return (
       <Link href="/me" className={cn(buttonVariants())}>
-        Đi tới chứng chỉ của tôi
+        Go to my certificates
       </Link>
     );
   }

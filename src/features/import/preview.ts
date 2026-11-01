@@ -4,10 +4,10 @@ import { foldText } from "@/lib/text";
 export type RowOutcome = "create" | "update" | "unchanged" | "error";
 
 export const ROW_OUTCOME_LABEL: Record<RowOutcome, string> = {
-  create: "Tạo mới",
-  update: "Cập nhật",
-  unchanged: "Không đổi",
-  error: "Lỗi",
+  create: "Create",
+  update: "Update",
+  unchanged: "Unchanged",
+  error: "Error",
 };
 
 /** A row with any error is an error whatever its stored action (the planner stores those as `skip`). */
@@ -26,6 +26,8 @@ export function countRows(rows: ImportRowView[]): Record<RowOutcome, number> {
 
 const MAX_LISTED_NAMES = 3;
 
+export const plural = (count: number, noun: string) => `${count} ${noun}${count === 1 ? "" : "s"}`;
+
 type CatalogRef = { id: string } | { name: string };
 
 /** The display name of a catalog reference that does not exist yet; `null` for an existing one. */
@@ -39,7 +41,7 @@ function addFirst(into: Map<string, string>, key: string, label: string) {
 }
 
 /**
- * "Sẽ tạo mới: 1 thành viên (Hà), 2 nhà cung cấp, …" from the `create` rows only (an update or skipped row
+ * "Will create: 1 member (Ha), 2 providers, …" from the `create` rows only (an update or skipped row
  * never creates anything). Only non-empty groups appear; `null` when there is nothing new.
  */
 export function describeNewEntities(rows: ImportRowView[]): string | null {
@@ -67,10 +69,10 @@ export function describeNewEntities(rows: ImportRowView[]): string | null {
     const names = [...members.values()];
     const listed = names.slice(0, MAX_LISTED_NAMES).join(", ");
     const rest = names.length - MAX_LISTED_NAMES;
-    groups.push(`${members.size} thành viên (${rest > 0 ? `${listed} và ${rest} người khác` : listed})`);
+    groups.push(`${plural(members.size, "member")} (${rest > 0 ? `${listed} and ${rest} more` : listed})`);
   }
-  if (providers.size > 0) groups.push(`${providers.size} nhà cung cấp`);
-  if (certTypes.size > 0) groups.push(`${certTypes.size} loại`);
-  if (courses.size > 0) groups.push(`${courses.size} khóa học`);
-  return groups.length > 0 ? `Sẽ tạo mới: ${groups.join(", ")}` : null;
+  if (providers.size > 0) groups.push(plural(providers.size, "provider"));
+  if (certTypes.size > 0) groups.push(plural(certTypes.size, "certificate type"));
+  if (courses.size > 0) groups.push(plural(courses.size, "course"));
+  return groups.length > 0 ? `Will create: ${groups.join(", ")}` : null;
 }

@@ -16,12 +16,12 @@ describe("GET /api/export/records", () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("answers a generic Vietnamese 500 when the records cannot be loaded completely", async () => {
+  it("answers a generic English 500 when the records cannot be loaded completely", async () => {
     listRecords.mockRejectedValue(new Error("Query returned more than 20000 rows"));
     const response = await GET(new Request("http://localhost/api/export/records?format=csv"));
     expect(response.status).toBe(500);
     const text = await response.text();
-    expect(text).toBe("Không xuất được dữ liệu. Vui lòng thử lại.");
+    expect(text).toBe("Could not export the data. Try again.");
     expect(text).not.toContain("20000");
   });
 
