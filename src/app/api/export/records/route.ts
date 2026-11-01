@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/features/auth/queries";
-import { recordsToCsv, recordsToXlsx } from "@/features/export/records-export";
+import { listMemberCareers } from "@/features/career/queries";
+import { recordsToCsv, recordsToXlsx, withCareerColumns, type ExportRow } from "@/features/export/records-export";
 import { listRecords } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 
@@ -15,9 +16,11 @@ export async function GET(request: Request) {
   // Early exit only — RLS (through listRecords' user-scoped client) decides which rows come back.
   if (!(await getCurrentUser())) return new Response("Chưa đăng nhập.", { status: 401 });
 
-  let rows: Awaited<ReturnType<typeof listRecords>>;
+  let rows: ExportRow[];
   try {
-    rows = await listRecords(); // admin: all, manager: their teams (+ own), member: own
+    // admin: all, manager: their teams (+ own), member: own. The career profiles follow the same members RLS.
+    const [records, careers] = await Promise.all([listRecords(), listMemberCareers()]);
+    rows = withCareerColumns(records, careers);
   } catch (error) {
     // Includes fetchAllRows refusing to truncate at its row cap: an incomplete export must never look complete.
     console.error("export: could not load records", error);

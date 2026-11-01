@@ -8,6 +8,19 @@ import type { RecordRow } from "@/features/records/queries";
 import { REFUND_STATUS_LABEL } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
 
+/** A record plus the career profile of its member (from `v_member_profiles`). */
+export type ExportRow = RecordRow & { careerRoleName: string | null; yoeYears: number | null };
+
+export type CareerProfile = { careerRoleName: string | null; yoeYears: number | null };
+
+/** Attaches each member's career role and YoE; a member without a visible profile gets empty cells. */
+export function withCareerColumns(rows: RecordRow[], profiles: Map<string, CareerProfile>): ExportRow[] {
+  return rows.map((row) => {
+    const profile = profiles.get(row.memberId);
+    return { ...row, careerRoleName: profile?.careerRoleName ?? null, yoeYears: profile?.yoeYears ?? null };
+  });
+}
+
 type ColumnKind = "text" | "number" | "date" | "percent";
 type Value = string | number | null;
 
@@ -15,20 +28,22 @@ type ExportColumn = {
   header: string;
   kind: ColumnKind;
   /** `date` columns return an ISO date, `percent` columns a 0..100 number. */
-  value: (row: RecordRow) => Value;
+  value: (row: ExportRow) => Value;
   width?: number;
 };
 
 /**
  * Column order and headers are the export contract: the import accepts an exported file unchanged (decision #26).
- * Import-relevant headers resolve through HEADER_ALIASES; "Mã", "Ngày hết hạn", "Số ngày còn lại" and
- * "Trạng thái hạn" are display-only and are reported as unknown (ignored) columns on re-import.
+ * Import-relevant headers resolve through HEADER_ALIASES; "Mã", "Career role", "YoE", "Ngày hết hạn", "Số ngày còn lại"
+ * and "Trạng thái hạn" are display-only and are reported as unknown (ignored) columns on re-import.
  */
 export const EXPORT_COLUMNS: ExportColumn[] = [
   { header: "Mã", kind: "text", value: (r) => r.memberCode },
   { header: "Họ tên", kind: "text", value: (r) => r.memberName, width: 28 },
   { header: "Email", kind: "text", value: (r) => r.memberEmail, width: 28 },
   { header: "Team", kind: "text", value: (r) => r.teamName },
+  { header: "Career role", kind: "text", value: (r) => r.careerRoleName },
+  { header: "YoE", kind: "number", value: (r) => r.yoeYears },
   { header: "Khóa học", kind: "text", value: (r) => r.courseName, width: 28 },
   { header: "Nhà cung cấp", kind: "text", value: (r) => r.providerName },
   { header: "Loại chứng chỉ", kind: "text", value: (r) => r.certTypeName },
@@ -48,7 +63,7 @@ export const EXPORT_COLUMNS: ExportColumn[] = [
 
 const HEADERS = EXPORT_COLUMNS.map((column) => column.header);
 
-export function recordsToCsv(rows: RecordRow[]): string {
+export function recordsToCsv(rows: ExportRow[]): string {
   const body = rows.map((row) =>
     EXPORT_COLUMNS.map((column): Value => {
       const value = column.value(row);
@@ -62,7 +77,7 @@ export function recordsToCsv(rows: RecordRow[]): string {
 }
 
 /** Real date serials and fractions with number formats, so Excel shows dd/mm/yyyy and percentages and the file re-imports as-is. */
-export function recordsToXlsx(rows: RecordRow[]): Uint8Array<ArrayBuffer> {
+export function recordsToXlsx(rows: ExportRow[]): Uint8Array<ArrayBuffer> {
   const body = rows.map((row) =>
     EXPORT_COLUMNS.map((column): Value => {
       const value = column.value(row);

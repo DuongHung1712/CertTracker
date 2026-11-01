@@ -12,6 +12,7 @@ import { MemberCode } from "@/components/status/member-code";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { formatYoe } from "@/features/career/format";
 import { removeManagerScopes } from "@/features/organizations/actions";
 import { deleteMember } from "@/features/members/actions";
 import { MemberDialog } from "@/features/members/components/member-dialog";
@@ -25,25 +26,35 @@ type Member = {
   teamName: string | null;
   isActive: boolean;
   userId: string | null;
+  careerRoleId: string | null;
+  careerRoleName: string | null;
+  careerStart: string | null;
+  yoeYears: number | null;
 };
+type RoleOption = { id: string; name: string };
 type Scope = { label: string; active: boolean };
 type TeamOption = { id: string; name: string };
 
 export function MembersTable({
   members,
   teams,
+  roles,
   scopes,
   showScopes,
   canCreate,
   canDelete,
+  canEditCareer,
 }: {
   members: Member[];
   teams: TeamOption[];
+  roles: RoleOption[];
   /** Manager scopes keyed by user id (Admin only; empty otherwise). */
   scopes: Record<string, Scope[]>;
   showScopes: boolean;
   canCreate: boolean;
   canDelete: boolean;
+  /** Admin only: sets the career role and start in the member form. */
+  canEditCareer: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -63,6 +74,14 @@ export function MembersTable({
     { accessorKey: "fullName", header: "Họ tên" },
     { accessorKey: "email", header: "Email" },
     { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
+    { accessorKey: "careerRoleName", header: "Role", cell: ({ row }) => row.original.careerRoleName ?? "Not set" },
+    {
+      accessorKey: "yoeYears",
+      header: "YoE",
+      cell: ({ row }) => formatYoe(row.original.yoeYears),
+      // Not set (null) sorts below every number.
+      sortingFn: (a, b) => (a.original.yoeYears ?? -1) - (b.original.yoeYears ?? -1),
+    },
     ...(showScopes
       ? ([
           {
@@ -177,7 +196,7 @@ export function MembersTable({
         getRowId={(row) => row.id}
         empty={<EmptyState title="Không tìm thấy thành viên" description="Thử từ khóa khác hoặc xóa bộ lọc." />}
       />
-      <MemberDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} teams={teams} />
+      <MemberDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} teams={teams} roles={roles} canEditCareer={canEditCareer} />
       {showScopes && (
         <ConfirmDialog
           open={!!clearingScopes}

@@ -39,6 +39,6 @@ test("Excel export is a valid workbook", async ({ page }) => {
   const book = XLSX.read(bytes);
   const sheet = book.Sheets[book.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json<string[]>(sheet, { header: 1 });
-  expect(rows[0].slice(0, 3)).toEqual(["Mã", "Họ tên", "Email"]);
+  expect(rows[0].slice(0, 6)).toEqual(["Mã", "Họ tên", "Email", "Team", "Career role", "YoE"]);
   expect(rows.length).toBeGreaterThan(1);
 });

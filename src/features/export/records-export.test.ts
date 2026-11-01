@@ -4,17 +4,24 @@ import { mapHeaders } from "@/features/import/clean";
 import { buildImportPlan, type ImportLookups } from "@/features/import/plan";
 import { readImportTable } from "@/features/import/workbook";
 import type { RecordRow } from "@/features/records/queries";
-import { EXPORT_COLUMNS, recordsToCsv, recordsToXlsx } from "@/features/export/records-export";
+import { EXPORT_COLUMNS, recordsToCsv, recordsToXlsx, withCareerColumns, type ExportRow } from "@/features/export/records-export";
 
-const NOTE = "Dòng một\nDòng hai\n\nDòng bốn";
+const CRLF = String.fromCharCode(13, 10);
+const NOTE ="Dòng một\nDòng hai\n\nDòng bốn";
 
-const ROWS: RecordRow[] = [
+const RECORDS: RecordRow[] = [
   { id: "r1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "saa", courseName: "AWS SAA", certTypeName: "Cloud", providerName: "AWS", validityMonths: 36, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2024-02-29", certificateUrl: "https://credly.com/b/1", hasEvidence: false, viaCompany: true, refundStatus: "paid", notes: "=cần kiểm tra", expiryDate: "2027-02-28", daysToExpiry: 150, expiryStatus: "Active" },
   { id: "r2", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "gcp", courseName: "GCP ACE", certTypeName: null, providerName: "Google", validityMonths: null, status: "in_progress", progress: 1, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry" },
   { id: "r3", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "az", courseName: "Azure AZ-900", certTypeName: "Cloud", providerName: "AWS", validityMonths: 12, status: "in_progress", progress: 55, plannedExamDate: null, issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "pending", notes: NOTE, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" },
 ];
 
-const baseRecord = (row: RecordRow) => ({
+const ROWS: ExportRow[] = [
+  { ...RECORDS[0]!, careerRoleName: "Senior Engineer", yoeYears: 3.5 },
+  { ...RECORDS[1]!, careerRoleName: "Senior Engineer", yoeYears: 3.5 },
+  { ...RECORDS[2]!, careerRoleName: null, yoeYears: null },
+];
+
+const baseRecord = (row: ExportRow) => ({
   id: row.id, memberId: row.memberId, courseId: row.courseId, status: row.status, progress: row.progress,
   plannedExamDate: row.plannedExamDate, issuedDate: row.issuedDate, certificateUrl: row.certificateUrl,
   viaCompany: row.viaCompany, refundStatus: row.refundStatus, notes: row.notes,
@@ -33,13 +40,13 @@ const LOOKUPS: ImportLookups = {
   records: ROWS.map(baseRecord),
 };
 
-const actions = (rows: RecordRow[], lookups: ImportLookups = LOOKUPS) => {
+const actions = (rows: ExportRow[], lookups: ImportLookups = LOOKUPS) => {
   const table = readImportTable(recordsToXlsx(rows));
   if (!table.ok) throw new Error(table.error);
   return buildImportPlan(table.value, lookups, "2026-09-30").rows.map((row) => [row.action, row.errors]);
 };
 
-const lookupsFor = (rows: RecordRow[]): ImportLookups => ({ ...LOOKUPS, records: rows.map(baseRecord) });
+const lookupsFor = (rows: ExportRow[]): ImportLookups => ({ ...LOOKUPS, records: rows.map(baseRecord) });
 
 describe("records export", () => {
   it("re-imports an exported workbook with zero changes (1% progress, leap day, multi-line note)", () => {
@@ -79,13 +86,27 @@ describe("records export", () => {
   it("maps import headers through the aliases and leaves display-only columns unmapped", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((c) => c.header));
     expect(duplicates).toEqual([]);
-    expect(unknown).toEqual(["Mã", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn"]);
+    expect(unknown).toEqual(["Mã", "Career role", "YoE", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn"]);
     expect(Object.keys(map)).toHaveLength(15);
+  });
+
+  it("puts Career role and YoE right after Team and writes their values", () => {
+    const headers = EXPORT_COLUMNS.map((c) => c.header);
+    expect(headers.slice(headers.indexOf("Team"), headers.indexOf("Team") + 3)).toEqual(["Team", "Career role", "YoE"]);
+    const lines = recordsToCsv(ROWS).split(CRLF);
+    expect(lines[1]).toContain("Team Cloud,Senior Engineer,3.5,AWS SAA");
+    expect(lines[3]).toContain("Team Cloud,,,Azure AZ-900");
+  });
+
+  it("joins the career profile of each record's member", () => {
+    const profiles = new Map([["an", { careerRoleName: "Team Lead", yoeYears: 6 }]]);
+    const joined = withCareerColumns([RECORDS[0]!, { ...RECORDS[1]!, memberId: "unknown" }], profiles);
+    expect(joined.map((row) => [row.careerRoleName, row.yoeYears])).toEqual([["Team Lead", 6], [null, null]]);
   });
 
   it("writes Vietnamese labels, dd/mm/yyyy dates and guarded text in CSV", () => {
     const csv = recordsToCsv(ROWS);
-    expect(csv.startsWith("\uFEFFMã,Họ tên,Email,Team,Khóa học")).toBe(true);
+    expect(csv.startsWith("\uFEFFMã,Họ tên,Email,Team,Career role,YoE,Khóa học")).toBe(true);
     expect(csv).toContain("29/02/2024");
     expect(csv).toContain("Hoàn thành");
     expect(csv).toContain("Đã hoàn tiền");

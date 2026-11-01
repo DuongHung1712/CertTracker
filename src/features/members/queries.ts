@@ -1,12 +1,16 @@
 import { getCurrentUser } from "@/features/auth/queries";
+import { listMemberCareers } from "@/features/career/queries";
 import { createClient } from "@/lib/supabase/server";
 
 export async function listMembers() {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("members")
-    .select("id, code, full_name, email, team_id, is_active, teams(name), profiles(user_id)")
-    .order("full_name");
+  const [{ data, error }, careers] = await Promise.all([
+    supabase
+      .from("members")
+      .select("id, code, full_name, email, team_id, is_active, teams(name), profiles(user_id)")
+      .order("full_name"),
+    listMemberCareers(),
+  ]);
   if (error) throw new Error(error.message);
   return data.map((row) => ({
     id: row.id,
@@ -17,6 +21,10 @@ export async function listMembers() {
     teamName: row.teams?.name ?? null,
     isActive: row.is_active,
     userId: row.profiles?.user_id ?? null,
+    careerRoleId: careers.get(row.id)?.careerRoleId ?? null,
+    careerRoleName: careers.get(row.id)?.careerRoleName ?? null,
+    careerStart: careers.get(row.id)?.careerStart ?? null,
+    yoeYears: careers.get(row.id)?.yoeYears ?? null,
   }));
 }
 

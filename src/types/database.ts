@@ -764,6 +764,10 @@ export type Database = {
       format_member_code: { Args: { n: number }; Returns: string }
       managed_member_ids: { Args: never; Returns: string[] }
       managed_team_ids: { Args: never; Returns: string[] }
+      move_career_role: {
+        Args: { p_direction: string; p_id: string }
+        Returns: undefined
+      }
       my_member_id: { Args: never; Returns: string }
       next_member_code: { Args: never; Returns: string }
       notification_staff: {

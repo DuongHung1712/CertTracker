@@ -1,15 +1,27 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { idSchema, memberSchema, type MemberInput } from "@/features/members/schema";
+import { careerStartToDate } from "@/features/career/schema";
+import { idSchema, makeMemberSchema, type MemberInput } from "@/features/members/schema";
 import { assertAffected } from "@/lib/assert-affected";
 import { err, ok, type Result } from "@/lib/result";
 import { mapPostgresError } from "@/lib/postgres-error";
 import { createClient } from "@/lib/supabase/server";
 
+/**
+ * Career columns to write, only the ones the caller sent: a manager's form sends neither, so nothing career-related
+ * reaches the update (the database trigger rejects a manager changing either column anyway).
+ */
+function careerColumns({ careerRoleId, careerStart }: Pick<MemberInput, "careerRoleId" | "careerStart">) {
+  return {
+    ...(careerRoleId !== undefined && { career_role_id: careerRoleId }),
+    ...(careerStart !== undefined && { career_start: careerStart === null ? null : careerStartToDate(careerStart) }),
+  };
+}
+
 /** Admin only — RLS has no insert policy for members for Manager (supabase/migrations/20260928000004_rls.sql). */
 export async function createMember(input: MemberInput): Promise<Result<null>> {
-  const parsed = memberSchema.safeParse(input);
+  const parsed = makeMemberSchema(new Date()).safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
   const supabase = await createClient();
   const { error } = await supabase.from("members").insert({
@@ -17,6 +29,7 @@ export async function createMember(input: MemberInput): Promise<Result<null>> {
     email: parsed.data.email,
     team_id: parsed.data.teamId,
     is_active: parsed.data.isActive,
+    ...careerColumns(parsed.data),
   });
   if (error) return err(mapPostgresError(error, { duplicate: `Email "${parsed.data.email}" đã được dùng.` }));
   revalidatePath("/members");
@@ -25,7 +38,7 @@ export async function createMember(input: MemberInput): Promise<Result<null>> {
 
 /** Admin: any member. Manager: members in a team they manage — and `teamId` must stay one of those teams (RLS with-check). */
 export async function updateMember(input: MemberInput & { id: string }): Promise<Result<null>> {
-  const parsed = memberSchema.extend({ id: idSchema.shape.id }).safeParse(input);
+  const parsed = makeMemberSchema(new Date()).extend({ id: idSchema.shape.id }).safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
   const { id, fullName, email, teamId, isActive } = parsed.data;
   const supabase = await createClient();
@@ -36,6 +49,7 @@ export async function updateMember(input: MemberInput & { id: string }): Promise
       email,
       team_id: teamId,
       is_active: isActive,
+      ...careerColumns(parsed.data),
     })
     .eq("id", id)
     .select("id");

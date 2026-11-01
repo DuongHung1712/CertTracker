@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { getCurrentUser } from "@/features/auth/queries";
+import { CareerCard } from "@/features/career/components/career-card";
+import { getMemberCareer } from "@/features/career/queries";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
@@ -23,9 +25,10 @@ export default async function MePage() {
     );
   }
 
-  const [records, courseOptions] = await Promise.all([
+  const [records, courseOptions, career] = await Promise.all([
     listRecords({ memberId: user.memberId }),
     listCourseOptions(),
+    getMemberCareer(user.memberId),
   ]);
 
   return (
@@ -36,6 +39,7 @@ export default async function MePage() {
         // The export is everything the caller's RLS shows; only for a Member is that exactly "my records".
         actions={user.role === "member" ? <ExportLinks /> : undefined}
       />
+      <CareerCard roleName={career.careerRoleName} careerStart={career.careerStart} yoeYears={career.yoeYears} />
       <RecordsRealtime />
       <RecordsTable
         records={records}
