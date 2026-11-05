@@ -40,20 +40,26 @@ export async function updateSession(request: NextRequest) {
   //   navigations and prefetches, whose layout calls `getCurrentUser()` -> `getUser()` once, so a
   //   navigation still contacts the Auth server exactly once. A symmetric (HS256) project makes
   //   `getClaims()` fall back to `getUser()`.
-  // Any error (e.g. a crafted cookie) counts as signed out.
+  // Local failure falls through to the Auth server, so both checks agree and /login cannot bounce a valid
+  // session back here in a loop. Any error (e.g. a crafted cookie) counts as signed out.
   const needsServerCheck = isPublic || request.method !== "GET" || pathname.startsWith("/api/");
-  let user: { id: string } | null = null;
-  try {
-    if (needsServerCheck) {
-      const { data } = await supabase.auth.getUser();
-      user = data.user ? { id: data.user.id } : null;
-    } else {
+  const checkLocally = async () => {
+    try {
       const { data } = await supabase.auth.getClaims();
-      user = data?.claims?.sub ? { id: data.claims.sub } : null;
+      return data?.claims?.sub ?? null;
+    } catch {
+      return null;
     }
-  } catch {
-    user = null;
-  }
+  };
+  const askAuthServer = async () => {
+    try {
+      const { data } = await supabase.auth.getUser();
+      return data.user?.id ?? null;
+    } catch {
+      return null;
+    }
+  };
+  const user = needsServerCheck ? await askAuthServer() : ((await checkLocally()) ?? (await askAuthServer()));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

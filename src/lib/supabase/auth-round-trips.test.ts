@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const authServerCalls = vi.fn();
 const claimsCalls = vi.fn();
 let claimsError: Error | null = null;
+let serverError: Error | null = null;
 let claims: { sub: string } | null = null;
 let serverUser: { id: string; email: string } | null = null;
 
@@ -21,6 +22,7 @@ vi.mock("@supabase/ssr", () => ({
       },
       getUser: async () => {
         authServerCalls();
+        if (serverError) throw serverError;
         return { data: { user: serverUser }, error: null };
       },
     },
@@ -70,6 +72,7 @@ beforeEach(() => {
   authServerCalls.mockClear();
   claimsCalls.mockClear();
   claimsError = null;
+  serverError = null;
   claims = { sub: "user-1" };
   serverUser = { id: "user-1", email: "manager@certtracker.test" };
   process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
@@ -102,6 +105,7 @@ describe("auth round trips per navigation", () => {
 describe("proxy", () => {
   it("redirects a page request without a verifiable session to /login", async () => {
     claims = null;
+    serverUser = null;
     const { updateSession } = await loadModules();
 
     const response = await updateSession(request("/members"));
@@ -111,9 +115,32 @@ describe("proxy", () => {
 
   it("treats a getClaims() that throws (crafted cookie) as signed out, not a 500", async () => {
     claimsError = new Error("malformed cookie");
+    serverUser = null;
     const { updateSession } = await loadModules();
 
     const response = await updateSession(request("/members"));
+
+    expect(redirectPath(response)).toBe("/login");
+  });
+
+  it.each([
+    ["throws", () => (claimsError = new Error("JWKS unreachable"))],
+    ["finds no claims", () => (claims = null)],
+  ])("lets a valid session through when getClaims() %s: no /login <-> /dashboard loop", async (_name, breakClaims) => {
+    breakClaims();
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/dashboard"));
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(authServerCalls).toHaveBeenCalledTimes(1);
+  });
+
+  it("treats a getUser() that throws as signed out, not a 500", async () => {
+    serverError = new Error("network down");
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/members", { method: "POST" }));
 
     expect(redirectPath(response)).toBe("/login");
   });
