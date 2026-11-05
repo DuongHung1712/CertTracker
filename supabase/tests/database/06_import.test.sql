@@ -24,7 +24,7 @@ insert into auth.users (id, email) values
   ('a0000000-0000-0000-0000-00000000000c', 'a@test.local');
 update public.profiles set role = 'admin' where user_id = 'a0000000-0000-0000-0000-00000000000a';
 update public.profiles set role = 'manager' where user_id = 'a0000000-0000-0000-0000-00000000000b';
-insert into public.team_managers (team_id, user_id)
+insert into public.manager_scopes (team_id, user_id)
   values ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-00000000000b');
 insert into public.providers (id, name) values ('dddddddd-0000-0000-0000-000000000001', 'Prov One');
 insert into public.courses (id, name, provider_id, validity_months)

@@ -11,7 +11,7 @@ import { FilterBar } from "@/components/data/filter-bar";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import { EXPIRY_STATUSES, expiryMeta } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
-import { RECORD_STATUS_LABEL } from "@/components/status/labels";
+import { NO_TEAM_LABEL, RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { MemberCode } from "@/components/status/member-code";
 import { ProgressInline } from "@/components/status/progress-inline";
 import { RecordStatusLabel } from "@/components/status/record-status";
@@ -108,14 +108,14 @@ export function RecordsTable({
     () => [
       ...(isTeam
         ? ([
-            { accessorKey: "memberCode", header: "Mã", cell: ({ row }) => <MemberCode code={row.original.memberCode} /> },
-            { accessorKey: "memberName", header: "Họ tên" },
+            { accessorKey: "memberCode", header: "Code", cell: ({ row }) => <MemberCode code={row.original.memberCode} /> },
+            { accessorKey: "memberName", header: "Full name" },
             { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
           ] satisfies ColumnDef<RecordRow, unknown>[])
         : []),
       {
         accessorKey: "courseName",
-        header: "Khóa học",
+        header: "Course",
         cell: ({ row }) => (
           <div className="flex flex-col">
             <span>{row.original.courseName}</span>
@@ -125,11 +125,11 @@ export function RecordsTable({
           </div>
         ),
       },
-      { accessorKey: "status", header: "Trạng thái", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
-      { accessorKey: "progress", header: "Tiến độ", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
+      { accessorKey: "status", header: "Status", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
+      { accessorKey: "progress", header: "Progress", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
       {
         id: "expiry",
-        header: "Hạn",
+        header: "Expiry",
         accessorFn: (record) => record.daysToExpiry,
         sortingFn: byDaysToExpiry,
         // Numeric columns default to descending first; "soonest expiry first" is the useful first click.
@@ -144,7 +144,7 @@ export function RecordsTable({
       },
       {
         accessorKey: "plannedExamDate",
-        header: "Ngày thi",
+        header: "Exam date",
         cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
       },
       {
@@ -160,7 +160,7 @@ export function RecordsTable({
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={`Thao tác cho ${record.memberName} · ${record.courseName}`}
+                    aria-label={`Actions for ${record.memberName} · ${record.courseName}`}
                   />
                 }
               >
@@ -173,18 +173,18 @@ export function RecordsTable({
                     setSheetOpen(true);
                   }}
                 >
-                  Sửa
+                  Edit
                 </DropdownMenuItem>
                 {record.hasEvidence && (
                   <DropdownMenuItem
                     render={<a href={`/api/records/${record.id}/evidence`} target="_blank" rel="noopener noreferrer" />}
                   >
-                    Xem minh chứng
+                    View evidence
                   </DropdownMenuItem>
                 )}
                 {canDelete && (
                   <DropdownMenuItem variant="destructive" onClick={() => setConfirming(record)}>
-                    Xóa
+                    Delete
                   </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
@@ -206,7 +206,7 @@ export function RecordsTable({
       setConfirming(null);
       return;
     }
-    toast.success("Đã xóa chứng chỉ");
+    toast.success("Deleted certificate");
     setConfirming(null);
   }
 
@@ -215,7 +215,7 @@ export function RecordsTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={isTeam ? "Tìm theo tên, mã, khóa học…" : "Tìm theo khóa học…"}
+        searchPlaceholder={isTeam ? "Search by name, code or course…" : "Search by course…"}
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -228,30 +228,30 @@ export function RecordsTable({
           <Select value={teamFilter} onValueChange={(value) => setTeamFilter(value ?? ALL)}>
             <SelectTrigger aria-label="Team">
               <SelectValue>
-                {(value: string) => (value === ALL ? "Tất cả team" : value === NO_TEAM ? "Chưa có team" : value)}
+                {(value: string) => (value === ALL ? "All teams" : value === NO_TEAM ? NO_TEAM_LABEL : value)}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>Tất cả team</SelectItem>
+              <SelectItem value={ALL}>All teams</SelectItem>
               {teamNames.map((name) => (
                 <SelectItem key={name} value={name}>
                   {name}
                 </SelectItem>
               ))}
-              {hasTeamless && <SelectItem value={NO_TEAM}>Chưa có team</SelectItem>}
+              {hasTeamless && <SelectItem value={NO_TEAM}>{NO_TEAM_LABEL}</SelectItem>}
             </SelectContent>
           </Select>
         )}
         <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL)}>
-          <SelectTrigger aria-label="Trạng thái">
+          <SelectTrigger aria-label="Status">
             <SelectValue>
               {(value: string) =>
-                value === ALL ? "Tất cả trạng thái" : (RECORD_STATUS_LABEL[value as keyof typeof RECORD_STATUS_LABEL] ?? value)
+                value === ALL ? "All statuses" : (RECORD_STATUS_LABEL[value as keyof typeof RECORD_STATUS_LABEL] ?? value)
               }
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tất cả trạng thái</SelectItem>
+            <SelectItem value={ALL}>All statuses</SelectItem>
             {RECORD_STATUSES.map((status) => (
               <SelectItem key={status} value={status}>
                 {RECORD_STATUS_LABEL[status]}
@@ -260,11 +260,11 @@ export function RecordsTable({
           </SelectContent>
         </Select>
         <Select value={expiryFilter} onValueChange={(value) => setExpiryFilter(value ?? ALL)}>
-          <SelectTrigger aria-label="Hạn">
+          <SelectTrigger aria-label="Expiry">
             <SelectValue>
               {(value: string) =>
                 value === ALL
-                  ? "Tất cả hạn"
+                  ? "All expiry statuses"
                   : (EXPIRY_STATUSES.find((status) => status === value) ?? null) !== null
                     ? expiryMeta(value as (typeof EXPIRY_STATUSES)[number]).label
                     : value
@@ -272,7 +272,7 @@ export function RecordsTable({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={ALL}>Tất cả hạn</SelectItem>
+            <SelectItem value={ALL}>All expiry statuses</SelectItem>
             {EXPIRY_STATUSES.map((status) => (
               <SelectItem key={status} value={status}>
                 {expiryMeta(status).label}
@@ -290,7 +290,7 @@ export function RecordsTable({
           }}
         >
           <Plus aria-hidden className="size-4" />
-          Thêm chứng chỉ
+          Add certificate
         </Button>
       </FilterBar>
       <DataTable
@@ -299,9 +299,9 @@ export function RecordsTable({
         getRowId={(row) => row.id}
         empty={
           records.length === 0 ? (
-            <EmptyState title="Chưa có chứng chỉ nào" description="Thêm chứng chỉ đầu tiên để bắt đầu theo dõi." />
+            <EmptyState title="No certificates yet" description="Add the first certificate to start tracking." />
           ) : (
-            <EmptyState title="Không tìm thấy chứng chỉ" description="Thử từ khóa khác hoặc xóa bộ lọc." />
+            <EmptyState title="No certificates found" description="Try a different search or clear the filters." />
           )
         }
       />
@@ -318,10 +318,10 @@ export function RecordsTable({
         <ConfirmDialog
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
-          title={`Xóa chứng chỉ ${confirming?.courseName} của ${confirming?.memberName}?`}
-          description="Bản ghi và tệp minh chứng sẽ bị xóa. Không thể hoàn tác."
-          confirmLabel="Xóa chứng chỉ"
-          pendingLabel="Đang xóa…"
+          title={`Delete the ${confirming?.courseName} certificate of ${confirming?.memberName}?`}
+          description="The certificate and its evidence file will be deleted. This cannot be undone."
+          confirmLabel="Delete certificate"
+          pendingLabel="Deleting…"
           pending={pending}
           onConfirm={handleDelete}
         />

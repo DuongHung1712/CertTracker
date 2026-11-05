@@ -25,7 +25,7 @@ export function UserMenu({ email, role }: { email: string; role: Role }) {
           accessible name (WCAG 2.5.3). The sr-only prefix below adds context
           instead, for when the email is hidden below the sm breakpoint. */}
       <DropdownMenuTrigger render={<Button variant="ghost" size="sm" />}>
-        <span className="sr-only">Tài khoản: </span>
+        <span className="sr-only">Account: </span>
         <span className="hidden max-w-48 truncate sm:inline">{email}</span>
         <RoleBadge role={role} />
         <ChevronDown aria-hidden className="size-4" />
@@ -36,7 +36,7 @@ export function UserMenu({ email, role }: { email: string; role: Role }) {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={pending} onClick={() => startTransition(async () => signOut())}>
-          {pending ? "Đang đăng xuất…" : "Đăng xuất"}
+          {pending ? "Signing out…" : "Sign out"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

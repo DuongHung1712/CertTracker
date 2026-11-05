@@ -44,18 +44,18 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
     () => [
       {
         id: "type",
-        header: "Loại",
+        header: "Type",
         accessorFn: (row) => ISSUE_META[row.type].label,
         cell: ({ row }) => (
           <span className="inline-flex items-center gap-2">
             {ISSUE_META[row.original.type].label}
-            {row.original.severity === "info" && <Badge variant="secondary">Gợi ý</Badge>}
+            {row.original.severity === "info" && <Badge variant="secondary">Suggestion</Badge>}
           </span>
         ),
       },
       {
         id: "subject",
-        header: "Đối tượng",
+        header: "Subject",
         accessorFn: (row) => subjectName(row) ?? "",
         cell: ({ row }) => {
           const name = subjectName(row.original);
@@ -73,24 +73,24 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
       { id: "team", header: "Team", accessorFn: (row) => row.teamName ?? "", cell: ({ row }) => row.original.teamName ?? "—" },
       {
         id: "detail",
-        header: "Chi tiết",
+        header: "Details",
         enableSorting: false,
         cell: ({ row }) => <span className="whitespace-normal">{describeIssue(row.original)}</span>,
       },
-      { accessorKey: "days", header: "Số ngày" },
+      { accessorKey: "days", header: "Days" },
       {
         id: "open",
-        header: () => <span className="sr-only">Thao tác</span>,
+        header: () => <span className="sr-only">Actions</span>,
         enableSorting: false,
         cell: ({ row }) => {
           const { label, href } = ISSUE_META[row.original.type];
           return (
             <Link
               href={href}
-              aria-label={`Mở ${label} của ${subjectName(row.original) ?? "—"}`}
+              aria-label={`Open ${label} for ${subjectName(row.original) ?? "—"}`}
               className={buttonVariants({ variant: "ghost", size: "xs" })}
             >
-              Mở
+              Open
             </Link>
           );
         },
@@ -107,7 +107,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Tìm theo tên, mã, khóa học, team…"
+        searchPlaceholder="Search by name, code, course or team…"
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -122,7 +122,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
             aria-pressed={typeFilter === null}
             onClick={() => setTypeFilter(null)}
           >
-            Tất cả ({issues.length})
+            All ({issues.length})
           </Button>
           {visibleTypes.map((type) => (
             <Button
@@ -143,9 +143,9 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         getRowId={(row) => `${row.type}:${row.subjectId}`}
         empty={
           issues.length === 0 ? (
-            <EmptyState title="Dữ liệu đang sạch" description="Không có bản ghi nào cần rà soát." />
+            <EmptyState title="The data is clean" description="No records need a review." />
           ) : (
-            <EmptyState title="Không có kết quả" description="Thử đổi bộ lọc." />
+            <EmptyState title="No results" description="Try changing the filters." />
           )
         }
       />

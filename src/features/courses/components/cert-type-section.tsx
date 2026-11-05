@@ -20,7 +20,7 @@ export function CertTypeSection({ certTypes }: { certTypes: CertType[] }) {
   const [pending, setPending] = useState(false);
 
   const columns: ColumnDef<CertType, unknown>[] = [
-    { accessorKey: "name", header: "Tên loại chứng chỉ" },
+    { accessorKey: "name", header: "Certificate type name" },
     {
       id: "actions",
       header: "",
@@ -35,10 +35,10 @@ export function CertTypeSection({ certTypes }: { certTypes: CertType[] }) {
               setDialogOpen(true);
             }}
           >
-            Sửa
+            Edit
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
-            Xóa
+            Delete
           </Button>
         </div>
       ),
@@ -55,14 +55,14 @@ export function CertTypeSection({ certTypes }: { certTypes: CertType[] }) {
       setConfirming(null);
       return;
     }
-    toast.success(`Đã xóa loại chứng chỉ ${confirming.name}`);
+    toast.success(`Deleted certificate type ${confirming.name}`);
     setConfirming(null);
   }
 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-section-title">Loại chứng chỉ</h2>
+        <h2 className="text-section-title">Certificate types</h2>
         <Button
           size="sm"
           onClick={() => {
@@ -71,23 +71,23 @@ export function CertTypeSection({ certTypes }: { certTypes: CertType[] }) {
           }}
         >
           <Plus aria-hidden className="size-4" />
-          Thêm loại chứng chỉ
+          Add certificate type
         </Button>
       </div>
       <DataTable
         columns={columns}
         data={certTypes}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="Chưa có loại chứng chỉ nào" />}
+        empty={<EmptyState title="No certificate types yet" />}
       />
       <CertTypeDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
       <ConfirmDialog
         open={!!confirming}
         onOpenChange={(open) => !open && setConfirming(null)}
-        title={`Xóa loại chứng chỉ ${confirming?.name}?`}
-        description="Chỉ xóa được khi không có khóa học nào dùng loại này."
-        confirmLabel="Xóa loại chứng chỉ"
-        pendingLabel="Đang xóa…"
+        title={`Delete certificate type ${confirming?.name}?`}
+        description="A certificate type can only be deleted when no course uses it."
+        confirmLabel="Delete certificate type"
+        pendingLabel="Deleting…"
         pending={pending}
         onConfirm={handleDelete}
       />

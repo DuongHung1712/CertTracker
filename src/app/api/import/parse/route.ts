@@ -13,7 +13,7 @@ import { createClient } from "@/lib/supabase/server";
 export const maxDuration = 60;
 const CHUNK = 500;
 const MULTIPART_OVERHEAD = 64 * 1024;
-const TOO_LARGE = "File lớn hơn 4 MB. Chia nhỏ file rồi nhập từng phần.";
+const TOO_LARGE = "The file is larger than 4 MB. Split it and import it in parts.";
 /** Cleanup steps for a batch whose upload failed; each reports whether it really changed the row. */
 async function removeBatch(batchId: string): Promise<boolean> {
   const { data, error } = await (await createClient()).from("import_batches").delete().eq("id", batchId).select("id");
@@ -36,9 +36,9 @@ const fail = (error: string, status: number) => NextResponse.json({ error }, { s
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
-  if (!user) return fail("Phiên đăng nhập đã hết. Đăng nhập lại rồi thử lại.", 401);
+  if (!user) return fail("Your session has expired. Sign in again and retry.", 401);
   // Early exit only — RLS on import_batches is the real guard.
-  if (user.role !== "admin") return fail("Chỉ quản trị viên được nhập dữ liệu.", 403);
+  if (user.role !== "admin") return fail("Only admins can import data.", 403);
 
   // Refuse an oversized body before buffering it (multipart framing adds a little to the file size).
   const declared = Number(request.headers.get("content-length"));
@@ -48,17 +48,17 @@ export async function POST(request: Request) {
   try {
     form = await request.formData();
   } catch {
-    return fail("Yêu cầu không hợp lệ.", 400);
+    return fail("Invalid request.", 400);
   }
   const file = form.get("file");
-  if (!(file instanceof File)) return fail("Chưa chọn file.", 400);
-  if (file.size === 0) return fail("File rỗng.", 400);
+  if (!(file instanceof File)) return fail("Choose a file first.", 400);
+  if (file.size === 0) return fail("The file is empty.", 400);
   if (file.size > MAX_IMPORT_BYTES) return fail(TOO_LARGE, 413);
 
   let batchId: string | null = null;
   try {
     const bytes = new Uint8Array(await file.arrayBuffer());
-    if (!isExcelFile(bytes)) return fail("Chỉ nhận file Excel (.xlsx hoặc .xls).", 415);
+    if (!isExcelFile(bytes)) return fail("Only Excel files (.xlsx or .xls) are accepted.", 415);
 
     const table = readImportTable(bytes);
     if (!table.ok) return fail(table.error, 422);
@@ -78,7 +78,7 @@ export async function POST(request: Request) {
       })
       .select("id")
       .single();
-    if (batchError) return fail("Không tạo được lô nhập. Vui lòng thử lại.", 500);
+    if (batchError) return fail("Could not create the import batch. Try again.", 500);
     batchId = batch.id;
 
     for (let i = 0; i < plan.rows.length; i += CHUNK) {
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
       if (error) {
         // A half-written batch must never stay committable: delete it, or at least mark it discarded.
         await cleanup(batch.id);
-        return fail("Không lưu được dữ liệu kiểm tra. Vui lòng thử lại.", 500);
+        return fail("Could not save the checked rows. Try again.", 500);
       }
     }
     return NextResponse.json({ batchId: batch.id }, { status: 201 });
@@ -104,6 +104,6 @@ export async function POST(request: Request) {
     // Never leak an internal error or stack trace to the client. If the batch row was created, make sure
     // it cannot be committed with a partial set of rows (the helper never throws).
     if (batchId) await cleanup(batchId);
-    return fail("Có lỗi xảy ra khi xử lý file. Vui lòng thử lại.", 500);
+    return fail("Something went wrong while processing the file. Try again.", 500);
   }
 }

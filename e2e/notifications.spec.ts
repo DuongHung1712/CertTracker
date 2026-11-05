@@ -123,8 +123,8 @@ test("dry runs list the seed's recipients and write nothing to the log", async (
   const admin = await signedInPage(browser, "admin@certtracker.test");
   try {
     await admin.page.goto("/settings");
-    await expect(admin.page.getByRole("heading", { name: "Cài đặt", level: 1 })).toBeVisible();
-    const history = admin.page.getByRole("region", { name: "Lịch sử gửi email", exact: true });
+    await expect(admin.page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
+    const history = admin.page.getByRole("region", { name: "Email history", exact: true });
     await expect(history).toBeVisible();
     const rowsBefore = await history.getByRole("row").count();
     const logBefore = await (await signInAsSeedUser("admin@certtracker.test")).from("notification_log").select("id");
@@ -182,23 +182,23 @@ test("a real run sends once and a second call sends nothing; /settings shows the
   const admin = await signedInPage(browser, "admin@certtracker.test");
   try {
     await admin.page.goto("/settings");
-    await expect(admin.page.getByRole("heading", { name: "Cài đặt", level: 1 })).toBeVisible();
-    const history = admin.page.getByRole("region", { name: "Lịch sử gửi email", exact: true });
+    await expect(admin.page.getByRole("heading", { name: "Settings", level: 1 })).toBeVisible();
+    const history = admin.page.getByRole("region", { name: "Email history", exact: true });
 
-    // Columns: Loại · Kỳ · Đã gửi · Lỗi · Đang gửi · Hoạt động cuối.
-    const expiryRow = rowWith(history, "Nhắc hạn chứng chỉ", weekLabel(isoWeekKey(today)));
+    // Columns: Type · Period · Sent · Failed · Sending · Stalled · Latest error · Last activity.
+    const expiryRow = rowWith(history, "Expiry alert", weekLabel(isoWeekKey(today)));
     await expect(expiryRow).toBeVisible();
     const sent = Number(await expiryRow.getByRole("cell").nth(2).innerText());
     expect(sent).toBeGreaterThanOrEqual(1);
     await expect(expiryRow.getByRole("cell").nth(3)).toHaveText("0");
 
-    const monthlyRow = rowWith(history, "Báo cáo tháng", monthLabel(previousMonthKey(today)));
+    const monthlyRow = rowWith(history, "Monthly report", monthLabel(previousMonthKey(today)));
     await expect(monthlyRow).toBeVisible();
     await expect(monthlyRow.getByRole("cell").nth(3)).toHaveText("0");
 
     // The configuration block reports presence only; the value of the secret never reaches the page.
-    const config = admin.page.getByRole("region", { name: "Cấu hình email", exact: true });
-    await expect(config.getByRole("listitem").filter({ hasText: "CRON_SECRET" })).toContainText("Đã cấu hình");
+    const config = admin.page.getByRole("region", { name: "Email configuration", exact: true });
+    await expect(config.getByRole("listitem").filter({ hasText: "CRON_SECRET" })).toHaveText(/^CRON_SECRET[\s\S]*Configured$/);
     await expect(admin.page.locator("body")).not.toContainText(SECRET);
   } finally {
     await admin.close();
@@ -226,16 +226,16 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
     const admin = await signedInPage(browser, "admin@certtracker.test");
     try {
       await admin.page.goto("/data-quality");
-      await expect(admin.page.getByRole("heading", { name: "Chất lượng dữ liệu", level: 1 })).toBeVisible();
+      await expect(admin.page.getByRole("heading", { name: "Data quality", level: 1 })).toBeVisible();
       const body = admin.page.locator("body");
-      await expect(rowWith(body, "Thiếu minh chứng", "Nguyễn Văn An")).toBeVisible();
-      await expect(rowWith(body, "Quá hạn thi", "Lê Minh Châu")).toBeVisible();
-      await expect(rowWith(body, "Quá hạn thi", "Trần Thị Bình")).toBeVisible();
+      await expect(rowWith(body, "Missing evidence", "Nguyễn Văn An")).toBeVisible();
+      await expect(rowWith(body, "Exam overdue", "Lê Minh Châu")).toBeVisible();
+      await expect(rowWith(body, "Exam overdue", "Trần Thị Bình")).toBeVisible();
 
-      await admin.page.getByRole("button", { name: "Quá hạn thi (2)" }).click();
-      await expect(admin.page.getByRole("button", { name: "Quá hạn thi (2)" })).toHaveAttribute("aria-pressed", "true");
-      await expect(rowWith(body, /Quá hạn thi/)).toHaveCount(2);
-      await expect(rowWith(body, /Thiếu minh chứng/)).toHaveCount(0);
+      await admin.page.getByRole("button", { name: "Exam overdue (2)" }).click();
+      await expect(admin.page.getByRole("button", { name: "Exam overdue (2)" })).toHaveAttribute("aria-pressed", "true");
+      await expect(rowWith(body, /Exam overdue/)).toHaveCount(2);
+      await expect(rowWith(body, /Missing evidence/)).toHaveCount(0);
     } finally {
       await admin.close();
     }
@@ -243,25 +243,25 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
     const manager = await signedInPage(browser, "manager@certtracker.test");
     try {
       await manager.page.goto("/data-quality");
-      await expect(manager.page.getByRole("heading", { name: "Chất lượng dữ liệu", level: 1 })).toBeVisible();
+      await expect(manager.page.getByRole("heading", { name: "Data quality", level: 1 })).toBeVisible();
       const body = manager.page.locator("body");
-      await expect(rowWith(body, "Thiếu minh chứng", "Nguyễn Văn An")).toBeVisible();
-      await expect(rowWith(body, "Quá hạn thi", "Lê Minh Châu")).toBeVisible();
+      await expect(rowWith(body, "Missing evidence", "Nguyễn Văn An")).toBeVisible();
+      await expect(rowWith(body, "Exam overdue", "Lê Minh Châu")).toBeVisible();
       // Absence is only meaningful once the page has rendered what the manager may see.
       await expect(rowWith(body, /Trần Thị Bình/)).toHaveCount(0);
-      await expect(manager.page.getByRole("button", { name: "Quá hạn thi (1)" })).toBeVisible();
+      await expect(manager.page.getByRole("button", { name: "Exam overdue (1)" })).toBeVisible();
       // Member- and course-level findings are for admins only.
-      await expect(manager.page.getByRole("button", { name: /^Chưa có team/ })).toHaveCount(0);
-      await expect(manager.page.getByRole("button", { name: /^Chưa khai báo thời hạn/ })).toHaveCount(0);
+      await expect(manager.page.getByRole("button", { name: /^No team/ })).toHaveCount(0);
+      await expect(manager.page.getByRole("button", { name: /^Validity not set/ })).toHaveCount(0);
     } finally {
       await manager.close();
     }
 
     const member = await signedInPage(browser, "member@certtracker.test");
     try {
-      const nav = member.page.getByRole("navigation", { name: "Điều hướng chính" });
-      await expect(nav.getByRole("link", { name: "Chứng chỉ của tôi" })).toBeVisible();
-      await expect(nav.getByRole("link", { name: /^Chất lượng dữ liệu$/ })).toHaveCount(0);
+      const nav = member.page.getByRole("navigation", { name: "Main navigation" });
+      await expect(nav.getByRole("link", { name: "My certificates" })).toBeVisible();
+      await expect(nav.getByRole("link", { name: /^Data quality$/ })).toHaveCount(0);
       await member.page.goto("/data-quality");
       await expect(member.page).toHaveURL(/\/me$/);
     } finally {
@@ -280,14 +280,14 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
 test("settings is for admins only", async ({ browser }) => {
   const manager = await signedInPage(browser, "manager@certtracker.test");
   try {
-    const nav = manager.page.getByRole("navigation", { name: "Điều hướng chính" });
-    await expect(nav.getByRole("link", { name: "Chất lượng dữ liệu" })).toBeVisible();
-    await expect(nav.getByRole("link", { name: /^Cài đặt$/ })).toHaveCount(0);
+    const nav = manager.page.getByRole("navigation", { name: "Main navigation" });
+    await expect(nav.getByRole("link", { name: "Data quality" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: /^Settings$/ })).toHaveCount(0);
 
     await manager.page.goto("/settings");
     await expect(manager.page).toHaveURL(/\/dashboard$/);
     await expect(manager.page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-    await expect(manager.page.getByRole("heading", { name: /^Cài đặt$/ })).toHaveCount(0);
+    await expect(manager.page.getByRole("heading", { name: /^Settings$/ })).toHaveCount(0);
   } finally {
     await manager.close();
   }

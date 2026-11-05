@@ -7,10 +7,10 @@ export function ExportLinks() {
   return (
     <>
       <a href="/api/export/records?format=csv" download className={LINK}>
-        Xuất CSV
+        Export CSV
       </a>
       <a href="/api/export/records?format=xlsx" download className={LINK}>
-        Xuất Excel
+        Export Excel
       </a>
     </>
   );

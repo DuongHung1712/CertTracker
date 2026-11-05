@@ -28,7 +28,7 @@ insert into auth.users (id, email) values
   ('d9000000-0000-0000-0000-00000000f00c', 'dq-a1@test.local');  -- profile trigger links it to member DQ A1
 update public.profiles set role = 'admin' where user_id = 'd9000000-0000-0000-0000-00000000f00a';
 update public.profiles set role = 'manager' where user_id = 'd9000000-0000-0000-0000-00000000f00b';
-insert into public.team_managers (team_id, user_id)
+insert into public.manager_scopes (team_id, user_id)
   values ('d9000000-0000-0000-0000-00000000a001', 'd9000000-0000-0000-0000-00000000f00b');
 
 insert into public.courses (id, name, validity_months) values

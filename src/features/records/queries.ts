@@ -1,5 +1,6 @@
 import type { RecordStatus } from "@/components/status/labels";
 import type { RefundStatus } from "@/features/records/schema";
+import { toCurrency, type Currency } from "@/lib/money";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
 
@@ -16,6 +17,9 @@ export type RecordRow = {
   certTypeName: string | null;
   providerName: string | null;
   validityMonths: number | null;
+  cost: number | null;
+  costCurrency: Currency | null;
+  estHours: number | null;
   status: RecordStatus;
   progress: number;
   plannedExamDate: string | null;
@@ -31,7 +35,7 @@ export type RecordRow = {
 };
 
 const COLUMNS =
-  "id, member_id, member_code, member_name, member_email, team_id, team_name, course_id, course_name, cert_type_name, provider_name, validity_months, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
+  "id, member_id, member_code, member_name, member_email, team_id, team_name, course_id, course_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
 
 /** RLS decides what comes back: everything for Admin, managed teams (+ own) for Manager, own for Member. */
 export async function listRecords(filter: { memberId?: string } = {}): Promise<RecordRow[]> {
@@ -60,6 +64,9 @@ export async function listRecords(filter: { memberId?: string } = {}): Promise<R
             certTypeName: row.cert_type_name,
             providerName: row.provider_name,
             validityMonths: row.validity_months,
+            cost: row.cost,
+            costCurrency: toCurrency(row.cost_currency),
+            estHours: row.est_hours,
             status: row.status,
             progress: row.progress ?? 0,
             plannedExamDate: row.planned_exam_date,

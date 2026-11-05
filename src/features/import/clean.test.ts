@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { EXPORT_COLUMNS } from "@/features/export/records-export";
 import {
-  cellText, normalizeNotes, detectProgressMode, excelSerialToDate, findHeaderRow, isoToExcelSerial, mapHeaders, normalizeBoolean,
+  cellText, IMPORT_FIELDS, normalizeNotes, detectProgressMode, excelSerialToDate, findHeaderRow, isoToExcelSerial, mapHeaders, normalizeBoolean,
   normalizeEmail, normalizeName, normalizeRefund, normalizeStatus, normalizeUrl, parseImportDate, parseNumber,
-  parseValidityMonths, progressToPercent,
+  parseCost, parseCurrency, parseStudyHours, parseValidityMonths, progressToPercent,
 } from "@/features/import/clean";
 
 describe("cellText / normalizeName (spec: trimCertType)", () => {
@@ -50,7 +51,7 @@ describe("normalizeStatus", () => {
   });
   it("returns null for blank and an error for unknown text", () => {
     expect(normalizeStatus("")).toEqual({ ok: true, value: null });
-    expect(normalizeStatus("Failed")).toEqual({ ok: false, error: 'Không nhận ra trạng thái "Failed"' });
+    expect(normalizeStatus("Failed")).toEqual({ ok: false, error: 'Unknown status "Failed"' });
   });
 });
 
@@ -117,10 +118,10 @@ describe("other fields", () => {
   it("normalizes email and rejects malformed ones", () => {
     expect(normalizeEmail("  AN@Certtracker.Test ")).toEqual({ ok: true, value: "an@certtracker.test" });
     expect(normalizeEmail("mailto:an@x.vn")).toEqual({ ok: true, value: "an@x.vn" });
-    expect(normalizeEmail("")).toEqual({ ok: false, error: "Thiếu email" });
+    expect(normalizeEmail("")).toEqual({ ok: false, error: "Email is missing" });
     expect(normalizeEmail("an@").ok).toBe(false);
     const tooLong = `${"a".repeat(250)}@x.vn`; // 255 characters
-    expect(normalizeEmail(tooLong)).toEqual({ ok: false, error: "Email quá dài (tối đa 254 ký tự)" });
+    expect(normalizeEmail(tooLong)).toEqual({ ok: false, error: "Email is too long (254 characters at most)" });
     expect(normalizeEmail(`${"a".repeat(249)}@x.vn`).ok).toBe(true); // 254 characters
     const started = Date.now();
     expect(normalizeEmail("a@".repeat(16_000)).ok).toBe(false);
@@ -128,6 +129,8 @@ describe("other fields", () => {
   });
   it("reads booleans", () => {
     expect(normalizeBoolean("x", "Qua công ty")).toEqual({ ok: true, value: true });
+    expect(normalizeBoolean("Yes", "Qua công ty")).toEqual({ ok: true, value: true });
+    expect(normalizeBoolean("No", "Qua công ty")).toEqual({ ok: true, value: false });
     expect(normalizeBoolean("Có", "Qua công ty")).toEqual({ ok: true, value: true });
     expect(normalizeBoolean("Không", "Qua công ty")).toEqual({ ok: true, value: false });
     expect(normalizeBoolean(1, "Qua công ty")).toEqual({ ok: true, value: true });
@@ -135,8 +138,19 @@ describe("other fields", () => {
     expect(normalizeBoolean("maybe", "Qua công ty").ok).toBe(false);
   });
   it("reads refund statuses including the export labels", () => {
+    expect(normalizeRefund("Refunded")).toEqual({ ok: true, value: "paid" });
+    expect(normalizeRefund("Not applicable")).toEqual({ ok: true, value: "n_a" });
+    expect(normalizeRefund("Pending")).toEqual({ ok: true, value: "pending" });
+    expect(normalizeRefund("Approved")).toEqual({ ok: true, value: "approved" });
+    expect(normalizeRefund("Rejected")).toEqual({ ok: true, value: "rejected" });
     expect(normalizeRefund("Đã hoàn tiền")).toEqual({ ok: true, value: "paid" });
     expect(normalizeRefund("Không áp dụng")).toEqual({ ok: true, value: "n_a" });
+    expect(normalizeRefund("Chờ duyệt")).toEqual({ ok: true, value: "pending" });
+    expect(normalizeRefund("Đã duyệt")).toEqual({ ok: true, value: "approved" });
+    expect(normalizeRefund("Từ chối")).toEqual({ ok: true, value: "rejected" });
+    expect(normalizeRefund("Refunded")).toEqual({ ok: true, value: "paid" });
+    expect(normalizeRefund("Not applicable")).toEqual({ ok: true, value: "n_a" });
+    expect(normalizeRefund("Pending")).toEqual({ ok: true, value: "pending" });
     expect(normalizeRefund("pending")).toEqual({ ok: true, value: "pending" });
     expect(normalizeRefund("?").ok).toBe(false);
   });
@@ -155,12 +169,68 @@ describe("other fields", () => {
   });
 });
 
+describe("cost, currency and study hours", () => {
+  it("reads an amount from a number or text, with optional symbols and thousands separators", () => {
+    expect(parseCost(150)).toEqual({ ok: true, value: 150 });
+    expect(parseCost("1234.5")).toEqual({ ok: true, value: 1234.5 });
+    expect(parseCost("3,500,000")).toEqual({ ok: true, value: 3_500_000 });
+    expect(parseCost("$1,200.50")).toEqual({ ok: true, value: 1200.5 });
+    expect(parseCost("3.500.000 ₫")).toEqual({ ok: true, value: 3_500_000 });
+    expect(parseCost("150 VNĐ")).toEqual({ ok: true, value: 150 });
+    expect(parseCost("150 vnđ")).toEqual({ ok: true, value: 150 });
+    expect(parseCost("2.000.000đ")).toEqual({ ok: true, value: 2_000_000 });
+    expect(parseCost("99 USD")).toEqual({ ok: true, value: 99 });
+    expect(parseCost(0)).toEqual({ ok: true, value: 0 });
+    expect(parseCost("")).toEqual({ ok: true, value: null });
+  });
+  it("rejects a cost that is not a non-negative amount", () => {
+    expect(parseCost("free")).toEqual({ ok: false, error: 'Cost "free" is not a valid amount.' });
+    expect(parseCost(-5).ok).toBe(false);
+  });
+  it.each([
+    ["VND", "VND"], ["vnd", "VND"], ["VNĐ", "VND"], ["₫", "VND"], ["đ", "VND"], ["Đồng", "VND"],
+    ["USD", "USD"], ["usd", "USD"], ["$", "USD"], ["US$", "USD"], ["Dollar", "USD"], ["Đô la", "USD"],
+  ])("maps the currency %s", (input, expected) => {
+    expect(parseCurrency(input)).toEqual({ ok: true, value: expected });
+  });
+  it("leaves a blank currency empty and rejects an unknown one with the documented message", () => {
+    expect(parseCurrency("  ")).toEqual({ ok: true, value: null });
+    expect(parseCurrency("EUR")).toEqual({ ok: false, error: 'Unknown currency "EUR". Use VND or USD.' });
+  });
+  it("reads study hours as a positive whole number", () => {
+    expect(parseStudyHours(40)).toEqual({ ok: true, value: 40 });
+    expect(parseStudyHours("40 giờ")).toEqual({ ok: true, value: 40 });
+    expect(parseStudyHours("12h")).toEqual({ ok: true, value: 12 });
+    expect(parseStudyHours("")).toEqual({ ok: true, value: null });
+    expect(parseStudyHours(0).ok).toBe(false);
+    expect(parseStudyHours(2.5).ok).toBe(false);
+    expect(parseStudyHours("lots")).toEqual({ ok: false, error: 'Study hours "lots" must be a whole number above 0.' });
+  });
+});
+
 describe("headers", () => {
+  it("maps the cost, currency and study hours headers in English and Vietnamese", () => {
+    expect(mapHeaders(["Cost", "Currency", "Study hours"]).map).toEqual({ cost: 0, costCurrency: 1, estHours: 2 });
+    expect(mapHeaders(["Chi phí", "Loại tiền", "Số giờ"]).map).toEqual({ cost: 0, costCurrency: 1, estHours: 2 });
+    expect(mapHeaders(["Tiền tệ", "Giờ học"]).map).toEqual({ costCurrency: 0, estHours: 1 });
+  });
   it("maps Vietnamese and English headers exactly, ignoring case and diacritics", () => {
     const { map, unknown, duplicates } = mapHeaders(["STT", "Họ và tên", "EMAIL", "Chứng chỉ", "Trạng thái", "Trạng thái hạn"]);
     expect(map).toEqual({ memberName: 1, email: 2, courseName: 3, status: 4 });
     expect(unknown).toEqual(["STT", "Trạng thái hạn"]);
     expect(duplicates).toEqual([]);
+  });
+  it("resolves every import header the export writes, and only the display-only ones stay unknown (decision #26)", () => {
+    const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((column) => column.header));
+    expect(duplicates).toEqual([]);
+    expect(Object.keys(map).sort()).toEqual([...IMPORT_FIELDS].sort());
+    expect(unknown).toEqual(["Code", "Career role", "YoE", "Expiry date", "Days left", "Expiry status"]);
+  });
+  it("still resolves the Vietnamese headers the previous export wrote", () => {
+    expect(mapHeaders(["Khóa học", "Trạng thái", "Tiến độ (%)"]).map).toEqual({ courseName: 0, status: 1, progress: 2 });
+    const old = mapHeaders(["Mã", "Họ tên", "Email", "Team", "Career role", "YoE", "Khóa học", "Nhà cung cấp", "Loại chứng chỉ", "Thời hạn (tháng)", "Cost", "Currency", "Study hours", "Trạng thái", "Tiến độ (%)", "Ngày thi dự kiến", "Ngày cấp", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn", "Link chứng chỉ", "Qua công ty", "Hoàn tiền", "Ghi chú"]);
+    expect(Object.keys(old.map).sort()).toEqual([...IMPORT_FIELDS].sort());
+    expect(old.unknown).toEqual(["Mã", "Career role", "YoE", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn"]);
   });
   it("reports a field mapped twice", () => {
     expect(mapHeaders(["Email", "E-mail", "Khóa học"]).duplicates).toEqual(["E-mail"]);

@@ -1,7 +1,7 @@
 import { render } from "@react-email/components";
 import type { ReactElement } from "react";
 
-// Without this the plain text runs table cells together ("Chứng chỉHạnCòn lại") and shouts every heading in capitals.
+// Without this the plain text runs table cells together ("CertificateExpiryTime left") and shouts every heading in capitals.
 const PLAIN_TEXT = {
   htmlToTextOptions: {
     selectors: [

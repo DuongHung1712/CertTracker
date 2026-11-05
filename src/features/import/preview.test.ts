@@ -60,7 +60,7 @@ describe("describeNewEntities", () => {
       row({ rowNo: 5, action: "skip", errors: ["x"], refs: null }),
     ];
     expect(describeNewEntities(rows)).toBe(
-      "Sẽ tạo mới: 1 thành viên (Hà), 2 nhà cung cấp, 1 loại, 2 khóa học",
+      "Will create: 1 member (Hà), 2 providers, 1 certificate type, 2 courses",
     );
   });
 
@@ -72,13 +72,13 @@ describe("describeNewEntities", () => {
         refs: { member: { id: "m" }, course: { name: "New course", provider: { id: "p" }, certType: { id: "t" } } },
       }),
     ];
-    expect(describeNewEntities(rows)).toBe("Sẽ tạo mới: 1 khóa học");
+    expect(describeNewEntities(rows)).toBe("Will create: 1 course");
   });
 
   it("truncates a long list of member names", () => {
     const rows = ["A", "B", "C", "D", "E"].map((name, i) =>
       row({ rowNo: i + 1, action: "create", refs: { member: { email: `${name}@x.vn`, fullName: name }, course: { id: "c" } } }),
     );
-    expect(describeNewEntities(rows)).toBe("Sẽ tạo mới: 5 thành viên (A, B, C và 2 người khác)");
+    expect(describeNewEntities(rows)).toBe("Will create: 5 members (A, B, C and 2 more)");
   });
 });

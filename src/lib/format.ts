@@ -9,12 +9,7 @@ export function formatDate(isoDate: string): string {
   return `${match[3]}/${match[2]}/${match[1]}`;
 }
 
-const vndFormatter = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
-const numberFormatter = new Intl.NumberFormat("vi-VN");
-
-export function formatVnd(amount: number): string {
-  return vndFormatter.format(amount);
-}
+const numberFormatter = new Intl.NumberFormat("en-US");
 
 export function formatNumber(value: number): string {
   return numberFormatter.format(value);

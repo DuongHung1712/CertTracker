@@ -16,9 +16,9 @@ function section(page: Page, name: string): Locator {
   return page.getByRole("region", { name, exact: true });
 }
 
-/** The value of one KPI tile inside the "Tổng quan" `dl`. */
+/** The value of one KPI tile inside the "Overview" `dl`. */
 function tileValue(page: Page, label: string): Locator {
-  return section(page, "Tổng quan")
+  return section(page, "Overview")
     .locator("dl > div")
     .filter({ has: page.getByText(label, { exact: true }) })
     .locator("dd")
@@ -33,12 +33,12 @@ function rowWith(scope: Locator, ...texts: string[]): Locator {
 }
 
 async function expectOrgWideTiles(page: Page) {
-  await expect(tileValue(page, "Bản ghi chứng chỉ")).toHaveText("3");
-  await expect(tileValue(page, "Hoàn thành")).toHaveText("1");
-  await expect(tileValue(page, "Đang học")).toHaveText("1");
-  await expect(tileValue(page, "Còn hiệu lực")).toHaveText("1");
-  await expect(tileValue(page, "Sắp hết hạn (≤ 60 ngày)")).toHaveText("1");
-  await expect(tileValue(page, "Đã hết hạn")).toHaveText("0");
+  await expect(tileValue(page, "Certificate records")).toHaveText("3");
+  await expect(tileValue(page, "Completed")).toHaveText("1");
+  await expect(tileValue(page, "In progress")).toHaveText("1");
+  await expect(tileValue(page, "Valid")).toHaveText("1");
+  await expect(tileValue(page, "Expiring (≤ 60 days)")).toHaveText("1");
+  await expect(tileValue(page, "Expired")).toHaveText("0");
 }
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
@@ -49,13 +49,13 @@ async function pickSelect(page: Page, dialog: Locator, label: string, optionName
 
 /** Admin edit of a record's status + progress through the row menu; waits for the save toast. */
 async function editStatus(page: Page, row: Locator, status: string, progress: string) {
-  await row.getByRole("button", { name: /Thao tác/ }).click();
-  await page.getByRole("menuitem", { name: "Sửa" }).click();
+  await row.getByRole("button", { name: /Actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
-  await pickSelect(page, dialog, "Trạng thái", status);
-  await dialog.getByLabel("Tiến độ (%)").fill(progress);
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+  await pickSelect(page, dialog, "Status", status);
+  await dialog.getByLabel("Progress (%)").fill(progress);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Saved certificate").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
 }
 
@@ -64,19 +64,19 @@ test("admin sees org-wide KPIs, the expiry chart and the personal ranking", asyn
 
   await expectOrgWideTiles(page);
   // Seed has 3 active members; members.spec leaks more (members without records), so never assert equality.
-  const members = (await tileValue(page, "Thành viên đang hoạt động").innerText()).replace(/\D/g, "");
+  const members = (await tileValue(page, "Active members").innerText()).replace(/\D/g, "");
   expect(Number(members)).toBeGreaterThanOrEqual(3);
 
-  const chart = section(page, "Hạn chứng chỉ").getByRole("img", { name: /^Hạn chứng chỉ:/ });
+  const chart = section(page, "Certificate expiry").getByRole("img", { name: /^Certificate expiry:/ });
   await expect(chart).toBeVisible();
   // Chart labels are day ranges, distinct from the tile labels; anchored so "…1" does not also match "…10".
-  await expect(chart).toHaveAttribute("aria-label", /(: |, )Còn ≤ 30 ngày 1(,|$)/);
-  await expect(chart).toHaveAttribute("aria-label", /(: |, )Còn > 60 ngày 0(,|$)/);
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )≤ 30 days left 1(,|$)/);
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )> 60 days left 0(,|$)/);
 
-  await expect(section(page, "Theo team")).toBeVisible();
-  await expect(rowWith(section(page, "Theo team"), "Team Cloud")).toBeVisible();
+  await expect(section(page, "By team")).toBeVisible();
+  await expect(rowWith(section(page, "By team"), "Team Cloud")).toBeVisible();
 
-  const ranking = section(page, "Xếp hạng cá nhân");
+  const ranking = section(page, "Individual ranking");
   await expect(ranking).toBeVisible();
   const anRow = rowWith(ranking, "Nguyễn Văn An");
   await expect(anRow).toBeVisible();
@@ -87,10 +87,10 @@ test("manager sees the same org-wide numbers but a ranking limited to their team
   await signIn(page, "manager@certtracker.test");
 
   // Org-wide (3 records), not just the managed team's 2.
-  await expect(tileValue(page, "Bản ghi chứng chỉ")).toHaveText("3");
-  await expect(section(page, "Theo team")).toBeVisible();
+  await expect(tileValue(page, "Certificate records")).toHaveText("3");
+  await expect(section(page, "By team")).toBeVisible();
 
-  const ranking = section(page, "Xếp hạng cá nhân");
+  const ranking = section(page, "Individual ranking");
   await expect(rowWith(ranking, "Nguyễn Văn An")).toBeVisible();
   await expect(rowWith(ranking, "Lê Minh Châu")).toBeVisible();
   await expect(rowWith(ranking, "Trần Thị Bình")).toHaveCount(0);
@@ -99,13 +99,13 @@ test("manager sees the same org-wide numbers but a ranking limited to their team
 test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
-  await expect(tileValue(page, "Bản ghi chứng chỉ")).toHaveText("3");
-  await expect(page.getByRole("heading", { name: /^Theo team$/ })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: /^Xếp hạng cá nhân$/ })).toHaveCount(0);
+  await expect(tileValue(page, "Certificate records")).toHaveText("3");
+  await expect(page.getByRole("heading", { name: /^By team$/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /^Individual ranking$/ })).toHaveCount(0);
 
-  await expect(page.getByText("Chỉ hiển thị nhóm có từ 3 người học trở lên.")).toBeVisible();
+  await expect(page.getByText("Only groups with at least 3 learners are shown.")).toBeVisible();
   // AWS has 2 learners and NVIDIA 1: every provider group is below the threshold, so none is shown.
-  await expect(section(page, "Theo nhà cung cấp").getByText("Chưa đủ dữ liệu để hiển thị")).toBeVisible();
+  await expect(section(page, "By provider").getByText("Not enough data to show")).toBeVisible();
 });
 
 test("a member cannot read the ranking or per-team numbers straight from the API", async () => {
@@ -141,20 +141,20 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
     await signIn(editor, "admin@certtracker.test");
     await editor.goto("/records");
 
-    await expect(tileValue(viewer, "Đang học")).toHaveText("1");
+    await expect(tileValue(viewer, "In progress")).toHaveText("1");
     // Pin the row by member and course so the edit never depends on row order.
     const row = rowWith(editor.locator("body"), "Lê Minh Châu", AWS);
     await expect(row).toBeVisible();
 
     try {
-      await editStatus(editor, row, "Đang học", "55");
+      await editStatus(editor, row, "In progress", "55");
       // No reload on the dashboard: Realtime must trigger the refresh.
-      await expect(tileValue(viewer, "Đang học")).toHaveText("2", { timeout: 10_000 });
+      await expect(tileValue(viewer, "In progress")).toHaveText("2", { timeout: 10_000 });
     } finally {
       await editor.keyboard.press("Escape");
-      await editStatus(editor, row, "Chưa bắt đầu", "0");
+      await editStatus(editor, row, "Not started", "0");
     }
-    await expect(tileValue(viewer, "Đang học")).toHaveText("1", { timeout: 10_000 });
+    await expect(tileValue(viewer, "In progress")).toHaveText("1", { timeout: 10_000 });
   } finally {
     await viewerContext.close();
     await editorContext.close();

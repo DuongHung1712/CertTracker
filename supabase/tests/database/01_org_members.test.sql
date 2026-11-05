@@ -7,7 +7,7 @@ select has_table('public', 'programs', 'programs table exists');
 select has_table('public', 'teams', 'teams table exists');
 select has_table('public', 'members', 'members table exists');
 select has_table('public', 'profiles', 'profiles table exists');
-select has_table('public', 'team_managers', 'team_managers table exists');
+select has_table('public', 'manager_scopes', 'manager_scopes table exists');
 
 insert into public.members (id, full_name, email)
 values ('aaaaaaaa-0000-0000-0000-000000000001', 'Member A', 'a@test.local');

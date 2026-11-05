@@ -14,19 +14,19 @@ export default async function ImportPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Import / Export" description="Nhập dữ liệu từ Excel cũ, xuất CSV/Excel." />
+      <PageHeader title="Import / Export" description="Import data from the old Excel file, export CSV or Excel." />
       <section className="flex flex-col gap-3">
-        <h2 className="text-section-title">Nhập từ Excel</h2>
+        <h2 className="text-section-title">Import from Excel</h2>
         <ImportUploadForm />
       </section>
       <section className="flex flex-col gap-3">
-        <h2 className="text-section-title">Xuất dữ liệu</h2>
+        <h2 className="text-section-title">Export data</h2>
         <div className="flex flex-wrap items-center gap-2">
           <ExportLinks />
         </div>
       </section>
       <section className="flex flex-col gap-3">
-        <h2 className="text-section-title">Lịch sử nhập</h2>
+        <h2 className="text-section-title">Import history</h2>
         <BatchHistory batches={batches} />
       </section>
     </div>

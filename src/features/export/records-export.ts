@@ -8,6 +8,19 @@ import type { RecordRow } from "@/features/records/queries";
 import { REFUND_STATUS_LABEL } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
 
+/** A record plus the career profile of its member (from `v_member_profiles`). */
+export type ExportRow = RecordRow & { careerRoleName: string | null; yoeYears: number | null };
+
+export type CareerProfile = { careerRoleName: string | null; yoeYears: number | null };
+
+/** Attaches each member's career role and YoE; a member without a visible profile gets empty cells. */
+export function withCareerColumns(rows: RecordRow[], profiles: Map<string, CareerProfile>): ExportRow[] {
+  return rows.map((row) => {
+    const profile = profiles.get(row.memberId);
+    return { ...row, careerRoleName: profile?.careerRoleName ?? null, yoeYears: profile?.yoeYears ?? null };
+  });
+}
+
 type ColumnKind = "text" | "number" | "date" | "percent";
 type Value = string | number | null;
 
@@ -15,40 +28,45 @@ type ExportColumn = {
   header: string;
   kind: ColumnKind;
   /** `date` columns return an ISO date, `percent` columns a 0..100 number. */
-  value: (row: RecordRow) => Value;
+  value: (row: ExportRow) => Value;
   width?: number;
 };
 
 /**
  * Column order and headers are the export contract: the import accepts an exported file unchanged (decision #26).
- * Import-relevant headers resolve through HEADER_ALIASES; "Mã", "Ngày hết hạn", "Số ngày còn lại" and
- * "Trạng thái hạn" are display-only and are reported as unknown (ignored) columns on re-import.
+ * Import-relevant headers resolve through HEADER_ALIASES; "Code", "Career role", "YoE", "Expiry date", "Days left"
+ * and "Expiry status" are display-only and are reported as unknown (ignored) columns on re-import.
  */
 export const EXPORT_COLUMNS: ExportColumn[] = [
-  { header: "Mã", kind: "text", value: (r) => r.memberCode },
-  { header: "Họ tên", kind: "text", value: (r) => r.memberName, width: 28 },
+  { header: "Code", kind: "text", value: (r) => r.memberCode },
+  { header: "Full name", kind: "text", value: (r) => r.memberName, width: 28 },
   { header: "Email", kind: "text", value: (r) => r.memberEmail, width: 28 },
   { header: "Team", kind: "text", value: (r) => r.teamName },
-  { header: "Khóa học", kind: "text", value: (r) => r.courseName, width: 28 },
-  { header: "Nhà cung cấp", kind: "text", value: (r) => r.providerName },
-  { header: "Loại chứng chỉ", kind: "text", value: (r) => r.certTypeName },
-  { header: "Thời hạn (tháng)", kind: "number", value: (r) => r.validityMonths },
-  { header: "Trạng thái", kind: "text", value: (r) => RECORD_STATUS_LABEL[r.status] },
-  { header: "Tiến độ (%)", kind: "percent", value: (r) => r.progress },
-  { header: "Ngày thi dự kiến", kind: "date", value: (r) => r.plannedExamDate, width: 14 },
-  { header: "Ngày cấp", kind: "date", value: (r) => r.issuedDate, width: 14 },
-  { header: "Ngày hết hạn", kind: "date", value: (r) => r.expiryDate, width: 14 },
-  { header: "Số ngày còn lại", kind: "number", value: (r) => r.daysToExpiry },
-  { header: "Trạng thái hạn", kind: "text", value: (r) => expiryMeta(toExpiryStatus(r.expiryStatus)).label },
-  { header: "Link chứng chỉ", kind: "text", value: (r) => r.certificateUrl },
-  { header: "Qua công ty", kind: "text", value: (r) => (r.viaCompany ? "Có" : "Không") },
-  { header: "Hoàn tiền", kind: "text", value: (r) => REFUND_STATUS_LABEL[r.refundStatus] },
-  { header: "Ghi chú", kind: "text", value: (r) => r.notes, width: 40 },
+  { header: "Career role", kind: "text", value: (r) => r.careerRoleName },
+  { header: "YoE", kind: "number", value: (r) => r.yoeYears },
+  { header: "Course", kind: "text", value: (r) => r.courseName, width: 28 },
+  { header: "Provider", kind: "text", value: (r) => r.providerName },
+  { header: "Certificate type", kind: "text", value: (r) => r.certTypeName },
+  { header: "Validity (months)", kind: "number", value: (r) => r.validityMonths },
+  { header: "Cost", kind: "number", value: (r) => r.cost },
+  { header: "Currency", kind: "text", value: (r) => r.costCurrency },
+  { header: "Study hours", kind: "number", value: (r) => r.estHours },
+  { header: "Status", kind: "text", value: (r) => RECORD_STATUS_LABEL[r.status] },
+  { header: "Progress (%)", kind: "percent", value: (r) => r.progress },
+  { header: "Planned exam date", kind: "date", value: (r) => r.plannedExamDate, width: 14 },
+  { header: "Issue date", kind: "date", value: (r) => r.issuedDate, width: 14 },
+  { header: "Expiry date", kind: "date", value: (r) => r.expiryDate, width: 14 },
+  { header: "Days left", kind: "number", value: (r) => r.daysToExpiry },
+  { header: "Expiry status", kind: "text", value: (r) => expiryMeta(toExpiryStatus(r.expiryStatus)).label },
+  { header: "Certificate link", kind: "text", value: (r) => r.certificateUrl },
+  { header: "Registered through the company", kind: "text", value: (r) => (r.viaCompany ? "Yes" : "No") },
+  { header: "Refund status", kind: "text", value: (r) => REFUND_STATUS_LABEL[r.refundStatus] },
+  { header: "Notes", kind: "text", value: (r) => r.notes, width: 40 },
 ];
 
 const HEADERS = EXPORT_COLUMNS.map((column) => column.header);
 
-export function recordsToCsv(rows: RecordRow[]): string {
+export function recordsToCsv(rows: ExportRow[]): string {
   const body = rows.map((row) =>
     EXPORT_COLUMNS.map((column): Value => {
       const value = column.value(row);
@@ -62,7 +80,7 @@ export function recordsToCsv(rows: RecordRow[]): string {
 }
 
 /** Real date serials and fractions with number formats, so Excel shows dd/mm/yyyy and percentages and the file re-imports as-is. */
-export function recordsToXlsx(rows: RecordRow[]): Uint8Array<ArrayBuffer> {
+export function recordsToXlsx(rows: ExportRow[]): Uint8Array<ArrayBuffer> {
   const body = rows.map((row) =>
     EXPORT_COLUMNS.map((column): Value => {
       const value = column.value(row);
@@ -83,6 +101,6 @@ export function recordsToXlsx(rows: RecordRow[]): Uint8Array<ArrayBuffer> {
   });
   sheet["!cols"] = EXPORT_COLUMNS.map((column) => ({ wch: column.width ?? 16 }));
   const book = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(book, sheet, "Chứng chỉ");
+  XLSX.utils.book_append_sheet(book, sheet, "Certificates");
   return new Uint8Array(XLSX.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer);
 }

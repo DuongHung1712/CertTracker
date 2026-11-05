@@ -16,7 +16,7 @@ export function LoginForm() {
         <Input id="email" name="email" type="email" autoComplete="email" required />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="password">Mật khẩu</Label>
+        <Label htmlFor="password">Password</Label>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
       {state && !state.ok && (
@@ -25,7 +25,7 @@ export function LoginForm() {
         </p>
       )}
       <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Đang đăng nhập..." : "Đăng nhập"}
+        {pending ? "Signing in…" : "Sign in"}
       </Button>
     </form>
   );

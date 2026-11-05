@@ -253,7 +253,7 @@ describe("handleCron runs", () => {
     const res = await handleCron(request("", undefined, "monthly-report"), "monthly-report", deps);
     expect(res.status).toBe(200);
     expect(((await res.json()) as RunSummary).planned).toBe(2);
-    expect(sender.sent.every((m) => m.subject.includes("tháng 09/2026"))).toBe(true);
+    expect(sender.sent.every((m) => m.subject.includes("September 2026"))).toBe(true);
   });
 
   it("omits the app link when APP_URL is not set", async () => {

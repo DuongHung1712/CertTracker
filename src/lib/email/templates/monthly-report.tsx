@@ -12,30 +12,30 @@ const num: CSSProperties = { textAlign: "right", whiteSpace: "nowrap" };
 /** Labels match the Dashboard KPI tiles word for word (decisions #31). */
 function kpiRows(k: Kpi): Array<[label: string, value: string]> {
   return [
-    ["Thành viên", formatNumber(k.members)],
-    ["Bản ghi", formatNumber(k.records)],
-    ["Hoàn thành", `${formatNumber(k.done)} (${formatRate(k.completionRate)})`],
-    ["Đang học", formatNumber(k.inProgress)],
-    ["Còn hiệu lực", formatNumber(k.valid)],
-    ["Sắp hết hạn (≤ 60 ngày)", formatNumber(k.expiring)],
-    ["Đã hết hạn", formatNumber(k.expired)],
-    ["Cấp mới trong tháng", formatNumber(k.issuedInMonth)],
-    ["Hết hạn trong tháng", formatNumber(k.expiredInMonth)],
+    ["Active members", formatNumber(k.members)],
+    ["Certificate records", formatNumber(k.records)],
+    ["Completed", `${formatNumber(k.done)} (${formatRate(k.completionRate)})`],
+    ["In progress", formatNumber(k.inProgress)],
+    ["Valid", formatNumber(k.valid)],
+    ["Expiring (≤ 60 days)", formatNumber(k.expiring)],
+    ["Expired", formatNumber(k.expired)],
+    ["Issued this month", formatNumber(k.issuedInMonth)],
+    ["Expired this month", formatNumber(k.expiredInMonth)],
   ];
 }
 
 /** Every user-controlled string below goes through JSX text, so React escapes it. */
 /** `asOf` is the Vietnam date the figures were computed on: KPIs are a snapshot of now, not of the end of the month. */
 export function MonthlyReportEmail({ report, appUrl, asOf }: { report: MonthlyReport; appUrl: string | null; asOf: string }) {
-  const title = `Báo cáo ${monthLabel(report.month)}`;
+  const title = `Monthly report for ${monthLabel(report.month)}`;
   return (
     <EmailLayout preview={title} appUrl={appUrl}>
-      <Text style={styles.text}>{report.name ? `Xin chào ${report.name}` : "Xin chào"}</Text>
+      <Text style={styles.text}>{report.name ? `Hello ${report.name},` : "Hello,"}</Text>
       <Heading as="h2" style={{ ...styles.h2, marginTop: 8 }}>
         {title}
       </Heading>
-      <Text style={styles.muted}>{report.scope === "teams" ? "Số liệu của các team bạn quản lý." : "Số liệu toàn đơn vị."}</Text>
-      <Text style={styles.muted}>{`Số liệu tính đến ${formatDate(asOf)}`}</Text>
+      <Text style={styles.muted}>{report.scope === "teams" ? "Figures for the teams you manage." : "Figures for the whole organisation."}</Text>
+      <Text style={styles.muted}>{`Figures as of ${formatDate(asOf)}`}</Text>
 
       <table role="presentation" cellPadding={0} cellSpacing={0} style={styles.table}>
         <tbody>
@@ -51,17 +51,17 @@ export function MonthlyReportEmail({ report, appUrl, asOf }: { report: MonthlyRe
       {report.teams.length > 0 ? (
         <>
           <Heading as="h2" style={styles.h2}>
-            Theo team
+            By team
           </Heading>
           <table role="presentation" cellPadding={0} cellSpacing={0} style={styles.table}>
             <thead>
               <tr>
                 <th style={styles.th}>Team</th>
-                <th style={{ ...styles.th, ...num }}>Thành viên</th>
-                <th style={{ ...styles.th, ...num }}>Hoàn thành</th>
-                <th style={{ ...styles.th, ...num }}>Còn hiệu lực</th>
-                <th style={{ ...styles.th, ...num }}>Sắp hết hạn</th>
-                <th style={{ ...styles.th, ...num }}>Đã hết hạn</th>
+                <th style={{ ...styles.th, ...num }}>Members</th>
+                <th style={{ ...styles.th, ...num }}>Completed</th>
+                <th style={{ ...styles.th, ...num }}>Valid</th>
+                <th style={{ ...styles.th, ...num }}>Expiring</th>
+                <th style={{ ...styles.th, ...num }}>Expired</th>
               </tr>
             </thead>
             <tbody>
@@ -85,7 +85,7 @@ export function MonthlyReportEmail({ report, appUrl, asOf }: { report: MonthlyRe
       {report.upcoming.length > 0 ? (
         <>
           <Heading as="h2" style={styles.h2}>
-            Sắp hết hạn trong 60 ngày
+            Expiring in the next 60 days
           </Heading>
           <ExpiryTable items={report.upcoming} withMember moreHref={appLink(appUrl, "/records")} />
         </>

@@ -3,6 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { capItems, MAX_LINES, type ExpiryBucket, type ExpiryItem } from "@/features/notifications/expiry-plan";
 import { formatDate } from "@/lib/format";
 import { EMAIL_THEME as c } from "@/lib/email/theme";
+import { pluralize } from "@/lib/plural";
 
 const FONT = '-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
@@ -39,7 +40,7 @@ export const appLink = (appUrl: string | null, path: string): string | null => (
 
 export function EmailLayout({ preview, children, appUrl }: { preview: string; children: ReactNode; appUrl: string | null }) {
   return (
-    <Html lang="vi">
+    <Html lang="en">
       <Head />
       <Preview>{preview}</Preview>
       <Body style={styles.body}>
@@ -50,11 +51,11 @@ export function EmailLayout({ preview, children, appUrl }: { preview: string; ch
           {children}
           <Hr style={{ borderColor: c.border, margin: "24px 0 12px" }} />
           <Section>
-            <Text style={styles.footer}>Email tự động từ CertTracker — vui lòng không trả lời.</Text>
+            <Text style={styles.footer}>This is an automated e-mail from CertTracker. Please do not reply.</Text>
             {appUrl ? (
               <Text style={styles.footer}>
                 <Link href={appUrl} style={styles.link}>
-                  Mở CertTracker
+                  Open CertTracker
                 </Link>
               </Text>
             ) : null}
@@ -72,10 +73,11 @@ const BUCKET_STYLE: Record<ExpiryBucket, CSSProperties> = {
 };
 
 export function bucketText(item: Pick<ExpiryItem, "bucket" | "daysToExpiry">): string {
-  return item.bucket === "expired" ? `Đã hết hạn ${-item.daysToExpiry} ngày` : `Còn ${item.daysToExpiry} ngày`;
+  if (item.bucket === "expired") return `Expired ${pluralize(-item.daysToExpiry, "day")} ago`;
+  return `${pluralize(item.daysToExpiry, "day")} left`;
 }
 
-/** Items are capped at MAX_LINES; the rest collapse into "và N chứng chỉ khác" (+ a link when the app URL is known). */
+/** Items are capped at MAX_LINES; the rest collapse into "and N more certificates" (+ a link when the app URL is known). */
 export function ExpiryTable({
   items,
   withMember,
@@ -91,10 +93,10 @@ export function ExpiryTable({
     <table role="presentation" cellPadding={0} cellSpacing={0} style={styles.table}>
       <thead>
         <tr>
-          {withMember ? <th style={styles.th}>Thành viên</th> : null}
-          <th style={styles.th}>Chứng chỉ</th>
-          <th style={styles.th}>Hạn</th>
-          <th style={styles.th}>Còn lại</th>
+          {withMember ? <th style={styles.th}>Member</th> : null}
+          <th style={styles.th}>Certificate</th>
+          <th style={styles.th}>Expiry</th>
+          <th style={styles.th}>Time left</th>
         </tr>
       </thead>
       <tbody>
@@ -115,12 +117,12 @@ export function ExpiryTable({
         {hidden > 0 ? (
           <tr>
             <td colSpan={columns} style={{ ...styles.td, color: c.mutedForeground }}>
-              {`và ${hidden} chứng chỉ khác`}
+              {`and ${pluralize(hidden, "more certificate")}`}
               {moreHref ? (
                 <>
                   {" — "}
                   <Link href={moreHref} style={styles.link}>
-                    Xem đầy đủ
+                    View all
                   </Link>
                 </>
               ) : null}

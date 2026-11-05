@@ -46,9 +46,9 @@ describe("monthRange", () => {
 });
 
 describe("labels", () => {
-  it("formats Vietnamese labels", () => {
-    expect(weekLabel("2026-W41")).toBe("tuần 41/2026");
-    expect(monthLabel("2026-09")).toBe("tháng 09/2026");
+  it("formats English labels", () => {
+    expect(weekLabel("2026-W41")).toBe("Week 41, 2026");
+    expect(monthLabel("2026-09")).toBe("September 2026");
   });
   it("rejects malformed keys", () => {
     expect(() => weekLabel("2026-41")).toThrow();

@@ -1,4 +1,5 @@
 import { formatDate } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 
 export const EXPIRY_STATUSES = ["Active", "Expiring in 60d", "Expiring Soon", "Expired", "No Expiry", "N/A"] as const;
 
@@ -6,12 +7,12 @@ export type ExpiryStatus = (typeof EXPIRY_STATUSES)[number];
 export type ExpiryTone = "active" | "expiring-60" | "expiring-soon" | "expired" | "no-expiry" | "na";
 
 const META: Record<ExpiryStatus, { tone: ExpiryTone; label: string }> = {
-  Active: { tone: "active", label: "Còn hiệu lực" },
-  "Expiring in 60d": { tone: "expiring-60", label: "Hết hạn trong 60 ngày" },
-  "Expiring Soon": { tone: "expiring-soon", label: "Sắp hết hạn" },
-  Expired: { tone: "expired", label: "Đã hết hạn" },
-  "No Expiry": { tone: "no-expiry", label: "Không thời hạn" },
-  "N/A": { tone: "na", label: "Chưa cấp" },
+  Active: { tone: "active", label: "Valid" },
+  "Expiring in 60d": { tone: "expiring-60", label: "Expiring in 60 days" },
+  "Expiring Soon": { tone: "expiring-soon", label: "Expiring soon" },
+  Expired: { tone: "expired", label: "Expired" },
+  "No Expiry": { tone: "no-expiry", label: "No expiry" },
+  "N/A": { tone: "na", label: "Not issued" },
 };
 
 /** Narrows the `expiry_status` text column of `v_training_records`. */
@@ -32,10 +33,10 @@ export function expiryDetail({
   daysToExpiry: number | null;
   expiryDate: string | null;
 }): string {
-  if (status === "No Expiry") return "Chứng chỉ không có thời hạn";
-  if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "Chưa có ngày cấp";
+  if (status === "No Expiry") return "This certificate does not expire";
+  if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "No issue date yet";
   const date = formatDate(expiryDate);
-  if (daysToExpiry < 0) return `Đã hết hạn ${-daysToExpiry} ngày · ${date}`;
-  if (daysToExpiry === 0) return `Hết hạn hôm nay · ${date}`;
-  return `Còn ${daysToExpiry} ngày · hết hạn ${date}`;
+  if (daysToExpiry < 0) return `Expired ${pluralize(-daysToExpiry, "day")} ago · ${date}`;
+  if (daysToExpiry === 0) return `Expires today · ${date}`;
+  return `${pluralize(daysToExpiry, "day")} left · expires ${date}`;
 }

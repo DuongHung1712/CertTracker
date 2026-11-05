@@ -46,6 +46,7 @@ describe("recordSchema", () => {
     expect(recordSchema.safeParse({ ...base, progress: 101 }).success).toBe(false);
     expect(recordSchema.safeParse({ ...base, progress: -1 }).success).toBe(false);
     expect(recordSchema.safeParse({ ...base, progress: 40.5 }).success).toBe(false);
+    expect(recordSchema.safeParse({ ...base, progress: 101 }).error?.issues[0]?.message).toBe("Progress must be between 0 and 100");
   });
 
   it("requires an issue date and 100% for a finished record", () => {
@@ -57,6 +58,15 @@ describe("recordSchema", () => {
 
 describe("recordRuleIssues", () => {
   const today = "2026-09-30";
+
+  it("explains each broken rule in English", () => {
+    const messages = (input: Parameters<typeof recordRuleIssues>[0]) => recordRuleIssues(input, today).map((issue) => issue.message);
+    expect(messages({ status: "done", progress: 90, issuedDate: "2026-01-01" })).toEqual(["A completed record must have progress 100%"]);
+    expect(messages({ status: "done", progress: 100, issuedDate: null })).toEqual(["A completed record needs an issue date"]);
+    expect(messages({ status: "not_started", progress: 5, issuedDate: null })).toEqual(["A record that has not started must have progress 0%"]);
+    expect(messages({ status: "in_progress", progress: 100, issuedDate: null })).toEqual(["Set the status to Completed when progress is 100%"]);
+    expect(messages({ status: "done", progress: 100, issuedDate: "2026-10-01" })).toEqual(["The issue date cannot be in the future"]);
+  });
 
   it("mirrors the three database CHECK constraints", () => {
     expect(recordRuleIssues({ status: "done", progress: 90, issuedDate: "2026-01-01" }, today)).toHaveLength(1);

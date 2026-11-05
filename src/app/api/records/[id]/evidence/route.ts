@@ -3,7 +3,7 @@ import { idSchema } from "@/features/records/schema";
 import { createSupabaseStorage } from "@/lib/storage/supabase-storage";
 import { createClient } from "@/lib/supabase/server";
 
-const notFound = () => new NextResponse("Không tìm thấy minh chứng.", { status: 404 });
+const notFound = () => new NextResponse("Evidence not found.", { status: 404 });
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const parsed = idSchema.safeParse(await params);

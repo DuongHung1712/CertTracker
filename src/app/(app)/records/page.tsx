@@ -19,8 +19,8 @@ export default async function RecordsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Chứng chỉ theo người"
-        description="Ai đang có, đang học chứng chỉ nào."
+        title="Records"
+        description="Who holds, or is studying, which certificate."
         actions={<ExportLinks />}
       />
       <RecordsRealtime />

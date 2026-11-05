@@ -24,8 +24,8 @@ export function Section({
 export function SectionError({ title }: { title: string }) {
   return (
     <Alert variant="destructive">
-      <AlertTitle>{`Không tải được "${title}"`}</AlertTitle>
-      <AlertDescription>Tải lại trang để thử lại. Nếu vẫn lỗi, báo quản trị viên.</AlertDescription>
+      <AlertTitle>{`Could not load "${title}"`}</AlertTitle>
+      <AlertDescription>Reload the page to try again. If it keeps failing, tell an admin.</AlertDescription>
     </Alert>
   );
 }

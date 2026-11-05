@@ -23,15 +23,15 @@ export type ExpiryBucket = { status: ExpiryStatus; label: string; count: number 
 
 /**
  * Chart labels state the day range. They are NOT the per-record badge labels (`expiryMeta`): the KPI tiles
- * "Còn hiệu lực" / "Sắp hết hạn (≤ 60 ngày)" (decision #31) span several buckets, so reusing the badge words
+ * "Valid" / "Expiring (≤ 60 days)" (decision #31) span several buckets, so reusing the badge words
  * here would show different numbers under the same name.
  */
 export const EXPIRY_BUCKET_LABELS = {
-  Active: "Còn > 60 ngày",
-  "Expiring in 60d": "Còn 31–60 ngày",
-  "Expiring Soon": "Còn ≤ 30 ngày",
-  Expired: "Đã hết hạn",
-  "No Expiry": "Không thời hạn",
+  Active: "> 60 days left",
+  "Expiring in 60d": "31–60 days left",
+  "Expiring Soon": "≤ 30 days left",
+  Expired: "Expired",
+  "No Expiry": "No expiry",
 } as const;
 
 export function expiryBuckets(k: DashboardKpis): ExpiryBucket[] {

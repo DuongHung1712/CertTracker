@@ -31,13 +31,13 @@ describe("summarizeRuns", () => {
     expect(rows.map((r) => r.kind).sort()).toEqual(["expiry-alert", "monthly-report"]);
   });
 
-  it("labels the period in Vietnamese and lists the newest first", () => {
+  it("labels the period in English and lists the newest first", () => {
     const rows = summarizeRuns([
       row({ period: "2026-W40", sentAt: "2026-09-28T01:00:00Z", claimedAt: "2026-09-28T01:00:00Z" }),
       row({ kind: "monthly-report", period: "2026-09", sentAt: "2026-10-01T01:00:00Z", claimedAt: "2026-10-01T01:00:00Z" }),
       row({}),
     ], NOW);
-    expect(rows.map((r) => r.label)).toEqual(["tuần 41/2026", "tháng 09/2026", "tuần 40/2026"]);
+    expect(rows.map((r) => r.label)).toEqual(["Week 41, 2026", "September 2026", "Week 40, 2026"]);
   });
 
   it("breaks a tie on the last activity by the later period", () => {
