@@ -4,9 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { createTeam, setTeamManagers, updateTeam } from "@/features/organizations/actions";
+import { createTeam, setScopeManagers, updateTeam } from "@/features/organizations/actions";
 import { teamSchema, type TeamInput } from "@/features/organizations/schema";
-import { TeamManagersField } from "@/features/organizations/components/team-managers-field";
+import { ScopeManagersField } from "@/features/organizations/components/scope-managers-field";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
@@ -52,13 +52,13 @@ export function TeamDialog({
       return;
     }
     if (editing) {
-      const managerResult = await setTeamManagers({ teamId: editing.id, userIds: managerIds });
+      const managerResult = await setScopeManagers({ scope: { kind: "team", id: editing.id }, userIds: managerIds });
       if (!managerResult.ok) {
         toast.error(managerResult.error);
         return;
       }
     }
-    toast.success(editing ? `Đã lưu team ${values.name}` : `Đã thêm team ${values.name}`);
+    toast.success(editing ? `Saved team ${values.name}` : `Added team ${values.name}`);
     onOpenChange(false);
     form.reset({ name: "", programId: "" });
   }
@@ -67,16 +67,16 @@ export function TeamDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-section-title">{editing ? "Sửa team" : "Thêm team"}</DialogTitle>
+          <DialogTitle className="text-section-title">{editing ? "Edit team" : "Add team"}</DialogTitle>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="team-name">Tên team</FieldLabel>
+            <FieldLabel htmlFor="team-name">Team name</FieldLabel>
             <Input id="team-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="team-program">Chương trình</FieldLabel>
+            <FieldLabel htmlFor="team-program">Program</FieldLabel>
             <Controller
               control={form.control}
               name="programId"
@@ -84,8 +84,8 @@ export function TeamDialog({
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="team-program" aria-invalid={!!form.formState.errors.programId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the program name. */}
-                    <SelectValue placeholder="Chọn chương trình">
-                      {(value: string) => programs.find((program) => program.id === value)?.name ?? "Chọn chương trình"}
+                    <SelectValue placeholder="Choose a program">
+                      {(value: string) => programs.find((program) => program.id === value)?.name ?? "Choose a program"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -102,12 +102,12 @@ export function TeamDialog({
           </Field>
           {editing && (
             <Field>
-              <FieldLabel>Quản lý team</FieldLabel>
-              <TeamManagersField candidates={candidates} selected={managerIds} onChange={setManagerIds} />
+              <FieldLabel>Team managers</FieldLabel>
+              <ScopeManagersField candidates={candidates} selected={managerIds} onChange={setManagerIds} />
             </Field>
           )}
           {!editing && (
-            <p className="text-caption text-muted-foreground">Gán quản lý sau khi lưu team.</p>
+            <p className="text-caption text-muted-foreground">Assign managers after saving the team.</p>
           )}
           {form.formState.errors.root && (
             <p role="alert" className="text-caption text-destructive">
@@ -116,10 +116,10 @@ export function TeamDialog({
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

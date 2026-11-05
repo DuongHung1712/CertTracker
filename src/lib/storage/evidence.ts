@@ -1,4 +1,6 @@
 export const MAX_EVIDENCE_BYTES = 4 * 1024 * 1024;
+export const EVIDENCE_TOO_LARGE_MESSAGE = "That file is larger than 4 MB. Compress it or choose a smaller file, then try again.";
+export const EVIDENCE_EMPTY_MESSAGE = "That file is empty. Choose another file.";
 export const EVIDENCE_ACCEPT = "application/pdf,image/jpeg,image/png,image/webp";
 
 export type EvidenceMime = "application/pdf" | "image/jpeg" | "image/png" | "image/webp";

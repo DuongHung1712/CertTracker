@@ -54,5 +54,5 @@ where u.email like '%@certtracker.test';
 
 update public.profiles set role = 'admin' where user_id = '5eed0000-0000-0000-0000-00000000f00a';
 update public.profiles set role = 'manager' where user_id = '5eed0000-0000-0000-0000-00000000f00b';
-insert into public.team_managers (team_id, user_id)
+insert into public.manager_scopes (team_id, user_id)
   values ('5eed0000-0000-0000-0000-00000000a001', '5eed0000-0000-0000-0000-00000000f00b');

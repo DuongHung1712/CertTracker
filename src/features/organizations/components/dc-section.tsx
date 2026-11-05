@@ -13,7 +13,7 @@ import { DcDialog } from "@/features/organizations/components/dc-dialog";
 
 type Dc = { id: string; name: string };
 
-const COLUMNS: ColumnDef<Dc, unknown>[] = [{ accessorKey: "name", header: "Tên trung tâm" }];
+const COLUMNS: ColumnDef<Dc, unknown>[] = [{ accessorKey: "name", header: "Centre name" }];
 
 export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean }) {
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -39,10 +39,10 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
                     setDialogOpen(true);
                   }}
                 >
-                  Sửa
+                  Edit
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
-                  Xóa
+                  Delete
                 </Button>
               </div>
             ),
@@ -61,14 +61,14 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
       setConfirming(null);
       return;
     }
-    toast.success(`Đã xóa trung tâm ${confirming.name}`);
+    toast.success(`Deleted centre ${confirming.name}`);
     setConfirming(null);
   }
 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-section-title">Trung tâm (DC)</h2>
+        <h2 className="text-section-title">Centres (DC)</h2>
         {canManage && (
           <Button
             size="sm"
@@ -78,7 +78,7 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
             }}
           >
             <Plus aria-hidden className="size-4" />
-            Thêm trung tâm
+            Add centre
           </Button>
         )}
       </div>
@@ -86,7 +86,7 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
         columns={columnsWithActions}
         data={dcs}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="Chưa có trung tâm nào" description="Thêm trung tâm đầu tiên để bắt đầu." />}
+        empty={<EmptyState title="No centres yet" description="Add the first centre to start building the organisation." />}
       />
       {canManage && (
         <>
@@ -94,10 +94,10 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Xóa trung tâm ${confirming?.name}?`}
-            description="Chỉ xóa được khi trung tâm chưa có chương trình nào."
-            confirmLabel="Xóa trung tâm"
-            pendingLabel="Đang xóa…"
+            title={`Delete centre ${confirming?.name}?`}
+            description="A centre can only be deleted when it has no programs."
+            confirmLabel="Delete centre"
+            pendingLabel="Deleting…"
             pending={pending}
             onConfirm={handleDelete}
           />

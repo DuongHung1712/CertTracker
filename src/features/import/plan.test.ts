@@ -5,14 +5,16 @@ import { buildLegacyWorkbook, LEGACY_EXPECTED } from "@/features/import/__fixtur
 import { readImportTable } from "@/features/import/workbook";
 
 const TODAY = "2026-09-30";
-const HEADERS = ["Họ tên", "Email", "Team", "Khóa học", "Nhà cung cấp", "Loại", "Thời hạn", "Trạng thái", "Tiến độ", "Ngày thi", "Ngày cấp", "Ghi chú"];
+const HEADERS = ["Họ tên", "Email", "Team", "Khóa học", "Nhà cung cấp", "Loại", "Thời hạn", "Trạng thái", "Tiến độ", "Ngày thi", "Ngày cấp", "Ghi chú", "Cost", "Currency", "Study hours"];
 
 function table(rows: Cell[][], headers = HEADERS): ImportTable {
   const map = Object.fromEntries(
-    headers.map((h, i) => [({ "Họ tên": "memberName", Email: "email", Team: "team", "Khóa học": "courseName", "Nhà cung cấp": "provider", Loại: "certType", "Thời hạn": "validityMonths", "Trạng thái": "status", "Tiến độ": "progress", "Ngày thi": "plannedExamDate", "Ngày cấp": "issuedDate", "Ghi chú": "notes" } as Record<string, string>)[h], i]),
+    headers.map((h, i) => [({ "Họ tên": "memberName", Email: "email", Team: "team", "Khóa học": "courseName", "Nhà cung cấp": "provider", Loại: "certType", "Thời hạn": "validityMonths", "Trạng thái": "status", "Tiến độ": "progress", "Ngày thi": "plannedExamDate", "Ngày cấp": "issuedDate", "Ghi chú": "notes", Cost: "cost", Currency: "costCurrency", "Study hours": "estHours" } as Record<string, string>)[h], i]),
   );
   return { sheetName: "S", headerRowNumber: 1, headers, map, unknownColumns: [], rows: rows.map((cells, i) => ({ rowNumber: i + 2, cells })), date1904: false };
 }
+
+const NO_COST = { cost: null, costCurrency: null, estHours: null };
 
 const LOOKUPS: ImportLookups = {
   members: [
@@ -23,9 +25,9 @@ const LOOKUPS: ImportLookups = {
   providers: [{ id: "p-aws", name: "AWS" }],
   certTypes: [{ id: "ct-cloud", name: "Cloud" }],
   courses: [
-    { id: "c-saa", name: "AWS SAA", providerId: "p-aws", certTypeId: "ct-cloud", validityMonths: 36 },
-    { id: "c-a", name: "Shared Name", providerId: "p-aws", certTypeId: null, validityMonths: null },
-    { id: "c-b", name: "Shared Name", providerId: "p-other", certTypeId: null, validityMonths: null },
+    { id: "c-saa", name: "AWS SAA", providerId: "p-aws", certTypeId: "ct-cloud", validityMonths: 36, ...NO_COST },
+    { id: "c-a", name: "Shared Name", providerId: "p-aws", certTypeId: null, validityMonths: null, ...NO_COST },
+    { id: "c-b", name: "Shared Name", providerId: "p-other", certTypeId: null, validityMonths: null, ...NO_COST },
   ],
   records: [
     { id: "r-1", memberId: "m-an", courseId: "c-saa", status: "in_progress", progress: 40, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: "cũ" },
@@ -33,7 +35,7 @@ const LOOKUPS: ImportLookups = {
 };
 
 const row = (overrides: Partial<Record<string, Cell>>): Cell[] => {
-  const base: Record<string, Cell> = { "Họ tên": "Nguyễn Văn An", Email: "an@x.vn", Team: "Team Cloud", "Khóa học": "AWS SAA", "Nhà cung cấp": "AWS", Loại: null, "Thời hạn": null, "Trạng thái": "Đang học", "Tiến độ": 50, "Ngày thi": null, "Ngày cấp": null, "Ghi chú": null, ...overrides };
+  const base: Record<string, Cell> = { "Họ tên": "Nguyễn Văn An", Email: "an@x.vn", Team: "Team Cloud", "Khóa học": "AWS SAA", "Nhà cung cấp": "AWS", Loại: null, "Thời hạn": null, "Trạng thái": "Đang học", "Tiến độ": 50, "Ngày thi": null, "Ngày cấp": null, "Ghi chú": null, Cost: null, Currency: null, "Study hours": null, ...overrides };
   return HEADERS.map((h) => base[h] ?? null);
 };
 
@@ -61,9 +63,9 @@ describe("buildImportPlan", () => {
       TODAY,
     );
     expect(plan.rows.map((r) => r.action)).toEqual(["create", "skip"]);
-    expect(plan.rows[1]!.errors[0]).toMatch(/Trùng với dòng 2/);
+    expect(plan.rows[1]!.errors[0]).toMatch(/Duplicate of row 2 /);
     expect(plan.rows[0]!.normalized!.member).toEqual({ email: "ha@x.vn", fullName: "Hà", teamId: "t-ai" });
-    expect(plan.rows[0]!.normalized!.course).toEqual({ name: "Azure Fundamentals", provider: { name: "Microsoft" }, certType: { name: "Security" }, validityMonths: 24 });
+    expect(plan.rows[0]!.normalized!.course).toEqual({ name: "Azure Fundamentals", provider: { name: "Microsoft" }, certType: { name: "Security" }, validityMonths: 24, ...NO_COST });
     expect(plan.newEntities).toEqual({ members: ["Hà"], providers: ["Microsoft"], certTypes: ["Security"], courses: ["Azure Fundamentals"] });
   });
 
@@ -77,7 +79,7 @@ describe("buildImportPlan", () => {
       TODAY,
     );
     expect(plan.rows[1]!.normalized!.member).toEqual({ email: "ha@x.vn", fullName: "Hà", teamId: "t-ai" });
-    expect(plan.rows[1]!.warnings.join()).toMatch(/dòng 2/);
+    expect(plan.rows[1]!.warnings.join()).toMatch(/using the name from row 2/);
   });
 
   it("errors on unknown or ambiguous teams for new members, and on missing names", () => {
@@ -90,22 +92,22 @@ describe("buildImportPlan", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.errors.join()).toMatch(/Không tìm thấy team "Team Ghost"/);
-    expect(rows[1]!.errors.join()).toMatch(/Có nhiều team tên "Team X"/);
-    expect(rows[2]!.errors.join()).toMatch(/Thiếu họ tên/);
+    expect(rows[0]!.errors.join()).toMatch(/Team "Team Ghost" not found/);
+    expect(rows[1]!.errors.join()).toMatch(/More than one team is named "Team X"/);
+    expect(rows[2]!.errors.join()).toMatch(/Full name is missing/);
   });
 
   it("never moves or renames an existing member, but warns", () => {
     const [planned] = buildImportPlan(table([row({ "Họ tên": "An Nguyễn", Team: "Team AI" })]), LOOKUPS, TODAY).rows;
     expect(planned!.normalized!.member).toEqual({ id: "m-an" });
-    expect(planned!.warnings.join()).toMatch(/giữ tên hiện có/);
-    expect(planned!.warnings.join()).toMatch(/không chuyển team/);
+    expect(planned!.warnings.join()).toMatch(/keeping the existing name/);
+    expect(planned!.warnings.join()).toMatch(/import does not move members/);
   });
 
   it("warns for an inactive member but still imports", () => {
     const [planned] = buildImportPlan(table([row({ Email: "old@x.vn", "Họ tên": "Cũ" })]), LOOKUPS, TODAY).rows;
     expect(planned!.action).toBe("create");
-    expect(planned!.warnings.join()).toMatch(/ngừng hoạt động/);
+    expect(planned!.warnings.join()).toMatch(/This member is inactive/);
   });
 
   it("needs a provider to disambiguate or to create a course", () => {
@@ -114,8 +116,8 @@ describe("buildImportPlan", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.errors.join()).toMatch(/Có nhiều khóa học tên/);
-    expect(rows[1]!.errors.join()).toMatch(/cần Nhà cung cấp/);
+    expect(rows[0]!.errors.join()).toMatch(/More than one course is named/);
+    expect(rows[1]!.errors.join()).toMatch(/a provider is needed/);
     expect(rows[2]!.normalized!.course).toEqual({ id: "c-saa" });
   });
 
@@ -128,7 +130,7 @@ describe("buildImportPlan", () => {
   it("uses fraction mode for the whole column and says so in the notes", () => {
     const plan = buildImportPlan(table([row({ "Tiến độ": 0.5 }), row({ Email: "x@x.vn", "Họ tên": "X", "Tiến độ": 1, "Trạng thái": "Đang học" })]), LOOKUPS, TODAY);
     expect(plan.rows[0]!.normalized!.record.progress).toBe(50);
-    expect(plan.notes.join()).toMatch(/0–1/);
+    expect(plan.notes.join()).toMatch(/fraction from 0 to 1/);
   });
 
   it("keeps raw cells and display fields for the preview, even on error rows", () => {
@@ -145,13 +147,13 @@ describe("buildImportPlan edge cases", () => {
     const [planned] = buildImportPlan(table([row({ "Khóa học": "aws saa", "Nhà cung cấp": "Microsoft" })]), lookups, TODAY).rows;
     expect(planned!.errors).toEqual([]);
     expect(planned!.action).toBe("create");
-    expect(planned!.normalized!.course).toEqual({ name: "aws saa", provider: { id: "p-ms" }, certType: null, validityMonths: null });
+    expect(planned!.normalized!.course).toEqual({ name: "aws saa", provider: { id: "p-ms" }, certType: null, validityMonths: null, ...NO_COST });
   });
 
   it("warns, but does not move, when an existing member without a team has a team in the file", () => {
     const [planned] = buildImportPlan(table([row({ Email: "old@x.vn", "Họ tên": "Cũ", Team: "Team Cloud" })]), LOOKUPS, TODAY).rows;
     expect(planned!.normalized!.member).toEqual({ id: "m-old" });
-    expect(planned!.warnings.join()).toMatch(/không chuyển team/);
+    expect(planned!.warnings.join()).toMatch(/import does not move members/);
   });
 
   it("does not warn about the team when it matches the member's current team", () => {
@@ -178,18 +180,109 @@ describe("buildImportPlan edge cases", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.normalized!.course).toEqual({ name: "Brand New", provider: { id: "p-aws" }, certType: null, validityMonths: 12 });
+    expect(rows[0]!.normalized!.course).toEqual({ name: "Brand New", provider: { id: "p-aws" }, certType: null, validityMonths: 12, ...NO_COST });
     expect(rows[1]!.normalized!.course).toEqual(rows[0]!.normalized!.course);
-    expect(rows[1]!.warnings.join()).toMatch(/Thời hạn/);
+    expect(rows[1]!.warnings.join()).toMatch(/Validity differs from the new course defined in row 2/);
   });
 
   it("warns when a non-blank cert type or validity differs from an existing course, and keeps the catalog", () => {
     const [planned] = buildImportPlan(table([row({ Loại: "AI", "Thời hạn": 12 })]), LOOKUPS, TODAY).rows;
     expect(planned!.normalized!.course).toEqual({ id: "c-saa" });
-    expect(planned!.warnings.join()).toMatch(/Loại chứng chỉ trong file khác danh mục/);
-    expect(planned!.warnings.join()).toMatch(/Thời hạn trong file khác danh mục/);
+    expect(planned!.warnings.join()).toMatch(/Certificate type in the file differs from the catalog/);
+    expect(planned!.warnings.join()).toMatch(/Validity in the file differs from the catalog/);
     const [same] = buildImportPlan(table([row({ Loại: "cloud", "Thời hạn": 36 })]), LOOKUPS, TODAY).rows;
-    expect(same!.warnings.join()).not.toMatch(/khác danh mục/);
+    expect(same!.warnings.join()).not.toMatch(/differs from the catalog/);
+  });
+
+  it("carries cost, currency and study hours onto a new course", () => {
+    const [planned] = buildImportPlan(
+      table([row({ "Khóa học": "Priced Course", Cost: "150", Currency: "usd", "Study hours": 40 })]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(planned!.errors).toEqual([]);
+    expect(planned!.normalized!.course).toEqual({
+      name: "Priced Course", provider: { id: "p-aws" }, certType: null, validityMonths: null,
+      cost: 150, costCurrency: "USD", estHours: 40,
+    });
+  });
+
+  it("reports an unknown currency as a row error", () => {
+    const [planned] = buildImportPlan(
+      table([row({ "Khóa học": "Priced Course", Cost: 150, Currency: "EUR" })]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(planned).toMatchObject({ action: "skip", normalized: null });
+    expect(planned!.errors).toContain('Unknown currency "EUR". Use VND or USD.');
+  });
+
+  it("rejects a cost without a currency, or a currency without a cost, on a new course", () => {
+    const [noCurrency, noCost] = buildImportPlan(
+      table([
+        row({ "Khóa học": "Priced A", Cost: 150 }),
+        row({ Email: "old@x.vn", "Họ tên": "Cũ", "Khóa học": "Priced B", Currency: "VND" }),
+      ]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(noCurrency!.errors).toContain("Choose a currency for the cost");
+    expect(noCost!.errors).toContain("Enter a cost or clear the currency");
+  });
+
+  it.each([
+    ["a cost without a currency", { Cost: 150 }],
+    ["an unknown currency", { Cost: 150, Currency: "EUR" }],
+    ["a currency without a cost", { Currency: "USD" }],
+    ["an unparseable cost", { Cost: "free", Currency: "USD" }],
+  ])("does not register a new course from a row with %s, so a later row cannot reuse it", (_label, bad) => {
+    const rows = buildImportPlan(
+      table([
+        row({ "Khóa học": "Brand New", ...bad }),
+        row({ Email: "old@x.vn", "Họ tên": "Cũ", "Khóa học": "brand new", Cost: 150, Currency: "USD" }),
+        row({ Email: "ha@x.vn", "Họ tên": "Hà", Team: "Team AI", "Khóa học": "Brand New" }),
+      ]),
+      LOOKUPS,
+      TODAY,
+    );
+    expect(rows.rows[0]).toMatchObject({ action: "skip", normalized: null });
+    expect(rows.rows[0]!.errors.length).toBeGreaterThan(0);
+    // The later rows define the course on their own; none inherits a half-pair from the rejected row.
+    expect(rows.rows[1]!.normalized!.course).toMatchObject({ cost: 150, costCurrency: "USD" });
+    expect(rows.rows[1]!.warnings.join()).not.toMatch(/Cost differs/);
+    expect(rows.rows[2]!.normalized!.course).toEqual(rows.rows[1]!.normalized!.course);
+    for (const planned of rows.rows) {
+      const course = planned.normalized?.course as { cost?: number | null; costCurrency?: string | null } | undefined;
+      if (course && "cost" in course) expect(course.cost === null).toBe(course.costCurrency === null);
+    }
+  });
+
+  it("warns about a differing cost, currency or hours on an existing course and keeps the catalog", () => {
+    const lookups: ImportLookups = {
+      ...LOOKUPS,
+      courses: LOOKUPS.courses.map((c) => (c.id === "c-saa" ? { ...c, cost: 150, costCurrency: "USD" as const, estHours: 40 } : c)),
+    };
+    const [differs] = buildImportPlan(table([row({ Cost: 200, Currency: "USD", "Study hours": 50 })]), lookups, TODAY).rows;
+    expect(differs!.normalized!.course).toEqual({ id: "c-saa" });
+    expect(differs!.warnings.join()).toMatch(/Cost in the file differs from the catalog/);
+    expect(differs!.warnings.join()).toMatch(/Study hours in the file differ from the catalog/);
+    const [sameValues] = buildImportPlan(table([row({ Cost: 150, Currency: "USD", "Study hours": 40 })]), lookups, TODAY).rows;
+    expect(sameValues!.warnings.join()).not.toMatch(/differ/);
+    const [otherCurrency] = buildImportPlan(table([row({ Cost: 150, Currency: "VND" })]), lookups, TODAY).rows;
+    expect(otherCurrency!.warnings.join()).toMatch(/Cost in the file differs from the catalog/);
+  });
+
+  it("warns when a later row defines the same new course with a different cost", () => {
+    const rows = buildImportPlan(
+      table([
+        row({ "Khóa học": "Brand New", Cost: 100, Currency: "USD" }),
+        row({ Email: "old@x.vn", "Họ tên": "Cũ", "Khóa học": "brand new", Cost: 120, Currency: "USD" }),
+      ]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(rows[1]!.normalized!.course).toEqual(rows[0]!.normalized!.course);
+    expect(rows[1]!.warnings.join()).toMatch(/Cost differs from the new course defined in row 2/);
   });
 
   it("refers to Excel row numbers, never array indexes", () => {
@@ -203,14 +296,14 @@ describe("buildImportPlan edge cases", () => {
     t.rows[2]!.rowNumber = 20;
     const plan = buildImportPlan(t, LOOKUPS, TODAY);
     expect(plan.rows.map((r) => r.rowNumber)).toEqual([10, 14, 20]);
-    expect(plan.rows[1]!.errors[0]).toMatch(/Trùng với dòng 10 /);
+    expect(plan.rows[1]!.errors[0]).toMatch(/Duplicate of row 10 /);
   });
 
   it("reports the sheet and unused columns in the notes", () => {
     const t = { ...table([row({})]), unknownColumns: ["STT", "Ảnh"] };
     const notes = buildImportPlan(t, LOOKUPS, TODAY).notes;
-    expect(notes[0]).toBe('Sheet "S", tiêu đề ở dòng 1.');
-    expect(notes.join()).toMatch(/Bỏ qua các cột không dùng: STT, Ảnh\./);
+    expect(notes[0]).toBe('Sheet "S", headers in row 1.');
+    expect(notes.join()).toMatch(/Ignored columns: STT, Ảnh\./);
   });
 
   it("applies decision #22 inside a plan: 100% without an issue date is capped at 99% with a warning", () => {
@@ -315,9 +408,9 @@ describe("reconcileRecord (decision #22)", () => {
     expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, existing, TODAY)).toMatchObject({ status: "in_progress", progress: 40, errors: [] });
   });
   it("errors when nothing can be derived, when done lacks an issue date, or when it is in the future", () => {
-    expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Thiếu trạng thái và tiến độ"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["Hoàn thành thì cần ngày cấp"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["Ngày cấp không được ở tương lai"]);
+    expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Status and progress are missing"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed record needs an issue date"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The issue date cannot be in the future"]);
   });
   it("accepts a done record whose issue date already exists in the database", () => {
     const existing = { id: "r", memberId: "m", courseId: "c", status: "done" as const, progress: 100, plannedExamDate: null, issuedDate: "2024-05-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };
@@ -336,8 +429,8 @@ it("produces the documented plan for the legacy fixture against seed-like lookup
     providers: [{ id: "aws", name: "AWS" }, { id: "nvidia", name: "NVIDIA" }],
     certTypes: [{ id: "tc", name: "Cloud" }, { id: "tai", name: "AI" }],
     courses: [
-      { id: "saa", name: "AWS Solutions Architect Associate", providerId: "aws", certTypeId: "tc", validityMonths: 36 },
-      { id: "nv", name: "NVIDIA Generative AI LLMs", providerId: "nvidia", certTypeId: "tai", validityMonths: 24 },
+      { id: "saa", name: "AWS Solutions Architect Associate", providerId: "aws", certTypeId: "tc", validityMonths: 36, ...NO_COST },
+      { id: "nv", name: "NVIDIA Generative AI LLMs", providerId: "nvidia", certTypeId: "tai", validityMonths: 24, ...NO_COST },
     ],
     records: [
       { id: "r1", memberId: "an", courseId: "saa", status: "done", progress: 100, plannedExamDate: null, issuedDate: "2023-10-26", certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },

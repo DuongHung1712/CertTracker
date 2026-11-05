@@ -12,7 +12,7 @@ export default async function CoursesPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Khóa học" description="Danh mục chứng chỉ, provider và thời hạn." />
+      <PageHeader title="Courses" description="Certificate types, providers and validity periods." />
       {isAdmin && (
         <>
           <CertTypeSection certTypes={certTypes} />

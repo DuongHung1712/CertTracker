@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate, formatDateTimeVn, formatNumber, formatPercent, formatVnd } from "@/lib/format";
+import { formatDate, formatDateTimeVn, formatNumber, formatPercent } from "@/lib/format";
 
 describe("format", () => {
   it("formats ISO dates as dd/MM/yyyy", () => {
@@ -10,12 +10,8 @@ describe("format", () => {
     expect(() => formatDate("19/10/2026")).toThrow("Expected YYYY-MM-DD");
   });
 
-  it("formats VND with Vietnamese grouping", () => {
-    expect(formatVnd(1250000)).toBe("1.250.000 ₫");
-  });
-
-  it("formats plain numbers and percents", () => {
-    expect(formatNumber(1250000)).toBe("1.250.000");
+  it("formats plain numbers in the English format, and percents", () => {
+    expect(formatNumber(1250000)).toBe("1,250,000");
     expect(formatPercent(74.6)).toBe("75%");
   });
 

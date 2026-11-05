@@ -96,7 +96,7 @@ export function RecordSheet({
     resetOptions: { keepDirtyValues: true },
   });
 
-  // Every way of closing (Hủy, Esc, overlay, successful save) goes through here, so a reopened
+  // Every way of closing (Cancel, Esc, overlay, successful save) goes through here, so a reopened
   // sheet never shows stale edits or a leftover file.
   function handleOpenChange(nextOpen: boolean) {
     if (!nextOpen) {
@@ -135,14 +135,14 @@ export function RecordSheet({
       if (!uploaded.ok) uploadError = uploaded.error;
     }
 
-    // The record is saved either way: staying open on "create" would hit the duplicate error on retry.
+    // The certificate is saved either way: staying open on "create" would hit the duplicate error on retry.
     handleOpenChange(false);
     if (uploadError) {
-      toast.error(`Đã lưu bản ghi nhưng chưa tải được minh chứng: ${uploadError} Mở "Sửa" để thử lại.`, {
+      toast.error(`The certificate is saved, but the evidence could not be uploaded: ${uploadError} Open "Edit" to try again.`, {
         duration: Infinity,
       });
     } else {
-      toast.success(editing ? "Đã lưu chứng chỉ" : "Đã thêm chứng chỉ");
+      toast.success(editing ? "Saved certificate" : "Added certificate");
     }
   }
 
@@ -155,7 +155,7 @@ export function RecordSheet({
       toast.error(result.error);
       return;
     }
-    toast.success("Đã xóa minh chứng");
+    toast.success("Removed evidence");
   }
 
   const errors = form.formState.errors;
@@ -164,12 +164,12 @@ export function RecordSheet({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="text-section-title">{editing ? "Sửa chứng chỉ" : "Thêm chứng chỉ"}</SheetTitle>
+          <SheetTitle className="text-section-title">{editing ? "Edit certificate" : "Add certificate"}</SheetTitle>
         </SheetHeader>
         <form className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4" onSubmit={form.handleSubmit(onSubmit)}>
           {!fixedMemberId && (
             <Field>
-              <FieldLabel htmlFor="record-member">Thành viên</FieldLabel>
+              <FieldLabel htmlFor="record-member">Member</FieldLabel>
               <Controller
                 control={form.control}
                 name="memberId"
@@ -179,8 +179,8 @@ export function RecordSheet({
                     value={field.value}
                     onChange={field.onChange}
                     options={members}
-                    placeholder="Chọn thành viên"
-                    emptyText="Không tìm thấy thành viên"
+                    placeholder="Choose a member"
+                    emptyText="No members found"
                     disabled={!!editing}
                     aria-invalid={!!errors.memberId}
                   />
@@ -190,7 +190,7 @@ export function RecordSheet({
             </Field>
           )}
           <Field>
-            <FieldLabel htmlFor="record-course">Khóa học</FieldLabel>
+            <FieldLabel htmlFor="record-course">Course</FieldLabel>
             <Controller
               control={form.control}
               name="courseId"
@@ -200,8 +200,8 @@ export function RecordSheet({
                   value={field.value}
                   onChange={field.onChange}
                   options={courseOptions}
-                  placeholder="Chọn khóa học"
-                  emptyText="Không tìm thấy khóa học"
+                  placeholder="Choose a course"
+                  emptyText="No courses found"
                   aria-invalid={!!errors.courseId}
                 />
               )}
@@ -209,7 +209,7 @@ export function RecordSheet({
             <FieldError errors={[errors.courseId]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-status">Trạng thái</FieldLabel>
+            <FieldLabel htmlFor="record-status">Status</FieldLabel>
             <Controller
               control={form.control}
               name="status"
@@ -224,8 +224,8 @@ export function RecordSheet({
                 >
                   <SelectTrigger id="record-status" aria-invalid={!!errors.status}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the label. */}
-                    <SelectValue placeholder="Chọn trạng thái">
-                      {(value: (typeof RECORD_STATUSES)[number]) => RECORD_STATUS_LABEL[value] ?? "Chọn trạng thái"}
+                    <SelectValue placeholder="Choose a status">
+                      {(value: (typeof RECORD_STATUSES)[number]) => RECORD_STATUS_LABEL[value] ?? "Choose a status"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -241,7 +241,7 @@ export function RecordSheet({
             <FieldError errors={[errors.status]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-progress">Tiến độ (%)</FieldLabel>
+            <FieldLabel htmlFor="record-progress">Progress (%)</FieldLabel>
             <Input
               id="record-progress"
               type="number"
@@ -253,7 +253,7 @@ export function RecordSheet({
             <FieldError errors={[errors.progress]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-planned">Ngày thi dự kiến</FieldLabel>
+            <FieldLabel htmlFor="record-planned">Planned exam date</FieldLabel>
             <Input
               id="record-planned"
               placeholder="dd/mm/yyyy"
@@ -264,7 +264,7 @@ export function RecordSheet({
             <FieldError errors={[errors.plannedExamDate]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-issued">Ngày cấp</FieldLabel>
+            <FieldLabel htmlFor="record-issued">Issue date</FieldLabel>
             <Input
               id="record-issued"
               placeholder="dd/mm/yyyy"
@@ -275,14 +275,14 @@ export function RecordSheet({
             <FieldError errors={[errors.issuedDate]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-url">Link chứng chỉ</FieldLabel>
+            <FieldLabel htmlFor="record-url">Certificate link</FieldLabel>
             <Input id="record-url" type="url" {...form.register("certificateUrl")} aria-invalid={!!errors.certificateUrl} />
             <FieldError errors={[errors.certificateUrl]} />
           </Field>
           {showCompanyFields && (
             <>
               <Field orientation="horizontal">
-                <FieldLabel htmlFor="record-via-company">Đăng ký qua công ty</FieldLabel>
+                <FieldLabel htmlFor="record-via-company">Registered through the company</FieldLabel>
                 <Controller
                   control={form.control}
                   name="viaCompany"
@@ -292,7 +292,7 @@ export function RecordSheet({
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="record-refund">Trạng thái hoàn tiền</FieldLabel>
+                <FieldLabel htmlFor="record-refund">Refund status</FieldLabel>
                 <Controller
                   control={form.control}
                   name="refundStatus"
@@ -318,12 +318,12 @@ export function RecordSheet({
             </>
           )}
           <Field>
-            <FieldLabel htmlFor="record-notes">Ghi chú</FieldLabel>
+            <FieldLabel htmlFor="record-notes">Notes</FieldLabel>
             <Textarea id="record-notes" {...form.register("notes")} aria-invalid={!!errors.notes} />
             <FieldError errors={[errors.notes]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-evidence">Minh chứng</FieldLabel>
+            <FieldLabel htmlFor="record-evidence">Evidence</FieldLabel>
             <FileDropzone
               id="record-evidence"
               file={file}
@@ -348,10 +348,10 @@ export function RecordSheet({
                   rel="noopener noreferrer"
                   className="text-body text-primary underline underline-offset-2"
                 >
-                  Xem minh chứng hiện tại
+                  View current evidence
                 </a>
                 <Button type="button" variant="ghost" size="sm" disabled={removingEvidence} onClick={handleRemoveEvidence}>
-                  Xóa minh chứng
+                  Remove evidence
                 </Button>
               </div>
             )}
@@ -363,10 +363,10 @@ export function RecordSheet({
           )}
           <SheetFooter className="flex-row justify-end gap-2 px-0">
             <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </SheetFooter>
         </form>

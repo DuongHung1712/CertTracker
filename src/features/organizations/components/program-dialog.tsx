@@ -36,7 +36,7 @@ export function ProgramDialog({
       form.setError("root", { message: result.error });
       return;
     }
-    toast.success(editing ? `Đã lưu chương trình ${values.name}` : `Đã thêm chương trình ${values.name}`);
+    toast.success(editing ? `Saved program ${values.name}` : `Added program ${values.name}`);
     onOpenChange(false);
     form.reset({ name: "", dcId: "" });
   }
@@ -45,16 +45,16 @@ export function ProgramDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-section-title">{editing ? "Sửa chương trình" : "Thêm chương trình"}</DialogTitle>
+          <DialogTitle className="text-section-title">{editing ? "Edit program" : "Add program"}</DialogTitle>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="program-name">Tên chương trình</FieldLabel>
+            <FieldLabel htmlFor="program-name">Program name</FieldLabel>
             <Input id="program-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="program-dc">Trung tâm</FieldLabel>
+            <FieldLabel htmlFor="program-dc">Centre</FieldLabel>
             <Controller
               control={form.control}
               name="dcId"
@@ -62,8 +62,8 @@ export function ProgramDialog({
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="program-dc" aria-invalid={!!form.formState.errors.dcId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the DC name. */}
-                    <SelectValue placeholder="Chọn trung tâm">
-                      {(value: string) => dcs.find((dc) => dc.id === value)?.name ?? "Chọn trung tâm"}
+                    <SelectValue placeholder="Choose a centre">
+                      {(value: string) => dcs.find((dc) => dc.id === value)?.name ?? "Choose a centre"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -85,10 +85,10 @@ export function ProgramDialog({
           )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

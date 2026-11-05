@@ -25,7 +25,7 @@ async function pickSelect(page: Page, dialog: Locator, label: string, optionName
 }
 
 async function openRowMenu(row: Locator) {
-  await row.getByRole("button", { name: /Thao tác/ }).click();
+  await row.getByRole("button", { name: /Actions for/ }).click();
 }
 
 /**
@@ -44,12 +44,12 @@ async function clickMenuItem(page: Page, row: Locator, name: string) {
 /** Admin/manager edit of a record's status + progress through the row menu; waits for the save toast. */
 async function editStatus(page: Page, row: Locator, status: string, progress: string) {
   await openRowMenu(row);
-  await page.getByRole("menuitem", { name: "Sửa" }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
-  await pickSelect(page, dialog, "Trạng thái", status);
-  await dialog.getByLabel("Tiến độ (%)").fill(progress);
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+  await pickSelect(page, dialog, "Status", status);
+  await dialog.getByLabel("Progress (%)").fill(progress);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Saved certificate").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
 }
 
@@ -58,24 +58,24 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
 
-  await page.getByRole("button", { name: "Thêm chứng chỉ" }).click();
+  await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
   // "tran" (no diacritics) must find "Trần Thị Bình".
-  await pickOption(page, dialog, "Thành viên", "tran", "Trần Thị Bình");
-  await pickOption(page, dialog, "Khóa học", "aws", AWS);
-  await pickSelect(page, dialog, "Trạng thái", "Hoàn thành");
-  await expect(dialog.getByLabel("Tiến độ (%)")).toHaveValue("100");
-  await dialog.getByLabel("Ngày cấp").fill("01/06/2026");
-  await dialog.getByLabel("Minh chứng").setInputFiles("e2e/fixtures/evidence.pdf");
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(page.getByText("Đã thêm chứng chỉ")).toBeVisible();
+  await pickOption(page, dialog, "Member", "tran", "Trần Thị Bình");
+  await pickOption(page, dialog, "Course", "aws", AWS);
+  await pickSelect(page, dialog, "Status", "Completed");
+  await expect(dialog.getByLabel("Progress (%)")).toHaveValue("100");
+  await dialog.getByLabel("Issue date").fill("01/06/2026");
+  await dialog.getByLabel("Evidence").setInputFiles("e2e/fixtures/evidence.pdf");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Added certificate")).toBeVisible();
 
   const row = recordRow(page, "Trần Thị Bình", AWS);
-  await expect(row).toContainText("Còn hiệu lực");
+  await expect(row).toContainText("Valid");
 
   try {
     // The evidence upload revalidates the list after the record itself appears, so retry until the link exists.
-    const link = page.getByRole("menuitem", { name: "Xem minh chứng" });
+    const link = page.getByRole("menuitem", { name: "View evidence" });
     await expect(async () => {
       await page.keyboard.press("Escape");
       await openRowMenu(row);
@@ -92,12 +92,12 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
     expect((await page.request.get(oldUrl)).status()).toBe(200);
     await page.keyboard.press("Escape");
 
-    // Replace the evidence: upload a PNG over the PDF through "Sửa".
-    await clickMenuItem(page, row, "Sửa");
+    // Replace the evidence: upload a PNG over the PDF through "Edit".
+    await clickMenuItem(page, row, "Edit");
     const editDialog = page.getByRole("dialog");
-    await editDialog.getByLabel("Minh chứng", { exact: true }).setInputFiles("e2e/fixtures/evidence.png");
-    await editDialog.getByRole("button", { name: "Lưu" }).click();
-    await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+    await editDialog.getByLabel("Evidence", { exact: true }).setInputFiles("e2e/fixtures/evidence.png");
+    await editDialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Saved certificate").first()).toBeVisible();
     await expect(editDialog).toHaveCount(0);
 
     // The upload revalidates after the save, so poll until the route resolves to the new object.
@@ -114,11 +114,11 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
     expect((await page.request.get(oldUrl)).status()).toBeGreaterThanOrEqual(400);
   } finally {
     // Always remove the record, even when an assertion above failed, so the run stays re-runnable.
-    await clickMenuItem(page, row, "Xóa");
-    await page.getByRole("button", { name: "Xóa chứng chỉ" }).click();
+    await clickMenuItem(page, row, "Delete");
+    await page.getByRole("button", { name: "Delete certificate" }).click();
     // Wait for the toast first: while the confirm dialog is open the page behind it is aria-hidden,
     // so `getByRole("row")` would report zero rows immediately, before the delete has happened.
-    await expect(page.getByText("Đã xóa chứng chỉ")).toBeVisible();
+    await expect(page.getByText("Deleted certificate")).toBeVisible();
     await expect(row).toHaveCount(0);
   }
 });
@@ -127,14 +127,14 @@ test("a second record for the same member and course is refused", async ({ page 
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
 
-  await page.getByRole("button", { name: "Thêm chứng chỉ" }).click();
+  await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
-  await pickOption(page, dialog, "Thành viên", "nguyen", "Nguyễn Văn An");
-  await pickOption(page, dialog, "Khóa học", "aws", AWS);
-  await dialog.getByRole("button", { name: "Lưu" }).click();
+  await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
+  await pickOption(page, dialog, "Course", "aws", AWS);
+  await dialog.getByRole("button", { name: "Save" }).click();
 
   await expect(
-    dialog.getByText("Thành viên này đã có bản ghi cho khóa học này. Sửa bản ghi hiện có thay vì tạo mới."),
+    dialog.getByText("This member already has a certificate for this course. Edit the existing certificate instead of creating a new one."),
   ).toBeVisible();
   await expect(dialog).toBeVisible();
 });
@@ -143,25 +143,25 @@ test("status rules are enforced in the form", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
 
-  await page.getByRole("button", { name: "Thêm chứng chỉ" }).click();
+  await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
   // An has no NVIDIA record, so a stray successful save would be visible as a new row (and would fail the count below).
-  await pickOption(page, dialog, "Thành viên", "nguyen", "Nguyễn Văn An");
-  await pickOption(page, dialog, "Khóa học", "nvidia", "NVIDIA Generative AI LLMs");
-  await pickSelect(page, dialog, "Trạng thái", "Hoàn thành");
+  await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
+  await pickOption(page, dialog, "Course", "nvidia", "NVIDIA Generative AI LLMs");
+  await pickSelect(page, dialog, "Status", "Completed");
 
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(dialog.getByText("Hoàn thành thì cần ngày cấp")).toBeVisible();
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog.getByText("A completed record needs an issue date")).toBeVisible();
 
-  await dialog.getByLabel("Ngày cấp").fill("31/02/2026");
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(dialog.getByText("Ngày cấp không hợp lệ (dd/mm/yyyy)")).toBeVisible();
+  await dialog.getByLabel("Issue date").fill("31/02/2026");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog.getByText("Enter a valid issue date (dd/mm/yyyy)")).toBeVisible();
 
-  await dialog.getByLabel("Ngày cấp").fill("01/01/2099");
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(dialog.getByText("Ngày cấp không được ở tương lai")).toBeVisible();
+  await dialog.getByLabel("Issue date").fill("01/01/2099");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog.getByText("The issue date cannot be in the future")).toBeVisible();
 
-  await dialog.getByRole("button", { name: "Hủy" }).click();
+  await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs")).toHaveCount(0);
 });
@@ -175,9 +175,9 @@ test("manager sees only the managed team and can only pick managed members", asy
   await expect(page.getByRole("cell", { name: "Lê Minh Châu", exact: true }).first()).toBeVisible();
   await expect(page.getByRole("cell", { name: "Trần Thị Bình", exact: true })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Thêm chứng chỉ" }).click();
+  await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Thành viên", { exact: true }).click();
+  await dialog.getByLabel("Member", { exact: true }).click();
   await expect(page.getByRole("option", { name: /Nguyễn Văn An/ })).toBeVisible();
   await expect(page.getByRole("option", { name: /Lê Minh Châu/ })).toBeVisible();
   await expect(page.getByRole("option", { name: /Trần Thị Bình/ })).toHaveCount(0);
@@ -193,25 +193,25 @@ test("member updates own progress and cannot see company fields", async ({ page 
   try {
     await openRowMenu(row);
     // Anchor on a visible item first: a count of 0 before the menu has rendered would pass vacuously.
-    await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
-    await expect(page.getByRole("menuitem", { name: "Xóa" })).toHaveCount(0);
-    await page.getByRole("menuitem", { name: "Sửa" }).click();
+    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
+    await page.getByRole("menuitem", { name: "Edit" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel("Khóa học", { exact: true })).toBeVisible();
-    await expect(dialog.getByLabel("Đăng ký qua công ty")).toHaveCount(0);
-    await expect(dialog.getByLabel("Trạng thái hoàn tiền")).toHaveCount(0);
-    await expect(dialog.getByLabel("Thành viên", { exact: true })).toHaveCount(0);
+    await expect(dialog.getByLabel("Course", { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel("Registered through the company")).toHaveCount(0);
+    await expect(dialog.getByLabel("Refund status")).toHaveCount(0);
+    await expect(dialog.getByLabel("Member", { exact: true })).toHaveCount(0);
 
-    await pickSelect(page, dialog, "Trạng thái", "Đang học");
-    await dialog.getByLabel("Tiến độ (%)").fill("40");
-    await dialog.getByRole("button", { name: "Lưu" }).click();
-    await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+    await pickSelect(page, dialog, "Status", "In progress");
+    await dialog.getByLabel("Progress (%)").fill("40");
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Saved certificate").first()).toBeVisible();
     await expect(row).toContainText("40%");
   } finally {
-    // Restore the seed state (Chưa bắt đầu / 0) so the suite can run again on the same database.
+    // Restore the seed state (Not started / 0) so the suite can run again on the same database.
     await page.keyboard.press("Escape");
-    await editStatus(page, row, "Chưa bắt đầu", "0");
+    await editStatus(page, row, "Not started", "0");
     await expect(row).toContainText("0%");
   }
 });
@@ -223,19 +223,19 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
   await expect(page).toHaveURL(/\/me$/);
 
   const row = recordRow(page, AWS);
-  const evidenceLink = page.getByRole("menuitem", { name: "Xem minh chứng" });
+  const evidenceLink = page.getByRole("menuitem", { name: "View evidence" });
   try {
     // Upload through the sheet (the seed record has no evidence).
     await openRowMenu(row);
-    await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
     await expect(evidenceLink).toHaveCount(0);
-    await page.getByRole("menuitem", { name: "Sửa" }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
     let dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel("Khóa học", { exact: true })).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Xóa minh chứng" })).toHaveCount(0);
-    await dialog.getByLabel("Minh chứng", { exact: true }).setInputFiles("e2e/fixtures/evidence.pdf");
-    await dialog.getByRole("button", { name: "Lưu" }).click();
-    await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+    await expect(dialog.getByLabel("Course", { exact: true })).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Remove evidence" })).toHaveCount(0);
+    await dialog.getByLabel("Evidence", { exact: true }).setInputFiles("e2e/fixtures/evidence.pdf");
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Saved certificate").first()).toBeVisible();
     await expect(dialog).toHaveCount(0);
 
     // The upload revalidates after the record save, so retry until the menu shows the link.
@@ -252,19 +252,19 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     await page.keyboard.press("Escape");
 
     // Remove it through the sheet.
-    await clickMenuItem(page, row, "Sửa");
+    await clickMenuItem(page, row, "Edit");
     dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("link", { name: "Xem minh chứng hiện tại" })).toBeVisible();
-    await dialog.getByRole("button", { name: "Xóa minh chứng" }).click();
-    await expect(page.getByText("Đã xóa minh chứng")).toBeVisible();
-    await dialog.getByRole("button", { name: "Hủy" }).click();
+    await expect(dialog.getByRole("link", { name: "View current evidence" })).toBeVisible();
+    await dialog.getByRole("button", { name: "Remove evidence" }).click();
+    await expect(page.getByText("Removed evidence")).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel" }).click();
     await expect(dialog).toHaveCount(0);
 
-    // Anchored on the always-present "Sửa" item; retried until the revalidation has dropped the link.
+    // Anchored on the always-present "Edit" item; retried until the revalidation has dropped the link.
     await expect(async () => {
       await page.keyboard.press("Escape");
       await openRowMenu(row);
-      await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible({ timeout: 1_500 });
+      await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible({ timeout: 1_500 });
       await expect(evidenceLink).toHaveCount(0, { timeout: 1_500 });
     }).toPass({ timeout: 15_000 });
     await page.keyboard.press("Escape");
@@ -272,11 +272,11 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     // Leave the seed record without evidence so the suite can run again on the same database.
     await page.keyboard.press("Escape");
     await openRowMenu(row);
-    await expect(page.getByRole("menuitem", { name: "Sửa" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
     if ((await evidenceLink.count()) > 0) {
-      await clickMenuItem(page, row, "Sửa");
-      await page.getByRole("dialog").getByRole("button", { name: "Xóa minh chứng" }).click();
-      await expect(page.getByText("Đã xóa minh chứng").first()).toBeVisible();
+      await clickMenuItem(page, row, "Edit");
+      await page.getByRole("dialog").getByRole("button", { name: "Remove evidence" }).click();
+      await expect(page.getByText("Removed evidence").first()).toBeVisible();
     }
     await page.keyboard.press("Escape");
   }
@@ -300,12 +300,12 @@ test("the list updates live for another user", async ({ browser }) => {
     await expect(adminRow).toBeVisible();
 
     try {
-      await editStatus(adminPage, adminRow, "Đang học", "55");
+      await editStatus(adminPage, adminRow, "In progress", "55");
       // No reload on the manager page: Realtime must trigger the refresh.
       await expect(managerRow).toContainText("55%", { timeout: 10_000 });
     } finally {
       await adminPage.keyboard.press("Escape");
-      await editStatus(adminPage, adminRow, "Chưa bắt đầu", "0");
+      await editStatus(adminPage, adminRow, "Not started", "0");
     }
     await expect(managerRow).toContainText("0%", { timeout: 10_000 });
   } finally {

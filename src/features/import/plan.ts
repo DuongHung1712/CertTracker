@@ -1,10 +1,11 @@
 import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
 import {
   cellText, detectProgressMode, IMPORT_FIELDS, normalizeBoolean, normalizeEmail, normalizeName, normalizeNotes, normalizeRefund,
-  normalizeStatus, normalizeUrl, parseImportDate, parseValidityMonths, progressToPercent,
+  normalizeStatus, normalizeUrl, parseCost, parseCurrency, parseImportDate, parseStudyHours, parseValidityMonths, progressToPercent,
   type Cell, type Cleaned, type ImportField, type ImportTable, type ProgressMode,
 } from "@/features/import/clean";
 import { recordRuleIssues, type RefundStatus } from "@/features/records/schema";
+import type { Currency } from "@/lib/money";
 import { foldText } from "@/lib/text";
 
 /* ---------------------------------------------------------------- types */
@@ -20,13 +21,20 @@ export type ImportLookups = {
   teams: { id: string; name: string }[];
   providers: { id: string; name: string }[];
   certTypes: { id: string; name: string }[];
-  courses: { id: string; name: string; providerId: string | null; certTypeId: string | null; validityMonths: number | null }[];
+  courses: {
+    id: string; name: string; providerId: string | null; certTypeId: string | null; validityMonths: number | null;
+    cost: number | null; costCurrency: Currency | null; estHours: number | null;
+  }[];
   records: ExistingRecord[];
 };
 
 export type Ref = { id: string } | { name: string };
 type MemberRef = { id: string } | { email: string; fullName: string; teamId: string | null };
-type CourseRef = { id: string } | { name: string; provider: Ref; certType: Ref | null; validityMonths: number | null };
+type NewCourseRef = {
+  name: string; provider: Ref; certType: Ref | null; validityMonths: number | null;
+  cost: number | null; costCurrency: Currency | null; estHours: number | null;
+};
+type CourseRef = { id: string } | NewCourseRef;
 type NormalizedRecord = {
   status: RecordStatus; progress: number;
   plannedExamDate: string | null; issuedDate: string | null; certificateUrl: string | null;
@@ -66,12 +74,12 @@ export function reconcileRecord(input: ReconcileInput, existing: ExistingRecord 
   let { status, progress } = input;
 
   if (status === null && progress === null) {
-    if (!existing) return { status: "not_started", progress: 0, errors: ["Thiếu trạng thái và tiến độ"], warnings };
+    if (!existing) return { status: "not_started", progress: 0, errors: ["Status and progress are missing"], warnings };
     ({ status, progress } = existing);
   } else if (status === null) {
     const value = progress as number;
     status = value === 0 ? "not_started" : "in_progress"; // 100 is settled by alignWithStatus (done or 99%)
-    if (value !== 100) warnings.push("Suy ra trạng thái từ tiến độ");
+    if (value !== 100) warnings.push("Status taken from progress");
   } else if (progress === null) {
     progress = deriveProgress(status, existing, warnings);
   }
@@ -85,7 +93,7 @@ function deriveProgress(status: RecordStatus, existing: ExistingRecord | null, w
   if (status === "done") return 100;
   if (status === "not_started") return 0;
   if (existing?.status === "in_progress") return existing.progress;
-  warnings.push("Không có tiến độ — đặt 0%");
+  warnings.push("No progress given — set to 0%");
   return 0;
 }
 
@@ -96,20 +104,20 @@ function alignWithStatus(
   warnings: string[],
 ): { status: RecordStatus; progress: number } {
   if (status === "done" && progress !== 100) {
-    warnings.push(`Trạng thái ${RECORD_STATUS_LABEL.done}: đặt tiến độ 100% (file ghi ${progress}%)`);
+    warnings.push(`Status ${RECORD_STATUS_LABEL.done}: progress set to 100% (the file says ${progress}%)`);
     return { status, progress: 100 };
   }
   if (status === "not_started" && progress > 0) {
     const next: RecordStatus = progress === 100 ? "done" : "in_progress";
-    warnings.push(`Có tiến độ ${progress}% — chuyển sang ${RECORD_STATUS_LABEL[next]}`);
+    warnings.push(`Progress is ${progress}% — status changed to ${RECORD_STATUS_LABEL[next]}`);
     return { status: next, progress };
   }
   if (status === "in_progress" && progress === 100) {
     if (hasIssuedDate) {
-      warnings.push(`Tiến độ 100% — chuyển sang ${RECORD_STATUS_LABEL.done}`);
+      warnings.push(`Progress is 100% — status changed to ${RECORD_STATUS_LABEL.done}`);
       return { status: "done", progress };
     }
-    warnings.push("Tiến độ 100% nhưng chưa có ngày cấp — đặt 99%");
+    warnings.push("Progress is 100% but there is no issue date — set to 99%");
     return { status, progress: 99 };
   }
   return { status, progress };
@@ -118,7 +126,7 @@ function alignWithStatus(
 /* -------------------------------------------------------------- context */
 
 type FirstNewMember = { ref: { email: string; fullName: string; teamId: string | null }; rowNumber: number };
-type FirstNewCourse = { ref: Extract<CourseRef, { name: string }>; rowNumber: number };
+type FirstNewCourse = { ref: NewCourseRef; rowNumber: number };
 
 /** Lookup indexes plus the "first definition wins" state shared by every row of one plan. */
 type PlanContext = {
@@ -197,13 +205,13 @@ function resolveMember(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   const firstRow = ctx.newMembers.get(email.value);
   if (firstRow) {
     if (fileName !== null && foldText(fileName) !== foldText(firstRow.ref.fullName)) {
-      issues.warnings.push(`Email trùng dòng ${firstRow.rowNumber} nhưng khác tên — dùng tên ở dòng ${firstRow.rowNumber}`);
+      issues.warnings.push(`Same email as row ${firstRow.rowNumber} but a different name — using the name from row ${firstRow.rowNumber}`);
     }
     return { email: email.value, ref: firstRow.ref };
   }
 
   const errorsBefore = issues.errors.length;
-  if (fileName === null) issues.errors.push("Thiếu họ tên để tạo thành viên mới");
+  if (fileName === null) issues.errors.push("Full name is missing, so the new member cannot be created");
   const teamId = resolveNewMemberTeam(ctx, teamText, issues);
   if (issues.errors.length > errorsBefore || fileName === null) return { email: email.value, ref: null };
 
@@ -221,27 +229,27 @@ function warnAboutExistingMember(
   issues: Issues,
 ): void {
   if (fileName !== null && foldText(fileName) !== foldText(member.fullName)) {
-    issues.warnings.push(`Tên trong file "${fileName}" khác tên hiện có "${member.fullName}" — giữ tên hiện có`);
+    issues.warnings.push(`Name in the file "${fileName}" differs from the existing name "${member.fullName}" — keeping the existing name`);
   }
   if (teamText !== null) {
     const matches = ctx.teamsByName.get(foldText(teamText)) ?? [];
     if (!matches.some((team) => team.id === member.teamId)) {
-      issues.warnings.push(`Team trong file "${teamText}" khác team hiện tại — nhập dữ liệu không chuyển team`);
+      issues.warnings.push(`Team in the file "${teamText}" differs from the current team — import does not move members`);
     }
   }
-  if (!member.isActive) issues.warnings.push("Thành viên đang ngừng hoạt động");
+  if (!member.isActive) issues.warnings.push("This member is inactive");
 }
 
 /** Teams are never created: a new member's team must already exist and be unambiguous. */
 function resolveNewMemberTeam(ctx: PlanContext, teamText: string | null, issues: Issues): string | null {
   if (teamText === null) {
-    issues.warnings.push("Thành viên mới chưa có team");
+    issues.warnings.push("The new member has no team");
     return null;
   }
   const matches = ctx.teamsByName.get(foldText(teamText)) ?? [];
   if (matches.length === 1) return matches[0]!.id;
   issues.errors.push(
-    matches.length === 0 ? `Không tìm thấy team "${teamText}"` : `Có nhiều team tên "${teamText}" — sửa tên team cho rõ`,
+    matches.length === 0 ? `Team "${teamText}" not found` : `More than one team is named "${teamText}" — rename them so they differ`,
   );
   return null;
 }
@@ -254,7 +262,7 @@ const NO_COURSE: CourseResolution = { ref: null, key: null };
 function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, issues: Issues): CourseResolution {
   const name = normalizeName(cells.courseName);
   if (name === null) {
-    issues.errors.push("Thiếu tên khóa học");
+    issues.errors.push("Course name is missing");
     return NO_COURSE;
   }
   const providerText = normalizeName(cells.provider);
@@ -262,16 +270,21 @@ function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   const validity = parseValidityMonths(cells.validityMonths);
   if (!validity.ok) issues.errors.push(validity.error);
   const validityMonths = validity.ok ? validity.value : null;
+  const errorsBeforeExtras = issues.errors.length;
+  const cost = take(parseCost(cells.cost), issues, null);
+  const costCurrency = take(parseCurrency(cells.costCurrency), issues, null);
+  const estHours = take(parseStudyHours(cells.estHours), issues, null);
+  const extras: CourseExtras = { cost, costCurrency, estHours };
 
   const sameName = ctx.coursesByName.get(foldText(name)) ?? [];
   let existing: ImportLookups["courses"][number] | undefined;
   if (providerText === null) {
     if (sameName.length > 1) {
-      issues.errors.push(`Có nhiều khóa học tên "${name}" — thêm cột Nhà cung cấp`);
+      issues.errors.push(`More than one course is named "${name}" — add a Provider column`);
       return NO_COURSE;
     }
     if (sameName.length === 0) {
-      issues.errors.push(`Không tìm thấy khóa học "${name}" — cần Nhà cung cấp để tạo mới`);
+      issues.errors.push(`Course "${name}" not found — a provider is needed to create it`);
       return NO_COURSE;
     }
     existing = sameName[0];
@@ -281,29 +294,45 @@ function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   }
 
   if (existing) {
-    warnAboutCatalogDifferences(ctx, existing, certTypeText, validityMonths, issues);
+    warnAboutCatalogDifferences(ctx, existing, { certTypeText, validityMonths, ...extras }, issues);
     return { ref: { id: existing.id }, key: existing.id };
   }
   if (!validity.ok || providerText === null) return NO_COURSE;
-  return defineNewCourse(ctx, { name, providerText, certTypeText, validityMonths }, rowNumber, issues);
+  // A new course is written to the database, where cost and currency must come as a pair.
+  if (cost !== null && costCurrency === null) issues.errors.push("Choose a currency for the cost");
+  if (cost === null && costCurrency !== null) issues.errors.push("Enter a cost or clear the currency");
+  // Never register an invalid definition: a later row for the same new course would reuse it and fail the commit.
+  if (issues.errors.length > errorsBeforeExtras) return NO_COURSE;
+  return defineNewCourse(ctx, { name, providerText, certTypeText, validityMonths, ...extras }, rowNumber, issues);
 }
+
+/** Cost, currency and study hours as read from a row; a cost counts only together with its currency. */
+type CourseExtras = { cost: number | null; costCurrency: Currency | null; estHours: number | null };
+const hasCost = (extras: CourseExtras): extras is { cost: number; costCurrency: Currency; estHours: number | null } =>
+  extras.cost !== null && extras.costCurrency !== null;
 
 /** The catalog wins; a non-blank value in the file that disagrees with it is only a warning. */
 function warnAboutCatalogDifferences(
   ctx: PlanContext,
   course: ImportLookups["courses"][number],
-  certTypeText: string | null,
-  validityMonths: number | null,
+  input: { certTypeText: string | null; validityMonths: number | null } & CourseExtras,
   issues: Issues,
 ): void {
+  const { certTypeText, validityMonths } = input;
   if (certTypeText !== null) {
     const catalogName = course.certTypeId === null ? null : ctx.certTypeNameById.get(course.certTypeId) ?? null;
     if (catalogName === null || foldText(catalogName) !== foldText(certTypeText)) {
-      issues.warnings.push("Loại chứng chỉ trong file khác danh mục — giữ danh mục");
+      issues.warnings.push("Certificate type in the file differs from the catalog — keeping the catalog");
     }
   }
   if (validityMonths !== null && validityMonths !== course.validityMonths) {
-    issues.warnings.push("Thời hạn trong file khác danh mục — giữ danh mục");
+    issues.warnings.push("Validity in the file differs from the catalog — keeping the catalog");
+  }
+  if (hasCost(input) && (input.cost !== course.cost || input.costCurrency !== course.costCurrency)) {
+    issues.warnings.push("Cost in the file differs from the catalog — keeping the catalog");
+  }
+  if (input.estHours !== null && input.estHours !== course.estHours) {
+    issues.warnings.push("Study hours in the file differ from the catalog — keeping the catalog");
   }
 }
 
@@ -318,7 +347,7 @@ function resolveCatalogRef(existing: Map<string, { id: string }>, created: Map<s
 
 function defineNewCourse(
   ctx: PlanContext,
-  input: { name: string; providerText: string; certTypeText: string | null; validityMonths: number | null },
+  input: { name: string; providerText: string; certTypeText: string | null; validityMonths: number | null } & CourseExtras,
   rowNumber: number,
   issues: Issues,
 ): CourseResolution {
@@ -327,7 +356,13 @@ function defineNewCourse(
   const first = ctx.newCourses.get(courseKey);
   if (first) {
     if (input.validityMonths !== null && input.validityMonths !== first.ref.validityMonths) {
-      issues.warnings.push(`Thời hạn khác định nghĩa khóa học mới ở dòng ${first.rowNumber} — dùng định nghĩa đầu tiên`);
+      issues.warnings.push(`Validity differs from the new course defined in row ${first.rowNumber} — using the first definition`);
+    }
+    if (hasCost(input) && (input.cost !== first.ref.cost || input.costCurrency !== first.ref.costCurrency)) {
+      issues.warnings.push(`Cost differs from the new course defined in row ${first.rowNumber} — using the first definition`);
+    }
+    if (input.estHours !== null && input.estHours !== first.ref.estHours) {
+      issues.warnings.push(`Study hours differ from the new course defined in row ${first.rowNumber} — using the first definition`);
     }
     return { ref: first.ref, key };
   }
@@ -336,6 +371,9 @@ function defineNewCourse(
     provider: resolveCatalogRef(ctx.providersByName, ctx.newProviders, input.providerText),
     certType: input.certTypeText === null ? null : resolveCatalogRef(ctx.certTypesByName, ctx.newCertTypes, input.certTypeText),
     validityMonths: input.validityMonths,
+    cost: input.cost,
+    costCurrency: input.costCurrency,
+    estHours: input.estHours,
   };
   ctx.newCourses.set(courseKey, { ref, rowNumber });
   return { ref, key };
@@ -356,14 +394,14 @@ type RecordCells = Omit<NormalizedRecord, "status" | "progress"> & { status: Rec
 
 function readRecordCells(ctx: PlanContext, cells: RowCells, issues: Issues): RecordCells {
   const notes = normalizeNotes(cells.notes);
-  if (notes !== null && notes.length > MAX_NOTES_LENGTH) issues.errors.push(`Ghi chú dài quá ${MAX_NOTES_LENGTH} ký tự`);
+  if (notes !== null && notes.length > MAX_NOTES_LENGTH) issues.errors.push(`Notes are longer than ${MAX_NOTES_LENGTH} characters`);
   return {
     status: take(normalizeStatus(cells.status), issues, null),
     progress: take(progressToPercent(cells.progress, ctx.progressMode), issues, null),
     plannedExamDate: take(parseImportDate(cells.plannedExamDate, ctx.date1904), issues, null),
     issuedDate: take(parseImportDate(cells.issuedDate, ctx.date1904), issues, null),
     certificateUrl: take(normalizeUrl(cells.certificateUrl), issues, null),
-    viaCompany: take(normalizeBoolean(cells.viaCompany, "Qua công ty"), issues, null),
+    viaCompany: take(normalizeBoolean(cells.viaCompany, "Registered through the company"), issues, null),
     refundStatus: take(normalizeRefund(cells.refundStatus), issues, null),
     notes,
   };
@@ -413,7 +451,7 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
     const recordKey = `${member.email}|${course.key}`;
     const firstRow = ctx.seenRecords.get(recordKey);
     if (firstRow === undefined) ctx.seenRecords.set(recordKey, source.rowNumber);
-    else issues.errors.push(`Trùng với dòng ${firstRow} (cùng email và khóa học)`);
+    else issues.errors.push(`Duplicate of row ${firstRow} (same email and course)`);
   }
 
   const skipped = (): PlannedRow => ({ ...base, normalized: null, action: "skip", ...issues });
@@ -463,9 +501,9 @@ export function buildImportPlan(table: ImportTable, lookups: ImportLookups, toda
   const ctx = createContext(table, lookups, today);
   const rows = table.rows.map((source) => planRow(ctx, table, source));
 
-  const notes = [`Sheet "${table.sheetName}", tiêu đề ở dòng ${table.headerRowNumber}.`];
-  if (ctx.progressMode === "fraction") notes.push("Cột tiến độ được hiểu là tỉ lệ 0–1 (vd. 0,75 = 75%).");
-  if (table.unknownColumns.length > 0) notes.push(`Bỏ qua các cột không dùng: ${table.unknownColumns.join(", ")}.`);
+  const notes = [`Sheet "${table.sheetName}", headers in row ${table.headerRowNumber}.`];
+  if (ctx.progressMode === "fraction") notes.push("The progress column is read as a fraction from 0 to 1 (for example 0.75 = 75%).");
+  if (table.unknownColumns.length > 0) notes.push(`Ignored columns: ${table.unknownColumns.join(", ")}.`);
 
   return { rows, notes, newEntities: collectNewEntities(rows) };
 }

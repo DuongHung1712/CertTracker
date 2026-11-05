@@ -27,7 +27,7 @@ export function DcDialog({
       form.setError("name", { message: result.error });
       return;
     }
-    toast.success(editing ? `Đã lưu trung tâm ${values.name}` : `Đã thêm trung tâm ${values.name}`);
+    toast.success(editing ? `Saved centre ${values.name}` : `Added centre ${values.name}`);
     onOpenChange(false);
     form.reset({ name: "" });
   }
@@ -36,20 +36,20 @@ export function DcDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-section-title">{editing ? "Sửa trung tâm" : "Thêm trung tâm"}</DialogTitle>
+          <DialogTitle className="text-section-title">{editing ? "Edit centre" : "Add centre"}</DialogTitle>
         </DialogHeader>
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="dc-name">Tên trung tâm</FieldLabel>
+            <FieldLabel htmlFor="dc-name">Centre name</FieldLabel>
             <Input id="dc-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </form>

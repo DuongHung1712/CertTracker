@@ -27,8 +27,8 @@ export type DataTableProps<TData, TValue> = {
   getRowId?: (row: TData, index: number) => string;
 };
 
-// Sorts Vietnamese text correctly by default (Đ between D and E, diacritics
-// ignored) and compares numbers numerically. A column with its own meaning
+// Sorts Vietnamese names correctly by default (d-stroke between d and e,
+// diacritics ignored) and compares numbers numerically. A column with its own meaning
 // of "order" — e.g. an expiry column that should sort by days left, not by
 // the English `expiry_status` string — passes its own `sortingFn` to
 // override this.
@@ -125,7 +125,7 @@ export function DataTable<TData, TValue>({
             ) : isLoading ? (
               <>
                 <TableRow className="sr-only">
-                  <TableCell colSpan={columnCount}>Đang tải…</TableCell>
+                  <TableCell colSpan={columnCount}>Loading…</TableCell>
                 </TableRow>
                 {Array.from({ length: 5 }, (_, i) => (
                   <TableRow key={`skeleton-${i}`} aria-hidden className="hover:bg-transparent">
@@ -138,7 +138,7 @@ export function DataTable<TData, TValue>({
             ) : rows.length === 0 ? (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={columnCount} className="whitespace-normal">
-                  {empty ?? <EmptyState title="Không có dữ liệu" />}
+                  {empty ?? <EmptyState title="Nothing to show" />}
                 </TableCell>
               </TableRow>
             ) : (
@@ -164,7 +164,7 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Trang trước"
+            aria-label="Previous page"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
@@ -173,7 +173,7 @@ export function DataTable<TData, TValue>({
           <Button
             variant="outline"
             size="icon-sm"
-            aria-label="Trang sau"
+            aria-label="Next page"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >

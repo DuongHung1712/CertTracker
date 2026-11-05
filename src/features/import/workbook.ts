@@ -27,11 +27,11 @@ const MAX_VALUE_CELLS = 400_000;
 /** Only the first sheets are scanned for the header; each scanned sheet costs a sheet_to_json pass. */
 const MAX_SCANNED_SHEETS = 10;
 
-const MERGE_TOO_LARGE = "File có vùng gộp ô quá lớn.";
+const MERGE_TOO_LARGE = "The file has merged cell ranges that are too large.";
 class MergeTooLargeError extends Error {}
 class TooManyCellsError extends Error {}
-const TOO_MANY_CELLS = "File có quá nhiều ô chứa dữ liệu. Chia nhỏ file rồi nhập từng phần.";
-const TOO_FAR_DOWN = `Sheet có dữ liệu ở dòng quá xa (sau dòng ${MAX_RAW_ROWS}). Xóa các dòng thừa rồi thử lại.`;
+const TOO_MANY_CELLS = "The file has too many cells with data. Split it and import it in parts.";
+const TOO_FAR_DOWN = `The sheet has data too far down (past row ${MAX_RAW_ROWS}). Delete the extra rows and try again.`;
 
 const hasValue = (cell: XLSX.CellObject): boolean => {
   const v = cell.v;
@@ -93,8 +93,8 @@ export function fillMergedCells(sheet: XLSX.WorkSheet, budget: { remaining: numb
 
 /** Decompressed-size ceiling for a zip (real xlsx files are well under 10 MB inflated). */
 const MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024;
-const TOO_LARGE = "File Excel giải nén quá lớn (tối đa 50 MB). Chia nhỏ file rồi nhập từng phần.";
-const BAD_ZIP = "File Excel không hợp lệ (cấu trúc zip bị hỏng).";
+const TOO_LARGE = "The Excel file is too large once unpacked (50 MB at most). Split it and import it in parts.";
+const BAD_ZIP = "The Excel file is not valid (its zip structure is damaged).";
 
 /**
  * Pre-parse zip-bomb guard; returns an error message or null. SheetJS 0.20.3 inflates with its own pure-JS inflater
@@ -165,7 +165,7 @@ function inspectZip(bytes: Uint8Array): string | null {
 const SCAN_ROWS = 10;
 
 export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
-  if (bytes.length > MAX_IMPORT_BYTES) return { ok: false, error: "File lớn hơn 4 MB. Chia nhỏ file rồi nhập từng phần." };
+  if (bytes.length > MAX_IMPORT_BYTES) return { ok: false, error: "The file is larger than 4 MB. Split it and import it in parts." };
   if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
     // Any "PK" prefix: SheetJS's own sniffer accepts more than PK 03 04 as a zip, so the guard must not be narrower.
     const zipError = checkZip(bytes);
@@ -182,7 +182,7 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
       cellStyles: false,
     });
   } catch {
-    return { ok: false, error: "Không đọc được file. File có thể bị hỏng hoặc được đặt mật khẩu." };
+    return { ok: false, error: "Could not read the file. It may be damaged or password protected." };
   }
   const date1904 = Boolean(book.Workbook?.WBProps?.date1904);
 
@@ -223,7 +223,7 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
     const header = findHeaderRow(rows, SCAN_ROWS);
     if (!header) continue;
     if (header.duplicates.length > 0) {
-      return { ok: false, error: `Cột "${header.duplicates[0]}" trùng nghĩa với một cột khác. Xóa hoặc đổi tên một trong hai.` };
+      return { ok: false, error: `Column "${header.duplicates[0]}" means the same as another column. Delete or rename one of them.` };
     }
     const firstRow = bounds.s.r; // 0-based
     const dataRows = rows
@@ -231,14 +231,14 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
       .map((cells, offset) => ({ rowNumber: firstRow + header.index + 2 + offset, cells }))
       .filter((row) => row.cells.some((cell) => cellText(cell) !== null));
     if (dataRows.length > MAX_IMPORT_ROWS) {
-      return { ok: false, error: `File có ${dataRows.length} dòng dữ liệu, tối đa ${MAX_IMPORT_ROWS}. Chia nhỏ file rồi nhập từng phần.` };
+      return { ok: false, error: `The file has ${dataRows.length} data rows, ${MAX_IMPORT_ROWS} at most. Split it and import it in parts.` };
     }
     return {
       ok: true,
       value: {
         sheetName,
         headerRowNumber: firstRow + header.index + 1,
-        headers: (rows[header.index] ?? []).map((cell, i) => cellText(cell) ?? `Cột ${i + 1}`),
+        headers: (rows[header.index] ?? []).map((cell, i) => cellText(cell) ?? `Column ${i + 1}`),
         map: header.map,
         unknownColumns: header.unknown,
         rows: dataRows,
@@ -249,7 +249,7 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
   return {
     ok: false,
     error:
-      "Không tìm thấy hàng tiêu đề có cột Email và Khóa học trong 10 dòng đầu của các sheet." +
-      (skippedWide ? ` Sheet "${skippedWide}" bị bỏ qua vì có quá nhiều cột (hơn ${MAX_IMPORT_COLUMNS}).` : ""),
+      "No header row with an Email column and a Course column was found in the first 10 rows of the sheets." +
+      (skippedWide ? ` Sheet "${skippedWide}" was skipped because it has too many columns (more than ${MAX_IMPORT_COLUMNS}).` : ""),
   };
 }

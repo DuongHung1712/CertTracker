@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const batchIdSchema = z.object({ batchId: z.guid("Dữ liệu không hợp lệ") });
+export const batchIdSchema = z.object({ batchId: z.guid("Invalid data") });
 
 export const importSummarySchema = z.object({
   created: z.number().int(),

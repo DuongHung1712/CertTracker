@@ -1,50 +1,50 @@
 # CertTracker Design System
 
-Tài liệu tham chiếu cho mọi giao diện của CertTracker. Người và AI đọc file này **trước khi dựng UI**.
+Reference for every CertTracker screen. People and AI read this file **before building UI**.
 
-- **Nguồn sự thật:** code (`src/app/globals.css`, `src/components/**`). File này mô tả và đặt quy tắc; trang Design System trên claude.ai là bản để xem, đồng bộ từ code.
-- **Quyết định nền:** `docs/decisions.md` #14.
-
----
-
-## 1. Nguyên tắc
-
-1. **Hồ sơ chứng chỉ, không phải bảng tính.** Nền giấy trắng ấm, chữ mực xanh đen, một màu nhấn teal đậm — nghiêm túc, đáng tin, vì đây là dữ liệu nhân sự.
-2. **Dữ liệu dày, đọc nhanh.** Bảng compact (dòng 32px, chữ 13px), số thẳng cột; khoảng trắng dành cho phân nhóm, không để trang trí.
-3. **Trạng thái không bao giờ chỉ dựa vào màu.** Mỗi trạng thái có chữ + icon; màu chỉ tăng tốc độ nhận biết.
-4. **Chỉ dùng token.** Không viết màu, cỡ chữ, bo góc cứng trong component — để thêm dark mode sau này không phải sửa component.
-5. **Một khung, lọc theo vai trò.** Cùng một app shell cho mọi vai trò; mục không dùng được thì ẩn. Quyền thật do RLS quyết định.
+- **Source of truth:** the code (`src/app/globals.css`, `src/components/**`). This file describes it and sets the rules; the Design System page on claude.ai is a viewing copy, synced from the code.
+- **Foundational decision:** `docs/decisions.md` #14.
 
 ---
 
-## 2. Token
+## 1. Principles
 
-Tên token theo **vai trò**, theo quy ước của shadcn/ui. Chỉ có giao diện sáng; dark mode thêm sau bằng cách khai báo lại cùng tên token (không đổi component).
+1. **A certificate record, not a spreadsheet.** Warm paper-white background, blue-black ink text, one deep teal accent: serious and trustworthy, because this is HR data.
+2. **Dense data, quick to read.** Compact tables (32px rows, 13px text), numbers aligned in columns; white space is for grouping, not decoration.
+3. **Status never relies on colour alone.** Every status has text and an icon; colour only speeds up recognition.
+4. **Tokens only.** No hard-coded colours, font sizes or corner radii in components, so dark mode can be added later without touching components.
+5. **One frame, filtered by role.** The same app shell for every role; items a role cannot use are hidden. Real permissions are decided by RLS.
 
-### 2.1 Màu giao diện
+---
 
-| Token | Giá trị | Dùng cho | Tương phản |
+## 2. Tokens
+
+Token names follow the **role** a colour plays, as in shadcn/ui. Only a light theme exists; dark mode is added later by redeclaring the same token names (no component changes).
+
+### 2.1 Interface colours
+
+| Token | Value | Used for | Contrast |
 |---|---|---|---|
-| `background` | `#F6F7F5` | Nền trang | — |
-| `foreground` | `#15212B` | Chữ chính | 15.2:1 trên `background` |
-| `card`, `popover` | `#FFFFFF` | Bảng, thẻ, hộp thoại, menu | — |
-| `card-foreground`, `popover-foreground` | `#15212B` | Chữ trên thẻ | 16.4:1 |
-| `muted`, `secondary` | `#EDF0EE` | Header bảng, nền phụ, nút phụ | — |
-| `muted-foreground` | `#56636C` | Chữ phụ, nhãn, placeholder | 5.4:1 trên `muted`, 5.8:1 trên `background` |
-| `secondary-foreground` | `#15212B` | Chữ trên nút phụ | 14.2:1 |
-| `primary` | `#0E5C58` | Nút chính, link, mục đang chọn, thanh tiến độ | 7.3:1 trên `background` |
-| `primary-foreground` | `#FFFFFF` | Chữ trên `primary` | 7.8:1 |
-| `primary-hover` | `#0A4744` | Hover nút chính | 10.5:1 với chữ trắng |
-| `accent` | `#E2EFEC` | Dòng bảng đang chọn, mục sidebar active, hover dòng | — |
-| `accent-foreground` | `#0E5C58` | Chữ trên `accent` | 6.6:1 |
-| `destructive` | `#B42318` | Nút xóa, chữ lỗi form | 6.6:1 trên trắng, cả hai chiều |
-| `border` | `#D8DEDB` | Đường kẻ bảng, viền thẻ, phân cách (trang trí) | 1.27:1 trên `background`, 1.36:1 trên `card` — không dùng làm ranh giới control |
-| `input` | `#83908C` | Viền ô nhập, checkbox, select | 3.3:1 trên `card`, 3.1:1 trên `background` |
-| `ring` | `#1C7C75` | Focus ring (2px, offset 2px) | 4.7:1 trên `background` |
+| `background` | `#F6F7F5` | Page background | — |
+| `foreground` | `#15212B` | Main text | 15.2:1 on `background` |
+| `card`, `popover` | `#FFFFFF` | Tables, cards, dialogs, menus | — |
+| `card-foreground`, `popover-foreground` | `#15212B` | Text on cards | 16.4:1 |
+| `muted`, `secondary` | `#EDF0EE` | Table header, secondary background, secondary button | — |
+| `muted-foreground` | `#56636C` | Secondary text, labels, placeholders | 5.4:1 on `muted`, 5.8:1 on `background` |
+| `secondary-foreground` | `#15212B` | Text on the secondary button | 14.2:1 |
+| `primary` | `#0E5C58` | Primary button, links, selected item, progress bar | 7.3:1 on `background` |
+| `primary-foreground` | `#FFFFFF` | Text on `primary` | 7.8:1 |
+| `primary-hover` | `#0A4744` | Primary button hover | 10.5:1 with white text |
+| `accent` | `#E2EFEC` | Selected table row, active sidebar item, row hover | — |
+| `accent-foreground` | `#0E5C58` | Text on `accent` | 6.6:1 |
+| `destructive` | `#B42318` | Delete button, form error text | 6.6:1 on white, in both directions |
+| `border` | `#D8DEDB` | Table rules, card borders, separators (decorative) | 1.27:1 on `background`, 1.36:1 on `card`; not used as a control boundary |
+| `input` | `#83908C` | Input, checkbox and select borders | 3.3:1 on `card`, 3.1:1 on `background` |
+| `ring` | `#1C7C75` | Focus ring (2px, offset 2px) | 4.7:1 on `background` |
 
-Sidebar dùng bộ riêng của shadcn, ánh xạ về các token trên:
+The sidebar uses shadcn's own set, mapped to the tokens above:
 
-| Token | Giá trị |
+| Token | Value |
 |---|---|
 | `sidebar` | `#FFFFFF` |
 | `sidebar-foreground` | `#15212B` |
@@ -53,11 +53,11 @@ Sidebar dùng bộ riêng của shadcn, ánh xạ về các token trên:
 | `sidebar-primary` / `sidebar-primary-foreground` | `#0E5C58` / `#FFFFFF` |
 | `sidebar-ring` | `#1C7C75` |
 
-### 2.2 Màu trạng thái hết hạn
+### 2.2 Expiry status colours
 
-Badge dạng "tem": nền nhạt, chữ đậm, viền 1px. Mỗi trạng thái có 3 token `--status-<id>-fg | -bg | -border`.
+Badges look like stamps: pale background, strong text, 1px border. Each status has 3 tokens, `--status-<id>-fg | -bg | -border`. The first column is the stored `expiry_status` key; the badge shows its English label (Valid, Expiring in 60 days, Expiring soon, Expired, No expiry, Not issued).
 
-| Trạng thái (`expiry_status`) | id | fg | bg | border | Icon (lucide) | Tương phản fg/bg |
+| Status (`expiry_status` key) | id | fg | bg | border | Icon (lucide) | Contrast fg/bg |
 |---|---|---|---|---|---|---|
 | Active | `active` | `#1D6636` | `#E7F3EB` | `#A8D2B4` | `circle-check` | 6.1:1 |
 | Expiring in 60d | `expiring-60` | `#7A5200` | `#FFF5DC` | `#EDCB7E` | `clock` | 6.4:1 |
@@ -66,197 +66,205 @@ Badge dạng "tem": nền nhạt, chữ đậm, viền 1px. Mỗi trạng thái 
 | No Expiry | `no-expiry` | `#4A5560` | `#EEF1F0` | `#D3D9D6` | `infinity` | 6.7:1 |
 | N/A | `na` | `#4A5560` | `#EEF1F0` | `#D3D9D6` | `minus` | 6.7:1 |
 
-Màu trạng thái **chỉ** dùng cho hạn chứng chỉ. Không dùng cho nút, trạng thái học hay vai trò.
+Status colours are used **only** for certificate expiry. Never for buttons, study status or roles.
 
-Sáu tông màu có độ sáng khá gần nhau (khó phân biệt nhanh với người mù màu đỏ-lục). Riêng `expired` in đậm (`font-semibold` thay vì `font-medium`) — trạng thái cần chú ý nhất được thêm một lớp phân biệt ngoài màu và icon.
+The six tones have fairly similar lightness (hard to tell apart quickly for people with red-green colour blindness). `expired` alone is set heavier (`font-semibold` instead of `font-medium`): the status that needs the most attention gets one more cue besides colour and icon.
 
-### 2.3 Chữ
+### 2.3 Typography
 
-| Vai trò | Font | Ghi chú |
+| Role | Font | Notes |
 |---|---|---|
-| Giao diện | **Be Vietnam Pro** 400/500/600/700 (`latin`, `vietnamese`) | Biến `--font-sans`; số liệu bật `tabular-nums` |
-| Mã | **Geist Mono** | Chỉ cho mã thành viên `M001`, mã khóa học |
+| Interface | **Be Vietnam Pro** 400/500/600/700 (`latin`, `vietnamese`) | Variable `--font-sans`; the Vietnamese subset stays because member names and course data contain Vietnamese letters; figures use `tabular-nums` |
+| Codes | **Geist Mono** | Only for member codes such as `M001` and course codes |
 
-| Style | Cỡ / dòng / đậm | Dùng cho |
+| Style | Size / line / weight | Used for |
 |---|---|---|
-| `page-title` | 20 / 28 / 600 | Tiêu đề trang (một `h1` mỗi trang) |
-| `section-title` | 15 / 22 / 600 | Tiêu đề khối, tiêu đề hộp thoại |
-| `body` | 14 / 20 / 400 | Nội dung, form |
-| `table` | 13 / 18 / 400 | Ô bảng |
-| `label` | 12 / 16 / 500, chữ hoa, `letter-spacing: 0.04em` | Header cột, nhãn nhóm |
-| `caption` | 12 / 16 / 400 | Chú thích, gợi ý dưới ô nhập |
-| `kpi` | 28 / 32 / 600, `tabular-nums` | Số lớn trên Dashboard |
+| `page-title` | 20 / 28 / 600 | Page title (one `h1` per page) |
+| `section-title` | 15 / 22 / 600 | Section titles, dialog titles |
+| `body` | 14 / 20 / 400 | Body text, forms |
+| `table` | 13 / 18 / 400 | Table cells |
+| `label` | 12 / 16 / 500, uppercase, `letter-spacing: 0.04em` | Column headers, group labels |
+| `caption` | 12 / 16 / 400 | Captions, hints under inputs |
+| `kpi` | 28 / 32 / 600, `tabular-nums` | Large figures on the Dashboard |
 
-### 2.4 Khoảng cách, kích thước, bo góc, bóng
+### 2.4 Spacing, sizes, radii, shadows
 
-- **Lưới 4px:** `4 · 8 · 12 · 16 · 24 · 32` (Tailwind `1 · 2 · 3 · 4 · 6 · 8`). Nhóm phần tử dùng `gap`, không dùng margin lẻ.
-- **Bảng:** dòng 32px, padding ô `4px 10px` (badge hoặc nút icon 24px + 8px); header nằm trong cùng khung cuộn ngang với phần thân, không cố định khi cuộn dọc (một khung cuộn cao không giới hạn thì không dính được — chưa cần thiết ở quy mô bảng hiện tại); nút thao tác trong dòng dùng `size="icon-xs"`.
-- **Control:** cao 32px trong bảng/bộ lọc/toolbar (mặc định của `Input`, `Button`); 36px trong form (`h-9` / `size="lg"`).
-- **Nội dung trang:** padding 24px (16px dưới 640px); form rộng tối đa 640px.
+- **4px grid:** `4 · 8 · 12 · 16 · 24 · 32` (Tailwind `1 · 2 · 3 · 4 · 6 · 8`). Group elements with `gap`, not odd margins.
+- **Tables:** 32px rows, cell padding `4px 10px` (a badge or an icon button is 24px + 8px); the header sits in the same horizontal scroll frame as the body and is not fixed on vertical scroll (a scroll frame with unlimited height cannot stick; not needed at the current table sizes); row action buttons use `size="icon-xs"`.
+- **Controls:** 32px high in tables, filters and toolbars (the default of `Input` and `Button`); 36px in forms (`h-9` / `size="lg"`).
+- **Page content:** 24px padding (16px below 640px); forms are at most 640px wide.
 
-| Bo góc | Giá trị | Class Tailwind | Dùng cho |
+| Radius | Value | Tailwind class | Used for |
 |---|---|---|---|
-| nhỏ | 4px | `rounded-sm`, `rounded-md` | Badge, checkbox |
-| vừa | 6px | `rounded-lg` | Nút, ô nhập, thẻ, menu (mặc định của shadcn `base-nova`) |
-| lớn | 8px | `rounded-xl` trở lên | Hộp thoại, sheet |
+| small | 4px | `rounded-sm`, `rounded-md` | Badges, checkboxes |
+| medium | 6px | `rounded-lg` | Buttons, inputs, cards, menus (the shadcn `base-nova` default) |
+| large | 8px | `rounded-xl` and up | Dialogs, sheets |
 
-Bóng đổ chỉ cho lớp nổi (popover, menu, hộp thoại, toast). Thẻ và bảng tách lớp bằng viền `border`.
+Shadows are only for floating layers (popovers, menus, dialogs, toasts). Cards and tables are separated by the `border` line.
 
-### 2.5 Biểu đồ
+### 2.5 Charts
 
-- **Bảng màu biểu đồ.** Tỉ lệ (hoàn thành) vẽ bằng thanh `primary` trên nền `muted`, không dùng chart-token. Biểu đồ phân bố hạn dùng đúng 5 màu `--status-*-fg` (`active`, `expiring-60`, `expiring-soon`, `expired`, `no-expiry`; ngoại lệ duy nhất của quy tắc "màu trạng thái chỉ cho hạn"), mỗi cột luôn có nhãn chữ và số; biểu đồ phải có bản chữ cho người đọc màn hình. Không animation. `--chart-1…5` giữ lại cho biểu đồ nhiều chuỗi sau này.
-- **Tương phản.** Màu cột là đối tượng đồ họa nên phải ≥ 3:1 với `card` (WCAG 1.4.11); `src/app/tokens.test.ts` kiểm tra cho 5 màu trên.
+- **Chart palette.** Rates (completion) are drawn as a `primary` bar on a `muted` track, with no chart tokens. The expiry distribution chart uses exactly the 5 `--status-*-fg` colours (`active`, `expiring-60`, `expiring-soon`, `expired`, `no-expiry`; the only exception to the rule "status colours are only for expiry"); every bar always carries a text label and a number; a chart must have a text version for screen readers. No animation. `--chart-1…5` are kept for multi-series charts later.
+- **Contrast.** Bar colours are graphical objects, so they must be at least 3:1 against `card` (WCAG 1.4.11); `src/app/tokens.test.ts` checks the 5 colours above.
 
 ---
 
-## 3. Component
+## 3. Components
 
-Component gốc lấy từ **shadcn/ui** style `base-nova` (Base UI) trong `src/components/ui`, sinh bằng `pnpm exec shadcn add <tên>` (dùng bản đã ghim trong `package.json`, không phải `dlx shadcn@latest` — tránh lệch phiên bản với lockfile). Ghép component bằng prop **`render`** (không phải `asChild`). Component riêng của CertTracker nằm ở các thư mục bên dưới; component chỉ thuộc một nghiệp vụ đặt trong `src/features/<feature>/components/`.
+Base components come from **shadcn/ui**, style `base-nova` (Base UI), in `src/components/ui`, generated with `pnpm exec shadcn add <name>` (the version pinned in `package.json`, not `dlx shadcn@latest`, to avoid drifting from the lockfile). Compose components with the **`render`** prop (not `asChild`). CertTracker's own components live in the folders below; a component that belongs to a single feature goes in `src/features/<feature>/components/`.
 
-Mọi component (kể cả shadcn) import `cn` từ `@/lib/utils` — bản đã được dạy các cỡ chữ `text-page-title … text-kpi`, để `text-caption` không bị xóa khi đứng cạnh một class màu. `shadcn add` luôn sinh `import { cn } from "cn"`: đổi lại thành `@/lib/utils` sau mỗi lần thêm component — ESLint chặn import `"cn"` trực tiếp nên quên bước này sẽ báo lỗi ngay.
+Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the version that knows the font sizes `text-page-title … text-kpi`, so `text-caption` is not stripped when it sits next to a colour class. `shadcn add` always generates `import { cn } from "cn"`: change it to `@/lib/utils` after each added component; ESLint blocks a direct `"cn"` import, so forgetting this step fails right away.
 
-| Nhóm | Component | Vị trí | Hành vi chính | Trạng thái |
+| Group | Component | Location | Main behaviour | Status |
 |---|---|---|---|---|
-| Khung app | `AppSidebar` | `components/app-shell/` | shadcn `sidebar`; thu gọn thành cột icon; ngăn kéo dưới 1024px; mục lọc theo vai trò (§4.5) | ✓ |
-| | `Topbar`, `UserMenu` | `components/app-shell/` | Breadcrumb trái; menu người dùng phải (email, `RoleBadge`, Đăng xuất) | ✓ |
-| | `PageHeader` | `components/app-shell/` | `page-title`, mô tả một dòng, vùng nút hành động bên phải | ✓ |
-| Dữ liệu | `DataTable` | `components/data/` | TanStack Table v8; compact; sắp xếp (mặc định theo tiếng Việt qua `Intl.Collator`, cột tự khai `sortingFn` riêng nếu "sắp xếp" có nghĩa khác — vd. hạn theo số ngày còn lại, không theo chuỗi tiếng Anh); phân trang 25 dòng; trạng thái rỗng / đang tải (skeleton 5 dòng, tôn trọng `prefers-reduced-motion`) / lỗi | ✓ (chọn nhiều dòng: khi có thao tác hàng loạt đầu tiên) |
-| | `FilterBar` | `components/data/` | Ô tìm kiếm + bộ lọc (children) + "Xóa lọc" (chỉ hiện khi có lọc) | ✓ |
-| | `EmptyState` | `components/data/` | Một câu giải thích + một nút hành động; không hình minh họa | ✓ |
-| Trạng thái | `ExpiryBadge` | `components/status/` | Nhận `expiry_status` + `days_to_expiry` + `expiry_date`; tooltip "Còn 23 ngày · hết hạn 19/10/2026" / "Đã hết hạn 5 ngày · …" | ✓ |
-| | `RecordStatusLabel` | `components/status/` | Hoàn thành `circle-check` · Đang học `loader-circle` · Chưa bắt đầu `circle-dashed`; chữ `foreground`, không màu trạng thái | ✓ |
-| | `ProgressInline` | `components/status/` | Thanh 4px màu `primary` trên `muted` + số % bên phải | ✓ |
-| | `RoleBadge` | `components/status/` | Quản trị / Quản lý / Thành viên; badge `secondary` | ✓ |
-| | `MemberCode` | `components/status/` | `M001` bằng font mono, `muted-foreground` | ✓ |
-| Form | `Field`, `FieldLabel`, `FieldError`…, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn `field` | Nhãn trên ô; lỗi dưới ô màu `destructive`; dùng chung Zod schema với server | ✓ (ghép với React Hook Form ở tuần 2) |
-| | `EntityCombobox` | `components/entity-combobox.tsx` | Chọn có tìm kiếm: member, khóa học, team | ✓ |
-| | Ô nhập ngày | `Input` | Nhập tay dd/mm/yyyy, kiểm tra bằng `toIsoDate` (decisions #16) | ✓ |
-| | `FileDropzone` | `components/file-dropzone.tsx` | Kéo thả ảnh/PDF minh chứng | ✓ |
-| Lớp phủ | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | Xem §4.2 | ✓ |
-| | `ConfirmDialog` | `components/confirm-dialog.tsx` | Tiêu đề nêu tên đối tượng; mô tả hậu quả; nút xác nhận `destructive` ghi đúng hành động | ✓ |
-| Phản hồi | `Toast` | shadcn `sonner` | Góc dưới phải; thành công 4s, lỗi giữ tới khi đóng (`duration: Infinity`) | ✓ |
-| | `Alert` | shadcn | Thông báo trong trang | ✓ |
-| Dashboard | `KpiTile` | `components/data/` | Số `kpi`, nhãn `label`, chú thích tùy chọn; không có "biến động so với kỳ trước" (không có lịch sử, spec §11) | ✓ |
+| App shell | `AppSidebar` | `components/app-shell/` | shadcn `sidebar`; collapses to an icon column; a drawer below 1024px; items filtered by role (§4.5) | ✓ |
+| | `Topbar`, `UserMenu` | `components/app-shell/` | Breadcrumb on the left; user menu on the right (email, `RoleBadge`, Sign out) | ✓ |
+| | `PageHeader` | `components/app-shell/` | `page-title`, a one-line description, an action-button area on the right | ✓ |
+| | `Logo`, `LogoMark` | `components/app-shell/logo.tsx` | Monogram or seal mark, optionally with the "CertTracker" wordmark (`showText`); used in the sidebar, favicon `src/app/icon.svg`; shown on `/design` | ✓ |
+| Data | `DataTable` | `components/data/` | TanStack Table v8; compact; sorting (by default with the Vietnamese collation via `Intl.Collator`, because names are Vietnamese; a column declares its own `sortingFn` when "sorted" means something else, e.g. expiry by days left, not by the status string); 25-row pagination; empty / loading (5-row skeleton, respects `prefers-reduced-motion`) / error states | ✓ (multi-row selection: with the first bulk action) |
+| | `FilterBar` | `components/data/` | Search box + filters (children) + "Clear filters" (shown only when a filter is active) | ✓ |
+| | `EmptyState` | `components/data/` | One sentence of explanation + one action button; no illustration | ✓ |
+| Status | `ExpiryBadge` | `components/status/` | Takes `expiry_status` + `days_to_expiry` + `expiry_date`; tooltip "23 days left · expires 19/10/2026" / "Expired 5 days ago · 19/10/2026" | ✓ |
+| | `RecordStatusLabel` | `components/status/` | Completed `circle-check` · In progress `loader-circle` · Not started `circle-dashed`; `foreground` text, no status colour | ✓ |
+| | `ProgressInline` | `components/status/` | 4px `primary` bar on `muted` + the % on the right | ✓ |
+| | `RoleBadge` | `components/status/` | Admin / Manager / Member; `secondary` badge | ✓ |
+| | `MemberCode` | `components/status/` | `M001` in the mono font, `muted-foreground` | ✓ |
+| Form | `Field`, `FieldLabel`, `FieldError`…, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn `field` | Label above the input; error below it in `destructive`; shares the Zod schema with the server | ✓ (combined with React Hook Form in week 2) |
+| | `EntityCombobox` | `components/entity-combobox.tsx` | Searchable select: member, course, team | ✓ |
+| | Date input | `Input` | Typed dd/mm/yyyy, checked with `toIsoDate` (decisions #16) | ✓ |
+| | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop an image or PDF as evidence | ✓ |
+| Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
+| | `ConfirmDialog` | `components/confirm-dialog.tsx` | The title names the object; the description states the consequence; the `destructive` confirm button names the exact action | ✓ |
+| Feedback | `Toast` | shadcn `sonner` | Bottom right; success 4s, errors stay until dismissed (`duration: Infinity`) | ✓ |
+| | `Alert` | shadcn | In-page message | ✓ |
+| Dashboard | `KpiTile` | `components/data/` | `kpi` figure, `label` label, optional caption; no "change against the previous period" (there is no history, spec §11) | ✓ |
 
-Icon: **lucide-react**, cỡ 16px (`size-4`) ở mọi nơi, kể cả sidebar — CSS của shadcn `Sidebar` tự đặt `[&_svg]:size-4` với độ ưu tiên cao hơn `size-5` gọi từ ngoài, nên 16px là kích thước thực tế dùng chung. Nút chỉ có icon phải có `aria-label` và `Tooltip`.
+Icons: **lucide-react**, 16px (`size-4`) everywhere, the sidebar included. The CSS of shadcn's `Sidebar` sets `[&_svg]:size-4` with a higher priority than a `size-5` passed from outside, so 16px is the size actually used. An icon-only button must have an `aria-label` and a `Tooltip`.
 
 ---
 
-## 4. Pattern
+## 4. Patterns
 
-### 4.1 Trang danh sách
+### 4.1 List page
 
 ```
-PageHeader   Thành viên · 42 người trong DC34                [+ Thêm thành viên]
-FilterBar    [Tìm theo tên, email, mã…] [Team ▾] [Trạng thái ▾]      Xóa lọc
-DataTable    Mã │ Họ tên │ Email │ Team │ Chứng chỉ │ Sắp hết hạn │ ⋯
-             phân trang 25 dòng/trang
+PageHeader   Members · 42 people in DC34                     [+ Add member]
+FilterBar    [Search by name, email, code…] [Team ▾] [Status ▾]      Clear filters
+DataTable    Code │ Full name │ Email │ Team │ Certificates │ Expiring soon │ ⋯
+             25 rows per page
 ```
 
-Cột đầu là định danh (mã hoặc tên), cột cuối là menu "⋯" — cột này do trang gọi `DataTable` tự khai báo, không phải tính năng có sẵn của component. Cột số canh phải.
+The first column identifies the row (code or name), the last column is the "⋯" menu; that column is declared by the page that calls `DataTable`, it is not a built-in feature of the component. Number columns are right-aligned.
 
-### 4.2 Tạo, sửa, xem
+### 4.2 Create, edit, view
 
-| Trường hợp | Dùng |
+| Case | Use |
 |---|---|
-| Form ≤ 6 trường (Team, Khóa học, CertType, Provider) | `Dialog` |
-| Đối tượng có dữ liệu con (Thành viên + chứng chỉ của họ) | Trang chi tiết `/members/[id]` |
-| Xem nhanh / sửa nhanh một bản ghi mà vẫn thấy bảng | `Sheet` bên phải |
+| A form with up to 6 fields (Team, Course, CertType, Provider) | `Dialog` |
+| An object with child data (a member and their certificates) | Detail page `/members/[id]` |
+| Quick view / quick edit of one record while keeping the table in view | `Sheet` on the right |
 
-Nút lưu nằm cuối form, bên phải; "Hủy" là nút phụ bên trái nó. Đang lưu thì nút hiện "Đang lưu…" và bị khóa.
+The save button sits at the end of the form, on the right; "Cancel" is the secondary button to its left. While saving, the button reads "Saving…" and is disabled.
 
-### 4.3 Thao tác phá hủy
+### 4.3 Destructive actions
 
-`ConfirmDialog`, ví dụ:
+`ConfirmDialog`, for example:
 
-> **Xóa thành viên M004 · Nguyễn Văn An?**
-> 5 bản ghi chứng chỉ của người này cũng sẽ bị xóa. Không thể hoàn tác.
-> [Hủy] [Xóa thành viên]
+> **Delete member M004 · Nguyen Van An?**
+> This member's 5 certificate records will be deleted too. This cannot be undone.
+> [Cancel] [Delete member]
 
-Khi DB **chặn** xóa (vd. khóa học đang có bản ghi chứng chỉ dùng tới — `on delete restrict`), không mở `ConfirmDialog`: hiện `Alert` nói lý do và cách xử lý (*"Khóa học đang được 3 bản ghi sử dụng. Chuyển các bản ghi sang khóa khác trước khi xóa."*).
+When the database **blocks** the delete (for example a course that certificate records still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course is used by 3 records. Move the records to another course before deleting it."*).
 
-### 4.4 Phản hồi
+### 4.4 Feedback
 
-- Thành công → toast nêu đúng việc vừa xảy ra: *"Đã thêm thành viên M004"*.
-- Lỗi nhập liệu → dưới ô, nói sai gì và sửa thế nào: *"Email đã được dùng cho thành viên M002"*.
-- Lỗi hệ thống → toast lỗi + cách xử lý: *"Không lưu được do mất kết nối. Kiểm tra mạng rồi thử lại."*
-- Đang tải → skeleton đúng hình dạng nội dung; không dùng spinner toàn trang.
+- Success: a toast that names exactly what happened, *"Added member M004"*.
+- Input error: under the field, say what is wrong and how to fix it, *"This email is already used by member M002"*.
+- System error: an error toast plus what to do, *"Could not save because the connection was lost. Check your network and try again."*
+- Loading: a skeleton shaped like the content; no full-page spinner.
+- Navigation (decision #56; decided 2026-10-31, option C): two layers.
+  1. **A thin teal bar** at the very top (`NavigationProgressBar`, `components/app-shell/navigation-progress.tsx`): 3px high, `bg-primary`, `aria-hidden`. The bar appears from the click on a link until the URL changes; meanwhile its width grows gradually to about 80%. When done, it runs to 100% and fades out over 200ms. The bar only changes opacity and is never attached to or removed from the DOM, so it never shifts the layout.
+  2. **The skeleton pulse** of `loading.tsx` from the moment the URL changes until the content arrives (`role="status" aria-busy="true"`).
 
-### 4.5 Menu theo vai trò
+  An in-app link must contain `<LinkPendingReporter />` to report the pending state to the bar.
 
-| Mục | Admin | Manager | Member |
+  In a production build links are usually prefetched, which skips the pending state, so the bar mostly shows on navigations that are not prefetched or are slow; otherwise the skeleton takes over straight away.
+
+### 4.5 Menu by role
+
+| Item | Admin | Manager | Member |
 |---|---|---|---|
 | Dashboard | ✓ | ✓ | ✓ |
-| Chứng chỉ của tôi¹ | ✓ | ✓ | ✓ |
-| Thành viên | ✓ | ✓ (team mình) | — |
-| Chứng chỉ (theo người) | ✓ | ✓ (team mình) | — |
-| Khóa học | ✓ | ✓ (chỉ xem) | ✓ (chỉ xem) |
-| Tổ chức (DC / Program / Team) | ✓ | — | — |
-| Import / Export | ✓ | — | — |
-| Cài đặt | ✓ | — | — |
+| My certificates¹ | ✓ | ✓ | ✓ |
+| Members | ✓ | ✓ (own teams) | Hidden |
+| Records (by person) | ✓ | ✓ (own teams) | Hidden |
+| Data quality | ✓ | ✓ (own teams) | Hidden |
+| Courses | ✓ | ✓ (view only) | ✓ (view only) |
+| Organisation (DC / Program / Team) | ✓ | Hidden | Hidden |
+| Import / Export | ✓ | Hidden | Hidden |
+| Settings | ✓ | Hidden | Hidden |
 
-¹ Chỉ hiện khi tài khoản được liên kết với một thành viên (`profiles.member_id` khác null).
+¹ Shown only when the account is linked to a member (`profiles.member_id` is not null).
 
-Ẩn chỉ là trải nghiệm; mọi quyền vẫn do RLS kiểm soát.
-
----
-
-## 5. Câu chữ và định dạng
-
-- Giao diện **tiếng Việt**; dữ liệu (tên khóa học, provider) giữ nguyên như nhập.
-- Nút là động từ + đối tượng: "Thêm thành viên", "Lưu thay đổi", "Xóa khóa học". Không dùng "Submit", "OK", "Xác nhận" trống.
-- Gọi tên theo điều người dùng nhận ra: "Chứng chỉ sắp hết hạn", không phải "expiry_status".
-- Ngày: `dd/MM/yyyy` (lấy "hôm nay" theo `Asia/Ho_Chi_Minh`, `src/lib/dates.ts`).
-- Số và tiền: `Intl.NumberFormat("vi-VN")` → `1.250.000 ₫`; phần trăm `75%`.
-- Không emoji trong giao diện.
+Hiding is only UX; every permission is still enforced by RLS.
 
 ---
 
-## 6. Truy cập
+## 5. Wording and formats
 
-- Chữ ≥ 4.5:1 trên nền của nó; viền control, focus ring, icon mang nghĩa ≥ 3:1 (bảng ở §2.1, §2.2 — được kiểm tra bằng test).
-- Focus ring `ring` 2px + offset 2px luôn nhìn thấy khi dùng bàn phím (`focus-visible`), kể cả trên nền `Sidebar` — quy tắc CSS không nằm trong layer nên thắng được `outline-hidden` mặc định của shadcn.
-- Mọi thao tác làm được bằng bàn phím: menu dòng, hộp thoại (bẫy focus, `Esc` để đóng), combobox.
-- Trạng thái luôn có chữ; icon trang trí có `aria-hidden`. Chi tiết chỉ hiện khi hover (như tooltip của `ExpiryBadge`) luôn có thêm một bản sao `sr-only` — tooltip không mở được bằng chạm và không phải trình duyệt nào cũng gắn `aria-describedby`.
-- Landmark: `<nav aria-label="Điều hướng chính">` bọc menu sidebar; `<header>` (Topbar) là anh em của `<main>`, không lồng bên trong — lồng bên trong sẽ mất vai trò "banner". Có link "Bỏ qua đến nội dung" (skip link) đầu mỗi trang trong khung app.
-- Tên hiển thị không được thay thế bằng `aria-label`: nếu một nút đã có chữ nhìn thấy (như tên/vai trò trong menu tài khoản), thêm ngữ cảnh bằng `sr-only` phía trước, không dùng `aria-label` đè lên (WCAG 2.5.3 Label in Name).
-- Tôn trọng `prefers-reduced-motion`: dừng mọi animation ở 1 vòng lặp thay vì lặp vô hạn (skeleton, spinner) để tránh nhấp nháy ngẫu nhiên; tắt chuyển động trượt của sheet/sidebar, chỉ giữ đổi độ mờ.
-- Vùng bấm tối thiểu 32×32px (24×24px cho icon trong ô bảng có khoảng trống xung quanh).
+- The interface is in **English** (English first; a bilingual English–Vietnamese interface comes after Release 1, decision #51). Data (course names, providers, people's names) stays exactly as entered.
+- Sentence case. Buttons are a verb plus the object, and an action keeps one name through the whole flow: "Add member", "Save changes", "Delete course". Never "Submit", "OK" or a bare "Confirm".
+- Name things the way users recognise them: "Certificates expiring soon", not "expiry_status".
+- Dates: `dd/MM/yyyy` ("today" is taken in `Asia/Ho_Chi_Minh`, `src/lib/dates.ts`).
+- Numbers and money in the English format: `1,250,000`, `3,500,000 ₫`, `$150` (`src/lib/format.ts`, `src/lib/money.ts`); percentages `75%`. Mixed currencies are never summed.
+- No emoji in the interface.
+
+---
+
+## 6. Accessibility
+
+- Text is at least 4.5:1 on its background; control borders, the focus ring and meaningful icons at least 3:1 (the tables in §2.1 and §2.2 are checked by tests).
+- The `ring` focus ring, 2px + 2px offset, is always visible for keyboard users (`focus-visible`), on the `Sidebar` background too. The CSS rule is not in a layer, so it wins over shadcn's default `outline-hidden`.
+- Every action works with the keyboard: row menus, dialogs (focus trap, `Esc` to close), comboboxes.
+- A status always has text; decorative icons have `aria-hidden`. Detail shown only on hover (such as the tooltip of `ExpiryBadge`) always gets an `sr-only` copy too: a tooltip cannot be opened by touch and not every browser attaches `aria-describedby`.
+- Landmarks: `<nav aria-label="Main navigation">` wraps the sidebar menu; `<header>` (Topbar) is a sibling of `<main>`, not nested inside it, because nesting would lose the "banner" role. A "Skip to content" link (skip link) opens every page in the app frame.
+- A visible name is never replaced by `aria-label`: if a button already has visible text (such as the name and role in the account menu), add context in front of it with `sr-only` instead of overriding it with `aria-label` (WCAG 2.5.3 Label in Name).
+- Respect `prefers-reduced-motion`: stop every animation after 1 loop instead of looping forever (skeleton, spinner) to avoid random flicker; the navigation bar stays still at 100% width and does not run; the slide animation of sheets and the sidebar is turned off and only the opacity change is kept.
+- Minimum hit area 32×32px (24×24px for an icon in a table cell with space around it).
 
 ---
 
 ## 7. Responsive
 
-| Độ rộng | Thay đổi |
+| Width | Change |
 |---|---|
-| ≥ 1024px | Sidebar cố định (thu gọn được) |
-| < 1024px | Sidebar thành ngăn kéo, mở bằng nút menu trên Topbar; tự đóng khi điều hướng sang trang khác |
-| < 640px | Form một cột; bảng cuộn ngang trong khung riêng, cột đầu dính; `PageHeader` xếp nút xuống dưới tiêu đề |
+| ≥ 1024px | Fixed sidebar (collapsible) |
+| < 1024px | The sidebar becomes a drawer, opened with the menu button on the Topbar; it closes itself when you navigate to another page |
+| < 640px | Single-column forms; tables scroll horizontally in their own frame with a sticky first column; `PageHeader` stacks the buttons under the title |
 
-Trang không bao giờ cuộn ngang; chỉ bảng cuộn trong khung của nó (`SidebarInset` cần `min-w-0` — mặc định flex item không co lại dưới nội dung dài nhất bên trong, ở đây là một bảng `white-space: nowrap`).
-
----
-
-## 8. Không làm
-
-- Màu, cỡ chữ, bo góc viết cứng trong component của CertTracker (`bg-teal-700`, `#0E5C58`, `text-[13px]`). Các file sinh sẵn trong `src/components/ui/` (shadcn) được miễn trừ — mặc định của chúng (`text-sm`/`text-xs`…) trùng giá trị `body`/`caption` nên không lệch thị giác; chỉ sửa khi một giá trị thực sự khác token (đã làm ở `RoleBadge`: `rounded-4xl` → `rounded-sm`).
-- Dùng màu trạng thái cho thứ khác ngoài hạn chứng chỉ.
-- Emoji làm icon; gradient trang trí; thẻ có sọc màu bên trái; bóng đổ trên thẻ/bảng.
-- Bo góc lớn hơn 8px.
-- Spinner toàn trang; hình minh họa trong empty state.
-- Hiện nút rồi khóa vì thiếu quyền — ẩn đi.
+The page never scrolls horizontally; only a table scrolls inside its own frame (`SidebarInset` needs `min-w-0`: by default a flex item does not shrink below its longest inner content, here a `white-space: nowrap` table).
 
 ---
 
-## 9. Thay đổi design system
+## 8. Do not
 
-1. Sửa token trong `src/app/globals.css` và bảng tương ứng trong file này **cùng một commit**.
-2. Chạy test tương phản (`pnpm test`); cặp nào dưới ngưỡng thì sửa màu, không hạ ngưỡng.
-3. Kiểm tra bằng mắt ở trang `/design` (`src/app/(dev)/design/page.tsx`, trả 404 trên production).
-4. Đồng bộ lên trang Design System trên claude.ai.
-5. Quyết định lớn (đổi màu nhấn, thêm dark mode) → thêm mục vào `docs/decisions.md`.
+- Hard-code colours, font sizes or corner radii in CertTracker components (`bg-teal-700`, `#0E5C58`, `text-[13px]`). The generated files in `src/components/ui/` (shadcn) are exempt: their defaults (`text-sm`/`text-xs`…) equal the `body`/`caption` values, so they do not drift visually; edit them only when a value really differs from a token (done in `RoleBadge`: `rounded-4xl` → `rounded-sm`).
+- Use status colours for anything other than certificate expiry.
+- Emoji as icons; decorative gradients; cards with a coloured left stripe; shadows on cards or tables.
+- Corner radii larger than 8px.
+- Full-page spinners; illustrations in empty states.
+- Show a button and then disable it for lack of permission: hide it.
 
-## 10. Chưa làm
+---
 
-- **Dark mode** — token đã đặt tên theo vai trò; khi làm chỉ khai báo lại giá trị.
-- **Logo** — chưa có; dùng chữ "CertTracker" (600, `foreground`).
+## 9. Changing the design system
+
+1. Change the token in `src/app/globals.css` and the matching table in this file **in the same commit**.
+2. Run the contrast tests (`pnpm test`); if a pair falls below the threshold, fix the colour, do not lower the threshold.
+3. Check by eye on the `/design` page (`src/app/(dev)/design/page.tsx`, which returns 404 in production).
+4. Sync the Design System page on claude.ai.
+5. Big decisions (changing the accent colour, adding dark mode) get an entry in `docs/decisions.md`.
+
+## 10. Not done yet
+
+- **Dark mode**: tokens are already named by role; when it is built, only the values are redeclared.

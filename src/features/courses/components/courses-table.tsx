@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteCourse } from "@/features/courses/actions";
 import { CourseSheet } from "@/features/courses/components/course-sheet";
-import { formatVnd } from "@/lib/format";
+import { formatMoney, type Currency } from "@/lib/money";
 
 type Course = {
   id: string;
@@ -29,6 +29,7 @@ type Course = {
   validityMonths: number | null;
   refundable: boolean;
   cost: number | null;
+  costCurrency: Currency | null;
   estHours: number | null;
   url: string | null;
 };
@@ -58,32 +59,34 @@ export function CoursesTable({
   }, [courses, search]);
 
   const columns: ColumnDef<Course, unknown>[] = [
-    { accessorKey: "name", header: "Tên khóa học" },
-    { accessorKey: "certTypeName", header: "Loại" },
-    { accessorKey: "providerName", header: "Nhà cung cấp" },
-    { accessorKey: "level", header: "Cấp độ", cell: ({ row }) => row.original.level || "—" },
+    { accessorKey: "name", header: "Course name" },
+    { accessorKey: "certTypeName", header: "Type" },
+    { accessorKey: "providerName", header: "Provider" },
+    { accessorKey: "level", header: "Level", cell: ({ row }) => row.original.level || "—" },
     {
       accessorKey: "validityMonths",
-      header: "Thời hạn",
-      cell: ({ row }) => (row.original.validityMonths ? `${row.original.validityMonths} tháng` : "Không hết hạn"),
+      header: "Validity",
+      cell: ({ row }) => (row.original.validityMonths ? `${row.original.validityMonths} ${row.original.validityMonths === 1 ? "month" : "months"}` : "No expiry"),
     },
     {
       accessorKey: "refundable",
-      header: "Hoàn tiền",
+      header: "Refundable",
       cell: ({ row }) =>
         row.original.refundable ? (
           <Badge variant="secondary" className="rounded-sm">
-            Có
+            Yes
           </Badge>
         ) : (
-          <span className="text-caption text-muted-foreground">Không</span>
+          <span className="text-caption text-muted-foreground">No</span>
         ),
     },
     {
       accessorKey: "cost",
-      header: "Chi phí",
-      cell: ({ row }) => (row.original.cost != null ? formatVnd(row.original.cost) : "—"),
+      header: "Cost",
+      cell: ({ row }) =>
+        row.original.cost != null && row.original.costCurrency ? formatMoney(row.original.cost, row.original.costCurrency) : "—",
     },
+    { accessorKey: "estHours", header: "Study hours", cell: ({ row }) => row.original.estHours ?? "—" },
     ...(canManage
       ? ([
           {
@@ -93,7 +96,7 @@ export function CoursesTable({
             cell: ({ row }) => (
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  render={<Button variant="ghost" size="icon-xs" aria-label={`Thao tác cho ${row.original.name}`} />}
+                  render={<Button variant="ghost" size="icon-xs" aria-label={`Actions for ${row.original.name}`} />}
                 >
                   <MoreHorizontal aria-hidden />
                 </DropdownMenuTrigger>
@@ -104,10 +107,10 @@ export function CoursesTable({
                       setSheetOpen(true);
                     }}
                   >
-                    Sửa
+                    Edit
                   </DropdownMenuItem>
                   <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
-                    Xóa
+                    Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -127,7 +130,7 @@ export function CoursesTable({
       setConfirming(null);
       return;
     }
-    toast.success(`Đã xóa khóa học ${confirming.name}`);
+    toast.success(`Deleted course ${confirming.name}`);
     setConfirming(null);
   }
 
@@ -136,7 +139,7 @@ export function CoursesTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Tìm theo tên, loại, nhà cung cấp…"
+        searchPlaceholder="Search by name, type or provider…"
         hasActiveFilters={search.length > 0}
         onClear={() => setSearch("")}
       >
@@ -151,7 +154,7 @@ export function CoursesTable({
             }}
           >
             <Plus aria-hidden className="size-4" />
-            Thêm khóa học
+            Add course
           </Button>
         )}
       </FilterBar>
@@ -159,7 +162,7 @@ export function CoursesTable({
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="Không tìm thấy khóa học" description="Thử từ khóa khác hoặc xóa bộ lọc." />}
+        empty={<EmptyState title="No courses found" description="Try a different search or clear the filters." />}
       />
       {canManage && (
         <>
@@ -177,6 +180,7 @@ export function CoursesTable({
                     validityMonths: editing.validityMonths,
                     refundable: editing.refundable,
                     cost: editing.cost,
+                    costCurrency: editing.costCurrency,
                     estHours: editing.estHours,
                     url: editing.url,
                   }
@@ -188,10 +192,10 @@ export function CoursesTable({
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Xóa khóa học ${confirming?.name}?`}
-            description="Chỉ xóa được khi chưa có ai theo học khóa này. Không thể hoàn tác."
-            confirmLabel="Xóa khóa học"
-            pendingLabel="Đang xóa…"
+            title={`Delete course ${confirming?.name}?`}
+            description="A course can only be deleted when nobody has a record for it. This cannot be undone."
+            confirmLabel="Delete course"
+            pendingLabel="Deleting…"
             pending={pending}
             onConfirm={handleDelete}
           />

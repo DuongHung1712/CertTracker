@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { CURRENCIES, toCurrency } from "@/lib/money";
 
 type Option = { id: string; name: string };
 type Editing = (CourseInput & { id: string }) | null;
@@ -37,6 +38,7 @@ export function CourseSheet({
     validityMonths: null,
     refundable: false,
     cost: null,
+    costCurrency: null,
     estHours: null,
     url: null,
   };
@@ -55,7 +57,7 @@ export function CourseSheet({
       form.setError("root", { message: result.error });
       return;
     }
-    toast.success(editing ? `Đã lưu khóa học ${values.name}` : `Đã thêm khóa học ${values.name}`);
+    toast.success(editing ? `Saved course ${values.name}` : `Added course ${values.name}`);
     onOpenChange(false);
     form.reset(empty);
   }
@@ -64,16 +66,16 @@ export function CourseSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="text-section-title">{editing ? "Sửa khóa học" : "Thêm khóa học"}</SheetTitle>
+          <SheetTitle className="text-section-title">{editing ? "Edit course" : "Add course"}</SheetTitle>
         </SheetHeader>
         <form className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
-            <FieldLabel htmlFor="course-name">Tên khóa học</FieldLabel>
+            <FieldLabel htmlFor="course-name">Course name</FieldLabel>
             <Input id="course-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="course-cert-type">Loại chứng chỉ</FieldLabel>
+            <FieldLabel htmlFor="course-cert-type">Certificate type</FieldLabel>
             <Controller
               control={form.control}
               name="certTypeId"
@@ -81,8 +83,8 @@ export function CourseSheet({
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="course-cert-type" aria-invalid={!!form.formState.errors.certTypeId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the cert type name. */}
-                    <SelectValue placeholder="Chọn loại chứng chỉ">
-                      {(value: string) => certTypes.find((option) => option.id === value)?.name ?? "Chọn loại chứng chỉ"}
+                    <SelectValue placeholder="Choose a certificate type">
+                      {(value: string) => certTypes.find((option) => option.id === value)?.name ?? "Choose a certificate type"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -98,7 +100,7 @@ export function CourseSheet({
             <FieldError errors={[form.formState.errors.certTypeId]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="course-provider">Nhà cung cấp</FieldLabel>
+            <FieldLabel htmlFor="course-provider">Provider</FieldLabel>
             <Controller
               control={form.control}
               name="providerId"
@@ -106,8 +108,8 @@ export function CourseSheet({
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger id="course-provider" aria-invalid={!!form.formState.errors.providerId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the provider name. */}
-                    <SelectValue placeholder="Chọn nhà cung cấp">
-                      {(value: string) => providers.find((option) => option.id === value)?.name ?? "Chọn nhà cung cấp"}
+                    <SelectValue placeholder="Choose a provider">
+                      {(value: string) => providers.find((option) => option.id === value)?.name ?? "Choose a provider"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -123,42 +125,77 @@ export function CourseSheet({
             <FieldError errors={[form.formState.errors.providerId]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="course-level">Cấp độ</FieldLabel>
+            <FieldLabel htmlFor="course-level">Level</FieldLabel>
             <Input id="course-level" {...form.register("level")} placeholder="Associate, Professional…" />
           </Field>
           <Field>
-            <FieldLabel htmlFor="course-validity">Thời hạn hiệu lực (tháng)</FieldLabel>
+            <FieldLabel htmlFor="course-validity">Validity (months)</FieldLabel>
             <Input
               id="course-validity"
               type="number"
               min={1}
               {...form.register("validityMonths")}
-              placeholder="Để trống nếu không hết hạn"
+              placeholder="Leave empty if it does not expire"
               aria-invalid={!!form.formState.errors.validityMonths}
             />
             <FieldError errors={[form.formState.errors.validityMonths]} />
           </Field>
           <Field orientation="horizontal">
-            <FieldLabel htmlFor="course-refundable">Được hoàn tiền</FieldLabel>
+            <FieldLabel htmlFor="course-refundable">Refundable</FieldLabel>
             <Controller
               control={form.control}
               name="refundable"
               render={({ field }) => <Switch id="course-refundable" checked={field.value} onCheckedChange={field.onChange} />}
             />
           </Field>
+          <div className="grid grid-cols-[1fr_8rem] gap-3">
+            <Field>
+              <FieldLabel htmlFor="course-cost">Cost</FieldLabel>
+              <Input
+                id="course-cost"
+                type="number"
+                min={0}
+                step="any"
+                {...form.register("cost")}
+                aria-invalid={!!form.formState.errors.cost}
+              />
+              <FieldError errors={[form.formState.errors.cost]} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="course-currency">Currency</FieldLabel>
+              <Controller
+                control={form.control}
+                name="costCurrency"
+                render={({ field }) => (
+                  <>
+                    <Select
+                      value={toCurrency(typeof field.value === "string" ? field.value : null)}
+                      onValueChange={(value) => field.onChange(toCurrency(value))}
+                    >
+                      <SelectTrigger id="course-currency" aria-invalid={!!form.formState.errors.costCurrency}>
+                        <SelectValue placeholder="Currency">{(value: string | null) => value ?? "Currency"}</SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CURRENCIES.map((currency) => (
+                          <SelectItem key={currency} value={currency}>
+                            {currency}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {field.value ? (
+                      <Button type="button" variant="ghost" size="xs" className="self-start" onClick={() => field.onChange(null)}>
+                        Clear currency
+                      </Button>
+                    ) : null}
+                  </>
+                )}
+              />
+              <FieldError errors={[form.formState.errors.costCurrency]} />
+            </Field>
+          </div>
           <Field>
-            <FieldLabel htmlFor="course-cost">Chi phí (VNĐ)</FieldLabel>
-            <Input
-              id="course-cost"
-              type="number"
-              min={0}
-              {...form.register("cost")}
-              aria-invalid={!!form.formState.errors.cost}
-            />
-            <FieldError errors={[form.formState.errors.cost]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="course-hours">Thời gian học ước tính (giờ)</FieldLabel>
+            <FieldLabel htmlFor="course-hours">Study hours (estimate)</FieldLabel>
             <Input
               id="course-hours"
               type="number"
@@ -169,7 +206,7 @@ export function CourseSheet({
             <FieldError errors={[form.formState.errors.estHours]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="course-url">Đường dẫn khóa học</FieldLabel>
+            <FieldLabel htmlFor="course-url">Course link</FieldLabel>
             <Input id="course-url" type="url" {...form.register("url")} aria-invalid={!!form.formState.errors.url} />
             <FieldError errors={[form.formState.errors.url]} />
           </Field>
@@ -180,10 +217,10 @@ export function CourseSheet({
           )}
           <SheetFooter className="flex-row justify-end gap-2 px-0">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Hủy
+              Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Đang lưu…" : "Lưu"}
+              {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </SheetFooter>
         </form>

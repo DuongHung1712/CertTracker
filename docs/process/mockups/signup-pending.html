@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Proposed mockup: request pending</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.steps { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.steps li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.steps .dot { width: 22px; height: 22px; border-radius: 11px; display: flex; align-items: center; justify-content: center; flex: none; border: 1px solid var(--input); color: var(--muted-foreground); font-size: 12px; font-weight: 600; background: var(--card); }
+.steps .done .dot { background: var(--status-active-bg); border-color: var(--status-active-border); color: var(--status-active-fg); }
+.steps .now .dot { background: var(--status-expiring-60-bg); border-color: var(--status-expiring-60-border); color: var(--status-expiring-60-fg); }
+.steps .now { font-weight: 600; }
+.steps .todo { color: var(--muted-foreground); }
+.steps .dot .ic { width: 12px; height: 12px; }
+.cap { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-foreground); margin-bottom: 8px; }
+.icon-circle { width: 40px; height: 40px; border-radius: 20px; display: flex; align-items: center; justify-content: center; }
+.icon-circle .ic { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review</div>
+<div class="auth" style="position:relative;gap:48px;align-items:flex-start;padding-top:96px">
+  <div>
+    <div class="cap">A. After submitting, or after signing in before approval</div>
+    <div class="auth-card" style="width:460px">
+      <div class="icon-circle" style="background:var(--status-expiring-60-bg);color:var(--status-expiring-60-fg)"><i class="ic ic-hourglass"></i></div>
+      <div>
+        <h1 style="font-size:18px;line-height:26px">Your request is waiting for approval</h1>
+        <p class="muted" style="margin-top:4px">Sent on 07 Oct 2026, 19:12 for <b style="color:var(--foreground)">dung.pham@certtracker.test</b> (Team Cloud).</p>
+      </div>
+      <ul class="steps">
+        <li class="done"><span class="dot"><i class="ic ic-check"></i></span>Request sent</li>
+        <li class="now"><span class="dot">2</span>An administrator reviews it</li>
+        <li class="todo"><span class="dot">3</span>You can sign in and see your certificates</li>
+      </ul>
+      <div class="notice"><i class="ic ic-mail"></i><span>You will receive an e-mail when the request is decided. You can close this page.</span></div>
+      <div class="toolbar"><span class="btn outline">Check status</span><span class="btn ghost">Sign out</span></div>
+    </div>
+  </div>
+  <div>
+    <div class="cap">B. If the administrator rejects the request</div>
+    <div class="auth-card" style="width:380px">
+      <div class="icon-circle" style="background:var(--status-expired-bg);color:var(--status-expired-fg)"><i class="ic ic-circle-x"></i></div>
+      <div>
+        <h1 style="font-size:18px;line-height:26px">Your request was not approved</h1>
+        <p class="muted" style="margin-top:4px">Decided on 07 Oct 2026, 21:40. Contact your administrator if you think this is a mistake.</p>
+      </div>
+      <div class="toolbar"><span class="btn outline">Sign out</span></div>
+    </div>
+  </div>
+
+  <div class="pin" style="left:248px;top:134px">1</div>
+  <div class="pin" style="left:248px;top:393px">2</div>
+  <div class="legend" style="left:24px;bottom:24px;width:520px">
+    <h4>Reviewer notes — not part of the UI</h4>
+    <p><b>1</b><span>The same page is shown right after the request and whenever the person signs in before a decision. No other page is reachable, and no data is loaded.</span></p>
+    <p><b>2</b><span>The e-mail on a decision is part of the proposal (it reuses the existing e-mail service). Whether to send it is a question for the reviewer.</span></p>
+  </div>
+</div>
+</body>
+</html>

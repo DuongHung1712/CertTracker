@@ -9,14 +9,14 @@ import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { MAX_IMPORT_BYTES } from "@/features/import/clean";
 
-const GENERIC_ERROR = "Có lỗi xảy ra. Vui lòng thử lại.";
+const GENERIC_ERROR = "Something went wrong. Try again.";
 const EXCEL_EXTENSION = /\.(xlsx|xls)$/i;
 
 /** Fast feedback only, with the same wording as the route; the route re-checks by file content. */
 function precheck(file: File): string | null {
-  if (file.size === 0) return "File rỗng.";
-  if (file.size > MAX_IMPORT_BYTES) return "File lớn hơn 4 MB. Chia nhỏ file rồi nhập từng phần.";
-  if (!EXCEL_EXTENSION.test(file.name)) return "Chỉ nhận file Excel (.xlsx hoặc .xls).";
+  if (file.size === 0) return "The file is empty.";
+  if (file.size > MAX_IMPORT_BYTES) return "The file is larger than 4 MB. Split it and import it in parts.";
+  if (!EXCEL_EXTENSION.test(file.name)) return "Only Excel files (.xlsx or .xls) are accepted.";
   return null;
 }
 
@@ -69,7 +69,7 @@ export function ImportUploadForm() {
   return (
     <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-3" noValidate>
       <Field>
-        <FieldLabel htmlFor="import-file">File Excel</FieldLabel>
+        <FieldLabel htmlFor="import-file">Excel file</FieldLabel>
         <Input
           id="import-file"
           name="file"
@@ -83,7 +83,7 @@ export function ImportUploadForm() {
           }}
         />
         <FieldDescription id="import-file-hint" className="text-caption">
-          Tối đa 4 MB, 2000 dòng. Dòng tiêu đề cần có cột Email và Khóa học.
+          Up to 4 MB and 2000 rows. The header row needs an Email column and a Course column.
         </FieldDescription>
       </Field>
       {error && (
@@ -94,7 +94,7 @@ export function ImportUploadForm() {
       )}
       <div>
         <Button type="submit" disabled={pending || !file}>
-          {pending ? "Đang đọc file…" : "Tải lên và kiểm tra"}
+          {pending ? "Reading the file…" : "Upload and check"}
         </Button>
       </div>
     </form>

@@ -20,7 +20,7 @@ export function ProviderSection({ providers }: { providers: Provider[] }) {
   const [pending, setPending] = useState(false);
 
   const columns: ColumnDef<Provider, unknown>[] = [
-    { accessorKey: "name", header: "Tên nhà cung cấp" },
+    { accessorKey: "name", header: "Provider name" },
     {
       id: "actions",
       header: "",
@@ -35,10 +35,10 @@ export function ProviderSection({ providers }: { providers: Provider[] }) {
               setDialogOpen(true);
             }}
           >
-            Sửa
+            Edit
           </Button>
           <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
-            Xóa
+            Delete
           </Button>
         </div>
       ),
@@ -55,14 +55,14 @@ export function ProviderSection({ providers }: { providers: Provider[] }) {
       setConfirming(null);
       return;
     }
-    toast.success(`Đã xóa nhà cung cấp ${confirming.name}`);
+    toast.success(`Deleted provider ${confirming.name}`);
     setConfirming(null);
   }
 
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-section-title">Nhà cung cấp</h2>
+        <h2 className="text-section-title">Providers</h2>
         <Button
           size="sm"
           onClick={() => {
@@ -71,23 +71,23 @@ export function ProviderSection({ providers }: { providers: Provider[] }) {
           }}
         >
           <Plus aria-hidden className="size-4" />
-          Thêm nhà cung cấp
+          Add provider
         </Button>
       </div>
       <DataTable
         columns={columns}
         data={providers}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="Chưa có nhà cung cấp nào" />}
+        empty={<EmptyState title="No providers yet" />}
       />
       <ProviderDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
       <ConfirmDialog
         open={!!confirming}
         onOpenChange={(open) => !open && setConfirming(null)}
-        title={`Xóa nhà cung cấp ${confirming?.name}?`}
-        description="Chỉ xóa được khi không có khóa học nào dùng nhà cung cấp này."
-        confirmLabel="Xóa nhà cung cấp"
-        pendingLabel="Đang xóa…"
+        title={`Delete provider ${confirming?.name}?`}
+        description="A provider can only be deleted when no course uses it."
+        confirmLabel="Delete provider"
+        pendingLabel="Deleting…"
         pending={pending}
         onConfirm={handleDelete}
       />

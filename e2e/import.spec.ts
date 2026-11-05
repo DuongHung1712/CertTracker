@@ -31,8 +31,13 @@ const SECOND_FILE = `legacy-${RUN}-lan-2.xlsx`;
 
 async function upload(page: Page, name: string, buffer: Buffer) {
   await page.goto("/import");
-  await page.getByLabel("File Excel").setInputFiles({ name, mimeType: XLSX_MIME, buffer });
-  await page.getByRole("button", { name: "Tải lên và kiểm tra" }).click();
+  const submit = page.getByRole("button", { name: "Upload and check" });
+  // A file chosen before hydration fires no React onChange, so retry until the form has picked it up.
+  await expect(async () => {
+    await page.getByLabel("Excel file").setInputFiles({ name, mimeType: XLSX_MIME, buffer });
+    await expect(submit).toBeEnabled({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
+  await submit.click();
 }
 
 /** The preview row for an Excel line number (its first cell). */
@@ -46,15 +51,15 @@ test("admin imports the legacy workbook", async ({ page }) => {
   await upload(page, FIRST_FILE, Buffer.from(buildLegacyWorkbook()));
   await expect(page).toHaveURL(BATCH_URL);
 
-  await expect(page.getByText("Tạo mới 3 · Cập nhật 2 · Không đổi 0 · Lỗi 3")).toBeVisible();
-  await expect(previewRow(page, 10)).toContainText("Trùng với dòng 8");
-  await expect(previewRow(page, 11)).toContainText('Không tìm thấy team "Team Ghost"');
-  await expect(previewRow(page, 12)).toContainText('Không nhận ra trạng thái "Failed"');
+  await expect(page.getByText("Create 3 · Update 2 · Unchanged 0 · Error 3")).toBeVisible();
+  await expect(previewRow(page, 10)).toContainText("Duplicate of row 8");
+  await expect(previewRow(page, 11)).toContainText('Team "Team Ghost" not found');
+  await expect(previewRow(page, 12)).toContainText('Unknown status "Failed"');
 
-  await page.getByRole("button", { name: "Nhập 5 dòng" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Nhập dữ liệu" }).click();
-  await expect(page.getByText("Đã nhập: tạo mới 3, cập nhật 2")).toBeVisible();
-  await expect(page.getByRole("alert").filter({ hasText: "Đã nhập lúc" })).toBeVisible();
+  await page.getByRole("button", { name: "Import 5 rows" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Import data" }).click();
+  await expect(page.getByText("Imported: created 3, updated 2")).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: /Imported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}/ })).toBeVisible();
 
   await page.goto("/records");
   await expect(page.getByRole("cell", { name: "Phạm Thu Hà", exact: true })).toBeVisible();
@@ -68,22 +73,22 @@ test("re-importing the same file changes nothing", async ({ page }) => {
   await upload(page, SECOND_FILE, Buffer.from(buildLegacyWorkbook()));
   await expect(page).toHaveURL(BATCH_URL);
 
-  await expect(page.getByText("Tạo mới 0 · Cập nhật 0 · Không đổi 5 · Lỗi 3")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Nhập 0 dòng" })).toBeDisabled();
+  await expect(page.getByText("Create 0 · Update 0 · Unchanged 5 · Error 3")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Import 0 rows" })).toBeDisabled();
 
-  await page.getByRole("button", { name: "Hủy lô" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Hủy lô" }).click();
-  await expect(page.getByText("Đã hủy lô nhập")).toBeVisible();
-  await expect(page.getByRole("alert").filter({ hasText: "Lô đã hủy." })).toBeVisible();
+  await page.getByRole("button", { name: "Discard batch" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Discard batch" }).click();
+  await expect(page.getByText("Batch discarded")).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "This batch was discarded." })).toBeVisible();
 
   // History: this run's two batches, found by file name (other batches may exist from earlier runs).
   await page.goto("/import");
   const committed = page.getByRole("row").filter({ hasText: FIRST_FILE });
   const discarded = page.getByRole("row").filter({ hasText: SECOND_FILE });
-  await expect(committed).toContainText("Đã nhập");
-  await expect(committed).toContainText("Tạo mới 3 · Cập nhật 2");
-  await expect(discarded).toContainText("Đã hủy");
-  await expect(committed.getByRole("link", { name: /^Xem/ })).toBeVisible();
+  await expect(committed).toContainText("Imported");
+  await expect(committed).toContainText("Created 3 · Updated 2");
+  await expect(discarded).toContainText("Discarded");
+  await expect(committed.getByRole("link", { name: /^View/ })).toBeVisible();
 });
 
 test("a file without the required columns is rejected", async ({ page }) => {
@@ -97,7 +102,7 @@ test("a file without the required columns is rejected", async ({ page }) => {
   const buffer = Buffer.from(XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer);
 
   await upload(page, "no-headers.xlsx", buffer);
-  await expect(page.getByRole("alert").filter({ hasText: "Không tìm thấy hàng tiêu đề" })).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: "No header row with an Email column" })).toBeVisible();
   await expect(page).toHaveURL(/\/import$/);
 });
 

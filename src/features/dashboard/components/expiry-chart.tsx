@@ -22,12 +22,12 @@ import { formatNumber } from "@/lib/format";
  */
 export function ExpiryChart({ buckets }: { buckets: ExpiryBucket[] }) {
   const total = buckets.reduce((sum, bucket) => sum + bucket.count, 0);
-  if (total === 0) return <p className="text-body text-muted-foreground">Chưa có chứng chỉ nào đã hoàn thành.</p>;
+  if (total === 0) return <p className="text-body text-muted-foreground">No completed certificates yet.</p>;
 
   const summary = buckets.map((bucket) => `${bucket.label} ${bucket.count}`).join(", ");
   return (
     <div className="min-w-0 [&_.recharts-text]:fill-foreground [&_.recharts-text]:text-table">
-      <div role="img" aria-label={`Hạn chứng chỉ: ${summary}`} className="h-56 min-w-0">
+      <div role="img" aria-label={`Certificate expiry: ${summary}`} className="h-56 min-w-0">
         <div aria-hidden className="h-full min-w-0">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
