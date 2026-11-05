@@ -473,6 +473,29 @@ export type Database = {
         }
         Relationships: []
       }
+      team_managers: {
+        Row: {
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_managers_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string

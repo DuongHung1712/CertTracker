@@ -1,6 +1,6 @@
 -- Manager scopes (spec 2026-10-31 §6.1, decision #55): a manager is responsible for teams and/or programs.
 -- A program scope covers every team whose program_id matches at query time, so a team added to (or moved out
--- of) a program changes access at once. Replaces team_managers.
+-- of) a program changes access at once. Takes over from team_managers.
 
 create table public.manager_scopes (
   id uuid primary key default gen_random_uuid(),
@@ -120,5 +120,5 @@ as $$
     and (u.banned_until is null or u.banned_until <= now());
 $$;
 
--- Its policies go with it.
-drop table public.team_managers;
+-- team_managers stays unused for one release so the previous app version still runs during the deploy and on
+-- a rollback (decision #58). A later migration drops it.

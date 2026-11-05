@@ -53,7 +53,7 @@ insert into public.manager_scopes (id, user_id, team_id, program_id) values
   ('b1000000-0000-0000-0000-000000005004', 'b1000000-0000-0000-0000-00000000f003', null, 'b1000000-0000-0000-0000-0000000000f2');
 
 -- ===== shape and constraints (as postgres) =====
-select hasnt_table('public', 'team_managers', 'team_managers is gone');
+select has_table('public', 'team_managers', 'team_managers stays for one release so the app can roll back (decision #58)');
 select throws_ok(
   $$insert into public.manager_scopes (user_id, team_id, program_id) values
     ('b1000000-0000-0000-0000-00000000f001', 'b1000000-0000-0000-0000-00000000a002', 'b1000000-0000-0000-0000-0000000000f2')$$,
