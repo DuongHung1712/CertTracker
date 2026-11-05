@@ -31,8 +31,13 @@ const SECOND_FILE = `legacy-${RUN}-lan-2.xlsx`;
 
 async function upload(page: Page, name: string, buffer: Buffer) {
   await page.goto("/import");
-  await page.getByLabel("Excel file").setInputFiles({ name, mimeType: XLSX_MIME, buffer });
-  await page.getByRole("button", { name: "Upload and check" }).click();
+  const submit = page.getByRole("button", { name: "Upload and check" });
+  // A file chosen before hydration fires no React onChange, so retry until the form has picked it up.
+  await expect(async () => {
+    await page.getByLabel("Excel file").setInputFiles({ name, mimeType: XLSX_MIME, buffer });
+    await expect(submit).toBeEnabled({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
+  await submit.click();
 }
 
 /** The preview row for an Excel line number (its first cell). */
