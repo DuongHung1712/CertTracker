@@ -23,6 +23,16 @@ describe("memberSchema", () => {
     ).toBe(false);
   });
 
+  it("trims the e-mail so it can link to a login", () => {
+    const result = memberSchema.parse({
+      fullName: "Linh Tran",
+      email: "  Linh.Tran@Example.com ",
+      teamId: "00000000-0000-0000-0000-000000000000",
+      isActive: true,
+    });
+    expect(result.email).toBe("Linh.Tran@Example.com");
+  });
+
   it("defaults isActive to true when omitted", () => {
     const result = memberSchema.safeParse({
       fullName: "An",
