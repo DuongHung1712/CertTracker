@@ -1,7 +1,9 @@
 -- Link a login to its member when the member is added after the login (spec 2026-11-06 §5.1).
 -- handle_new_user() only covers the other order (login first). Only the admin (or no JWT: migrations,
 -- seed, cron; the import runs with the admin's JWT) may cause a link: a manager editing an in-scope
--- member's e-mail must not hand that member's certificates to an unrelated login.
+-- member's e-mail must not hand that member's certificates to an unrelated login. An unchanged e-mail
+-- never links either: the app resends the e-mail on every save, so a manager's earlier edit would
+-- otherwise be activated by an admin's unrelated save.
 create function public.link_account_to_member()
 returns trigger
 language plpgsql
@@ -10,6 +12,9 @@ set search_path = ''
 as $$
 begin
   if auth.uid() is not null and public.app_role() is distinct from 'admin' then
+    return new;
+  end if;
+  if tg_op = 'UPDATE' and new.email is not distinct from old.email then
     return new;
   end if;
 
