@@ -74,7 +74,7 @@ Dashboard → **Authentication**:
 
 ### B4. Tạo tài khoản admin đầu tiên
 
-App chưa có trang "đặt mật khẩu", nên **không dùng *Invite user*** (link mời sẽ không dùng được).
+Chỉ admin đầu tiên tạo theo cách dưới đây. Những người khác dùng *Invite user*: xem [accounts-and-catalogue.md](accounts-and-catalogue.md).
 
 1. **Authentication → Users → Add user → Create new user**.
 2. Nhập email thật của bạn và một mật khẩu mạnh, **tick *Auto Confirm User***.

@@ -4,7 +4,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 
 ## Trạng thái hiện tại
 
-- **Release 1** (decision #54: không còn Release 2/3; 3 vai trò Admin (= DC lead, phủ cả DC), Manager phạm vi team/program, Member; decision #55). Phần chứng chỉ (tuần 1–6) **đã chạy** trên production (PR #16 merge vào `main` 2026-10-17, function ở `hnd1`). Phần còn lại theo BRD v3.0 (`exports/CertTracker-BRD-v3.0-2026-10-31.docx`, ngoài git) và `docs/process/04-wbs.md`: M0 duyệt BRD + trả lời 4 câu hỏi mở + spec/plan → M1 phạm vi manager, role/YoE, chi phí khóa học, UI tiếng Anh → M2 Skill Matrix → M3 mục tiêu theo quý, chọn/giao khóa học → M4 AI (DeepSeek, decision #52) → M5 lộ trình role → M6 pilot, G1 (chỉ là bước duyệt sau pilot), production. **M1 đã làm xong trên nhánh `feat/m1-platform` (2026-11-01; chưa merge, chưa `supabase db push` 5 migration `20261031…`; riêng 8.1 còn đo p75 trên production)** theo spec `docs/superpowers/specs/2026-10-31-m1-platform-changes-design.md`, decisions #55–#57. Tiếp theo: M0 còn lại (duyệt BRD + 4 câu hỏi mở), rồi **M2** (Skill Matrix).
+- **Release Cert Core trước** (decision #59, thay #54): phần chứng chỉ, phạm vi manager, role/YoE, chi phí khóa học, UI tiếng Anh **đã chạy trên `main` và production** (2026-11-05), cloud chưa có dữ liệu thật. Theo `docs/process/04-wbs.md`: C0 duyệt phạm vi → C1 tài khoản qua e-mail và danh mục khóa học (decision #60, tiếp theo) → C2 AI phục vụ chứng chỉ (DeepSeek, decision #52) → C3 hosting, pilot, G1, production. Sau đó (Later): Skill Matrix, mục tiêu theo quý, lộ trình role, chuyển backend sang Rust. 3 vai trò: Admin (= DC lead), Manager phạm vi team/program, Member (decision #55). Còn nợ: migration xóa `team_managers` (decision #58).
 - Cập nhật dòng này khi chuyển tuần/giai đoạn.
 
 ## Nguồn sự thật (đọc khi cần, đừng đọc hết mỗi phiên)
@@ -14,7 +14,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 | Data model, RLS, luồng, lộ trình | `docs/superpowers/specs/2026-09-26-certtracker-design.md` |
 | Các quyết định đã chốt + lý do | `docs/decisions.md` |
 | Token, component, pattern UI | `docs/design-system.md` (xem trực quan: `/design` khi chạy dev) |
-| Phạm vi Release 1 (use case, FR/NFR), WBS và mốc M0–M6 | BRD v3.0 `exports/CertTracker-BRD-v3.0-2026-10-31.docx` (ngoài git), `docs/process/04-wbs.md` |
+| Phạm vi (use case, FR/NFR), WBS và mốc C0–C3, Later | BRD v3.0 `exports/CertTracker-BRD-v3.0-2026-10-31.docx` (ngoài git), `docs/process/04-wbs.md` |
 | Kế hoạch triển khai | `docs/superpowers/plans/` |
 | Yêu cầu gốc | `CertTracker - Feature List.pdf` |
 | Quy trình theo thứ tự (ý tưởng, CA, yêu cầu, WBS, SAD gọn, thiết kế, PoC/MVP, production), cổng G1 | `docs/process/` 00–08 (bắt đầu từ `README.md`) |
