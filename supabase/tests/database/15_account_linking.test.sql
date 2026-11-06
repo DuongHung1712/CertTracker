@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(24);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -30,6 +30,7 @@ insert into public.courses (id, name, validity_months)
 insert into public.members (id, full_name, email, team_id) values
   ('e1000000-0000-0000-0000-00000000c004', 'AL Member Four', 'al-four-old@test.local', 'e1000000-0000-0000-0000-00000000a001'),
   ('e1000000-0000-0000-0000-00000000c005', 'AL Member Five', 'al-five-old@test.local', 'e1000000-0000-0000-0000-00000000a001'),
+  ('e1000000-0000-0000-0000-00000000c0d1', 'AL Member Five D', 'al-five-d-old@test.local', 'e1000000-0000-0000-0000-00000000a001'),
   ('e1000000-0000-0000-0000-00000000c0b1', 'AL Linked', 'al-linked@test.local', 'e1000000-0000-0000-0000-00000000a001'),
   ('e1000000-0000-0000-0000-00000000c0b2', 'AL Other', 'al-other@test.local', 'e1000000-0000-0000-0000-00000000a001'),
   ('e1000000-0000-0000-0000-00000000c0c1', 'AL Already Linked', 'al-already@test.local', 'e1000000-0000-0000-0000-00000000a001'),
@@ -37,6 +38,8 @@ insert into public.members (id, full_name, email, team_id) values
 insert into public.training_records (id, member_id, course_id, status, progress) values
   ('e1000000-0000-0000-0000-00000000b005', 'e1000000-0000-0000-0000-00000000c005',
    'e1000000-0000-0000-0000-00000000e001', 'in_progress', 50),
+  ('e1000000-0000-0000-0000-00000000b0d1', 'e1000000-0000-0000-0000-00000000c0d1',
+   'e1000000-0000-0000-0000-00000000e001', 'in_progress', 55),
   ('e1000000-0000-0000-0000-00000000b007', 'e1000000-0000-0000-0000-00000000c007',
    'e1000000-0000-0000-0000-00000000e001', 'in_progress', 70);
 
@@ -50,6 +53,8 @@ insert into auth.users (id, email) values
   ('e1000000-0000-0000-0000-00000000f033', 'E1.Lower@Test.Local'),
   ('e1000000-0000-0000-0000-00000000f004', 'al-four-new@test.local'),
   ('e1000000-0000-0000-0000-00000000f005', 'al-five-new@test.local'),
+  ('e1000000-0000-0000-0000-00000000f0d1', 'al-five-d-new@test.local'),
+  ('e1000000-0000-0000-0000-00000000f01b', 'al-no-jwt@test.local'),
   ('e1000000-0000-0000-0000-00000000f0b1', 'al-x@test.local'),
   ('e1000000-0000-0000-0000-00000000f0c1', 'al-already-login@test.local');
 update public.profiles set role = 'admin' where user_id = 'e1000000-0000-0000-0000-00000000f00a';
@@ -81,6 +86,14 @@ select pg_temp.logout();
 select is((select member_id from public.profiles where user_id = 'e1000000-0000-0000-0000-00000000f001'),
   'e1000000-0000-0000-0000-00000000c001'::uuid,
   'DB-1: an admin adding the member links the login that already exists');
+
+-- ===== DB-1b: a member inserted with no JWT links too =====
+select pg_temp.logout();
+insert into public.members (id, full_name, email, team_id)
+  values ('e1000000-0000-0000-0000-00000000c01b', 'AL No JWT', 'al-no-jwt@test.local', 'e1000000-0000-0000-0000-00000000a001');
+select is((select member_id from public.profiles where user_id = 'e1000000-0000-0000-0000-00000000f01b'),
+  'e1000000-0000-0000-0000-00000000c01b'::uuid,
+  'DB-1b: a member inserted with no JWT links the login that already exists');
 
 -- ===== DB-2: a member created by an import links the same way =====
 select pg_temp.login_as('e1000000-0000-0000-0000-00000000f00a');
@@ -126,6 +139,26 @@ select is((select count(*) from public.members), 0::bigint,
   'DB-5: that login still sees no member');
 select is((select count(*) from public.training_records), 0::bigint,
   'DB-5: that login still sees no training record');
+select pg_temp.logout();
+
+-- ===== DB-5d: the admin's later save of an unchanged e-mail never links the manager's edit =====
+select pg_temp.login_as('e1000000-0000-0000-0000-00000000f00b');
+update public.members set email = 'al-five-d-new@test.local' where id = 'e1000000-0000-0000-0000-00000000c0d1';
+select pg_temp.logout();
+select is((select email::text from public.members where id = 'e1000000-0000-0000-0000-00000000c0d1'),
+  'al-five-d-new@test.local', 'DB-5d: the manager''s e-mail edit was saved');
+-- The app's member form always sends email, unchanged or not.
+select pg_temp.login_as('e1000000-0000-0000-0000-00000000f00a');
+update public.members set full_name = 'AL Member Five D Renamed', email = email
+  where id = 'e1000000-0000-0000-0000-00000000c0d1';
+select pg_temp.logout();
+select is((select member_id is null from public.profiles where user_id = 'e1000000-0000-0000-0000-00000000f0d1'),
+  true, 'DB-5d: an admin save that keeps the manager-set e-mail does not link the login');
+select pg_temp.login_as('e1000000-0000-0000-0000-00000000f0d1');
+select is((select count(*) from public.members), 0::bigint,
+  'DB-5d: that login still sees no member');
+select is((select count(*) from public.training_records), 0::bigint,
+  'DB-5d: that login still sees no training record');
 select pg_temp.logout();
 
 -- ===== DB-5b: a link is never moved =====
