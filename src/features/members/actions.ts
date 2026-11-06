@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { careerStartToDate } from "@/features/career/schema";
-import { idSchema, makeMemberSchema, type MemberInput } from "@/features/members/schema";
+import { getCurrentUser } from "@/features/auth/queries";
+import { idSchema, makeMemberSchema, memberAccessSchema, type MemberAccessInput, type MemberInput } from "@/features/members/schema";
 import { assertAffected } from "@/lib/assert-affected";
 import { err, ok, type Result } from "@/lib/result";
 import { mapPostgresError } from "@/lib/postgres-error";
@@ -95,5 +96,26 @@ export async function deleteMember(input: { id: string }): Promise<Result<null>>
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/members");
+  return ok(null);
+}
+
+/**
+ * Admin only (RLS on profiles). Changing your own access is refused so the app always keeps the admin who is using
+ * it. Manager scopes are kept when someone stops being a manager; they grant nothing until the role comes back.
+ */
+export async function setMemberAccess(input: MemberAccessInput): Promise<Result<null>> {
+  const parsed = memberAccessSchema.safeParse(input);
+  if (!parsed.success) return err("Invalid data");
+  const { userId, role } = parsed.data;
+  const user = await getCurrentUser();
+  if (user?.id === userId) return err("You can't change your own access. Ask another admin.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("profiles").update({ role }).eq("user_id", userId).select("user_id");
+  if (error) return err(mapPostgresError(error));
+  const guard = assertAffected(data);
+  if (guard) return guard;
+  revalidatePath("/members");
+  revalidatePath("/org");
   return ok(null);
 }

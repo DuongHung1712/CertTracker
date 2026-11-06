@@ -100,3 +100,32 @@ test("admin sees what a manager manages, and that the scopes go inactive when th
     await cleanup();
   }
 });
+
+test("admin changes a member's access from the member form", async ({ page }) => {
+  const cleanup = await giveSeedManagerAMember();
+  try {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/members");
+    const row = page.getByRole("row", { name: new RegExp(MANAGER_NAME) });
+    await expect(row.getByRole("cell", { name: "Manager", exact: true })).toBeVisible();
+
+    await row.getByRole("button", { name: `Actions for ${MANAGER_NAME}` }).click();
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await page.getByRole("dialog").getByLabel("Access").click();
+    await page.getByRole("option", { name: "Member", exact: true }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(row.getByRole("cell", { name: "Member", exact: true })).toBeVisible();
+    await expect(row.getByText("Scopes inactive: not a manager")).toBeVisible();
+  } finally {
+    await setSeedManagerRole("manager");
+    await cleanup();
+  }
+});
+
+test("a member without an account shows No account and no access control", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+  await page.goto("/members");
+  await page.getByRole("button", { name: "Add member" }).click();
+  await expect(page.getByRole("dialog").getByLabel("Access")).toHaveCount(0);
+});

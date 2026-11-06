@@ -15,6 +15,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatYoe } from "@/features/career/format";
 import { removeManagerScopes } from "@/features/organizations/actions";
 import { deleteMember } from "@/features/members/actions";
+import { ROLE_LABEL, type Role } from "@/components/status/labels";
 import { MemberDialog } from "@/features/members/components/member-dialog";
 
 type Member = {
@@ -26,6 +27,7 @@ type Member = {
   teamName: string | null;
   isActive: boolean;
   userId: string | null;
+  accessRole: Role | null;
   careerRoleId: string | null;
   careerRoleName: string | null;
   careerStart: string | null;
@@ -84,6 +86,11 @@ export function MembersTable({
     },
     ...(showScopes
       ? ([
+          {
+            accessorKey: "accessRole",
+            header: "Access",
+            cell: ({ row }) => (row.original.accessRole ? ROLE_LABEL[row.original.accessRole] : "No account"),
+          },
           {
             id: "scopes",
             header: "Manages",

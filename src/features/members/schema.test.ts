@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { makeMemberSchema, memberSchema } from "@/features/members/schema";
+import { makeMemberSchema, memberSchema, memberAccessSchema } from "@/features/members/schema";
 
 describe("memberSchema", () => {
   it("requires a name, a valid email and a team", () => {
@@ -53,5 +53,18 @@ describe("makeMemberSchema", () => {
     const result = schema.safeParse({ ...base, careerStart: { year: 2026, month: 12 } });
     expect(result.success).toBe(false);
     expect(!result.success && result.error.issues[0]?.message).toBe("Career start can't be in the future");
+  });
+});
+
+describe("memberAccessSchema", () => {
+  const userId = "5eed0000-0000-0000-0000-00000000f00b";
+
+  it.each(["admin", "manager", "member"])("accepts %s", (role) => {
+    expect(memberAccessSchema.safeParse({ userId, role }).success).toBe(true);
+  });
+
+  it("rejects an unknown role and a bad id", () => {
+    expect(memberAccessSchema.safeParse({ userId, role: "owner" }).success).toBe(false);
+    expect(memberAccessSchema.safeParse({ userId: "x", role: "member" }).success).toBe(false);
   });
 });
