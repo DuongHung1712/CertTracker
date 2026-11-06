@@ -212,6 +212,21 @@ describe("proxy", () => {
     expect(redirectPath(response)).toBe("/login");
   });
 
+  it.each([["signed out", null], ["signed in", { sub: "user-1" }]])(
+    "leaves /set-password alone for a %s visitor: the one-time token in the link authenticates it",
+    async (_name, session) => {
+      claims = session;
+      serverUser = session && { id: "user-1", email: "manager@certtracker.test" };
+      const { updateSession } = await loadModules();
+
+      const response = await updateSession(request("/set-password?token_hash=abc&type=invite"));
+
+      expect(response.headers.get("location")).toBeNull();
+      expect(authServerCalls).not.toHaveBeenCalled();
+      expect(claimsCalls).not.toHaveBeenCalled();
+    },
+  );
+
   it("skips auth entirely for cron routes", async () => {
     claims = null;
     const { updateSession } = await loadModules();

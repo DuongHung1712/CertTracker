@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { loginSchema } from "@/features/auth/schema";
+import { loginSchema, setPasswordSchema } from "@/features/auth/schema";
 import { err, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,4 +28,31 @@ export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
+}
+
+const LINK_ERROR = "This link has expired or was already used. Ask your admin for a new one.";
+
+/**
+ * Finishes an invitation or password reset link. The token is verified only here, on submit, not when the page
+ * opens, so mail scanners that open links cannot use it up. The user then signs in with the new password.
+ */
+export async function setPassword(_prev: Result<null> | null, formData: FormData): Promise<Result<null> | null> {
+  const parsed = setPasswordSchema.safeParse({
+    tokenHash: formData.get("tokenHash"),
+    type: formData.get("type"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? LINK_ERROR);
+
+  const supabase = await createClient();
+  const { error: linkError } = await supabase.auth.verifyOtp({ token_hash: parsed.data.tokenHash, type: parsed.data.type });
+  if (linkError) return err(LINK_ERROR);
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  // The token is spent by now, so a retry needs a new link.
+  if (error) return err("We could not save that password. Ask your admin for a new link, then choose a different one.");
+
+  await supabase.auth.signOut({ scope: "local" });
+  redirect("/login?passwordSet=1");
 }

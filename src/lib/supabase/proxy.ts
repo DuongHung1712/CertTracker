@@ -4,10 +4,13 @@ import { isCronPath } from "@/lib/cron-path";
 import type { Database } from "@/types/database";
 
 const PUBLIC_PATHS = ["/login"];
+const SET_PASSWORD_PATH = "/set-password";
 
 export async function updateSession(request: NextRequest) {
-  // Authenticated by CRON_SECRET inside the handler; no session, no login redirect (and no /dashboard bounce).
-  if (isCronPath(request.nextUrl.pathname)) return NextResponse.next({ request });
+  // Authenticated inside by CRON_SECRET or the link's one-time token; no session, no login redirect (and no /dashboard bounce).
+  if (isCronPath(request.nextUrl.pathname) || request.nextUrl.pathname === SET_PASSWORD_PATH) {
+    return NextResponse.next({ request });
+  }
 
   let response = NextResponse.next({ request });
 
