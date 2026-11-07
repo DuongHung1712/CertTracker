@@ -40,6 +40,7 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ["muted-foreground", "card"],
   ["secondary-foreground", "secondary"],
   ["primary-foreground", "primary"],
+  ["primary-foreground-muted", "primary"],
   ["primary-foreground", "primary-hover"],
   ["primary", "background"],
   ["primary", "card"],
@@ -57,6 +58,11 @@ const UI_PAIRS: Array<[string, string]> = [
   ["input", "background"],
   ["ring", "background"],
   ["ring", "card"],
+];
+
+const DARK_UI_PAIRS: Array<[string, string]> = [
+  ...UI_PAIRS,
+  ["input", "muted"],
 ];
 
 // Expiry-chart bars are graphic objects drawn straight on the card (WCAG 1.4.11).
@@ -86,7 +92,7 @@ describe("dark design tokens", () => {
     expect(contrastRatio(darkHex(fg), darkHex(bg))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it.each(UI_PAIRS)("dark control --%s on --%s reaches 3:1", (fg, bg) => {
+  it.each(DARK_UI_PAIRS)("dark control --%s on --%s reaches 3:1", (fg, bg) => {
     expect(contrastRatio(darkHex(fg), darkHex(bg))).toBeGreaterThanOrEqual(3);
   });
 

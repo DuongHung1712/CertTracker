@@ -28,6 +28,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-foreground-muted: var(--primary-foreground-muted);
   --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -116,6 +117,7 @@
   --popover-foreground: #15212B;
   --primary: #0E5C58;
   --primary-foreground: #FFFFFF;
+  --primary-foreground-muted: #D8E4E2;
   --primary-hover: #0A4744;
   --secondary: #EDF0EE;
   --secondary-foreground: #15212B;
@@ -173,21 +175,22 @@
   --popover-foreground: #EBF0EE;
   --primary: #249C90;
   --primary-foreground: #0D151C;
+  --primary-foreground-muted: #132226;
   --primary-hover: #2DB4A6;
   --secondary: #1F2B35;
   --secondary-foreground: #EBF0EE;
   --muted: #1F2B35;
-  --muted-foreground: #94A3A8;
+  --muted-foreground: #9EB2B7;
   --accent: #163332;
   --accent-foreground: #48D1C1;
   --destructive: #F87171;
   --border: #253440;
-  --input: #5A7385;
+  --input: #617B8E;
   --ring: #38B2A3;
 
   --chart-1: #38B2A3;
-  --chart-2: #94A3A8;
-  --chart-3: #5A7385;
+  --chart-2: #9EB2B7;
+  --chart-3: #617B8E;
   --chart-4: #253440;
   --chart-5: #EBF0EE;
 

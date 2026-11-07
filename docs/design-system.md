@@ -19,7 +19,7 @@ Reference for every CertTracker screen. People and AI read this file **before bu
 
 ## 2. Tokens
 
-Token names follow the **role** a colour plays, as in shadcn/ui. Only a light theme exists; dark mode is added later by redeclaring the same token names (no component changes).
+Token names follow the **role** a colour plays, as in shadcn/ui. Both light and dark themes are supported via semantic CSS variables in `src/app/globals.css`. Component styling never hard-codes colors; tokens adapt to the active theme. Choice is persisted in localStorage via `next-themes` with `disableTransitionOnChange` and indicated with radio indicators in the User Menu.
 
 ### 2.1 Interface colours
 
@@ -30,16 +30,17 @@ Token names follow the **role** a colour plays, as in shadcn/ui. Only a light th
 | `card`, `popover` | `#FFFFFF` | `#162028` | Tables, cards, dialogs, menus | — |
 | `card-foreground`, `popover-foreground` | `#15212B` | `#EBF0EE` | Text on cards | 16.4:1 / 14.3:1 |
 | `muted`, `secondary` | `#EDF0EE` | `#1F2B35` | Table header, secondary background, secondary button | — |
-| `muted-foreground` | `#56636C` | `#94A3A8` | Secondary text, labels, placeholders | 5.4:1 / 6.3:1 |
+| `muted-foreground` | `#56636C` | `#9EB2B7` | Secondary text, labels, placeholders | 5.4:1 / 7.5:1 |
 | `secondary-foreground` | `#15212B` | `#EBF0EE` | Text on the secondary button | 14.2:1 / 11.2:1 |
 | `primary` | `#0E5C58` | `#249C90` | Primary button, links, selected item, progress bar | 7.3:1 / 5.4:1 |
 | `primary-foreground` | `#FFFFFF` | `#0D151C` | Text on `primary` | 7.8:1 / 5.5:1 |
+| `primary-foreground-muted` | `#D8E4E2` | `#132226` | Secondary/muted text on `primary` selection | 6.0:1 / 4.9:1 |
 | `primary-hover` | `#0A4744` | `#2DB4A6` | Primary button hover | 10.5:1 / 7.2:1 |
 | `accent` | `#E2EFEC` | `#163332` | Selected table row, active sidebar item, row hover | — |
 | `accent-foreground` | `#0E5C58` | `#48D1C1` | Text on `accent` | 6.6:1 / 7.3:1 |
 | `destructive` | `#B42318` | `#F87171` | Delete button, form error text | 6.6:1 / 6.0:1 |
 | `border` | `#D8DEDB` | `#253440` | Table rules, card borders, separators (decorative) | — |
-| `input` | `#83908C` | `#5A7385` | Input, checkbox and select borders | 3.3:1 / 3.3:1 |
+| `input` | `#83908C` | `#617B8E` | Input, checkbox and select borders | 3.3:1 / 3.7:1 |
 | `ring` | `#1C7C75` | `#38B2A3` | Focus ring (2px, offset 2px) | 4.7:1 / 6.9:1 |
 
 The sidebar uses shadcn's own set, mapped to the tokens above:
@@ -272,9 +273,9 @@ The page never scrolls horizontally; only a table scrolls inside its own frame (
 2. Run the contrast tests (`pnpm test`); if a pair falls below the threshold, fix the colour, do not lower the threshold.
 3. Check by eye on the `/design` page (`src/app/(dev)/design/page.tsx`, which returns 404 in production).
 4. Sync the Design System page on claude.ai.
-5. Big decisions (changing the accent colour, adding dark mode) get an entry in `docs/decisions.md`.
+5. Big decisions (changing the accent colour, adding dark mode) get an entry in `docs/decisions.md` (see #14, #62).
 
 ## 10. Themes
 
 - **Light theme**: Warm paper-white (`#F6F7F5`) background, blue-black ink text (`#15212B`), deep teal accent (`#0E5C58`).
-- **Dark theme**: Dark slate paper (`#10171D`) background, pale ink text (`#EBF0EE`), luminous teal accent (`#249C90`). Both themes meet WCAG 2.1 AA text (>= 4.5:1) and UI boundaries/focus (>= 3:1). Controlled via `.dark` class on the root.
+- **Dark theme**: Dark slate paper (`#10171D`) background, pale ink text (`#EBF0EE`), luminous teal accent (`#249C90`), muted text (`#9EB2B7`), input borders (`#617B8E`). Both themes meet WCAG 2.1 AA text (>= 4.5:1) and UI boundaries/focus (>= 3:1). Controlled via `.dark` class on the root, persisted in localStorage (`next-themes` with `disableTransitionOnChange`), and switched via user menu radio items.
