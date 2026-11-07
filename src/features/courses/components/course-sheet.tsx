@@ -71,7 +71,12 @@ export function CourseSheet({
         <form className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
             <FieldLabel htmlFor="course-name">Course name</FieldLabel>
-            <Input id="course-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
+            <Input
+              id="course-name"
+              className="h-9"
+              {...form.register("name")}
+              aria-invalid={!!form.formState.errors.name}
+            />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Field>
@@ -126,7 +131,7 @@ export function CourseSheet({
           </Field>
           <Field>
             <FieldLabel htmlFor="course-level">Level</FieldLabel>
-            <Input id="course-level" {...form.register("level")} placeholder="Associate, Professional…" />
+            <Input id="course-level" className="h-9" {...form.register("level")} placeholder="Associate, Professional…" />
           </Field>
           <Field>
             <FieldLabel htmlFor="course-validity">Validity (months)</FieldLabel>
@@ -134,6 +139,7 @@ export function CourseSheet({
               id="course-validity"
               type="number"
               min={1}
+              className="h-9"
               {...form.register("validityMonths")}
               placeholder="Leave empty if it does not expire"
               aria-invalid={!!form.formState.errors.validityMonths}
@@ -156,6 +162,7 @@ export function CourseSheet({
                 type="number"
                 min={0}
                 step="any"
+                className="h-9"
                 {...form.register("cost")}
                 aria-invalid={!!form.formState.errors.cost}
               />
@@ -172,7 +179,7 @@ export function CourseSheet({
                       value={toCurrency(typeof field.value === "string" ? field.value : null)}
                       onValueChange={(value) => field.onChange(toCurrency(value))}
                     >
-                      <SelectTrigger id="course-currency" aria-invalid={!!form.formState.errors.costCurrency}>
+                      <SelectTrigger id="course-currency" className="h-9" aria-invalid={!!form.formState.errors.costCurrency}>
                         <SelectValue placeholder="Currency">{(value: string | null) => value ?? "Currency"}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -200,6 +207,7 @@ export function CourseSheet({
               id="course-hours"
               type="number"
               min={1}
+              className="h-9"
               {...form.register("estHours")}
               aria-invalid={!!form.formState.errors.estHours}
             />
@@ -207,7 +215,7 @@ export function CourseSheet({
           </Field>
           <Field>
             <FieldLabel htmlFor="course-url">Course link</FieldLabel>
-            <Input id="course-url" type="url" {...form.register("url")} aria-invalid={!!form.formState.errors.url} />
+            <Input id="course-url" type="url" className="h-9" {...form.register("url")} aria-invalid={!!form.formState.errors.url} />
             <FieldError errors={[form.formState.errors.url]} />
           </Field>
           {form.formState.errors.root && (
@@ -215,11 +223,20 @@ export function CourseSheet({
               {form.formState.errors.root.message}
             </p>
           )}
-          <SheetFooter className="flex-row justify-end gap-2 px-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <SheetFooter className="flex-row justify-end gap-2 px-0 pt-2 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-[44px] sm:min-h-[36px]"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              className="min-h-[44px] sm:min-h-[36px]"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </SheetFooter>

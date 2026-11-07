@@ -66,7 +66,11 @@ export function CoursesTable({
     {
       accessorKey: "validityMonths",
       header: "Validity",
-      cell: ({ row }) => (row.original.validityMonths ? `${row.original.validityMonths} ${row.original.validityMonths === 1 ? "month" : "months"}` : "No expiry"),
+      cell: ({ row }) =>
+        row.original.validityMonths
+          ? `${row.original.validityMonths} ${row.original.validityMonths === 1 ? "month" : "months"}`
+          : "No expiry",
+      meta: { align: "right" },
     },
     {
       accessorKey: "refundable",
@@ -85,8 +89,14 @@ export function CoursesTable({
       header: "Cost",
       cell: ({ row }) =>
         row.original.cost != null && row.original.costCurrency ? formatMoney(row.original.cost, row.original.costCurrency) : "—",
+      meta: { align: "right" },
     },
-    { accessorKey: "estHours", header: "Study hours", cell: ({ row }) => row.original.estHours ?? "—" },
+    {
+      accessorKey: "estHours",
+      header: "Study hours",
+      cell: ({ row }) => row.original.estHours ?? "—",
+      meta: { align: "right" },
+    },
     ...(canManage
       ? ([
           {
@@ -162,7 +172,13 @@ export function CoursesTable({
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="No courses found" description="Try a different search or clear the filters." />}
+        empty={
+          courses.length === 0 ? (
+            <EmptyState title="No courses yet" description="Add the first course to make it available for certificates." />
+          ) : (
+            <EmptyState title="No courses found" description="Try a different search or clear the filters." />
+          )
+        }
       />
       {canManage && (
         <>
