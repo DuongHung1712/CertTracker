@@ -158,7 +158,7 @@ Spec §5.5 asked whether the `loading.tsx` files make each sidebar link prefetch
 | `/records` | 15 | 0 | 1 |
 | `/members` | 15 | 0 | 1 |
 
-Rule was "more than 2 per page view means `prefetch={false}`": 1 is within it, so the sidebar links are unchanged. Limit: the local project verifies JWTs locally (`getClaims()`), while a symmetric (HS256) project would add one call per proxy check; re-run against production after the first deploy (see `docs/deploy/accounts-and-catalogue.md`). Full loads only, not client-side clicks.
+Rule was "more than 2 per page view means `prefetch={false}`": 1 is within it, so the sidebar links are unchanged. Limit: the local project verifies JWTs locally (`getClaims()`), while a symmetric (HS256) project would add one call per proxy check; on production check the JWT signing-key type or the Auth logs after the first deploy (the script cannot see server calls there; see `docs/deploy/accounts-and-catalogue.md`). Full loads only, not client-side clicks.
 
 ## 5. Open points (to be confirmed)
 

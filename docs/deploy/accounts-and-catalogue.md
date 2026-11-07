@@ -105,10 +105,17 @@ Then check `/courses`. Delete the leftover test types `AWS`, `TOEIC`, `IELTS` an
 
 So that nothing merges without the tests: GitHub > **Settings > Branches**, add a branch protection rule for `dev` and for `main`, turn on "Require status checks to pass before merging" and require `check` and `e2e` (the two jobs of `.github/workflows/ci.yml`). *To confirm:* a check appears in GitHub's list only after it has run once, so push the branch and let CI run before setting this.
 
-## After the first deploy: count Auth calls
+## After the first deploy: check the Auth calls per page view
 
-Run `scripts/count-auth-calls.mjs` against production once, as an existing user, and compare with the numbers in `docs/process/04-wbs.md` §4 (more than 2 Auth calls per page view means setting `prefetch={false}` on the sidebar links). Production has no counting proxy, so omit `UPSTREAM`: only browser-visible calls are printed (the server column needs the proxy, see the script header).
+The rule in `docs/process/04-wbs.md` §4: more than 2 Auth calls (`/auth/v1/user`) per page view means setting `prefetch={false}` on the sidebar links. `scripts/count-auth-calls.mjs` **cannot count the server's calls against production**: only a counting proxy in front of Supabase sees them, and production has none. Without `UPSTREAM` the script prints browser calls only, which are always 0. So check production one of two ways:
+
+- Signing keys: Supabase Dashboard, Project Settings, JWT keys (page name to confirm). Asymmetric keys: 1 call per page view, the local number (§4). An HS256 (symmetric) project: 2 per page view (the layout's `getUser()` plus the proxy's fallback), still within the rule.
+- Auth logs: open the page once, then count the `/auth/v1/user` requests in the project's Auth logs for that moment (Dashboard, Logs, Auth; names to confirm).
+
+To repeat the local measurement: build with the counting proxy's URL, then run the script (it overwrites `.next`, so run a normal `pnpm build` afterwards):
 
 ```bash
-BASE_URL=https://<production-host> EMAIL=<your e-mail> PASSWORD=<your password> node scripts/count-auth-calls.mjs
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54399 pnpm build
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54399 pnpm exec next start -p 3101   # in another terminal
+BASE_URL=http://localhost:3101 EMAIL=admin@certtracker.test PASSWORD=<local seed password> UPSTREAM=http://127.0.0.1:54321 node scripts/count-auth-calls.mjs
 ```

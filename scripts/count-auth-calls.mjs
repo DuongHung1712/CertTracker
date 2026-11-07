@@ -9,10 +9,15 @@
 //            starts a counting reverse proxy on PROXY_PORT (default 54399) that forwards to UPSTREAM, and the app
 //            must run with NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:<PROXY_PORT>, set at `pnpm build` time
 //            (Next inlines NEXT_PUBLIC_*) as well as at start. Server calls are told apart from browser calls by
-//            the missing Origin header. Without UPSTREAM (e.g. against production) only "browser" is printed.
+//            the missing Origin header. Without UPSTREAM only "browser" is printed (always 0: the browser never
+//            calls that endpoint), so this script cannot count server calls against production.
+//            UPSTREAM must be local http (127.0.0.1 or localhost): tokens pass through the proxy unencrypted.
+// This measurement builds the app pointing at the counting proxy and overwrites `.next`: run a normal
+// `pnpm build` afterwards, or a later `pnpm start` sends every Supabase call to a dead port.
 // A page view = sign in, then one full load of the path, wait for network idle plus SETTLE_MS so link prefetches
 // (production builds only) have fired. Limits: full loads only, not client-side clicks; sidebar links outside the
-// viewport may prefetch later; one browser, so the numbers are a rule of thumb, not a load test.
+// viewport may prefetch later; one browser, so the numbers are a rule of thumb, not a load test. Only
+// `/auth/v1/user` is counted, not token refreshes (`/auth/v1/token`) or JWKS fetches.
 import http from "node:http";
 import { chromium } from "@playwright/test";
 
@@ -31,9 +36,14 @@ let serverCalls = 0;
 let proxy = null;
 if (UPSTREAM) {
   const target = new URL(UPSTREAM);
+  if (target.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(target.hostname)) {
+    console.error("UPSTREAM must be the local Supabase over http (for example http://127.0.0.1:54321).");
+    process.exit(1);
+  }
   proxy = http.createServer((req, res) => {
     if (req.url.includes(AUTH_USER) && !req.headers.origin) serverCalls += 1;
-    const { host: _host, ...headers } = req.headers;
+    const headers = { ...req.headers };
+    delete headers.host; // Node sets Host from the request options
     const upstream = http.request(
       { host: target.hostname, port: target.port, path: req.url, method: req.method, headers },
       (up) => {
@@ -41,7 +51,11 @@ if (UPSTREAM) {
         up.pipe(res);
       },
     );
-    upstream.on("error", () => res.writeHead(502).end());
+    upstream.on("error", (error) => {
+      console.error(`Counting proxy: upstream error ${error.code ?? error.name}`);
+      if (res.headersSent) res.end();
+      else res.writeHead(502).end();
+    });
     req.pipe(upstream);
   });
   await new Promise((resolve) => proxy.listen(PROXY_PORT, "127.0.0.1", resolve));
