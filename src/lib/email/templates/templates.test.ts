@@ -23,6 +23,9 @@ const alertOf = (over: Partial<ExpiryAlert>): ExpiryAlert => ({ email: "a@b.co",
 const renderAlert = (alert: ExpiryAlert, appUrl: string | null = null) =>
   renderEmail(createElement(ExpiryAlertEmail, { alert, period: "2026-W41", appUrl }));
 
+// U-7: a Vietnamese name must reach the inbox as written, not as `?`, mojibake or numeric entities.
+const VIETNAMESE_NAME = "Nguyễn Thị Hằng";
+
 const kpi = (over: Partial<Kpi> = {}): Kpi => ({
   members: 10,
   records: 40,
@@ -176,6 +179,24 @@ describe("ExpiryAlertEmail", () => {
     const { text } = await renderAlert(alertOf({ own: [item(1, { courseName: "Chứng chỉ An toàn" })] }), "https://x.test");
     expect(text).not.toMatch(/<[a-z][\s\S]*>/i);
     expect(text).toContain("Chứng chỉ An toàn");
+  });
+});
+
+describe("Vietnamese names (U-7)", () => {
+  it("keeps the name intact in the expiry alert's html and text", async () => {
+    const { html, text } = await renderAlert(
+      alertOf({ name: VIETNAMESE_NAME, teams: [{ teamId: "t", teamName: "T", items: [item(1, { memberName: VIETNAMESE_NAME })] }] }),
+    );
+    expect(html).toContain(`Hello ${VIETNAMESE_NAME},`);
+    expect(html).toContain(`>${VIETNAMESE_NAME} (MC001)<`); // the member's row
+    expect(text).toContain(`Hello ${VIETNAMESE_NAME},`);
+  });
+
+  it("keeps the name intact in the monthly report's html and text", async () => {
+    const { html, text } = await renderReport(reportOf({ name: VIETNAMESE_NAME, upcoming: [item(1, { memberName: VIETNAMESE_NAME })] }));
+    expect(html).toContain(`Hello ${VIETNAMESE_NAME},`);
+    expect(html).toContain(`>${VIETNAMESE_NAME} (MC001)<`); // the upcoming row
+    expect(text).toContain(`Hello ${VIETNAMESE_NAME},`);
   });
 });
 

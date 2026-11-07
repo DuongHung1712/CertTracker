@@ -131,8 +131,8 @@ const NOT_VALIDATED_YET =
   "No interview result has been recorded yet, so nothing may be marked Validated. " +
   "Relax this check deliberately when the first interview result is recorded (WBS 1.2).";
 const WBS_STATUS = new Set(["Done", "In progress", "Not started", "Waiting", "Out of scope"]);
-// Build order of Release 1 (decision #54); "—" only for work that is out of scope or a parent row.
-const MILESTONES = new Set(["Built", "M0", "M1", "M2", "M3", "M4", "M5", "M6", "—"]);
+// Build order of the Cert Core release (decision #59); "—" only for work that is out of scope or a parent row.
+const MILESTONES = new Set(["Built", "C0", "C1", "C2", "C3", "Later", "—"]);
 
 describe("02-concept-analysis.md", () => {
   it("keeps the documented columns in the needs table, with well-formed unique ids", () => {
@@ -296,7 +296,7 @@ describe("04-wbs.md", () => {
     expect(missing, `requirements not covered by any work package: ${missing.join(", ")}`).toEqual([]);
   });
 
-  it("puts all work in Release 1 milestones, with dependencies that exist", () => {
+  it("puts all work in a known milestone, with dependencies that exist", () => {
     const codes = new Set(wbs.map((r) => r.code));
     for (const r of wbs) {
       expect(MILESTONES.has(r.milestone), `${r.code} milestone "${r.milestone}"`).toBe(true);

@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
-import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE } from "@/lib/storage/evidence";
+import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE, EVIDENCE_WRONG_TYPE_MESSAGE } from "@/lib/storage/evidence";
 import { cn } from "@/lib/utils";
 
 /**
@@ -36,7 +36,7 @@ export function FileDropzone({
     const allowed = accept.split(",").map((type) => type.trim());
     if (candidate.size === 0) return onReject(EVIDENCE_EMPTY_MESSAGE);
     if (candidate.size > maxBytes) return onReject(EVIDENCE_TOO_LARGE_MESSAGE);
-    if (!allowed.includes(candidate.type)) return onReject("Only PDF, JPG, PNG or WebP files are accepted.");
+    if (!allowed.includes(candidate.type)) return onReject(EVIDENCE_WRONG_TYPE_MESSAGE);
     onChange(candidate);
   }
 

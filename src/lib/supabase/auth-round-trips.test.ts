@@ -1,5 +1,7 @@
+import { inspect } from "node:util";
+import { AuthRetryableFetchError, AuthSessionMissingError, type AuthError } from "@supabase/supabase-js";
 import { NextRequest } from "next/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 
 // One page navigation = the proxy (`updateSession`) + the layout and the page, both calling
 // `getCurrentUser()`. Only calls that contact the Supabase Auth server are counted: `getUser()`
@@ -11,19 +13,37 @@ let claimsError: Error | null = null;
 let serverError: Error | null = null;
 let claims: { sub: string } | null = null;
 let serverUser: { id: string; email: string } | null = null;
+// auth-js reports most failures by returning `{ error }` instead of throwing.
+let claimsReturnedError: AuthError | null = null;
+let serverReturnedError: AuthError | null = null;
+// When set, each session check writes a refreshed session through `cookies.setAll`, as the real client does.
+let rotatesSession = false;
+
+const ROTATED_COOKIE_VALUE = "rotated-secret-value";
+const ROTATED_COOKIE = {
+  name: "sb-test-auth",
+  value: ROTATED_COOKIE_VALUE,
+  options: { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/", maxAge: 400 },
+};
+// Sent by the browser but never written by the client: it must not be echoed back on a redirect.
+const INCOMING_COOKIE_VALUE = "incoming-value";
+
+type CookieWriter = { cookies: { setAll: (cookies: (typeof ROTATED_COOKIE)[]) => void } };
 
 vi.mock("@supabase/ssr", () => ({
-  createServerClient: () => ({
+  createServerClient: (_url: string, _key: string, options: CookieWriter) => ({
     auth: {
       getClaims: async () => {
         claimsCalls();
+        if (rotatesSession) options.cookies.setAll([ROTATED_COOKIE]);
         if (claimsError) throw claimsError;
-        return { data: claims ? { claims } : null, error: null };
+        return { data: claims ? { claims } : null, error: claimsReturnedError };
       },
       getUser: async () => {
         authServerCalls();
+        if (rotatesSession) options.cookies.setAll([ROTATED_COOKIE]);
         if (serverError) throw serverError;
-        return { data: { user: serverUser }, error: null };
+        return { data: { user: serverUser }, error: serverReturnedError };
       },
     },
     from: () => ({
@@ -68,7 +88,13 @@ async function loadModules() {
   return { updateSession, getCurrentUser };
 }
 
+let consoleError: MockInstance<typeof console.error>;
+
 beforeEach(() => {
+  consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  claimsReturnedError = null;
+  serverReturnedError = null;
+  rotatesSession = false;
   authServerCalls.mockClear();
   claimsCalls.mockClear();
   claimsError = null;
@@ -77,6 +103,10 @@ beforeEach(() => {
   serverUser = { id: "user-1", email: "manager@certtracker.test" };
   process.env.NEXT_PUBLIC_SUPABASE_URL = "http://127.0.0.1:54321";
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-test-key";
+});
+
+afterEach(() => {
+  consoleError.mockRestore();
 });
 
 describe("auth round trips per navigation", () => {
@@ -212,6 +242,21 @@ describe("proxy", () => {
     expect(redirectPath(response)).toBe("/login");
   });
 
+  it.each([["signed out", null], ["signed in", { sub: "user-1" }]])(
+    "leaves /set-password alone for a %s visitor: the one-time token in the link authenticates it",
+    async (_name, session) => {
+      claims = session;
+      serverUser = session && { id: "user-1", email: "manager@certtracker.test" };
+      const { updateSession } = await loadModules();
+
+      const response = await updateSession(request("/set-password?token_hash=abc&type=invite"));
+
+      expect(response.headers.get("location")).toBeNull();
+      expect(authServerCalls).not.toHaveBeenCalled();
+      expect(claimsCalls).not.toHaveBeenCalled();
+    },
+  );
+
   it("skips auth entirely for cron routes", async () => {
     claims = null;
     const { updateSession } = await loadModules();
@@ -221,5 +266,131 @@ describe("proxy", () => {
     expect(response.headers.get("location")).toBeNull();
     expect(authServerCalls).not.toHaveBeenCalled();
     expect(claimsCalls).not.toHaveBeenCalled();
+  });
+});
+
+const signedOutVisit = () => {
+  claims = null;
+  serverUser = null;
+  return "/dashboard";
+};
+const signedInLoginVisit = () => "/login";
+
+describe("proxy redirects keep a refreshed session", () => {
+  it.each([
+    ["to /login", signedOutVisit, "/login"],
+    ["away from /login", signedInLoginVisit, "/dashboard"],
+  ])("carries the refreshed session cookie with its options on the redirect %s", async (_name, visit, target) => {
+    rotatesSession = true;
+    const path = visit();
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request(path));
+    const setCookie = response.headers.get("set-cookie");
+
+    expect(redirectPath(response)).toBe(target);
+    expect(setCookie).toContain(`sb-test-auth=${ROTATED_COOKIE_VALUE}`);
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("Secure");
+    expect(setCookie).toContain("SameSite=lax");
+    expect(setCookie).toContain("Path=/");
+    expect(setCookie).toContain("Max-Age=400");
+  });
+
+  it.each([
+    ["to /login", signedOutVisit],
+    ["away from /login", signedInLoginVisit],
+  ])("does not echo the request's own cookies on the redirect %s", async (_name, visit) => {
+    rotatesSession = true;
+    const path = visit();
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request(path, { headers: { cookie: `sb-other=${INCOMING_COOKIE_VALUE}` } }));
+
+    expect(response.headers.get("set-cookie")).not.toContain(INCOMING_COOKIE_VALUE);
+  });
+});
+
+describe("proxy logs auth failures", () => {
+  const ACCESS_TOKEN = "eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEifQ.c2lnbmF0dXJl";
+
+  it.each([
+    ["thrown", () => (serverError = new Error("network down"))],
+    ["returned as a retryable fetch error", () => (serverReturnedError = new AuthRetryableFetchError("fetch failed", 0))],
+  ])("logs an Auth server failure %s exactly once", async (_name, breakServer) => {
+    claims = null;
+    serverUser = null;
+    breakServer();
+    const { updateSession } = await loadModules();
+
+    await updateSession(request("/members"));
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ["thrown", () => (serverError = new Error("network down"))],
+    ["returned as a retryable fetch error", () => (serverReturnedError = new AuthRetryableFetchError("fetch failed", 0))],
+  ])("still treats a page request as signed out when the Auth server failure is %s", async (_name, breakServer) => {
+    claims = null;
+    serverUser = null;
+    breakServer();
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/members"));
+
+    expect(redirectPath(response)).toBe("/login");
+  });
+
+  it("does not log a visitor who simply has no session", async () => {
+    claims = null;
+    serverUser = null;
+    claimsReturnedError = new AuthSessionMissingError();
+    serverReturnedError = new AuthSessionMissingError();
+    const { updateSession } = await loadModules();
+
+    const response = await updateSession(request("/members"));
+
+    expect(redirectPath(response)).toBe("/login");
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
+  it("never logs a session cookie or a token", async () => {
+    rotatesSession = true;
+    claims = null;
+    serverUser = null;
+    serverError = new Error("network down");
+    const { updateSession } = await loadModules();
+
+    await updateSession(request("/members", { headers: { cookie: `sb-test-auth-token=${ACCESS_TOKEN}` } }));
+    const logged = inspect(consoleError.mock.calls, { depth: Infinity });
+
+    expect(consoleError).toHaveBeenCalled(); // otherwise the checks below pass vacuously
+    expect(logged).not.toContain(ROTATED_COOKIE_VALUE);
+    expect(logged).not.toContain(ACCESS_TOKEN);
+  });
+
+  it.each([
+    ["thrown", () => (claimsError = new Error("JWKS unreachable"))],
+    ["returned as a retryable fetch error", () => (claimsReturnedError = new AuthRetryableFetchError("JWKS unreachable", 0))],
+  ])("logs a local session check failure %s exactly once, with its error", async (_name, breakClaims) => {
+    claims = null;
+    breakClaims();
+    const { updateSession } = await loadModules();
+
+    await updateSession(request("/dashboard"));
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    expect(inspect(consoleError.mock.calls)).toContain("JWKS unreachable");
+  });
+
+  it("does not log a local session check that finds no session", async () => {
+    claims = null;
+    claimsReturnedError = new AuthSessionMissingError();
+    const { updateSession } = await loadModules();
+
+    await updateSession(request("/dashboard"));
+
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });

@@ -216,6 +216,22 @@ test("member updates own progress and cannot see company fields", async ({ page 
   }
 });
 
+test("the certificate form says what to do when a course is missing", async ({ page }) => {
+  const hint = "Can't find your course? Ask your admin to add it.";
+  await signIn(page, "member@certtracker.test");
+  await page.goto("/records");
+  await expect(page).toHaveURL(/\/me$/);
+
+  await page.getByRole("button", { name: "Add certificate" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
+
+  await dialog.getByLabel("Course", { exact: true }).fill("zzzz-no-such-course");
+  // The popup is portalled outside the dialog.
+  await expect(page.getByText("No courses found", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
+});
+
 test("member uploads, opens and removes evidence on their own record", async ({ page }) => {
   test.setTimeout(60_000);
   await signIn(page, "member@certtracker.test");
