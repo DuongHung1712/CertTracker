@@ -11,11 +11,13 @@ export default defineConfig({
   // workers avoids that concurrency window; 14 specs still finish in well under a minute.
   workers: 1,
   use: { baseURL },
-  webServer: {
-    command: process.env.PLAYWRIGHT_BASE_URL ? undefined : "pnpm dev",
-    url: `${baseURL}/login`,
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: "pnpm dev",
+        url: `${baseURL}/login`,
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });
