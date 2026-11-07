@@ -1,17 +1,9 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, test, type Page } from "@playwright/test";
-import { readLocalEnv } from "./support/env";
+import { deleteAccount, inviteLink } from "./support/accounts";
 import { signInAsSeedAdmin } from "./support/restore-seed";
 
 const SEED_TEAM_CLOUD_ID = "5eed0000-0000-0000-0000-00000000a001";
 const PASSWORD = "A-new-password-1";
-
-// The invitation link is what the Dashboard e-mails; here the admin API builds the same one (supabase/templates/invite.html).
-function adminApi(): SupabaseClient {
-  const key = readLocalEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!key) throw new Error("Set SUPABASE_SERVICE_ROLE_KEY in .env.local or the environment.");
-  return createClient(readLocalEnv("NEXT_PUBLIC_SUPABASE_URL")!, key, { auth: { persistSession: false } });
-}
 
 async function setPassword(page: Page, hash: string, type: string, password = PASSWORD) {
   await page.goto(`/set-password?token_hash=${hash}&type=${type}`);
@@ -32,14 +24,11 @@ test.beforeAll(async () => {
     .from("members")
     .insert({ full_name: "Invited E2E", email, team_id: SEED_TEAM_CLOUD_ID });
   if (memberError) throw new Error(memberError.message);
-  const { data, error } = await adminApi().auth.admin.generateLink({ type: "invite", email });
-  if (error) throw new Error(error.message);
-  userId = data.user.id;
-  inviteHash = data.properties.hashed_token;
+  ({ userId, hash: inviteHash } = await inviteLink(email));
 });
 
 test.afterAll(async () => {
-  if (userId) await adminApi().auth.admin.deleteUser(userId);
+  if (userId) await deleteAccount(userId);
   const seedAdmin = await signInAsSeedAdmin();
   await seedAdmin.from("members").delete().eq("email", email);
 });
@@ -80,14 +69,13 @@ test("a broken link shows no form", async ({ page }) => {
 });
 
 test("a recovery link works while another user is signed in", async ({ page }) => {
-  const { data, error } = await adminApi().auth.admin.generateLink({ type: "recovery", email });
-  if (error) throw new Error(error.message);
+  const { hash } = await inviteLink(email, "recovery");
   await page.goto("/login");
   await page.getByLabel("Email").fill("admin@certtracker.test");
   await page.getByLabel("Password").fill("Password123!");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
-  await setPassword(page, data.properties.hashed_token, "recovery", "Another-password-2");
+  await setPassword(page, hash, "recovery", "Another-password-2");
   await expect(page).toHaveURL(/\/login\?passwordSet=1$/);
 });
