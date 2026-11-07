@@ -25,7 +25,7 @@ import {
   type RecordInput,
 } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
-import { EVIDENCE_ACCEPT, MAX_EVIDENCE_BYTES } from "@/lib/storage/evidence";
+import { EVIDENCE_ACCEPT, EVIDENCE_WRONG_TYPE_MESSAGE, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
 
 type Editing = RecordRow | null;
 type FormValues = z.input<typeof recordSchema>;
@@ -109,6 +109,13 @@ export function RecordSheet({
   }
 
   async function onSubmit(input: RecordInput) {
+    // A rejected proof file must not leave a saved certificate behind; the error stays visible under the dropzone.
+    if (fileError) return;
+    if (file && !sniffEvidenceType(new Uint8Array(await file.slice(0, 16).arrayBuffer()))) {
+      setFileError(EVIDENCE_WRONG_TYPE_MESSAGE);
+      return;
+    }
+
     let recordId: string;
     if (editing) {
       const result = await updateRecord({ id: editing.id, ...input });
