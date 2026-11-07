@@ -20,7 +20,13 @@ let serverReturnedError: AuthError | null = null;
 let rotatesSession = false;
 
 const ROTATED_COOKIE_VALUE = "rotated-secret-value";
-const ROTATED_COOKIE = { name: "sb-test-auth", value: ROTATED_COOKIE_VALUE, options: {} };
+const ROTATED_COOKIE = {
+  name: "sb-test-auth",
+  value: ROTATED_COOKIE_VALUE,
+  options: { httpOnly: true, secure: true, sameSite: "lax" as const, path: "/", maxAge: 400 },
+};
+// Sent by the browser but never written by the client: it must not be echoed back on a redirect.
+const INCOMING_COOKIE_VALUE = "incoming-value";
 
 type CookieWriter = { cookies: { setAll: (cookies: (typeof ROTATED_COOKIE)[]) => void } };
 
@@ -263,27 +269,45 @@ describe("proxy", () => {
   });
 });
 
+const signedOutVisit = () => {
+  claims = null;
+  serverUser = null;
+  return "/dashboard";
+};
+const signedInLoginVisit = () => "/login";
+
 describe("proxy redirects keep a refreshed session", () => {
-  it("carries the refreshed session cookie on the redirect to /login", async () => {
+  it.each([
+    ["to /login", signedOutVisit, "/login"],
+    ["away from /login", signedInLoginVisit, "/dashboard"],
+  ])("carries the refreshed session cookie with its options on the redirect %s", async (_name, visit, target) => {
     rotatesSession = true;
-    claims = null;
-    serverUser = null;
+    const path = visit();
     const { updateSession } = await loadModules();
 
-    const response = await updateSession(request("/dashboard"));
+    const response = await updateSession(request(path));
+    const setCookie = response.headers.get("set-cookie");
 
-    expect(redirectPath(response)).toBe("/login");
-    expect(response.headers.get("set-cookie")).toContain(`sb-test-auth=${ROTATED_COOKIE_VALUE}`);
+    expect(redirectPath(response)).toBe(target);
+    expect(setCookie).toContain(`sb-test-auth=${ROTATED_COOKIE_VALUE}`);
+    expect(setCookie).toContain("HttpOnly");
+    expect(setCookie).toContain("Secure");
+    expect(setCookie).toContain("SameSite=lax");
+    expect(setCookie).toContain("Path=/");
+    expect(setCookie).toContain("Max-Age=400");
   });
 
-  it("carries the refreshed session cookie on the redirect away from /login", async () => {
+  it.each([
+    ["to /login", signedOutVisit],
+    ["away from /login", signedInLoginVisit],
+  ])("does not echo the request's own cookies on the redirect %s", async (_name, visit) => {
     rotatesSession = true;
+    const path = visit();
     const { updateSession } = await loadModules();
 
-    const response = await updateSession(request("/login"));
+    const response = await updateSession(request(path, { headers: { cookie: `sb-other=${INCOMING_COOKIE_VALUE}` } }));
 
-    expect(redirectPath(response)).toBe("/dashboard");
-    expect(response.headers.get("set-cookie")).toContain(`sb-test-auth=${ROTATED_COOKIE_VALUE}`);
+    expect(response.headers.get("set-cookie")).not.toContain(INCOMING_COOKIE_VALUE);
   });
 });
 
@@ -344,5 +368,29 @@ describe("proxy logs auth failures", () => {
     expect(consoleError).toHaveBeenCalled(); // otherwise the checks below pass vacuously
     expect(logged).not.toContain(ROTATED_COOKIE_VALUE);
     expect(logged).not.toContain(ACCESS_TOKEN);
+  });
+
+  it.each([
+    ["thrown", () => (claimsError = new Error("JWKS unreachable"))],
+    ["returned as a retryable fetch error", () => (claimsReturnedError = new AuthRetryableFetchError("JWKS unreachable", 0))],
+  ])("logs a local session check failure %s exactly once, with its error", async (_name, breakClaims) => {
+    claims = null;
+    breakClaims();
+    const { updateSession } = await loadModules();
+
+    await updateSession(request("/dashboard"));
+
+    expect(consoleError).toHaveBeenCalledTimes(1);
+    expect(inspect(consoleError.mock.calls)).toContain("JWKS unreachable");
+  });
+
+  it("does not log a local session check that finds no session", async () => {
+    claims = null;
+    claimsReturnedError = new AuthSessionMissingError();
+    const { updateSession } = await loadModules();
+
+    await updateSession(request("/dashboard"));
+
+    expect(consoleError).not.toHaveBeenCalled();
   });
 });
