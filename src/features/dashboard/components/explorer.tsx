@@ -109,10 +109,17 @@ function ExplorerPane({ tab }: { tab: TabConfig }) {
                   return (
                     <TableRow
                       key={row.key}
+                      tabIndex={0}
                       aria-selected={isSelected}
                       onClick={() => setSelectedKey(row.key)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedKey(row.key);
+                        }
+                      }}
                       className={cn(
-                        "h-8 cursor-pointer transition-colors hover:bg-accent/50",
+                        "h-8 cursor-pointer transition-colors hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset",
                         isSelected && "bg-accent text-accent-foreground font-medium"
                       )}
                     >
@@ -153,7 +160,9 @@ function ExplorerPane({ tab }: { tab: TabConfig }) {
       {/* Right pane: detail panel for selected row */}
       <div className="lg:col-span-5">
         {selectedRow ? (
-          <div
+          <section
+            role="region"
+            aria-label="Selected item details"
             data-testid="explorer-detail-panel"
             className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 transition-colors"
           >
@@ -224,7 +233,7 @@ function ExplorerPane({ tab }: { tab: TabConfig }) {
                 showLabels
               />
             </div>
-          </div>
+          </section>
         ) : (
           <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border p-4 text-center text-caption text-muted-foreground">
             Select an item to view its details.

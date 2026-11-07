@@ -81,6 +81,15 @@ test("admin sees org-wide KPIs, the expiry chart and the personal ranking", asyn
   const anRow = rowWith(ranking, "Nguyễn Văn An");
   await expect(anRow).toBeVisible();
   await expect(anRow.getByRole("cell").first()).toHaveText("1");
+
+  // Health row has the completion donut with text equivalent
+  const donut = page.getByRole("img", { name: /^Study completion:/ });
+  await expect(donut).toBeVisible();
+
+  // Explorer detail panel is visible for selected row
+  const detailPanel = page.getByRole("region", { name: "Selected item details" });
+  await expect(detailPanel).toBeVisible();
+  await expect(detailPanel.getByRole("heading", { name: "Team Cloud" })).toBeVisible();
 });
 
 test("manager sees the same org-wide numbers but a ranking limited to their team", async ({ page }) => {
@@ -100,11 +109,13 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
   await expect(tileValue(page, "Certificate records")).toHaveText("3");
+  await expect(page.getByRole("tab", { name: /^By team$/ })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /^By team$/ })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /^Individual ranking$/ })).toHaveCount(0);
 
   await expect(page.getByText("Only groups with at least 3 learners are shown.")).toBeVisible();
   // AWS has 2 learners and NVIDIA 1: every provider group is below the threshold, so none is shown.
+  await page.getByRole("tab", { name: "By provider" }).click();
   await expect(section(page, "By provider").getByText("Not enough data to show")).toBeVisible();
 });
 
@@ -159,4 +170,35 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
     await viewerContext.close();
     await editorContext.close();
   }
+});
+
+test("explorer tabs, filtering, and keyboard row selection update the detail panel", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+
+  // Switch to "Popular courses" tab
+  await page.getByRole("tab", { name: "Popular courses" }).click();
+  const courseSection = section(page, "Popular courses");
+  await expect(courseSection).toBeVisible();
+
+  // Detail panel reflects default first row (AWS course)
+  const detailPanel = page.getByRole("region", { name: "Selected item details" });
+  await expect(detailPanel).toBeVisible();
+  await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
+
+  // Filter input searches across courses
+  const searchInput = courseSection.getByRole("textbox", { name: "Filter course" });
+  await searchInput.fill("NVIDIA");
+  await expect(rowWith(courseSection, "NVIDIA")).toBeVisible();
+  await expect(courseSection.getByText(AWS)).toHaveCount(0);
+
+  // Clear search restores all courses
+  await searchInput.clear();
+  await expect(rowWith(courseSection, AWS)).toBeVisible();
+
+  // Keyboard navigation on rows: focus row and press Enter
+  const nvidiaRow = rowWith(courseSection, "NVIDIA");
+  await nvidiaRow.focus();
+  await page.keyboard.press("Enter");
+  await expect(nvidiaRow).toHaveAttribute("aria-selected", "true");
+  await expect(detailPanel.getByRole("heading", { name: /NVIDIA/ })).toBeVisible();
 });
