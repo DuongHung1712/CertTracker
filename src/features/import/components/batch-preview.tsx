@@ -91,7 +91,12 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
   // Memoised: rebuilding columns on every render would remount cells.
   const columns = useMemo<ColumnDef<ImportRowView, unknown>[]>(
     () => [
-      { id: "rowNo", header: "Row", accessorFn: (row) => row.rowNo },
+      {
+        id: "rowNo",
+        header: "Row",
+        accessorFn: (row) => row.rowNo,
+        meta: { align: "right" },
+      },
       { id: "email", header: "Email", accessorFn: (row) => row.raw.email ?? "", cell: ({ row }) => row.original.raw.email ?? "—" },
       {
         id: "course",
@@ -153,10 +158,18 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         actions={
           actionable && (
             <>
-              <Button variant="outline" onClick={() => setConfirming("discard")}>
+              <Button
+                variant="outline"
+                className="min-h-[44px] sm:min-h-[36px]"
+                onClick={() => setConfirming("discard")}
+              >
                 Discard batch
               </Button>
-              <Button disabled={importable === 0 || incomplete} onClick={() => setConfirming("commit")}>
+              <Button
+                className="min-h-[44px] sm:min-h-[36px]"
+                disabled={importable === 0 || incomplete}
+                onClick={() => setConfirming("commit")}
+              >
                 {`Import ${pluralize(importable, "row")}`}
               </Button>
             </>
