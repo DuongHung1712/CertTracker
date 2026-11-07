@@ -128,4 +128,12 @@ test("a member without an account shows No account and no access control", async
   await page.goto("/members");
   await page.getByRole("button", { name: "Add member" }).click();
   await expect(page.getByRole("dialog").getByLabel("Access")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+
+  // Seed member An has no login: the table says so, and editing shows the note instead of a select.
+  const row = page.getByRole("row", { name: /Nguyễn Văn An/ });
+  await expect(row.getByRole("cell", { name: "No account" })).toBeVisible();
+  await row.getByRole("button", { name: /Actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  await expect(page.getByRole("dialog").getByText("No account yet. New accounts start as Member.")).toBeVisible();
 });

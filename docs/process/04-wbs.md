@@ -165,6 +165,6 @@ Rule was "more than 2 per page view means `prefetch={false}`": 1 is within it, s
 - All estimates, confirmed by the developer and the DC manager
 - The four open questions of BRD §7: AI budget, DeepSeek terms, risk thresholds, key-person rule (`1.8`)
 - The acceptance threshold for reading certificates with AI (≥ 80% of fields on 30 real certificates is a proposal) (`13.2`)
-- Which team runs the pilot, and when (`9.2`)
+- ~~Which team runs the pilot, and when (`9.2`)~~ Decided: DAS, 20 people, from Phase 1 (decision #61)
 - Who collects the CA data and when (`1.6`)
-- Whether the hosting decision comes before or after G1 (`9.3`)
+- ~~Whether the hosting decision comes before or after G1 (`9.3`)~~ Decided for the pilot: free tiers during the proof of concept, paid hosting decided afterwards (spec §8 item 1); `9.3` stays the later decision on real hosting
