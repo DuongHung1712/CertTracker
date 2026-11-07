@@ -60,7 +60,7 @@ export function CareerCard({
           <p className="text-body font-medium">Started working</p>
           <div className="flex flex-wrap items-start gap-3">
             <CareerStartFields idPrefix="career" value={draft} onChange={setDraft} error={error} disabled={pending} />
-            <Button className="mt-5" onClick={save} disabled={pending}>
+            <Button className="mt-5 min-h-[44px] sm:min-h-[36px]" onClick={save} disabled={pending}>
               {pending ? "Saving…" : "Save"}
             </Button>
           </div>
