@@ -36,7 +36,7 @@ let serverCalls = 0;
 let proxy = null;
 if (UPSTREAM) {
   const target = new URL(UPSTREAM);
-  if (target.protocol !== "http:" || !["127.0.0.1", "localhost", "[::1]"].includes(target.hostname)) {
+  if (target.protocol !== "http:" || !["127.0.0.1", "localhost"].includes(target.hostname)) {
     console.error("UPSTREAM must be the local Supabase over http (for example http://127.0.0.1:54321).");
     process.exit(1);
   }
