@@ -5,6 +5,9 @@ on:
     branches: [main, dev]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -37,8 +40,9 @@ jobs:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm supabase start
-      # Values come from the throwaway local stack; mask them anyway so no step log can show them.
+      # Stdout is dropped because `supabase start` prints the local keys; stderr (errors) stays visible.
+      - run: pnpm supabase start > /dev/null
+      # Values come from the throwaway local stack; mask them before they reach later steps.
       - name: Export e2e environment
         run: |
           status=$(pnpm supabase status -o env)
@@ -61,7 +65,9 @@ jobs:
             echo "EMAIL_TRANSPORT=console"
           } >> "$GITHUB_ENV"
       - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
+      - run: pnpm test:e2e --reporter=list,html --trace=retain-on-failure
+        env:
+          PLAYWRIGHT_HTML_OPEN: never
       - if: failure()
         uses: actions/upload-artifact@v4
         with:
