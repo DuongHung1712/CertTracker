@@ -83,6 +83,7 @@ export function MembersTable({
       cell: ({ row }) => formatYoe(row.original.yoeYears),
       // Not set (null) sorts below every number.
       sortingFn: (a, b) => (a.original.yoeYears ?? -1) - (b.original.yoeYears ?? -1),
+      meta: { align: "right" },
     },
     ...(showScopes
       ? ([
@@ -201,7 +202,13 @@ export function MembersTable({
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="No members found" description="Try a different search or clear the filters." />}
+        empty={
+          members.length === 0 ? (
+            <EmptyState title="No members yet" description="Add the first member to start tracking your team." />
+          ) : (
+            <EmptyState title="No members found" description="Try a different search or clear the filters." />
+          )
+        }
       />
       <MemberDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} teams={teams} roles={roles} canEditCareer={canEditCareer} />
       {showScopes && (

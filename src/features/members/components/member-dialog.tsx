@@ -137,12 +137,23 @@ export function MemberDialog({
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
             <FieldLabel htmlFor="member-name">Full name</FieldLabel>
-            <Input id="member-name" {...form.register("fullName")} aria-invalid={!!form.formState.errors.fullName} />
+            <Input
+              id="member-name"
+              className="h-9"
+              {...form.register("fullName")}
+              aria-invalid={!!form.formState.errors.fullName}
+            />
             <FieldError errors={[form.formState.errors.fullName]} />
           </Field>
           <Field>
             <FieldLabel htmlFor="member-email">Email</FieldLabel>
-            <Input id="member-email" type="email" {...form.register("email")} aria-invalid={!!form.formState.errors.email} />
+            <Input
+              id="member-email"
+              type="email"
+              className="h-9"
+              {...form.register("email")}
+              aria-invalid={!!form.formState.errors.email}
+            />
             <FieldError errors={[form.formState.errors.email]} />
           </Field>
           <Field>
@@ -248,11 +259,20 @@ export function MemberDialog({
               {form.formState.errors.root.message}
             </p>
           )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="gap-2 pt-2 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-[44px] sm:min-h-[36px]"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              className="min-h-[44px] sm:min-h-[36px]"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
