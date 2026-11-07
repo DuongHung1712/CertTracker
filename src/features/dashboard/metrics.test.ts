@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { expiringCerts, expiryBuckets, formatRate, ratePercent, rankingForDisplay, validCerts } from "@/features/dashboard/metrics";
+import {
+  expiringBuckets,
+  expiringCerts,
+  expiryBuckets,
+  formatRate,
+  kpiStudyStatusSplit,
+  rankingForDisplay,
+  ratePercent,
+  studyStatusSplit,
+  validBuckets,
+  validCerts,
+  validVsExpiredSplit,
+} from "@/features/dashboard/metrics";
 import type { DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 
 const kpis: DashboardKpis = {
@@ -82,5 +94,56 @@ describe("rankingForDisplay", () => {
     const copy = [...input];
     expect(rankingForDisplay(input).map((r) => r.fullName)).toEqual(["Bình", "An", "Dũng", "Đào"]);
     expect(input).toEqual(copy);
+  });
+});
+
+describe("new visual helpers (spec §2 & §4)", () => {
+  it("validBuckets returns the 4 valid segments summing to validCerts", () => {
+    const buckets = validBuckets(kpis);
+    expect(buckets).toHaveLength(4);
+    expect(buckets.map((b) => b.label)).toEqual([
+      "> 60 days left",
+      "31–60 days left",
+      "≤ 30 days left",
+      "No expiry",
+    ]);
+    const sum = buckets.reduce((acc, b) => acc + b.count, 0);
+    expect(sum).toBe(validCerts(kpis));
+    expect(buckets[0].color).toBe("var(--status-active-fg)");
+    expect(buckets[3].color).toBe("var(--status-no-expiry-fg)");
+  });
+
+  it("expiringBuckets returns the 2 expiring segments summing to expiringCerts", () => {
+    const buckets = expiringBuckets(kpis);
+    expect(buckets).toHaveLength(2);
+    expect(buckets.map((b) => b.label)).toEqual(["31–60 days left", "≤ 30 days left"]);
+    const sum = buckets.reduce((acc, b) => acc + b.count, 0);
+    expect(sum).toBe(expiringCerts(kpis));
+    expect(buckets[0].color).toBe("var(--status-expiring-60-fg)");
+    expect(buckets[1].color).toBe("var(--status-expiring-soon-fg)");
+  });
+
+  it("studyStatusSplit maps Completed / In progress / Not started using --chart-1..3", () => {
+    const split = studyStatusSplit({ done: 5, inProgress: 2, notStarted: 1 });
+    expect(split).toEqual([
+      { key: "done", label: "Completed", count: 5, color: "var(--chart-1)" },
+      { key: "inProgress", label: "In progress", count: 2, color: "var(--chart-2)" },
+      { key: "notStarted", label: "Not started", count: 1, color: "var(--chart-3)" },
+    ]);
+  });
+
+  it("kpiStudyStatusSplit converts DashboardKpis correctly", () => {
+    const split = kpiStudyStatusSplit(kpis);
+    expect(split[0].count).toBe(kpis.doneRecords);
+    expect(split[1].count).toBe(kpis.inProgressRecords);
+    expect(split[2].count).toBe(kpis.notStartedRecords);
+  });
+
+  it("validVsExpiredSplit maps Valid and Expired counts correctly", () => {
+    const split = validVsExpiredSplit({ valid: 6, expired: 2 });
+    expect(split).toEqual([
+      { key: "valid", label: "Valid", count: 6, color: "var(--status-active-fg)" },
+      { key: "expired", label: "Expired", count: 2, color: "var(--status-expired-fg)" },
+    ]);
   });
 });

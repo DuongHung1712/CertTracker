@@ -53,3 +53,54 @@ export function rankingForDisplay(rows: RankingRow[]): RankingRow[] {
     (a, b) => a.rank - b.rank || viCollator.compare(a.fullName, b.fullName) || a.memberCode.localeCompare(b.memberCode),
   );
 }
+
+export type VisualSegment = {
+  key: string;
+  label: string;
+  count: number;
+  color: string;
+};
+
+/** The 4 valid buckets for the "Valid" hero card stacked bar (> 60d, 31-60d, ≤ 30d, no expiry). */
+export function validBuckets(k: DashboardKpis): VisualSegment[] {
+  return [
+    { key: "active", label: "> 60 days left", count: k.activeCerts, color: "var(--status-active-fg)" },
+    { key: "expiring-60", label: "31–60 days left", count: k.expiring60Certs, color: "var(--status-expiring-60-fg)" },
+    { key: "expiring-soon", label: "≤ 30 days left", count: k.expiringSoonCerts, color: "var(--status-expiring-soon-fg)" },
+    { key: "no-expiry", label: "No expiry", count: k.noExpiryCerts, color: "var(--status-no-expiry-fg)" },
+  ];
+}
+
+/** The 2 expiring buckets for the "Expiring (≤ 60 days)" hero card (31-60d vs ≤ 30d). */
+export function expiringBuckets(k: DashboardKpis): VisualSegment[] {
+  return [
+    { key: "expiring-60", label: "31–60 days left", count: k.expiring60Certs, color: "var(--status-expiring-60-fg)" },
+    { key: "expiring-soon", label: "≤ 30 days left", count: k.expiringSoonCerts, color: "var(--status-expiring-soon-fg)" },
+  ];
+}
+
+/** Study status split (Completed, In progress, Not started) using chart tokens --chart-1..3. */
+export function studyStatusSplit(counts: { done: number; inProgress: number; notStarted: number }): VisualSegment[] {
+  return [
+    { key: "done", label: "Completed", count: counts.done, color: "var(--chart-1)" },
+    { key: "inProgress", label: "In progress", count: counts.inProgress, color: "var(--chart-2)" },
+    { key: "notStarted", label: "Not started", count: counts.notStarted, color: "var(--chart-3)" },
+  ];
+}
+
+/** Helper to convert DashboardKpis record counts to study status split. */
+export function kpiStudyStatusSplit(k: DashboardKpis): VisualSegment[] {
+  return studyStatusSplit({
+    done: k.doneRecords,
+    inProgress: k.inProgressRecords,
+    notStarted: k.notStartedRecords,
+  });
+}
+
+/** Valid vs Expired split for breakdown row detail panel. */
+export function validVsExpiredSplit(counts: { valid: number; expired: number }): VisualSegment[] {
+  return [
+    { key: "valid", label: "Valid", count: counts.valid, color: "var(--status-active-fg)" },
+    { key: "expired", label: "Expired", count: counts.expired, color: "var(--status-expired-fg)" },
+  ];
+}
