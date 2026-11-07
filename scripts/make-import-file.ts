@@ -23,12 +23,22 @@ const peopleSchema = z.array(
         course: z.string().min(1),
         status: z.enum(["done", "in_progress", "not_started"]),
         progress: z.number().min(0).max(100),
-        plannedExamDate: z.string().optional(),
-        issuedDate: z.string().optional(),
+        plannedExamDate: z.iso.date().optional(),
+        issuedDate: z.iso.date().optional(),
       }),
     ),
   }),
 );
+
+/** Never echoes the JSON error: V8 quotes the offending line, which holds real names and e-mails. */
+function readPeopleJson(path: string): unknown {
+  try {
+    return JSON.parse(readFileSync(path, "utf8"));
+  } catch {
+    console.error("The people file could not be read as JSON (check commas and quotes).");
+    process.exit(1);
+  }
+}
 
 const args = process.argv.slice(2);
 const isRehearsal = args[0] === REHEARSAL_FLAG;
@@ -40,7 +50,7 @@ if (!outputPath || (!isRehearsal && !inputPath)) {
 
 const today = todayVn();
 const catalogue = readCatalogueSql(readFileSync(CATALOGUE_PATH, "utf8"));
-const people = isRehearsal ? rehearsalPeople(today, catalogue) : peopleSchema.parse(JSON.parse(readFileSync(inputPath!, "utf8")));
+const people = isRehearsal ? rehearsalPeople(today, catalogue) : peopleSchema.parse(readPeopleJson(inputPath!));
 
 mkdirSync(dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, buildSampleWorkbook(people, catalogue, today));

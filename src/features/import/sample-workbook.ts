@@ -1,6 +1,6 @@
 // Server-only in practice (xlsx writer): used by scripts/make-import-file.ts and tests.
 import type { RecordStatus } from "@/components/status/labels";
-import { type ExpiryStatus } from "@/components/status/expiry";
+import type { ExpiryStatus } from "@/components/status/expiry";
 import { recordsToXlsx, type ExportRow } from "@/features/export/records-export";
 import { isoToExcelSerial } from "@/features/import/clean";
 
@@ -21,7 +21,7 @@ export type SamplePerson = {
 
 const VALUES_START = "from (values";
 const VALUES_END = ") as v(";
-// A quoted string (with '' escapes), `null`, or a number; `::type` casts match nothing and are skipped.
+// A quoted string (with '' escapes), `null`, `true`/`false`, or a number; `::type` casts match nothing and are skipped.
 const VALUE_TOKEN = /'((?:[^']|'')*)'|null|\d+(?:\.\d+)?|true|false/g;
 const NAME_COLUMN = 0;
 const CERT_TYPE_COLUMN = 1;
@@ -30,7 +30,9 @@ const VALIDITY_COLUMN = 4;
 
 /** Reads the `from (values …)` rows of supabase/catalog/courses.sql: one row per line, a script writes that layout. */
 export function readCatalogueSql(sql: string): CatalogueCourse[] {
-  const start = sql.indexOf(VALUES_START) + VALUES_START.length;
+  const markerAt = sql.indexOf(VALUES_START);
+  if (markerAt === -1) throw new Error(`The catalogue SQL has no "${VALUES_START}" block`);
+  const start = markerAt + VALUES_START.length;
   const block = sql.slice(start, sql.indexOf(VALUES_END, start));
   return block
     .split("\n")
