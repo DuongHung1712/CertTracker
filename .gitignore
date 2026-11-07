@@ -52,3 +52,6 @@ next-env.d.ts
 
 # generated import files with real team data
 /private/
+
+# BRD exports (Word files stay outside git)
+/exports/
