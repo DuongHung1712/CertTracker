@@ -13,20 +13,48 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="tokenHash" value={tokenHash} />
       <input type="hidden" name="type" value={type} />
-      <div className="space-y-2">
-        <Label htmlFor="password">New password</Label>
-        <Input id="password" name="password" type="password" autoComplete="new-password" minLength={8} required />
+      <div className="space-y-1.5">
+        <Label htmlFor="password" className="text-body font-medium">
+          New password
+        </Label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          className="h-9"
+          aria-describedby={state && !state.ok ? "set-password-error" : undefined}
+          aria-invalid={state && !state.ok ? true : undefined}
+        />
+        <p className="text-caption text-muted-foreground">Minimum 8 characters</p>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm password</Label>
-        <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" required />
+      <div className="space-y-1.5">
+        <Label htmlFor="confirmPassword" className="text-body font-medium">
+          Confirm password
+        </Label>
+        <Input
+          id="confirmPassword"
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          required
+          className="h-9"
+          aria-describedby={state && !state.ok ? "set-password-error" : undefined}
+          aria-invalid={state && !state.ok ? true : undefined}
+        />
       </div>
       {state && !state.ok && (
-        <p role="alert" className="text-sm text-destructive">
+        <p id="set-password-error" role="alert" className="text-sm font-medium text-destructive">
           {state.error}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={pending}>
+      <Button
+        type="submit"
+        className="w-full h-9 min-h-[44px] sm:min-h-[36px] font-medium transition-colors"
+        disabled={pending}
+      >
         {pending ? "Saving…" : "Save password"}
       </Button>
     </form>
