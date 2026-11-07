@@ -44,8 +44,14 @@ export function BreakdownTable({
         header: peopleLabel,
         accessorFn: (row) => row.headcount ?? row.people,
         cell: ({ getValue }) => formatNumber(getValue<number>()),
+        meta: { align: "right" },
       },
-      { accessorKey: "records", header: "Records", cell: ({ row }) => formatNumber(row.original.records) },
+      {
+        accessorKey: "records",
+        header: "Records",
+        cell: ({ row }) => formatNumber(row.original.records),
+        meta: { align: "right" },
+      },
       {
         id: "rate",
         header: "Completed",
@@ -63,8 +69,18 @@ export function BreakdownTable({
           );
         },
       },
-      { accessorKey: "inProgress", header: "In progress", cell: ({ row }) => formatNumber(row.original.inProgress) },
-      { accessorKey: "valid", header: "Valid", cell: ({ row }) => formatNumber(row.original.valid) },
+      {
+        accessorKey: "inProgress",
+        header: "In progress",
+        cell: ({ row }) => formatNumber(row.original.inProgress),
+        meta: { align: "right" },
+      },
+      {
+        accessorKey: "valid",
+        header: "Valid",
+        cell: ({ row }) => formatNumber(row.original.valid),
+        meta: { align: "right" },
+      },
       {
         accessorKey: "expired",
         header: "Expired",
@@ -74,6 +90,7 @@ export function BreakdownTable({
             {formatNumber(row.original.expired)}
           </span>
         ),
+        meta: { align: "right" },
       },
     ],
     [groupLabel, peopleLabel],
