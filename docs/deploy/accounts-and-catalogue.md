@@ -10,7 +10,7 @@ Do these once in Supabase Dashboard. The local stack gets the same templates fro
 4. **Link lifetime, 24 hours:** Authentication > Email OTP expiry, set to `86400` seconds (the default is 3600, one hour). People do not always open mail within the hour. This one setting governs invitation and recovery links alike. *To confirm:* the exact page name in your Dashboard version; the setting is `otp_expiry` in `supabase/config.toml`.
 5. **E-mail rate limit:** look up the "emails sent per hour" limit for Auth and make sure it allows 20 invitations in one sitting, or plan to invite in batches over several hours. *To confirm:* the number and where it is shown in your Dashboard version (the local `supabase/config.toml` sets `email_sent = 2`, which only matters locally).
 6. **Password rules must not be stricter than the form.** The set-password form accepts 8 or more characters of any kind (`src/features/auth/schema.ts`). In the Dashboard's password settings keep the minimum length at 8 or less and require no character classes. A stricter rule would make the save fail after the form looked valid, and the person would be signed out and have to ask for a new link. The local equivalents are `minimum_password_length` and `password_requirements` in `supabase/config.toml`.
-7. **Sign-up is off:** the project does not allow new users to sign up (`enable_signup = false` locally; *to confirm:* the page and switch name in the Dashboard). Only invited staff may have a login.
+7. **Sign-up is off:** the project does not allow new users to sign up (`enable_signup = false` locally; *to confirm:* the page and switch name in the Dashboard). Only invited staff may have a login. **Do not turn off the Email provider itself**, only the sign-up switch: switching the provider off also turns off e-mail sign-in for everyone, and all 20 people would be locked out.
 
 Test it on your own second address before inviting anyone (checks P-1 to P-4 in `pilot-checklist.md`).
 
@@ -30,7 +30,7 @@ Both link only a login that is not linked yet, and only to a member nobody is li
 
 **Not automatic any more:** a login that already exists for an address a member gets *later* is **not** linked by re-saving the member form with the same e-mail, and a manager's e-mail edit never links anything. (The admin *changing* a member's e-mail to the login's address does link it, if both are unlinked.) To link an existing pair, use the SQL under "Fix a link" below.
 
-**Before inviting an address, check the member's e-mail history.** A manager can set an in-scope member's e-mail to an address that has no login yet, and the later invite would link that login to that member. Open the member at `/members` and check that the e-mail is the person's own before inviting; if you are not sure, invite and then check what `/me` shows for them.
+**Before inviting an address, check that the member's e-mail is the person's own.** A manager can set an in-scope member's e-mail to an address that has no login yet, and the later invite would link that login to that member. The app keeps no e-mail history, so open the member at `/members` and compare the e-mail with the person's real one before inviting; if you are not sure, ask the person, or check afterwards what `/me` shows for them.
 
 **Forgotten password:** Dashboard > Users > the person > *Send password recovery*. The link works once and lasts 24 hours; send a new one if needed.
 
@@ -55,25 +55,34 @@ select id from public.members where email = '<member e-mail>';
 select id from auth.users where email = '<login e-mail>';
 ```
 
-Link an unlinked login to a member (a member can have only one login, so it fails if that member is already linked to another login; remove that link first):
+Look at the login's current profile first, so you know what you are changing:
 
 ```sql
-update public.profiles set member_id = '<member id>' where user_id = '<user id>';
+select user_id, member_id, role from public.profiles where user_id = '<user id>';
 ```
 
-Fix a **wrong** link: remove it, then set the right one.
+Link an **unlinked** login to a member. The `member_id is null` condition makes the statement do nothing (0 rows updated) if the login is already linked, so it cannot silently move a link. A member can have only one login, so it also fails if that member is already linked to another login; remove that link first.
+
+```sql
+update public.profiles set member_id = '<member id>' where user_id = '<user id>' and member_id is null;
+```
+
+To **move** an existing link deliberately (a wrong link), remove it first, then set the right one. This is a deliberate two-step so that no single statement moves a login from one person's certificates to another's.
 
 ```sql
 update public.profiles set member_id = null where user_id = '<user id>';
-update public.profiles set member_id = '<right member id>' where user_id = '<user id>';
+update public.profiles set member_id = '<right member id>' where user_id = '<user id>' and member_id is null;
 ```
 
 Check the result at `/me` for that person. The link decides whose certificates and proof files the login can read, so double-check both ids.
 
 ## When someone leaves
 
-1. Open the member at `/members` and turn **Active** off. This stops their e-mails and takes them out of the dashboard numbers.
-2. Dashboard > **Authentication > Users** > the person > **Ban**. Marking the member inactive does not stop them from signing in; the ban does. *To confirm:* the exact wording of the ban action in your Dashboard version, and that an already open session ends when its access token expires.
+1. **If they are a manager or an admin, first set their Access to Member** in the member form at `/members` (for yourself, ask another admin). The database reads the role live from the profile, so this removes their manager or admin rights at once, before anything else.
+2. Open the member at `/members` and turn **Active** off. This stops their e-mails and takes them out of the dashboard numbers.
+3. Dashboard > **Authentication > Users** > the person > **Ban**. Marking the member inactive does not stop them from signing in; the ban does. *To confirm:* the exact wording of the ban action in your Dashboard version.
+
+**An open session keeps working for a while.** The ban stops new sign-ins and token refreshes, but the access token the leaver already holds keeps working until it expires: 1 hour by default (`jwt_expiry = 3600` in `supabase/config.toml`; *to confirm* the production project's value in the Dashboard). During that time they can still read and edit their own certificates. That is why step 1 comes first for a manager or admin.
 
 Nothing is deleted: the member, their certificates and proof stay. This is manual on purpose (`shortcut: manual ban for leavers, automate if the admin does it more than a few times`).
 

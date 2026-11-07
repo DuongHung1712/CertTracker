@@ -47,9 +47,12 @@ Write the date and the counts in the pilot log.
 
 ## Restore into a separate project
 
+> [!WARNING]
+> **Every statement in this section is for the new, EMPTY restore project only.** Several of them delete or load rows. Before you run anything in the SQL Editor or paste a connection string, check the project name and ref shown in the Dashboard header (and the host in the connection string) and make sure it is the restore project, not production. The free tier has no point-in-time recovery, so a statement run in production cannot be undone.
+
 Never restore over production. This is the rehearsal in P-8, and also the way out after a real loss (then the "separate project" becomes the new production, and the app's variables are pointed at it).
 
-1. **Create a new, empty Supabase project.** Note its database connection string (Dashboard > Project Settings > Database) and its project ref.
+1. **Create a new, empty Supabase project.** Note its database connection string (Dashboard > Project Settings > Database) and its project ref. *To confirm:* the free-tier direct database host may be IPv6-only; if `psql` or `db push` cannot connect from an IPv4-only network, use the **Session pooler** connection string from the same page (not the transaction pooler on port 6543, which does not keep a `set` for the whole session).
 2. **Create the schema from the repository's migrations, not from `schema.sql`.** The proof-file bucket and its access rules live in the `storage` schema, which the dump leaves out, and the migrations create them. Check out the commit that production runs, then:
 
    ```bash
@@ -58,13 +61,19 @@ Never restore over production. This is the rehearsal in P-8, and also the way ou
    ```
 
    Use `--db-url` so the CLI stays linked to production and the push cannot go to the wrong project.
-3. **Empty the table a migration has seeded.** The migrations insert the career roles, which `data.sql` also holds, so:
+3. **Empty the table a migration has seeded.** The migrations insert the career roles, which `data.sql` also holds. Run this in the new project's SQL Editor (after checking the project name and ref, see the warning above). It refuses to run if the project holds any member, so it cannot touch real data by mistake:
 
    ```sql
-   truncate public.career_roles cascade;
+   do $$
+   begin
+     if exists (select 1 from public.members) then
+       raise exception 'Not an empty project: stop';
+     end if;
+     delete from public.career_roles;
+   end $$;
    ```
 
-   Run it in the new project's SQL Editor before loading. If the load later stops on a "duplicate key" error, the table in the message was seeded by a migration: truncate it and load again.
+   Do not use `truncate ... cascade` here: `members` points at `career_roles`, so a cascade in the wrong project would delete every member, certificate and login link. If the load later stops on a "duplicate key" error, the table in the message was seeded by a migration: empty it the same way (the guard first, then a plain `delete` of that table) and load again.
 4. **Load the data.** `data.sql` starts with `set session_replication_role = replica` (seen in the dump's `--dry-run`), so triggers do not fire and rows land exactly as they were:
 
    ```bash
@@ -79,6 +88,8 @@ Never restore over production. This is the rehearsal in P-8, and also the way ou
    ```
 
    Then compare `pnpm supabase storage ls -r ss:///certificates --project-ref <new project ref>` with the backup folder.
+
+   **Check the nesting.** The access rule takes the *first* folder of the object name as the member id (`can_access_evidence`). If `storage cp -r` created `certificates/certificates/<member id>/...` inside the bucket, no member can open their own file, although an admin still can. The first object name must start with a member id. *To confirm on the first real restore:* the nesting behaviour in both directions. If the names are nested, delete the uploaded objects in the restore project (Dashboard > Storage) and upload one member folder at a time instead: `pnpm supabase storage cp -r <backup folder>/certificates/<member id> ss:///certificates/<member id> --project-ref <new project ref>`.
 6. **Check it** in the new project's SQL Editor and compare with production's numbers (run the same query there, or use the counts you wrote down at backup time):
 
    ```sql
@@ -90,6 +101,15 @@ Never restore over production. This is the rehearsal in P-8, and also the way ou
    union all select 'proof files', count(*) from storage.objects where bucket_id = 'certificates';
    ```
 
-   Then open one proof file: Dashboard > Storage > `certificates` > any file, and see that it displays.
+   Then check that the proof path in the database equals the object name in Storage, for one file (the `evidence_path` of a record and the `name` of its object must be identical):
+
+   ```sql
+   select id, evidence_path from public.training_records where evidence_path is not null limit 1;
+   select name from storage.objects where bucket_id = 'certificates' limit 5;
+   ```
+
+   `training_records.evidence_path` has the form `<member id>/<record id>/<file>`, and the object name must be exactly that, with the member id first.
+
+   Then open a proof **through the app**, not only in the Dashboard: point a copy of the app at the restore project (a local `pnpm dev` with that project's URL and keys in `.env.local`, never the Vercel production variables), sign in as that member or their manager, and open the proof. The restored logins keep their old passwords, which you do not know; set a new password for the one login you test with in the restore project's Dashboard (restore project only; *to confirm* the Dashboard action), and open the proof as a non-admin, because an admin can open files in a wrong folder. The Dashboard preview opens the file as the project owner and would pass even if every member's link were broken. If you cannot point the app at the restore project, say so in the pilot log and treat P-8 as only partly checked.
 7. **Record the result** in `pilot-checklist.md` (P-8): date, the counts, and whether the proof file opened.
 8. **Delete the rehearsal project** when done (a rehearsal) so staff data does not stay in a second place; the data owner's agreement names one place.

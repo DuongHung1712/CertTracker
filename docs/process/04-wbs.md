@@ -48,8 +48,8 @@ This document lists the work done and the work remaining for CertTracker. The fi
 | 8.3 | Self sign-up with approval | Not in Release 1 (BRD §1.3: the admin creates every account) | — | — | Could | — | — | — | Out of scope | — | R-31 |
 | 8.4 | Accessibility check | Keyboard and screen-reader audit of the live screens; list of fixes | BRD Appendix B.2 items met | C3 | Must | 1–2 | — | 15.1 | Not started | NFR-05 | NFR-05 |
 | 9 | **Validation and rollout** | See 9.1–G1 | — | — | — | 6–11 (sum) | — | — | Not started | — | — |
-| 9.1 | Pilot readiness | Sending domain verified; first backup; DC manager agrees to staff data in the cloud | All `Pilot` items in [08](08-production-readiness.md) done; a test e-mail reaches a non-owner address | C1 | Must | 1–2 | — | 7, 9.3 | Not started | FR-10, FR-11 | R-12, R-13 |
-| 9.2 | Pilot with one real team | Two-week pilot ([07](07-poc-and-mvp.md) §6) and pilot report | `SM-3` met; feedback recorded | C1 | Must | 2–3 | — | 9.1, 1.3, 8.1 | Not started | BO-1, BO-2 | R-12, R-13 |
+| 9.1 | Pilot readiness | Sending domain verified; first backup; DC manager agrees to staff data in the cloud | All `Pilot` items in [08](08-production-readiness.md) done; a test e-mail reaches a non-owner address | C1 | Must | 1–2 | — | 7 | Not started | FR-10, FR-11 | R-12, R-13 |
+| 9.2 | Pilot with one real team | Two-week pilot ([07](07-poc-and-mvp.md) §6) and pilot report | `SM-3` met; feedback recorded | C1 | Must | 2–3 | — | 9.1, 8.1 | Not started | BO-1, BO-2 | R-12, R-13 |
 | 9.3 | Production hosting decision | Stay on free tiers or move (Vercel Hobby is non-commercial; Supabase Free has no automatic backup) | Recorded in `decisions.md` before real staff data is loaded | C3 | Must | 1–2 | — | — | Not started | NFR-13 | NFR-07 |
 | 9.4 | Production readiness | Production checklist completed; release checklist adopted | All `Production` items in 08 done; go decision recorded | C3 | Must | 2–4 | — | 9.3, G1 | Not started | NFR-13 | NFR-01, NFR-06, NFR-07 |
 | G1 | Gate: pilot review | DC manager's decision to roll out beyond the pilot team | Pilot report accepted; no longer blocks any feature (decision #54) | C3 | Must | — | — | 1.2, 1.3, 1.6, 9.2 | Not started | BO-1 | — |
@@ -100,15 +100,15 @@ This document lists the work done and the work remaining for CertTracker. The fi
 |---|---|---|---|
 | Built | On `main` and production (https://cert-tracker-three.vercel.app): W1–W6 certificates, plus manager scopes, career role and YoE, course cost, English UI, loading feedback | — | — |
 | C0 | Scope: BRD revised and approved, AI budget and terms answered, mockups reviewed, plans | 3–4 | 0.8 |
-| C1 | Accounts and data, then the DAS pilot (decision #61): e-mail set-up, access control, catalogue, production speed check, pilot readiness and the two-week pilot; Phase 2 features 15.4–15.6 are built during the pilot (not yet estimated) | 5.5–8.5 (without 15.4–15.6) | 2.5 |
-| C2 | Certificate AI: platform, reading certificate files, import clean-up, questions, monthly summary, evaluation | 10–15 | 5.5 |
-| C3 | Validate and go live: hosting, real-file trial, accessibility, interviews, G1, production | 9–15 | 8.5 |
+| C1 | Accounts and data, then the DAS pilot (decision #61): e-mail set-up, access control, catalogue, production speed check, pilot readiness and the two-week pilot; Phase 2 features 15.4–15.6 are built during the pilot (not yet estimated) | 5.5–8 (without 15.4–15.6) | 2.4 |
+| C2 | Certificate AI: platform, reading certificate files, import clean-up, questions, monthly summary, evaluation | 10–15 | 5.4 |
+| C3 | Validate and go live: hosting, real-file trial, accessibility, interviews, G1, production | 9–15 | 8.4 |
 | Later | Skill Matrix, quarterly goals, the AI that needs them, role growth, Rust backend | 31–45.5 | Not scheduled |
 
-- **Cert Core open work:** 27.5–42.5 developer days (about 6–9 weeks for one developer). The pilot (9.2) also needs two calendar weeks of real use.
+- **Cert Core open work:** 27.5–42 developer days (about 6–8 weeks for one developer). The pilot (9.2) also needs two calendar weeks of real use.
 - **Production today:** the code is live, but the cloud database holds 2 members, no courses and no certificates (checked 2026-11-05), so no user has validated it yet.
-- **Before real staff data:** 9.3 (hosting), 9.1 (sending domain, backup, data owner's agreement) and 15.1 must be done.
-- **Pilot order (decision #61):** the DAS pilot (9.1, 9.2) runs in `C1`, before the AI (`C2`). For the pilot period 9.3 is answered by spec 2026-11-06 §8 item 1 (stay on the free tiers; the paid-hosting decision comes after); it stays open here until it is recorded in `decisions.md`. 1.3 is measured on the file DAS imports (`SM-2`) and keeps its `C3` report.
+- **Before real staff data:** 9.1 (sending domain, backup, data owner's agreement) and 15.1 must be done, and the free-tier choice for the pilot period is recorded (spec §8 item 1); 9.3 is the later decision on real hosting.
+- **Pilot order (decision #61):** the DAS pilot (9.1, 9.2) runs in `C1`, before the AI (`C2`). So that no `C1` row waits for a later milestone, 9.1 no longer depends on 9.3 and 9.2 no longer depends on 1.3: for the pilot period the hosting question is answered by spec 2026-11-06 §8 item 1 (stay on the free tiers; paid hosting is decided afterwards, which is 9.3), and 1.3 is measured on the file DAS imports (`SM-2`) and keeps its `C3` report.
 - **Waiting:** 1.7 and 1.8 wait on the DC manager. 13.1 cannot send real data to DeepSeek before 1.8 is answered; it can be built and tested with sample data.
 - **Moved to Later because they need the Skill Matrix or goals:** 13.3, 13.4, 13.6, 13.9. 12.3 (exam reminders) also moves; say if exam reminders should come back into Cert Core.
 
