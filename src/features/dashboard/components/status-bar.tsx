@@ -14,11 +14,13 @@ export type StatusSegment = {
 export function StatusBar({
   segments,
   className,
+  barClassName,
   ariaLabel,
   showLabels = false,
 }: {
   segments: StatusSegment[];
   className?: string;
+  barClassName?: string;
   ariaLabel?: string;
   showLabels?: boolean;
 }) {
@@ -34,7 +36,7 @@ export function StatusBar({
         <div
           role="img"
           aria-label={computedAriaLabel}
-          className="h-2 w-full overflow-hidden rounded-sm bg-muted"
+          className={cn("h-2.5 w-full overflow-hidden rounded-sm bg-muted", barClassName)}
         />
       </div>
     );
@@ -45,7 +47,7 @@ export function StatusBar({
       <div
         role="img"
         aria-label={computedAriaLabel}
-        className="flex h-2 w-full overflow-hidden rounded-sm bg-muted"
+        className={cn("flex h-2.5 w-full overflow-hidden rounded-sm bg-muted", barClassName)}
       >
         {activeSegments.map((s, index) => {
           const pct = (s.count / total) * 100;

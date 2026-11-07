@@ -38,31 +38,43 @@ export default function DashboardLoading() {
         </div>
       </div>
 
-      {/* Health row (2/3 Expiry + 1/3 Donut) */}
-      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 flex flex-col gap-3">
-          <Skeleton className="h-5 w-36" />
-          <Skeleton className="h-64 rounded-lg" />
-        </div>
-        <div className="lg:col-span-1 flex flex-col gap-3">
-          <Skeleton className="h-5 w-28" />
-          <Skeleton className="h-64 rounded-lg" />
+      {/* Explorer: Master-Detail board */}
+      <div className="flex flex-col gap-3">
+        <Skeleton className="h-5 w-24" />
+        <div className="overflow-hidden rounded-xl border border-border bg-card">
+          <div className="border-b border-border bg-muted/30 px-4 py-2.5">
+            <Skeleton className="h-7 w-80 max-w-full rounded-md" />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12">
+            <div className="flex flex-col gap-3 border-b border-border p-4 lg:col-span-5 lg:border-b-0 lg:border-r">
+              <Skeleton className="h-8.5 w-full rounded-md" />
+              {Array.from({ length: 4 }, (_, i) => (
+                <Skeleton key={`list-item-${i}`} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+            <div className="flex flex-col gap-4 p-5 lg:col-span-7">
+              <Skeleton className="h-7 w-48" />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <Skeleton key={`sub-card-${i}`} className="h-20 rounded-lg" />
+                ))}
+              </div>
+              <Skeleton className="h-32 rounded-lg" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Explorer */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-9 w-72 max-w-full rounded-lg" />
+      {/* Health row (2/3 Expiry + 1/3 Donut) */}
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="flex flex-col gap-3 lg:col-span-2">
+          <Skeleton className="h-5 w-36" />
+          <Skeleton className="h-64 rounded-lg" />
         </div>
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-7 flex flex-col gap-3">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-64 rounded-lg" />
-          </div>
-          <div className="lg:col-span-5">
-            <Skeleton className="h-64 rounded-lg" />
-          </div>
+        <div className="flex flex-col gap-3 lg:col-span-1">
+          <Skeleton className="h-5 w-28" />
+          <Skeleton className="h-64 rounded-lg" />
         </div>
       </div>
 

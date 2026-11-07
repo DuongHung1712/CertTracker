@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { AlertCircle, Award, CheckCircle2, Clock, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -307,35 +307,44 @@ export function DashboardRedesignDemo() {
     <div className="flex flex-col gap-8">
       <div>
         <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Hero KPI cards</h3>
-        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             label="Certificate records"
             value={61}
+            icon={<Award className="size-4 text-foreground" />}
             visual={<StatusBar segments={certSegments} />}
           />
           <KpiCard
             label="Valid"
             value={50}
+            icon={<CheckCircle2 className="size-4 text-[var(--status-active-fg)]" />}
             hint="Includes 8 with no expiry"
             visual={<StatusBar segments={validSegments} />}
           />
           <KpiCard
             label="Expiring (≤ 60 days)"
             value={9}
+            icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
             visual={<StatusBar segments={expiringSegments} />}
           />
           <KpiCard
             label="Expired"
             value={2}
+            icon={<AlertCircle className="size-4 text-destructive" />}
             valueClassName="text-destructive font-semibold"
             hint="Completed certificates past their expiry date"
             visual={
               <StatusBar
-                segments={[{ key: "expired", label: "Expired", count: 2, color: "var(--status-expired)" }]}
+                segments={[{ key: "expired", label: "Expired", count: 2, color: "var(--status-expired-fg)" }]}
               />
             }
           />
         </dl>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Explorer (Master-Detail board)</h3>
+        <Explorer tabs={demoTabs} defaultTab="team" />
       </div>
 
       <div>
@@ -350,11 +359,6 @@ export function DashboardRedesignDemo() {
             <CompletionDonut counts={{ done: 38, inProgress: 14, notStarted: 9 }} />
           </div>
         </div>
-      </div>
-
-      <div>
-        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Explorer (Tabs & Detail panel)</h3>
-        <Explorer tabs={demoTabs} defaultTab="team" />
       </div>
     </div>
   );

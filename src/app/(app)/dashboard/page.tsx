@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertCircle, Award, CheckCircle2, Clock } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { KpiTile } from "@/components/data/kpi-tile";
@@ -113,10 +114,12 @@ export default async function DashboardPage() {
         {kpis.ok ? (
           <div className="flex flex-col gap-3">
             {/* Hero row: 4 cards with visuals below dd */}
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
                 label="Certificate records"
                 value={kpis.data.totalRecords}
+                icon={<Award className="size-4 text-foreground" />}
+                hint="Total tracked across teams"
                 visual={
                   <StatusBar
                     segments={kpiStudyStatusSplit(kpis.data)}
@@ -127,6 +130,7 @@ export default async function DashboardPage() {
               <KpiCard
                 label="Valid"
                 value={validCerts(kpis.data)}
+                icon={<CheckCircle2 className="size-4 text-[var(--status-active-fg)]" />}
                 hint={`Includes ${kpis.data.noExpiryCerts} with no expiry`}
                 visual={
                   <StatusBar
@@ -138,6 +142,7 @@ export default async function DashboardPage() {
               <KpiCard
                 label="Expiring (≤ 60 days)"
                 value={expiringCerts(kpis.data)}
+                icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
                 hint="31–60 days vs ≤ 30 days left"
                 visual={
                   <StatusBar
@@ -149,8 +154,9 @@ export default async function DashboardPage() {
               <KpiCard
                 label="Expired"
                 value={kpis.data.expiredCerts}
+                icon={<AlertCircle className="size-4 text-destructive" />}
                 hint="Completed certificates past their expiry date"
-                valueClassName={kpis.data.expiredCerts > 0 ? "text-destructive" : undefined}
+                valueClassName={kpis.data.expiredCerts > 0 ? "text-destructive font-semibold" : undefined}
                 visual={
                   <StatusBar
                     segments={[
@@ -191,7 +197,22 @@ export default async function DashboardPage() {
         />
       ) : (
         <>
-          {/* 3. Health row: 2/3 ExpiryChart + 1/3 CompletionDonut */}
+          {/* 3. Explorer: Centerpiece Master-Detail board matching the template layout */}
+          <Section title="Explorer" description="Breakdown by team, certificate type, provider or course">
+            {explorerTabs.length > 0 ? (
+              <Explorer tabs={explorerTabs} defaultTab={defaultTab} />
+            ) : (
+              <SectionError title="Explorer" />
+            )}
+          </Section>
+
+          {isMember && (
+            <p className="text-caption text-muted-foreground">
+              Only groups with at least 3 learners are shown.
+            </p>
+          )}
+
+          {/* 4. Health row: 2/3 ExpiryChart + 1/3 CompletionDonut */}
           <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
               <Section title="Certificate expiry" description="Completed certificates, by time left">
@@ -218,21 +239,6 @@ export default async function DashboardPage() {
               </Section>
             </div>
           </div>
-
-          {/* 4. Explorer: Tabbed selector with compact list & detail panel */}
-          <Section title="Explorer" description="Breakdown by team, certificate type, provider or course">
-            {explorerTabs.length > 0 ? (
-              <Explorer tabs={explorerTabs} defaultTab={defaultTab} />
-            ) : (
-              <SectionError title="Explorer" />
-            )}
-          </Section>
-
-          {isMember && (
-            <p className="text-caption text-muted-foreground">
-              Only groups with at least 3 learners are shown.
-            </p>
-          )}
         </>
       )}
 
