@@ -16,10 +16,20 @@ import { RecordStatusLabel } from "@/components/status/record-status";
 import type { RecordStatus } from "@/components/status/labels";
 import { Button } from "@/components/ui/button";
 import { BreakdownTable } from "@/features/dashboard/components/breakdown-table";
+import { CompletionDonut } from "@/features/dashboard/components/completion-donut";
 import { ExpiryChart } from "@/features/dashboard/components/expiry-chart";
+import { Explorer } from "@/features/dashboard/components/explorer";
+import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
-import type { ExpiryBucket } from "@/features/dashboard/metrics";
-import type { BreakdownRow, RankingRow } from "@/features/dashboard/schema";
+import { StatusBar } from "@/features/dashboard/components/status-bar";
+import {
+  expiringBuckets,
+  expiryBuckets,
+  kpiStudyStatusSplit,
+  validBuckets,
+  type ExpiryBucket,
+} from "@/features/dashboard/metrics";
+import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 
 type SampleRow = {
   id: string;
@@ -240,6 +250,112 @@ export function BreakdownDemo() {
       <BreakdownTable rows={BREAKDOWN_ROWS} groupLabel="Team" peopleLabel="Members" />
       <BreakdownTable rows={[]} groupLabel="Course" peopleLabel="Learners" />
       <RankingTable rows={RANKING_ROWS} />
+    </div>
+  );
+}
+
+export function DashboardRedesignDemo() {
+  const sampleKpis: DashboardKpis = {
+    totalMembers: 20,
+    totalRecords: 61,
+    doneRecords: 38,
+    inProgressRecords: 14,
+    notStartedRecords: 9,
+    activeCerts: 42,
+    expiring60Certs: 6,
+    expiringSoonCerts: 3,
+    expiredCerts: 2,
+    noExpiryCerts: 8,
+  };
+  const sampleBuckets: ExpiryBucket[] = expiryBuckets(sampleKpis);
+  const certSegments = kpiStudyStatusSplit(sampleKpis);
+  const validSegments = validBuckets(sampleKpis);
+  const expiringSegments = expiringBuckets(sampleKpis);
+
+  const demoTabs = [
+    {
+      id: "team",
+      label: "By team",
+      groupLabel: "Team",
+      peopleLabel: "Members",
+      rows: BREAKDOWN_ROWS,
+    },
+    {
+      id: "cert_type",
+      label: "By certificate type",
+      groupLabel: "Type",
+      peopleLabel: "Learners",
+      rows: BREAKDOWN_ROWS.slice(0, 4),
+    },
+    {
+      id: "provider",
+      label: "By provider",
+      groupLabel: "Provider",
+      peopleLabel: "Learners",
+      rows: BREAKDOWN_ROWS.slice(2, 6),
+    },
+    {
+      id: "course",
+      label: "Popular courses",
+      groupLabel: "Course",
+      peopleLabel: "Learners",
+      rows: BREAKDOWN_ROWS.slice(0, 5),
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Hero KPI cards</h3>
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label="Certificate records"
+            value={61}
+            visual={<StatusBar segments={certSegments} />}
+          />
+          <KpiCard
+            label="Valid"
+            value={50}
+            hint="Includes 8 with no expiry"
+            visual={<StatusBar segments={validSegments} />}
+          />
+          <KpiCard
+            label="Expiring (≤ 60 days)"
+            value={9}
+            visual={<StatusBar segments={expiringSegments} />}
+          />
+          <KpiCard
+            label="Expired"
+            value={2}
+            valueClassName="text-destructive font-semibold"
+            hint="Completed certificates past their expiry date"
+            visual={
+              <StatusBar
+                segments={[{ key: "expired", label: "Expired", count: 2, color: "var(--status-expired)" }]}
+              />
+            }
+          />
+        </dl>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Health row</h3>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="rounded-lg border border-border bg-card p-4 lg:col-span-2">
+            <h4 className="mb-4 text-section-title">Expiry horizon</h4>
+            <ExpiryChart buckets={sampleBuckets} />
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h4 className="mb-4 text-section-title">Study status</h4>
+            <CompletionDonut counts={{ done: 38, inProgress: 14, notStarted: 9 }} />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Explorer (Tabs & Detail panel)</h3>
+        <Explorer tabs={demoTabs} defaultTab="team" />
+      </div>
     </div>
   );
 }
