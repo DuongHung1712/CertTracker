@@ -50,12 +50,10 @@ export async function setPassword(_prev: Result<null> | null, formData: FormData
   if (linkError) return err(LINK_ERROR);
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
-  // The token is spent by now, so a retry needs a new link. verifyOtp already opened a session: close it.
-  if (error) {
-    await supabase.auth.signOut({ scope: "local" });
-    return err("We could not save that password. Ask your admin for a new link, then choose a different one.");
-  }
-
+  // verifyOtp already opened a session: close it whether or not the save worked, so nobody stays signed in without a password.
   await supabase.auth.signOut({ scope: "local" });
+  // The token is spent by now, so a retry needs a new link.
+  if (error) return err("We could not save that password. Ask your admin for a new link, then choose a different one.");
+
   redirect("/login?passwordSet=1");
 }
