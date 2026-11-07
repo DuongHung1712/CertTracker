@@ -48,7 +48,7 @@ Write the date and the counts in the pilot log.
 ## Restore into a separate project
 
 > [!WARNING]
-> **Every statement in this section is for the new, EMPTY restore project only.** Several of them delete or load rows. Before you run anything in the SQL Editor or paste a connection string, check the project name and ref shown in the Dashboard header (and the host in the connection string) and make sure it is the restore project, not production. The free tier has no point-in-time recovery, so a statement run in production cannot be undone.
+> **Every statement in this section is for the new, EMPTY restore project only.** Several of them delete or load rows. Before you run anything in the SQL Editor or paste a connection string, check the project name and ref shown in the Dashboard header (and the host in the connection string, and the `--project-ref` you type in the `storage` commands) and make sure it is the restore project, not production. The free tier has no point-in-time recovery, so a statement run in production cannot be undone.
 
 Never restore over production. This is the rehearsal in P-8, and also the way out after a real loss (then the "separate project" becomes the new production, and the app's variables are pointed at it).
 
@@ -61,12 +61,12 @@ Never restore over production. This is the rehearsal in P-8, and also the way ou
    ```
 
    Use `--db-url` so the CLI stays linked to production and the push cannot go to the wrong project.
-3. **Empty the table a migration has seeded.** The migrations insert the career roles, which `data.sql` also holds. Run this in the new project's SQL Editor (after checking the project name and ref, see the warning above). It refuses to run if the project holds any member, so it cannot touch real data by mistake:
+3. **Empty the table a migration has seeded.** The migrations insert the career roles, which `data.sql` also holds. Run this in the new project's SQL Editor (after checking the project name and ref, see the warning above). It refuses to run if the project holds any member or any login, so it cannot touch real data by mistake:
 
    ```sql
    do $$
    begin
-     if exists (select 1 from public.members) then
+     if exists (select 1 from public.members) or exists (select 1 from auth.users) then
        raise exception 'Not an empty project: stop';
      end if;
      delete from public.career_roles;

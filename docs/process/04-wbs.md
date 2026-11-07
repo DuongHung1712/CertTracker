@@ -105,7 +105,7 @@ This document lists the work done and the work remaining for CertTracker. The fi
 | C3 | Validate and go live: hosting, real-file trial, accessibility, interviews, G1, production | 9–15 | 8.4 |
 | Later | Skill Matrix, quarterly goals, the AI that needs them, role growth, Rust backend | 31–45.5 | Not scheduled |
 
-- **Cert Core open work:** 27.5–42 developer days (about 6–8 weeks for one developer). The pilot (9.2) also needs two calendar weeks of real use.
+- **Cert Core open work:** 27.5–42 developer days (about 5.5–8.4 weeks for one developer). The pilot (9.2) also needs two calendar weeks of real use.
 - **Production today:** the code is live, but the cloud database holds 2 members, no courses and no certificates (checked 2026-11-05), so no user has validated it yet.
 - **Before real staff data:** 9.1 (sending domain, backup, data owner's agreement) and 15.1 must be done, and the free-tier choice for the pilot period is recorded (spec §8 item 1); 9.3 is the later decision on real hosting.
 - **Pilot order (decision #61):** the DAS pilot (9.1, 9.2) runs in `C1`, before the AI (`C2`). So that no `C1` row waits for a later milestone, 9.1 no longer depends on 9.3 and 9.2 no longer depends on 1.3: for the pilot period the hosting question is answered by spec 2026-11-06 §8 item 1 (stay on the free tiers; paid hosting is decided afterwards, which is 9.3), and 1.3 is measured on the file DAS imports (`SM-2`) and keeps its `C3` report.
