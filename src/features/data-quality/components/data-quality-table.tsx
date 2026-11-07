@@ -77,7 +77,11 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         enableSorting: false,
         cell: ({ row }) => <span className="whitespace-normal">{describeIssue(row.original)}</span>,
       },
-      { accessorKey: "days", header: "Days" },
+      {
+        accessorKey: "days",
+        header: "Days",
+        meta: { align: "right" },
+      },
       {
         id: "open",
         header: () => <span className="sr-only">Actions</span>,
@@ -85,13 +89,15 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         cell: ({ row }) => {
           const { label, href } = ISSUE_META[row.original.type];
           return (
-            <Link
-              href={href}
-              aria-label={`Open ${label} for ${subjectName(row.original) ?? "—"}`}
-              className={buttonVariants({ variant: "ghost", size: "xs" })}
-            >
-              Open
-            </Link>
+            <div className="flex justify-end">
+              <Link
+                href={href}
+                aria-label={`Open ${label} for ${subjectName(row.original) ?? "—"}`}
+                className={buttonVariants({ variant: "ghost", size: "sm" })}
+              >
+                Open
+              </Link>
+            </div>
           );
         },
       },
@@ -119,6 +125,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
           <Button
             size="sm"
             variant={typeFilter === null ? "secondary" : "outline"}
+            className="min-h-[44px] sm:min-h-[32px]"
             aria-pressed={typeFilter === null}
             onClick={() => setTypeFilter(null)}
           >
@@ -129,6 +136,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
               key={type}
               size="sm"
               variant={typeFilter === type ? "secondary" : "outline"}
+              className="min-h-[44px] sm:min-h-[32px]"
               aria-pressed={typeFilter === type}
               onClick={() => setTypeFilter(typeFilter === type ? null : type)}
             >
@@ -143,9 +151,9 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         getRowId={(row) => `${row.type}:${row.subjectId}`}
         empty={
           issues.length === 0 ? (
-            <EmptyState title="The data is clean" description="No records need a review." />
+            <EmptyState title="The data is clean" description="No records need a review or fix right now." />
           ) : (
-            <EmptyState title="No results" description="Try changing the filters." />
+            <EmptyState title="No results found" description="Try another search or clear the filters." />
           )
         }
       />
