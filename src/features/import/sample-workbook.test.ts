@@ -11,7 +11,7 @@ import {
   type SamplePerson,
 } from "@/features/import/sample-workbook";
 import { readImportTable } from "@/features/import/workbook";
-import type { ImportTable } from "@/features/import/clean";
+import { excelSerialToDate, type ImportTable } from "@/features/import/clean";
 
 const TODAY = "2026-11-09";
 const TEAMS = ["Team Alpha", "Team Beta", "Team Gamma"];
@@ -169,6 +169,13 @@ describe("buildSampleWorkbook", () => {
     expect(plan.rows[0]!.errors).toContainEqual(expect.stringMatching(/not-an-email/));
   });
 
+  it("clamps the expiry date to the month's last day, as PostgreSQL does", () => {
+    const leapDay = person({ certificates: [{ course: "Secure Coding", status: "done", progress: 100, issuedDate: "2024-02-29" }] });
+    const table = readTable(buildSampleWorkbook([leapDay], CATALOGUE, TODAY));
+    const expiry = table.rows[0]!.cells[table.headers.indexOf("Expiry date")];
+    expect(excelSerialToDate(Number(expiry))).toBe("2025-02-28");
+  });
+
   it("refuses a certificate whose course is not in the catalogue, naming the course", () => {
     const unknown = person({ certificates: [{ course: "Unknown Course", status: "not_started", progress: 0 }] });
     expect(() => buildSampleWorkbook([unknown], CATALOGUE, TODAY)).toThrow(/Unknown Course/);
@@ -200,6 +207,10 @@ on conflict (provider_id, name) do nothing;
       { name: "Cloud Starter", validityMonths: null, provider: "Example Cloud", certType: "Cloud" },
       { name: "Language Level 3", validityMonths: 24, provider: "Example Testing Centre (ETC)", certType: "Languages & Soft Skills" },
     ]);
+  });
+
+  it("refuses input without the from (values marker instead of reading the wrong block", () => {
+    expect(() => readCatalogueSql("insert into public.cert_types (name) values\n  ('Cloud');\n")).toThrow();
   });
 
   describe("on the real catalogue file", () => {
