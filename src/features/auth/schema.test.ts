@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { loginSchema } from "@/features/auth/schema";
+import { loginSchema, setPasswordSchema } from "@/features/auth/schema";
 
 describe("loginSchema", () => {
   it("accepts a valid email and password and trims the email", () => {
@@ -18,5 +19,40 @@ describe("loginSchema", () => {
     const result = loginSchema.safeParse({ email: "admin@certtracker.test", password: "" });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toBe("Enter your password");
+  });
+});
+
+describe("setPasswordSchema", () => {
+  const valid = { tokenHash: "abc", type: "invite", password: "long-enough", confirmPassword: "long-enough" };
+
+  it.each(["invite", "recovery"])("accepts a %s link", (type) => {
+    expect(setPasswordSchema.safeParse({ ...valid, type }).success).toBe(true);
+  });
+
+  it("rejects any other link type", () => {
+    expect(setPasswordSchema.safeParse({ ...valid, type: "magiclink" }).success).toBe(false);
+  });
+
+  it("rejects a missing token", () => {
+    expect(setPasswordSchema.safeParse({ ...valid, tokenHash: "" }).success).toBe(false);
+  });
+
+  it("rejects a short password with a message", () => {
+    const result = setPasswordSchema.safeParse({ ...valid, password: "short", confirmPassword: "short" });
+    expect(result.error?.issues[0]?.message).toBe("Use at least 8 characters");
+  });
+
+  it("rejects two different passwords on the confirm field", () => {
+    const result = setPasswordSchema.safeParse({ ...valid, confirmPassword: "something-else" });
+    expect(result.error?.issues[0]?.message).toBe("The two passwords do not match");
+    expect(result.error?.issues[0]?.path).toEqual(["confirmPassword"]);
+  });
+});
+
+describe("account e-mail templates", () => {
+  // Paste these into Supabase Dashboard > Authentication > Email Templates; the page only accepts this link shape.
+  it.each(["invite", "recovery"])("%s links to /set-password with the one-time token", (type) => {
+    const html = readFileSync(`supabase/templates/${type}.html`, "utf8");
+    expect(html).toContain(`{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=${type}`);
   });
 });

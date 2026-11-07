@@ -5,7 +5,7 @@ import { idSchema, recordSchema, type RecordInput } from "@/features/records/sch
 import { assertAffected } from "@/lib/assert-affected";
 import { mapPostgresError } from "@/lib/postgres-error";
 import { err, ok, type Result } from "@/lib/result";
-import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE, evidencePath, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
+import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE, EVIDENCE_WRONG_TYPE_MESSAGE, evidencePath, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
 import { createSupabaseStorage } from "@/lib/storage/supabase-storage";
 import { createClient } from "@/lib/supabase/server";
 
@@ -94,7 +94,7 @@ export async function uploadEvidence(formData: FormData): Promise<Result<null>> 
   if (file.size === 0) return err(EVIDENCE_EMPTY_MESSAGE);
   if (file.size > MAX_EVIDENCE_BYTES) return err(EVIDENCE_TOO_LARGE_MESSAGE);
   const mime = sniffEvidenceType(new Uint8Array(await file.slice(0, 16).arrayBuffer()));
-  if (!mime) return err("Only PDF, JPG, PNG or WebP files are accepted.");
+  if (!mime) return err(EVIDENCE_WRONG_TYPE_MESSAGE);
 
   const supabase = await createClient();
   // The member id comes from the row RLS lets this user see — never from the client — so the

@@ -7,7 +7,7 @@ export async function listMembers() {
   const [{ data, error }, careers] = await Promise.all([
     supabase
       .from("members")
-      .select("id, code, full_name, email, team_id, is_active, teams(name), profiles(user_id)")
+      .select("id, code, full_name, email, team_id, is_active, teams(name), profiles(user_id, role)")
       .order("full_name"),
     listMemberCareers(),
   ]);
@@ -21,6 +21,7 @@ export async function listMembers() {
     teamName: row.teams?.name ?? null,
     isActive: row.is_active,
     userId: row.profiles?.user_id ?? null,
+    accessRole: row.profiles?.role ?? null,
     careerRoleId: careers.get(row.id)?.careerRoleId ?? null,
     careerRoleName: careers.get(row.id)?.careerRoleName ?? null,
     careerStart: careers.get(row.id)?.careerStart ?? null,

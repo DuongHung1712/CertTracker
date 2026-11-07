@@ -13,7 +13,8 @@ import {
 } from "@/features/career/components/career-start-fields";
 import { formatCareerStart, formatYoe } from "@/features/career/format";
 import { dateToCareerStart, makeCareerStartSchema } from "@/features/career/schema";
-import { createMember, updateMember } from "@/features/members/actions";
+import { ROLE_LABEL, type Role } from "@/components/status/labels";
+import { createMember, setMemberAccess, updateMember } from "@/features/members/actions";
 import { memberSchema, type MemberInput } from "@/features/members/schema";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,6 +31,8 @@ type Editing = {
   email: string;
   teamId: string | null;
   isActive: boolean;
+  userId: string | null;
+  accessRole: Role | null;
   careerRoleId: string | null;
   careerRoleName: string | null;
   careerStart: string | null;
@@ -79,6 +82,7 @@ export function MemberDialog({
   });
   const [career, setCareer] = useState(() => careerDraftFor(editing));
   const [careerError, setCareerError] = useState<string | undefined>();
+  const [access, setAccess] = useState(editing?.accessRole ?? null);
   // Start from the member being edited each time the dialog opens (adjusted during render, not in an effect).
   const [wasOpen, setWasOpen] = useState(open);
   if (wasOpen !== open) {
@@ -86,6 +90,7 @@ export function MemberDialog({
     if (open) {
       setCareer(careerDraftFor(editing));
       setCareerError(undefined);
+      setAccess(editing?.accessRole ?? null);
     }
   }
 
@@ -109,6 +114,13 @@ export function MemberDialog({
     if (!result.ok) {
       form.setError("root", { message: result.error });
       return;
+    }
+    if (editing?.userId && access && access !== editing.accessRole) {
+      const accessResult = await setMemberAccess({ userId: editing.userId, role: access });
+      if (!accessResult.ok) {
+        form.setError("root", { message: accessResult.error });
+        return;
+      }
     }
     toast.success(editing ? `Saved member ${values.fullName}` : `Added member ${values.fullName}`);
     onOpenChange(false);
@@ -158,6 +170,27 @@ export function MemberDialog({
             />
             <FieldError errors={[form.formState.errors.teamId]} />
           </Field>
+          {canEditCareer && editing && (
+            <Field>
+              <FieldLabel htmlFor="member-access">Access</FieldLabel>
+              {access ? (
+                <Select value={access} onValueChange={(role) => setAccess(role ?? access)}>
+                  <SelectTrigger id="member-access" className="w-full">
+                    <SelectValue>{(value: Role) => ROLE_LABEL[value]}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(ROLE_LABEL) as Role[]).map((role) => (
+                      <SelectItem key={role} value={role}>
+                        {ROLE_LABEL[role]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-caption text-muted-foreground">No account yet. New accounts start as Member.</p>
+              )}
+            </Field>
+          )}
           {canEditCareer ? (
             <>
               <Field>

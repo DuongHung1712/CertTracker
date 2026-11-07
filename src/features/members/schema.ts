@@ -26,3 +26,9 @@ export function makeMemberSchema(now: Date) {
  * strings, and the FK constraint in Postgres enforces the id actually exists.
  */
 export const idSchema = z.object({ id: z.guid("Invalid data") });
+
+export const memberAccessSchema = z.object({
+  userId: z.guid("Invalid data"),
+  role: z.enum(["admin", "manager", "member"], "Invalid data"),
+});
+export type MemberAccessInput = z.infer<typeof memberAccessSchema>;
