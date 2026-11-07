@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { expect, type Locator, type Page } from "@playwright/test";
 import { adminApi, deleteAccount } from "./accounts";
 import { signInAsSeedAdmin } from "./restore-seed";
@@ -90,6 +91,13 @@ export async function addOwnCertificateWithProof(page: Page) {
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Added certificate")).toBeVisible();
   await expect(dialog).toHaveCount(0);
+}
+
+/** Clicks an export link on /records and returns the downloaded file's bytes. */
+export async function downloadExport(page: Page, linkName: "Export CSV" | "Export Excel"): Promise<Buffer> {
+  await page.goto("/records");
+  const [file] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: linkName }).click()]);
+  return readFile(await file.path());
 }
 
 export function recordRow(page: Page, ...texts: string[]): Locator {

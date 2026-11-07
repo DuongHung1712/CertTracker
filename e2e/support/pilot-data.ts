@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, type Page } from "@playwright/test";
 import { buildSampleWorkbook, readCatalogueSql, rehearsalPeople } from "../../src/features/import/sample-workbook";
 import { todayVn } from "../../src/lib/dates";
+import { adminApi } from "./accounts";
 import { SEED_PROGRAM_ID } from "./manager-scopes";
 import { signInAsSeedAdmin } from "./restore-seed";
 
@@ -16,6 +17,9 @@ const REHEARSAL_PEOPLE = 20;
 const CATALOGUE_PATH = "supabase/catalog/courses.sql";
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const BATCH_URL = /\/import\/([0-9a-f-]{36})$/;
+const REHEARSAL_FILE_PREFIX = "rehearsal-";
+// Every row of supabase/seed.sql has an id with this prefix.
+const SEED_ID_PREFIX = "5eed0000-";
 
 type Admin = Awaited<ReturnType<typeof signInAsSeedAdmin>>;
 type CatalogueTable = "courses" | "providers" | "cert_types";
@@ -86,7 +90,7 @@ export async function importRehearsalFile(page: Page): Promise<() => Promise<voi
   const today = todayVn();
   const catalogue = readCatalogueSql(readFileSync(CATALOGUE_PATH, "utf8"));
   const before = await catalogueIds(await signInAsSeedAdmin());
-  const batchId = await importWorkbook(page, `rehearsal-${Date.now()}.xlsx`, buildSampleWorkbook(rehearsalPeople(today, catalogue), catalogue, today));
+  const batchId = await importWorkbook(page, `${REHEARSAL_FILE_PREFIX}${Date.now()}.xlsx`, buildSampleWorkbook(rehearsalPeople(today, catalogue), catalogue, today));
 
   return async () => {
     const admin = await signInAsSeedAdmin();
@@ -102,4 +106,36 @@ export async function importRehearsalFile(page: Page): Promise<() => Promise<voi
       await deleteVerified(admin, table, [...after[table]].filter((id) => !before[table].has(id)));
     }
   };
+}
+
+/**
+ * Removes whatever an earlier rehearsal run left behind when it crashed or timed out before its cleanup: the batches,
+ * the `person%` members and their records, their rows in the send log, the three teams, and the courses, providers
+ * and certificate types named in the catalogue that are not seed rows. Idempotent; run it before `createPilotTeams`.
+ */
+export async function sweepRehearsalLeftovers(): Promise<void> {
+  const admin = await signInAsSeedAdmin();
+  const batches = must(await admin.from("import_batches").select("id").like("file_name", `${REHEARSAL_FILE_PREFIX}%`), "read rehearsal batches");
+  await deleteVerified(admin, "import_batches", batches.map((batch) => batch.id));
+  const people = must(await admin.from("members").select("id").like("email", REHEARSAL_EMAIL_LIKE), "read rehearsal people");
+  const memberIds = people.map((person) => person.id);
+  if (memberIds.length > 0) must(await admin.from("training_records").delete().in("member_id", memberIds).select("id"), "delete rehearsal records");
+  await deleteVerified(admin, "members", memberIds);
+  // The send log is admin read-only through RLS, so its rows go through the service role.
+  const { error } = await adminApi().from("notification_log").delete().like("recipient_email", REHEARSAL_EMAIL_LIKE);
+  if (error) throw new Error(`delete rehearsal send log: ${error.message}`);
+  const teams = must(await admin.from("teams").select("id").in("name", REHEARSAL_TEAMS).eq("program_id", SEED_PROGRAM_ID), "read teams");
+  await deleteVerified(admin, "teams", teams.map((team) => team.id));
+
+  const catalogue = readCatalogueSql(readFileSync(CATALOGUE_PATH, "utf8"));
+  const names: Record<CatalogueTable, string[]> = {
+    courses: catalogue.map((course) => course.name),
+    providers: [...new Set(catalogue.map((course) => course.provider))],
+    cert_types: [...new Set(catalogue.map((course) => course.certType))],
+  };
+  // Child before parent: courses reference providers and certificate types.
+  for (const table of CATALOGUE_TABLES) {
+    const rows = must(await admin.from(table).select("id").in("name", names[table]), `read ${table}`);
+    await deleteVerified(admin, table, rows.map((row) => row.id).filter((id) => !id.startsWith(SEED_ID_PREFIX)));
+  }
 }

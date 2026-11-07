@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
@@ -8,6 +7,7 @@ import {
   addOwnCertificateWithProof,
   addPilotMember,
   AWS,
+  downloadExport,
   evidenceHref,
   pilotEmail,
   recordRow,
@@ -31,12 +31,6 @@ async function readRecordsCount(page: Page): Promise<number> {
   await page.goto("/dashboard");
   await expect(recordsTile(page)).toHaveText(/^\d+$/);
   return Number(await recordsTile(page).textContent());
-}
-
-async function exportCsv(page: Page): Promise<string> {
-  await page.goto("/records");
-  const [file] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Export CSV" }).click()]);
-  return (await readFile(await file.path())).toString("utf8");
 }
 
 async function expectNoHorizontalScroll(page: Page) {
@@ -88,7 +82,7 @@ test("E-1: a member's whole first day reaches the manager, the dashboard and the
     expect((await managerPage.request.get(href, { maxRedirects: 0 })).status()).toBe(307);
 
     expect(await readRecordsCount(adminPage)).toBe(recordsBefore + 1);
-    expect(await exportCsv(adminPage)).toContain(VIETNAMESE_NAME);
+    expect((await downloadExport(adminPage, "Export CSV")).toString("utf8")).toContain(VIETNAMESE_NAME);
   } finally {
     await removeManagerMember();
     await Promise.all([adminPage, memberPage, managerPage].map((page) => page.context().close()));

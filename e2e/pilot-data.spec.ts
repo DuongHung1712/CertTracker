@@ -1,13 +1,12 @@
-import { readFile } from "node:fs/promises";
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext } from "@playwright/test";
 import * as XLSX from "xlsx";
 import { buildSampleWorkbook } from "../src/features/import/sample-workbook";
 import { todayVn } from "../src/lib/dates";
 import { signIn } from "./helpers";
-import { adminApi } from "./support/accounts";
 import { readLocalEnv } from "./support/env";
-import { createPilotTeams, deleteImportBatch, importRehearsalFile, importWorkbook, REHEARSAL_EMAIL_LIKE } from "./support/pilot-data";
-import { AWS, pilotEmail, removePilotPeople } from "./support/pilot-member";
+import { createPilotTeams, deleteImportBatch, importRehearsalFile, importWorkbook, sweepRehearsalLeftovers } from "./support/pilot-data";
+import { AWS, downloadExport, pilotEmail, removePilotPeople } from "./support/pilot-member";
+import { signInAsSeedAdmin } from "./support/restore-seed";
 
 // The DAS pilot's data journeys (spec §7.4 E-8, E-9). The cron routes run against the same local database, with
 // EMAIL_TRANSPORT=console and CRON_SECRET passed to the Playwright process (the dev server inherits them).
@@ -15,11 +14,12 @@ const VIETNAMESE_NAME = "Nguyễn Thị Hằng";
 const UTF8_BOM = [0xef, 0xbb, 0xbf];
 const SECRET = readLocalEnv("CRON_SECRET") ?? "";
 const CRON_JOBS = ["expiry-alerts", "monthly-report"] as const;
+const LOG_KIND = { "expiry-alerts": "expiry-alert", "monthly-report": "monthly-report" } as const;
 const REHEARSAL_EMAIL = /^person\d{2}@example\.com$/;
 // The seed's AWS course as the catalogue reader would describe it, so the E-8 import creates no catalogue rows.
 const SEED_AWS = { name: AWS, validityMonths: 36, provider: "AWS", certType: "Cloud" };
 
-type CronSummary = { transport: string; planned: number; sent: number; skipped: number; failed: number; recipients?: { email: string }[] };
+type CronSummary = { period: string; transport: string; planned: number; sent: number; skipped: number; failed: number; recipients?: { email: string }[] };
 
 async function callCron(request: APIRequestContext, job: (typeof CRON_JOBS)[number], dryRun: boolean) {
   const response = await request.get(`/api/cron/${job}${dryRun ? "?dryRun=1" : ""}`, { headers: { Authorization: `Bearer ${SECRET}` } });
@@ -27,15 +27,18 @@ async function callCron(request: APIRequestContext, job: (typeof CRON_JOBS)[numb
   return (await response.json()) as CronSummary;
 }
 
-async function download(page: Page, linkName: "Export CSV" | "Export Excel"): Promise<Buffer> {
-  await page.goto("/records");
-  const [file] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: linkName }).click()]);
-  return readFile(await file.path());
+/** The send log's recipients for one job and period, sorted (read as the seed admin, whom RLS lets read it). */
+async function loggedRecipients(job: (typeof CRON_JOBS)[number], period: string): Promise<string[]> {
+  const admin = await signInAsSeedAdmin();
+  const { data, error } = await admin.from("notification_log").select("recipient_email").eq("kind", LOG_KIND[job]).eq("period", period);
+  if (error) throw new Error(`read send log: ${error.message}`);
+  return data.map((row) => row.recipient_email).sort();
 }
 
 test.beforeAll(async () => {
   if (SECRET.length < 16) throw new Error("Pass CRON_SECRET (≥16 chars) in the environment of the Playwright run.");
   await removePilotPeople();
+  await sweepRehearsalLeftovers();
 });
 test.afterAll(removePilotPeople);
 
@@ -53,11 +56,11 @@ test("E-8: an imported Vietnamese name survives /members, the CSV export and the
     await page.goto("/members");
     await expect(page.getByRole("cell", { name: VIETNAMESE_NAME, exact: true })).toBeVisible();
 
-    const csv = await download(page, "Export CSV");
+    const csv = await downloadExport(page, "Export CSV");
     expect([...csv.subarray(0, 3)]).toEqual(UTF8_BOM);
     expect(csv.toString("utf8")).toContain(VIETNAMESE_NAME);
 
-    const book = XLSX.read(await download(page, "Export Excel"));
+    const book = XLSX.read(await downloadExport(page, "Export Excel"));
     const rows = XLSX.utils.sheet_to_json<string[]>(book.Sheets[book.SheetNames[0]!]!, { header: 1 });
     expect(rows.flat()).toContain(VIETNAMESE_NAME);
   } finally {
@@ -85,19 +88,24 @@ test("E-9: after the rehearsal import each cron job mails every recipient once, 
         expect(first.failed, job).toBe(0);
         expect(first.planned, job).toBe(dry.planned);
         expect(first.sent + first.skipped, job).toBe(first.planned);
+        // The rehearsal people are new to the log, so the expiry run must really send. The monthly report goes to the
+        // seed's admin and manager, whom notifications.spec may already have mailed this month: there the log proves it.
+        if (job === "expiry-alerts") expect(first.sent, job).toBeGreaterThan(0);
+        const logged = await loggedRecipients(job, dry.period);
+        expect(logged.filter((address) => emails.includes(address)), `${job}: one log row per recipient`).toEqual([...emails].sort());
 
         const second = await callCron(request, job, false);
         expect(second.failed, job).toBe(0);
         expect(second.sent, job).toBe(0);
         expect(second.skipped, job).toBe(second.planned);
+        expect(await loggedRecipients(job, dry.period), `${job}: the second run adds no log rows`).toEqual(logged);
       }
     } finally {
       await removeRehearsal();
-      // The send log is admin read-only through RLS; only the rehearsal's own rows are removed, the seed's stay as in notifications.spec.
-      const { error } = await adminApi().from("notification_log").delete().like("recipient_email", REHEARSAL_EMAIL_LIKE);
-      if (error) throw new Error(`delete rehearsal send log: ${error.message}`);
     }
   } finally {
     await removeTeams();
+    // Also clears the rehearsal's rows in the send log.
+    await sweepRehearsalLeftovers();
   }
 });

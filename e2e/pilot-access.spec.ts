@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { EVIDENCE_TOO_LARGE_MESSAGE, MAX_EVIDENCE_BYTES } from "../src/lib/storage/evidence";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { EVIDENCE_TOO_LARGE_MESSAGE, EVIDENCE_WRONG_TYPE_MESSAGE, MAX_EVIDENCE_BYTES } from "../src/lib/storage/evidence";
 import { signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import {
@@ -22,8 +22,8 @@ import { signInAsSeedAdmin } from "./support/restore-seed";
 const APP_ROUTES = ["/dashboard", "/me", "/members", "/records", "/courses", "/org", "/import", "/data-quality", "/settings"];
 const CRON_ROUTES = ["/api/cron/expiry-alerts", "/api/cron/monthly-report"];
 const REFUSED_WITHOUT_DATA = [307, 401, 404];
+const LOGIN_PATH = "/login";
 const MAX_REDIRECTS = 5;
-const WRONG_TYPE_MESSAGE = "Only PDF, JPG, PNG or WebP files are accepted.";
 const NVIDIA = "NVIDIA Generative AI LLMs";
 
 const memberA = { email: pilotEmail("a"), id: "" };
@@ -37,6 +37,23 @@ async function recordCount(memberId: string): Promise<number> {
   const { count, error } = await admin.from("training_records").select("id", { count: "exact", head: true }).eq("member_id", memberId);
   if (error) throw new Error(`count records: ${error.message}`);
   return count!;
+}
+
+/**
+ * Clicks Save and waits until the form has finished submitting (the button reads "Save" and is enabled again),
+ * then returns how many Server Action requests the click sent. The submit handler awaits every action it calls,
+ * so once the button is back none can still be on its way.
+ */
+async function saveAndCountServerActions(page: Page, dialog: Locator): Promise<number> {
+  let serverActions = 0;
+  const countAction = (request: { headers(): Record<string, string> }) => {
+    if (request.headers()["next-action"]) serverActions += 1;
+  };
+  page.on("request", countAction);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog.getByRole("button", { name: "Save", exact: true })).toBeEnabled();
+  page.off("request", countAction);
+  return serverActions;
 }
 
 async function closeSheet(page: Page) {
@@ -86,12 +103,15 @@ test("E-5: a signed-out visitor is sent to /login and never gets data", async ({
   }
 
   const dataResponses = {
-    "/api/export/records": await request.get("/api/export/records", { maxRedirects: 0 }),
+    // With a valid format the route gets past its input check, so only the session decides.
+    "/api/export/records?format=csv": await request.get("/api/export/records?format=csv", { maxRedirects: 0 }),
     "/api/import/parse": await request.post("/api/import/parse", { maxRedirects: 0, multipart: { file: { name: "a.xlsx", mimeType: "application/octet-stream", buffer: Buffer.from("x") } } }),
     [evidenceUrl]: await request.get(evidenceUrl, { maxRedirects: 0 }),
   };
   for (const [route, response] of Object.entries(dataResponses)) {
     expect(REFUSED_WITHOUT_DATA, route).toContain(response.status());
+    // A redirect anywhere else (the signed storage URL, say) would be data.
+    if (response.status() === 307) expect(pathOf(response.headers()["location"]), route).toBe(LOGIN_PATH);
   }
 
   for (const route of CRON_ROUTES) {
@@ -137,8 +157,9 @@ test("E-7: a proof over 4 MB shows the form's message and nothing is saved", asy
   const oversized = Buffer.concat([Buffer.from("%PDF-"), Buffer.alloc(MAX_EVIDENCE_BYTES + 1 - 5)]);
   await dialog.getByLabel("Evidence").setInputFiles({ name: "proof.pdf", mimeType: "application/pdf", buffer: oversized });
   await expect(dialog.getByText(EVIDENCE_TOO_LARGE_MESSAGE)).toBeVisible();
-  await dialog.getByRole("button", { name: "Save" }).click();
-  if ((await page.getByRole("dialog").count()) > 0) await closeSheet(page);
+  expect(await saveAndCountServerActions(page, dialog)).toBe(0);
+  await expect(dialog.getByText(EVIDENCE_TOO_LARGE_MESSAGE)).toBeVisible();
+  await closeSheet(page);
   expect(await recordCount(memberB.id)).toBe(before);
 });
 
@@ -147,8 +168,8 @@ test("E-7: a text file renamed .pdf shows the form's message and nothing is save
   const before = await recordCount(memberB.id);
   const dialog = await openOwnCertificateForm(page, "nvidia", NVIDIA);
   await dialog.getByLabel("Evidence").setInputFiles({ name: "proof.pdf", mimeType: "application/pdf", buffer: Buffer.from("just some text\n") });
-  await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText(WRONG_TYPE_MESSAGE)).toBeVisible();
-  if ((await page.getByRole("dialog").count()) > 0) await closeSheet(page);
+  expect(await saveAndCountServerActions(page, dialog)).toBe(0);
+  await expect(dialog.getByText(EVIDENCE_WRONG_TYPE_MESSAGE)).toBeVisible();
+  await closeSheet(page);
   expect(await recordCount(memberB.id)).toBe(before);
 });
