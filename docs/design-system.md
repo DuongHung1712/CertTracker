@@ -210,10 +210,11 @@ When the database **blocks** the delete (for example a course that certificate r
 Hiding is only UX; every permission is still enforced by RLS.
 
 ### 4.6 Dashboard
-- **Header:** Title, subtitle timestamp, and one primary action ("View records" for admin/manager, "My certificates" for member).
-- **Overview:** 4 hero cards with small stacked visuals, followed by 3 compact tiles. All inside region "Overview", `dl > div` with bare number in the first `dd`.
-- **Health:** Expiry distribution chart (2/3) + Completion donut (1/3).
-- **Explorer:** Tabbed selector ("By team", "By certificate type", "By provider", "Popular courses") with compact table on left and live detail panel on right.
+- **Header:** Title, subtitle timestamp, and action buttons: "Filters" button (scrolls to/focuses filter controls) and primary action with 16px icon ("View records" for admin/manager, "My certificates" for member).
+- **Overview:** 4 tall hero KPI cards (~240px, `KpiCard`) with numbers in the upper half and real mini charts in the lower half (`RecordsMiniChart`, `ValidMiniChart`, `ExpiringGaugeMiniChart`, and positive empty state `ExpiredMiniChart`), followed by a slim compact stat strip (Active members, Completed, In progress). All inside region "Overview", `dl > div` with bare number in the first `dd`.
+- **Certificate Expiry:** Compact horizontal strip (~120px) positioned directly above Explorer, with exact `role="img"` and `aria-label` contract.
+- **Filter Row:** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
+- **Explorer:** Master-Detail board with tab pills and count chips on top, solid `bg-primary` row for selected item (contrast ≥ 4.5:1, visible focus ring), and live detail dossier on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open in records).
 - **Ranking:** Individual leaderboard (admin/manager only).
 
 ---

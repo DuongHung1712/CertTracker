@@ -59,7 +59,7 @@ async function editStatus(page: Page, row: Locator, status: string, progress: st
   await expect(dialog).toHaveCount(0);
 }
 
-test("admin sees org-wide KPIs, the expiry chart and the personal ranking", async ({ page }) => {
+test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal ranking", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
 
   await expectOrgWideTiles(page);
@@ -67,6 +67,16 @@ test("admin sees org-wide KPIs, the expiry chart and the personal ranking", asyn
   const members = (await tileValue(page, "Active members").innerText()).replace(/\D/g, "");
   expect(Number(members)).toBeGreaterThanOrEqual(3);
 
+  // Hero KPI cards contain accessible mini charts with role="img"
+  await expect(page.getByRole("img", { name: /^Certificate records by group:/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Valid certificates:/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Expiring within 60 days:/ })).toBeVisible();
+
+  // Expired card shows positive empty state when total = 0 (seed has 0)
+  const expiredPositive = page.getByRole("img", { name: /^No expired certificates/ });
+  await expect(expiredPositive).toBeVisible();
+
+  // Expiry chart sits above explorer with exact aria-label contract
   const chart = section(page, "Certificate expiry").getByRole("img", { name: /^Certificate expiry:/ });
   await expect(chart).toBeVisible();
   // Chart labels are day ranges, distinct from the tile labels; anchored so "…1" does not also match "…10".
@@ -82,9 +92,9 @@ test("admin sees org-wide KPIs, the expiry chart and the personal ranking", asyn
   await expect(anRow).toBeVisible();
   await expect(anRow.getByRole("cell").first()).toHaveText("1");
 
-  // Health row has the completion donut with text equivalent
-  const donut = page.getByRole("img", { name: /^Study completion:/ });
-  await expect(donut).toBeVisible();
+  // Study completion split in Explorer detail panel exposes accessible image
+  const completionSplit = page.getByRole("img", { name: /^Study completion:/ });
+  await expect(completionSplit).toBeVisible();
 
   // Explorer detail panel is visible for selected row
   const detailPanel = page.getByRole("region", { name: "Selected item details" });
@@ -172,7 +182,7 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
   }
 });
 
-test("explorer tabs, filtering, and keyboard row selection update the detail panel", async ({ page }) => {
+test("explorer tabs, filter row, clear filters, and keyboard row selection update detail panel", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
 
   // Switch to "Popular courses" tab
@@ -186,14 +196,19 @@ test("explorer tabs, filtering, and keyboard row selection update the detail pan
   await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
 
   // Filter input searches across courses
-  const searchInput = courseSection.getByRole("textbox", { name: "Filter course" });
+  const searchInput = page.getByRole("textbox", { name: "Filter course" });
   await searchInput.fill("NVIDIA");
   await expect(rowWith(courseSection, "NVIDIA")).toBeVisible();
   await expect(courseSection.getByText(AWS)).toHaveCount(0);
 
-  // Clear search restores all courses
-  await searchInput.clear();
+  // Active filter chip shows 1
+  await expect(page.getByText("Active filters")).toBeVisible();
+
+  // Clear filters button restores all courses
+  const clearBtn = page.getByRole("button", { name: "Clear filters" }).first();
+  await clearBtn.click();
   await expect(rowWith(courseSection, AWS)).toBeVisible();
+  await expect(searchInput).toHaveValue("");
 
   // Keyboard navigation on rows: focus row and press Enter
   const nvidiaRow = rowWith(courseSection, "NVIDIA");
@@ -201,4 +216,9 @@ test("explorer tabs, filtering, and keyboard row selection update the detail pan
   await page.keyboard.press("Enter");
   await expect(nvidiaRow).toHaveAttribute("aria-selected", "true");
   await expect(detailPanel.getByRole("heading", { name: /NVIDIA/ })).toBeVisible();
+
+  // Filtering that excludes the selected row falls back to first matching row
+  await searchInput.fill("AWS");
+  await expect(rowWith(courseSection, AWS)).toHaveAttribute("aria-selected", "true");
+  await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
 });

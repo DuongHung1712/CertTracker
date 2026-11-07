@@ -2,22 +2,24 @@ import Link from "next/link";
 import { AlertCircle, Award, CheckCircle2, Clock } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
-import { KpiTile } from "@/components/data/kpi-tile";
 import { buttonVariants } from "@/components/ui/button";
 import { getCurrentUser } from "@/features/auth/queries";
-import { CompletionDonut } from "@/features/dashboard/components/completion-donut";
 import { ExpiryChart } from "@/features/dashboard/components/expiry-chart";
 import { Explorer } from "@/features/dashboard/components/explorer";
+import { DashboardHeaderActions } from "@/features/dashboard/components/header-actions";
+import {
+  ExpiredMiniChart,
+  ExpiringGaugeMiniChart,
+  RecordsMiniChart,
+  ValidMiniChart,
+} from "@/features/dashboard/components/hero-charts";
 import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
 import { Section, SectionError } from "@/features/dashboard/components/section";
-import { StatusBar } from "@/features/dashboard/components/status-bar";
 import {
-  expiringBuckets,
   expiringCerts,
   expiryBuckets,
   formatRate,
-  kpiStudyStatusSplit,
   ratePercent,
   validBuckets,
   validCerts,
@@ -25,7 +27,7 @@ import {
 import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard/queries";
 import { settle } from "@/features/dashboard/settle";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
-import { formatDateTimeVn } from "@/lib/format";
+import { formatDateTimeVn, formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const RANKING_DESCRIPTION =
@@ -50,6 +52,13 @@ export default async function DashboardPage() {
   ]);
 
   const noRecords = kpis.ok && kpis.data.totalRecords === 0;
+
+  // Breakdown rows used for hero chart dimensions
+  const breakdownForHero = canSeeTeams && teams?.ok
+    ? teams.data
+    : certTypes.ok
+      ? certTypes.data
+      : [];
 
   // Build Explorer tabs
   const explorerTabs = [
@@ -98,46 +107,29 @@ export default async function DashboardPage() {
       <PageHeader
         title="Dashboard"
         description={`Figures as of ${formatDateTimeVn(new Date().toISOString())}.`}
-        actions={
-          <Link
-            href={isMember ? "/me" : "/records"}
-            className={cn(buttonVariants(), "min-h-[44px] sm:min-h-[36px]")}
-          >
-            {isMember ? "My certificates" : "View records"}
-          </Link>
-        }
+        actions={<DashboardHeaderActions isMember={isMember} />}
       />
       <RecordsRealtime />
 
-      {/* 2. Overview: Hero row (4 cards) + Compact row (3 tiles) */}
+      {/* 2. Overview: Hero row (4 tall cards with mini charts) + Slim stat strip (3 stats) */}
       <Section title="Overview">
         {kpis.ok ? (
-          <div className="flex flex-col gap-3">
-            {/* Hero row: 4 cards with visuals below dd */}
+          <div className="flex flex-col gap-3.5">
+            {/* Hero row: 4 tall cards with real mini charts filling the lower half */}
             <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
               <KpiCard
                 label="Certificate records"
                 value={kpis.data.totalRecords}
                 icon={<Award className="size-4 text-foreground" />}
                 hint="Total tracked across teams"
-                visual={
-                  <StatusBar
-                    segments={kpiStudyStatusSplit(kpis.data)}
-                    ariaLabel="Study status breakdown"
-                  />
-                }
+                visual={<RecordsMiniChart rows={breakdownForHero} />}
               />
               <KpiCard
                 label="Valid"
                 value={validCerts(kpis.data)}
                 icon={<CheckCircle2 className="size-4 text-[var(--status-active-fg)]" />}
                 hint={`Includes ${kpis.data.noExpiryCerts} with no expiry`}
-                visual={
-                  <StatusBar
-                    segments={validBuckets(kpis.data)}
-                    ariaLabel="Valid certificates breakdown"
-                  />
-                }
+                visual={<ValidMiniChart buckets={validBuckets(kpis.data)} />}
               />
               <KpiCard
                 label="Expiring (≤ 60 days)"
@@ -145,9 +137,9 @@ export default async function DashboardPage() {
                 icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
                 hint="31–60 days vs ≤ 30 days left"
                 visual={
-                  <StatusBar
-                    segments={expiringBuckets(kpis.data)}
-                    ariaLabel="Expiring certificates breakdown"
+                  <ExpiringGaugeMiniChart
+                    expiringCount={expiringCerts(kpis.data)}
+                    totalCompleted={kpis.data.doneRecords}
                   />
                 }
               />
@@ -158,30 +150,37 @@ export default async function DashboardPage() {
                 hint="Completed certificates past their expiry date"
                 valueClassName={kpis.data.expiredCerts > 0 ? "text-destructive font-semibold" : undefined}
                 visual={
-                  <StatusBar
-                    segments={[
-                      {
-                        key: "expired",
-                        label: "Expired",
-                        count: kpis.data.expiredCerts,
-                        color: "var(--status-expired-fg)",
-                      },
-                    ]}
-                    ariaLabel="Expired certificates count"
+                  <ExpiredMiniChart
+                    totalExpired={kpis.data.expiredCerts}
+                    rows={breakdownForHero}
                   />
                 }
               />
             </dl>
 
-            {/* Compact row: 3 tiles */}
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <KpiTile label="Active members" value={kpis.data.totalMembers} />
-              <KpiTile
-                label="Completed"
-                value={kpis.data.doneRecords}
-                hint={`${formatRate(ratePercent(kpis.data.doneRecords, kpis.data.totalRecords))} of records`}
-              />
-              <KpiTile label="In progress" value={kpis.data.inProgressRecords} />
+            {/* Slim compact stat strip: 3 inline stats replacing large separate boxes */}
+            <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card shadow-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+                <dt className="text-label uppercase tracking-wider text-muted-foreground">Active members</dt>
+                <dd className="text-xl font-semibold tabular-nums text-foreground">
+                  {formatNumber(kpis.data.totalMembers)}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+                <dt className="text-label uppercase tracking-wider text-muted-foreground">Completed</dt>
+                <dd className="text-xl font-semibold tabular-nums text-foreground">
+                  {formatNumber(kpis.data.doneRecords)}
+                </dd>
+                <dd className="text-caption text-muted-foreground">
+                  {formatRate(ratePercent(kpis.data.doneRecords, kpis.data.totalRecords))} of records
+                </dd>
+              </div>
+              <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+                <dt className="text-label uppercase tracking-wider text-muted-foreground">In progress</dt>
+                <dd className="text-xl font-semibold tabular-nums text-foreground">
+                  {formatNumber(kpis.data.inProgressRecords)}
+                </dd>
+              </div>
             </dl>
           </div>
         ) : (
@@ -197,7 +196,18 @@ export default async function DashboardPage() {
         />
       ) : (
         <>
-          {/* 3. Explorer: Centerpiece Master-Detail board matching the template layout */}
+          {/* 3. Certificate expiry: Compact horizontal strip sitting directly above Explorer */}
+          <Section title="Certificate expiry" description="Completed certificates, by time left">
+            <div className="rounded-lg border border-border bg-card p-3.5 shadow-xs">
+              {kpis.ok ? (
+                <ExpiryChart buckets={expiryBuckets(kpis.data)} compact />
+              ) : (
+                <SectionError title="Certificate expiry" />
+              )}
+            </div>
+          </Section>
+
+          {/* 4. Explorer: Filter Row + Centerpiece Master-Detail board matching the template */}
           <Section title="Explorer" description="Breakdown by team, certificate type, provider or course">
             {explorerTabs.length > 0 ? (
               <Explorer tabs={explorerTabs} defaultTab={defaultTab} />
@@ -211,34 +221,6 @@ export default async function DashboardPage() {
               Only groups with at least 3 learners are shown.
             </p>
           )}
-
-          {/* 4. Health row: 2/3 ExpiryChart + 1/3 CompletionDonut */}
-          <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <Section title="Certificate expiry" description="Completed certificates, by time left">
-                {kpis.ok ? (
-                  <ExpiryChart buckets={expiryBuckets(kpis.data)} />
-                ) : (
-                  <SectionError title="Certificate expiry" />
-                )}
-              </Section>
-            </div>
-            <div className="lg:col-span-1">
-              <Section title="Completion" description="Study status of all records">
-                {kpis.ok ? (
-                  <CompletionDonut
-                    counts={{
-                      done: kpis.data.doneRecords,
-                      inProgress: kpis.data.inProgressRecords,
-                      notStarted: kpis.data.notStartedRecords,
-                    }}
-                  />
-                ) : (
-                  <SectionError title="Completion" />
-                )}
-              </Section>
-            </div>
-          </div>
         </>
       )}
 

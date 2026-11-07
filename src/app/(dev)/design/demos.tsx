@@ -19,13 +19,16 @@ import { BreakdownTable } from "@/features/dashboard/components/breakdown-table"
 import { CompletionDonut } from "@/features/dashboard/components/completion-donut";
 import { ExpiryChart } from "@/features/dashboard/components/expiry-chart";
 import { Explorer } from "@/features/dashboard/components/explorer";
+import {
+  ExpiredMiniChart,
+  ExpiringGaugeMiniChart,
+  RecordsMiniChart,
+  ValidMiniChart,
+} from "@/features/dashboard/components/hero-charts";
 import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
-import { StatusBar } from "@/features/dashboard/components/status-bar";
 import {
-  expiringBuckets,
   expiryBuckets,
-  kpiStudyStatusSplit,
   validBuckets,
   type ExpiryBucket,
 } from "@/features/dashboard/metrics";
@@ -268,9 +271,7 @@ export function DashboardRedesignDemo() {
     noExpiryCerts: 8,
   };
   const sampleBuckets: ExpiryBucket[] = expiryBuckets(sampleKpis);
-  const certSegments = kpiStudyStatusSplit(sampleKpis);
   const validSegments = validBuckets(sampleKpis);
-  const expiringSegments = expiringBuckets(sampleKpis);
 
   const demoTabs = [
     {
@@ -306,26 +307,26 @@ export function DashboardRedesignDemo() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Hero KPI cards</h3>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Tall Hero KPI cards</h3>
         <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
             label="Certificate records"
             value={61}
             icon={<Award className="size-4 text-foreground" />}
-            visual={<StatusBar segments={certSegments} />}
+            visual={<RecordsMiniChart rows={BREAKDOWN_ROWS} />}
           />
           <KpiCard
             label="Valid"
             value={50}
             icon={<CheckCircle2 className="size-4 text-[var(--status-active-fg)]" />}
             hint="Includes 8 with no expiry"
-            visual={<StatusBar segments={validSegments} />}
+            visual={<ValidMiniChart buckets={validSegments} />}
           />
           <KpiCard
             label="Expiring (≤ 60 days)"
             value={9}
             icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
-            visual={<StatusBar segments={expiringSegments} />}
+            visual={<ExpiringGaugeMiniChart expiringCount={9} totalCompleted={48} />}
           />
           <KpiCard
             label="Expired"
@@ -333,17 +334,39 @@ export function DashboardRedesignDemo() {
             icon={<AlertCircle className="size-4 text-destructive" />}
             valueClassName="text-destructive font-semibold"
             hint="Completed certificates past their expiry date"
-            visual={
-              <StatusBar
-                segments={[{ key: "expired", label: "Expired", count: 2, color: "var(--status-expired-fg)" }]}
-              />
-            }
+            visual={<ExpiredMiniChart totalExpired={2} rows={BREAKDOWN_ROWS} />}
           />
         </dl>
       </div>
 
       <div>
-        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Explorer (Master-Detail board)</h3>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Stat Strip</h3>
+        <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card shadow-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">Active members</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">20</dd>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">Completed</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">48</dd>
+            <dd className="text-caption text-muted-foreground">78.7% of records</dd>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">In progress</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">10</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Expiry Strip</h3>
+        <div className="rounded-lg border border-border bg-card p-3.5 shadow-xs">
+          <ExpiryChart buckets={sampleBuckets} compact />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Explorer (Filter row + Master-Detail board)</h3>
         <Explorer tabs={demoTabs} defaultTab="team" />
       </div>
 

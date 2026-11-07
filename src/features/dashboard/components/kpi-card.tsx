@@ -2,8 +2,9 @@ import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /**
- * Hero KPI card for the Overview row on /dashboard.
+ * Tall Hero KPI card for the Overview row on /dashboard (~220-260px).
  * Conforms to the `dl > div > dt + dd.first()` contract required by e2e assertions.
+ * Lower half holds a real mini chart or visual.
  */
 export function KpiCard({
   label,
@@ -27,11 +28,11 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "flex min-w-0 flex-col justify-between gap-3.5 rounded-lg border border-border bg-card p-4 transition-colors",
+        "flex min-w-0 min-h-[235px] flex-col justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors",
         className,
       )}
     >
-      <div className="flex min-w-0 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-col gap-1">
         <div className="flex items-center justify-between gap-2">
           <dt className="text-label uppercase tracking-wider text-muted-foreground">{label}</dt>
           {icon && (
@@ -48,7 +49,7 @@ export function KpiCard({
         </dd>
         {hint && <dd className="text-caption text-muted-foreground line-clamp-1">{hint}</dd>}
       </div>
-      {visual && <div className="mt-auto pt-1">{visual}</div>}
+      {visual && <div className="mt-auto pt-2">{visual}</div>}
     </div>
   );
 }
