@@ -37,7 +37,9 @@ Baseline before Phase 1 (2026-11-05): Vitest 768, pgTAP 335, e2e 67.
 
 Four small commits followed: 5c8cd18, 097a537, 198b8ad, be66faa. Their checks (`task-11-fix-report.md`): lint 0 errors, typecheck clean, Vitest 804 (process-docs 102/102), e2e 23/23 on the touched specs (records, courses, career, design, members). **The full e2e suite and pgTAP were not re-run after those four commits.** None of them touches a migration.
 
-<!-- controller: final re-run counts -->
+**Final re-run on `78cdc5a` (the last commit of the branch, after the four small commits):** lint 0 errors (1 known warning), typecheck clean, Vitest 66 files / 804, pgTAP 16 files / 414 after a full `supabase db reset`, e2e 79 passed twice (4.7 and 4.5 min, 0 flaky, 0 retries), `pnpm build` ok. The counts are identical to the run on `43d12b2`.
+
+*Log note, not a failure:* in e2e run 1 the dev server logged `AuthApiError: Invalid Refresh Token` twice and one `[proxy] auth check failed` near the live-update test in `records.spec.ts`; that test passed. The new proxy logging (Task 3) now makes a stale session cookie visible in the log. Cause not investigated; if it shows up in production logs, look for a cookie from a signed-out session.
 
 ## 3. Mutation checks
 
