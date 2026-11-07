@@ -57,7 +57,7 @@ export function AppSidebar({ role, hasMember }: { role: Role; hasMember: boolean
                       isActive={active}
                       tooltip={item.label}
                     >
-                      <item.icon aria-hidden className="size-5" />
+                      <item.icon aria-hidden className="size-4" />
                       <span>{item.label}</span>
                       <LinkPendingReporter />
                     </SidebarMenuButton>
