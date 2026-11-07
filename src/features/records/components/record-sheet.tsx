@@ -9,7 +9,7 @@ import { EntityCombobox, type ComboboxOption } from "@/components/entity-combobo
 import { FileDropzone } from "@/components/file-dropzone";
 import { RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { Button } from "@/components/ui/button";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -206,6 +206,7 @@ export function RecordSheet({
                 />
               )}
             />
+            <FieldDescription>Can&apos;t find your course? Ask your admin to add it.</FieldDescription>
             <FieldError errors={[errors.courseId]} />
           </Field>
           <Field>
