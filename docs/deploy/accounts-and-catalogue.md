@@ -38,3 +38,11 @@ pnpm supabase db query --linked -f supabase/catalog/courses.sql
 ```
 
 Then check `/courses`. Types and providers left over from earlier testing stay; delete them at `/courses` if they are unused.
+
+## After the first deploy: count Auth calls
+
+Run `scripts/count-auth-calls.mjs` against production once, as an existing user, and compare with the numbers in `docs/process/04-wbs.md` §4 (more than 2 Auth calls per page view means setting `prefetch={false}` on the sidebar links). Production has no counting proxy, so omit `UPSTREAM`: only browser-visible calls are printed (the server column needs the proxy, see the script header).
+
+```bash
+BASE_URL=https://<production-host> EMAIL=<your e-mail> PASSWORD=<your password> node scripts/count-auth-calls.mjs
+```

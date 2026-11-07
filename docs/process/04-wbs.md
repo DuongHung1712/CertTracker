@@ -144,6 +144,18 @@ All values are local prod build, p75 in ms. The last column isolates the auth ch
 - No page is above 1 s, so there is no follow-up item from this run. The production run after deployment decides whether `SM-4` is met.
 
 
+### Auth calls per page view (Cert Core Phase 1, task 9, 2026-11-07)
+
+Spec §5.5 asked whether the `loading.tsx` files make each sidebar link prefetch cost an Auth call. Measured with `scripts/count-auth-calls.mjs` on a local production build (`pnpm build`, `next start -p 3101`) against the local Supabase stack, signed in as the seed admin, one full load per page plus 3 s for link prefetches. The build ran with `NEXT_PUBLIC_SUPABASE_URL` pointing at the script's counting proxy, so calls from the Next server are counted too.
+
+| Page | Link prefetches in the window | Auth `/auth/v1/user` calls from the browser | from the Next server |
+|---|---|---|---|
+| `/dashboard` | 15 | 0 | 1 |
+| `/records` | 15 | 0 | 1 |
+| `/members` | 15 | 0 | 1 |
+
+Rule was "more than 2 per page view means `prefetch={false}`": 1 is within it, so the sidebar links are unchanged. Limit: the local project verifies JWTs locally (`getClaims()`), while a symmetric (HS256) project would add one call per proxy check; re-run against production after the first deploy (see `docs/deploy/accounts-and-catalogue.md`). Full loads only, not client-side clicks.
+
 ## 5. Open points (to be confirmed)
 
 - All estimates, confirmed by the developer and the DC manager
