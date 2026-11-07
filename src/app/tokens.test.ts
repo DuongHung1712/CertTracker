@@ -3,19 +3,27 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { contrastRatio } from "@/lib/design/contrast";
 
-function readRootTokens(): Record<string, string> {
+function readTokens(selector: string): Record<string, string> {
   const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
-  const root = /:root\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+  const regex = new RegExp(`${selector}\\s*\\{([^}]*)\\}`);
+  const block = regex.exec(css)?.[1] ?? "";
   return Object.fromEntries(
-    [...root.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)].map((m) => [m[1], m[2]]),
+    [...block.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)].map((m) => [m[1], m[2]]),
   );
 }
 
-const tokens = readRootTokens();
+const tokens = readTokens(":root");
+const darkTokens = readTokens("\\.dark");
 
 function hex(name: string): string {
   const value = tokens[name];
   if (!value) throw new Error(`Token --${name} is missing or not #rrggbb in :root`);
+  return value;
+}
+
+function darkHex(name: string): string {
+  const value = darkTokens[name];
+  if (!value) throw new Error(`Token --${name} is missing or not #rrggbb in .dark`);
   return value;
 }
 
@@ -65,5 +73,19 @@ describe("design tokens", () => {
 
   it.each(CHART_STATUS_IDS)("chart bar --status-%s-fg on --card reaches 3:1", (id) => {
     expect(contrastRatio(hex(`status-${id}-fg`), hex("card"))).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("dark design tokens", () => {
+  it.each(TEXT_PAIRS)("dark text --%s on --%s reaches 4.5:1", (fg, bg) => {
+    expect(contrastRatio(darkHex(fg), darkHex(bg))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(UI_PAIRS)("dark control --%s on --%s reaches 3:1", (fg, bg) => {
+    expect(contrastRatio(darkHex(fg), darkHex(bg))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(CHART_STATUS_IDS)("dark chart bar --status-%s-fg on --card reaches 3:1", (id) => {
+    expect(contrastRatio(darkHex(`status-${id}-fg`), darkHex("card"))).toBeGreaterThanOrEqual(3);
   });
 });

@@ -23,48 +23,48 @@ Token names follow the **role** a colour plays, as in shadcn/ui. Only a light th
 
 ### 2.1 Interface colours
 
-| Token | Value | Used for | Contrast |
-|---|---|---|---|
-| `background` | `#F6F7F5` | Page background | — |
-| `foreground` | `#15212B` | Main text | 15.2:1 on `background` |
-| `card`, `popover` | `#FFFFFF` | Tables, cards, dialogs, menus | — |
-| `card-foreground`, `popover-foreground` | `#15212B` | Text on cards | 16.4:1 |
-| `muted`, `secondary` | `#EDF0EE` | Table header, secondary background, secondary button | — |
-| `muted-foreground` | `#56636C` | Secondary text, labels, placeholders | 5.4:1 on `muted`, 5.8:1 on `background` |
-| `secondary-foreground` | `#15212B` | Text on the secondary button | 14.2:1 |
-| `primary` | `#0E5C58` | Primary button, links, selected item, progress bar | 7.3:1 on `background` |
-| `primary-foreground` | `#FFFFFF` | Text on `primary` | 7.8:1 |
-| `primary-hover` | `#0A4744` | Primary button hover | 10.5:1 with white text |
-| `accent` | `#E2EFEC` | Selected table row, active sidebar item, row hover | — |
-| `accent-foreground` | `#0E5C58` | Text on `accent` | 6.6:1 |
-| `destructive` | `#B42318` | Delete button, form error text | 6.6:1 on white, in both directions |
-| `border` | `#D8DEDB` | Table rules, card borders, separators (decorative) | 1.27:1 on `background`, 1.36:1 on `card`; not used as a control boundary |
-| `input` | `#83908C` | Input, checkbox and select borders | 3.3:1 on `card`, 3.1:1 on `background` |
-| `ring` | `#1C7C75` | Focus ring (2px, offset 2px) | 4.7:1 on `background` |
+| Token | Light value | Dark value | Used for | Contrast (Light / Dark) |
+|---|---|---|---|---|
+| `background` | `#F6F7F5` | `#10171D` | Page background | — |
+| `foreground` | `#15212B` | `#EBF0EE` | Main text | 15.2:1 / 15.7:1 |
+| `card`, `popover` | `#FFFFFF` | `#162028` | Tables, cards, dialogs, menus | — |
+| `card-foreground`, `popover-foreground` | `#15212B` | `#EBF0EE` | Text on cards | 16.4:1 / 14.3:1 |
+| `muted`, `secondary` | `#EDF0EE` | `#1F2B35` | Table header, secondary background, secondary button | — |
+| `muted-foreground` | `#56636C` | `#94A3A8` | Secondary text, labels, placeholders | 5.4:1 / 6.3:1 |
+| `secondary-foreground` | `#15212B` | `#EBF0EE` | Text on the secondary button | 14.2:1 / 11.2:1 |
+| `primary` | `#0E5C58` | `#249C90` | Primary button, links, selected item, progress bar | 7.3:1 / 5.4:1 |
+| `primary-foreground` | `#FFFFFF` | `#0D151C` | Text on `primary` | 7.8:1 / 5.5:1 |
+| `primary-hover` | `#0A4744` | `#2DB4A6` | Primary button hover | 10.5:1 / 7.2:1 |
+| `accent` | `#E2EFEC` | `#163332` | Selected table row, active sidebar item, row hover | — |
+| `accent-foreground` | `#0E5C58` | `#48D1C1` | Text on `accent` | 6.6:1 / 7.3:1 |
+| `destructive` | `#B42318` | `#F87171` | Delete button, form error text | 6.6:1 / 6.0:1 |
+| `border` | `#D8DEDB` | `#253440` | Table rules, card borders, separators (decorative) | — |
+| `input` | `#83908C` | `#5A7385` | Input, checkbox and select borders | 3.3:1 / 3.3:1 |
+| `ring` | `#1C7C75` | `#38B2A3` | Focus ring (2px, offset 2px) | 4.7:1 / 6.9:1 |
 
 The sidebar uses shadcn's own set, mapped to the tokens above:
 
-| Token | Value |
-|---|---|
-| `sidebar` | `#FFFFFF` |
-| `sidebar-foreground` | `#15212B` |
-| `sidebar-border` | `#D8DEDB` |
-| `sidebar-accent` / `sidebar-accent-foreground` | `#E2EFEC` / `#0E5C58` |
-| `sidebar-primary` / `sidebar-primary-foreground` | `#0E5C58` / `#FFFFFF` |
-| `sidebar-ring` | `#1C7C75` |
+| Token | Light value | Dark value |
+|---|---|---|
+| `sidebar` | `#FFFFFF` | `#121B22` |
+| `sidebar-foreground` | `#15212B` | `#EBF0EE` |
+| `sidebar-border` | `#D8DEDB` | `#253440` |
+| `sidebar-accent` / `sidebar-accent-foreground` | `#E2EFEC` / `#0E5C58` | `#163332` / `#48D1C1` |
+| `sidebar-primary` / `sidebar-primary-foreground` | `#0E5C58` / `#FFFFFF` | `#249C90` / `#0D151C` |
+| `sidebar-ring` | `#1C7C75` | `#38B2A3` |
 
 ### 2.2 Expiry status colours
 
 Badges look like stamps: pale background, strong text, 1px border. Each status has 3 tokens, `--status-<id>-fg | -bg | -border`. The first column is the stored `expiry_status` key; the badge shows its English label (Valid, Expiring in 60 days, Expiring soon, Expired, No expiry, Not issued).
 
-| Status (`expiry_status` key) | id | fg | bg | border | Icon (lucide) | Contrast fg/bg |
-|---|---|---|---|---|---|---|
-| Active | `active` | `#1D6636` | `#E7F3EB` | `#A8D2B4` | `circle-check` | 6.1:1 |
-| Expiring in 60d | `expiring-60` | `#7A5200` | `#FFF5DC` | `#EDCB7E` | `clock` | 6.4:1 |
-| Expiring Soon | `expiring-soon` | `#9A3D0B` | `#FDEADD` | `#EFB189` | `triangle-alert` | 5.9:1 |
-| Expired | `expired` | `#B42318` | `#FDE8E6` | `#F0ADA7` | `circle-x` | 5.6:1 |
-| No Expiry | `no-expiry` | `#4A5560` | `#EEF1F0` | `#D3D9D6` | `infinity` | 6.7:1 |
-| N/A | `na` | `#4A5560` | `#EEF1F0` | `#D3D9D6` | `minus` | 6.7:1 |
+| Status (`expiry_status` key) | id | Light fg / bg / border | Dark fg / bg / border | Icon (lucide) | Contrast fg/bg (Light / Dark) |
+|---|---|---|---|---|---|
+| Active | `active` | `#1D6636` / `#E7F3EB` / `#A8D2B4` | `#4ADE80` / `#132E1F` / `#235E39` | `circle-check` | 6.1:1 / 8.4:1 |
+| Expiring in 60d | `expiring-60` | `#7A5200` / `#FFF5DC` / `#EDCB7E` | `#FACC15` / `#2D260D` / `#635118` | `clock` | 6.4:1 / 9.8:1 |
+| Expiring Soon | `expiring-soon` | `#9A3D0B` / `#FDEADD` / `#EFB189` | `#FB923C` / `#321D12` / `#6B3B20` | `triangle-alert` | 5.9:1 / 7.0:1 |
+| Expired | `expired` | `#B42318` / `#FDE8E6` / `#F0ADA7` | `#F87171` / `#321415` / `#6C282B` | `circle-x` | 5.6:1 / 6.1:1 |
+| No Expiry | `no-expiry` | `#4A5560` / `#EEF1F0` / `#D3D9D6` | `#94A3B8` / `#1A232F` / `#334155` | `infinity` | 6.7:1 / 6.2:1 |
+| N/A | `na` | `#4A5560` / `#EEF1F0` / `#D3D9D6` | `#94A3B8` / `#1A232F` / `#334155` | `minus` | 6.7:1 / 6.2:1 |
 
 Status colours are used **only** for certificate expiry. Never for buttons, study status or roles.
 
@@ -265,6 +265,7 @@ The page never scrolls horizontally; only a table scrolls inside its own frame (
 4. Sync the Design System page on claude.ai.
 5. Big decisions (changing the accent colour, adding dark mode) get an entry in `docs/decisions.md`.
 
-## 10. Not done yet
+## 10. Themes
 
-- **Dark mode**: tokens are already named by role; when it is built, only the values are redeclared.
+- **Light theme**: Warm paper-white (`#F6F7F5`) background, blue-black ink text (`#15212B`), deep teal accent (`#0E5C58`).
+- **Dark theme**: Dark slate paper (`#10171D`) background, pale ink text (`#EBF0EE`), luminous teal accent (`#249C90`). Both themes meet WCAG 2.1 AA text (>= 4.5:1) and UI boundaries/focus (>= 3:1). Controlled via `.dark` class on the root.

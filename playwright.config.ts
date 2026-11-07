@@ -1,5 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
+
 export default defineConfig({
   testDir: "./e2e",
   // `webServer.command` runs `next dev`, not a production build. Server Actions submitted by
@@ -8,10 +10,10 @@ export default defineConfig({
   // which is a dev-server artifact, not an app bug — each spec passes reliably run alone. Serializing
   // workers avoids that concurrency window; 14 specs still finish in well under a minute.
   workers: 1,
-  use: { baseURL: "http://localhost:3000" },
+  use: { baseURL },
   webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000/login",
+    command: process.env.PLAYWRIGHT_BASE_URL ? undefined : "pnpm dev",
+    url: `${baseURL}/login`,
     reuseExistingServer: true,
     timeout: 120_000,
   },
