@@ -117,7 +117,7 @@ Survived and accepted: Task 2 (a) widening only the update policy (the read poli
 | 8 | 1 (no separate re-review) | Failure artifact would be empty (no reporter/trace flags) |
 | 9 | 1 | Runbook step could detect nothing without UPSTREAM; `.next` held the counting URL; **UPSTREAM unguarded** (now http and localhost/127.0.0.1 only) |
 | 10 | 1 + controller minors (43d12b2) | **Critical data-loss SQL:** `truncate public.career_roles cascade` would have wiped members, records and profiles on production; leaver keeps an open session; nested storage restore would hide proofs from members |
-| 11 | 1 (re-review in progress) | GO for PR to `dev`. **I-1:** an unlinked login could change its own Auth e-mail to a colleague's and be linked later, if "Confirm email"/"Secure email change" are OFF in production. Checked locally: with confirmation on, the change stays pending |
+| 11 | 1 (re-review ✅, no new Critical/Important) | GO for PR to `dev`. **I-1:** an unlinked login could change its own Auth e-mail to a colleague's and be linked later, if "Confirm email"/"Secure email change" are OFF in production. Checked locally: with confirmation on, the change stays pending |
 
 ## 6. What the owner must still do
 

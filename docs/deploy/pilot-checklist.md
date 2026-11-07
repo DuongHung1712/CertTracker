@@ -31,6 +31,8 @@ Steps for each runbook: accounts and invitations in `accounts-and-catalogue.md`,
 - [ ] 10. Data owner's written agreement (`PRD-15`): names, e-mails and proof files go to a cloud service
 - [ ] 11. Delete leftover test types `AWS`, `TOEIC`, `IELTS` and provider `IIG` (they clutter DAS's course form)
 - [ ] 12. Check JWT signing key type (HS256 costs one extra Auth call per page), then count Auth calls as in `accounts-and-catalogue.md`
+*Items 13 to 15 were added by the Phase 1 review; they are not in spec §8.*
+
 - [ ] 13. Password rules in the Dashboard no stricter than the form: minimum 8 characters, no character classes (a stricter rule makes "Set password" fail)
 - [ ] 14. Do not turn off the Email provider (only the sign-up switch); invitations and sign-in need it
 - [ ] 15. Keep "Confirm email" and "Secure email change" ON (*to confirm* the production values and Dashboard names); otherwise an unlinked login could take over a colleague by changing its own address. Add or import members **before** inviting them
