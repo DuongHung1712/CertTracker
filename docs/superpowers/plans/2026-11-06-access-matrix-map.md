@@ -62,3 +62,10 @@ A `lives_ok` on an UPDATE does not count as cover: an UPDATE that RLS filters ou
 | Admin | `manager_scopes` | read all, update | all | **gap** → 16 #53, #54 |
 
 Note: an UPDATE on `members` reaches only rows the SELECT policy "members: read self or managed team" shows, so a manager's update of an out-of-scope member is refused by two policies. Widening the update policy alone exposes nothing (mutation check (a), task 2 report).
+
+## Known untested cells
+
+Two cells have no test (no permission gap; found in the Task 2 review, deferred by ruling R14). Add a test if either policy is touched:
+
+- A **member updating `manager_scopes`**: the map covers a member's read, insert and delete, not update. Policy refuses it today.
+- A **demoted manager updating or deleting their own proof file**: file 16 #41 and #42 cover the read and the upload into their own folder, and #43 to #45 the former team's files, but not an update or delete of their own file. The policy treats them as any member (own folder only), as for a member in file 05 #25 and #29.

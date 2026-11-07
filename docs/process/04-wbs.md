@@ -1,11 +1,11 @@
 # Work Breakdown Structure (WBS)
 
-- **Status:** Draft v4 — re-cut around the Cert Core release (decision #59)
-- **Last updated:** 2026-11-05
+- **Status:** Draft v5 — re-cut around the Cert Core release (decision #59); pilot before AI (decision #61)
+- **Last updated:** 2026-11-07
 - **Owner:** CertTracker team (DC34)
-- **Sources:** BRD v3.0 (`exports/CertTracker-BRD-v3.0-2026-10-31.docx`, not in git), [decisions #50–#60](../decisions.md), `git log`, [Plans](../superpowers/plans/), [Requirements](03-requirements.md)
+- **Sources:** BRD v3.0 (`exports/CertTracker-BRD-v3.0-2026-10-31.docx`, not in git), [decisions #50–#61](../decisions.md), `git log`, [Plans](../superpowers/plans/), [Requirements](03-requirements.md)
 
-> **Tóm tắt (VI):** Cây công việc cắt lại theo **release Cert Core** (decision #59): phần đã chạy trên `main` và production là `Built`; `C0` duyệt phạm vi, `C1` tài khoản và danh mục khóa học, `C2` AI phục vụ chứng chỉ, `C3` kiểm chứng và go-live. Skill Matrix, mục tiêu theo quý, lộ trình role, phần AI còn lại và việc chuyển backend sang Rust nằm ở `Later`. Mã WBS giữ nguyên để các tài liệu 00/07/08 còn trỏ đúng; việc mới là 15 và 16.
+> **Tóm tắt (VI):** Cây công việc cắt lại theo **release Cert Core** (decision #59): phần đã chạy trên `main` và production là `Built`; `C0` duyệt phạm vi, `C1` tài khoản và danh mục khóa học, `C2` AI phục vụ chứng chỉ, `C3` kiểm chứng và go-live. Skill Matrix, mục tiêu theo quý, lộ trình role, phần AI còn lại và việc chuyển backend sang Rust nằm ở `Later`. Mã WBS giữ nguyên để các tài liệu 00/07/08 còn trỏ đúng; việc mới là 15 và 16. Theo decision #61, pilot với DAS (9.1, 9.2) đứng trước `C2` (AI), và ba tính năng giai đoạn 2 (15.4–15.6) làm trong lúc pilot chạy.
 
 ## 1. Purpose and how to read
 
@@ -48,8 +48,8 @@ This document lists the work done and the work remaining for CertTracker. The fi
 | 8.3 | Self sign-up with approval | Not in Release 1 (BRD §1.3: the admin creates every account) | — | — | Could | — | — | — | Out of scope | — | R-31 |
 | 8.4 | Accessibility check | Keyboard and screen-reader audit of the live screens; list of fixes | BRD Appendix B.2 items met | C3 | Must | 1–2 | — | 15.1 | Not started | NFR-05 | NFR-05 |
 | 9 | **Validation and rollout** | See 9.1–G1 | — | — | — | 6–11 (sum) | — | — | Not started | — | — |
-| 9.1 | Pilot readiness | Sending domain verified; first backup; DC manager agrees to staff data in the cloud | All `Pilot` items in [08](08-production-readiness.md) done; a test e-mail reaches a non-owner address | C3 | Must | 1–2 | — | 7, 9.3 | Not started | FR-10, FR-11 | R-12, R-13 |
-| 9.2 | Pilot with one real team | Two-week pilot ([07](07-poc-and-mvp.md) §6) and pilot report | `SM-3` met; feedback recorded | C3 | Must | 2–3 | — | 9.1, 1.3, 8.1 | Not started | BO-1, BO-2 | R-12, R-13 |
+| 9.1 | Pilot readiness | Sending domain verified; first backup; DC manager agrees to staff data in the cloud | All `Pilot` items in [08](08-production-readiness.md) done; a test e-mail reaches a non-owner address | C1 | Must | 1–2 | — | 7, 9.3 | Not started | FR-10, FR-11 | R-12, R-13 |
+| 9.2 | Pilot with one real team | Two-week pilot ([07](07-poc-and-mvp.md) §6) and pilot report | `SM-3` met; feedback recorded | C1 | Must | 2–3 | — | 9.1, 1.3, 8.1 | Not started | BO-1, BO-2 | R-12, R-13 |
 | 9.3 | Production hosting decision | Stay on free tiers or move (Vercel Hobby is non-commercial; Supabase Free has no automatic backup) | Recorded in `decisions.md` before real staff data is loaded | C3 | Must | 1–2 | — | — | Not started | NFR-13 | NFR-07 |
 | 9.4 | Production readiness | Production checklist completed; release checklist adopted | All `Production` items in 08 done; go decision recorded | C3 | Must | 2–4 | — | 9.3, G1 | Not started | NFR-13 | NFR-01, NFR-06, NFR-07 |
 | G1 | Gate: pilot review | DC manager's decision to roll out beyond the pilot team | Pilot report accepted; no longer blocks any feature (decision #54) | C3 | Must | — | — | 1.2, 1.3, 1.6, 9.2 | Not started | BO-1 | — |
@@ -85,10 +85,13 @@ This document lists the work done and the work remaining for CertTracker. The fi
 | 14.2 | My next role | Criteria met / not yet; link to my plan | Matches the member's ratings and certificates | Later | Must | 1–2 | — | 14.1 | Not started | FR-27, UC-13 | — |
 | 14.3 | AI learning path | Gap explained; ordered steps with a rough timeline | Never says whether someone is ready for promotion | Later | Should | 1–1.5 | — | 14.2, 13.1 | Not started | FR-28, UC-13 | — |
 | 14.4 | Team progress towards a role | Criteria met and missing per member in scope; no scores | Only people within the manager's scope | Later | Could | 1–1.5 | — | 14.2 | Not started | FR-29, UC-14 | — |
-| 15 | **Cert Core accounts and data** | See 15.1–15.3 | — | — | — | 2–2.5 (sum) | — | — | In progress | — | — |
+| 15 | **Cert Core accounts and data** | See 15.1–15.6 | — | — | — | 2–2.5 (sum of 15.1–15.3; 15.4–15.6 not estimated yet) | — | — | In progress | — | — |
 | 15.1 | Account set-up by e-mail | Admin invites from the Supabase Dashboard; the member sets a password through the e-mailed link; same link type for a new password | e2e: invite, set password, sign in; a used link is refused. Dashboard templates and SMTP set on production | C1 | Must | 1–1.5 | 2026-11-05 → | 2 | In progress | FR-01 | R-17 |
 | 15.2 | Change access in the app | Admin sets Admin, Manager or Member in the member form; new accounts start as Member | e2e: role change takes effect; own access cannot be changed | C1 | Must | 0.5 | 2026-11-05 → | 15.1 | In progress | FR-01 | R-17 |
 | 15.3 | Course catalogue | Script loads 55 courses by name, each value checked against official sources (`supabase/catalog/SOURCES.md`); safe to run again | Local run twice adds no duplicates; loaded on production | C1 | Must | 0.5 | 2026-11-05 | 3 | Done | FR-04 | R-03 |
+| 15.4 | Submit and approve (Phase 2) | A Completed certificate waits for the manager in scope or the admin, who approves it or returns it with a note; only approved certificates count in the dashboard, reports and e-mails; the export gets an Approval column (spec 2026-11-06 §10.1) | pgTAP approval tests and e2e E-11, E-12, E-15 (spec §10.4); every existing Completed certificate becomes Approved | C1 | Should | — | — | 15.1 | Not started | Feature List v2.1 §A | R-05, R-06 |
+| 15.5 | Chosen field (Phase 2) | A member picks the certificate type they want to grow in, on `/me`; the admin can set it, a manager sees it read-only (spec §10.2) | pgTAP chosen-field tests and e2e E-13 (spec §10.4) | C1 | Should | — | — | 15.1 | Not started | Feature List v2.1 §A | R-01 |
+| 15.6 | Numbers by month or quarter (Phase 2) | A period picker on the dashboard: people newly certified, new certificates and new certificates per type for the chosen month or quarter, plus a waiting-for-approval count (spec §10.3) | pgTAP period tests and e2e E-14 (spec §10.4) | C1 | Should | — | — | 15.1 | Not started | Feature List v2.1 §A | R-09, R-10 |
 | 16 | Backend moves to Rust | Direction only, after Cert Core has real users (decision #59); needs its own spec, starting with auth | Not estimated | Later | Could | — | — | 9.4 | Not started | — | — |
 
 ## 3. Summary
@@ -97,14 +100,15 @@ This document lists the work done and the work remaining for CertTracker. The fi
 |---|---|---|---|
 | Built | On `main` and production (https://cert-tracker-three.vercel.app): W1–W6 certificates, plus manager scopes, career role and YoE, course cost, English UI, loading feedback | — | — |
 | C0 | Scope: BRD revised and approved, AI budget and terms answered, mockups reviewed, plans | 3–4 | 0.8 |
-| C1 | Accounts and data: e-mail set-up, access control, catalogue, production speed check | 2.5–3.5 | 1.5 |
-| C2 | Certificate AI: platform, reading certificate files, import clean-up, questions, monthly summary, evaluation | 10–15 | 4.5 |
-| C3 | Validate and go live: hosting, real-file trial, accessibility, interviews, pilot, G1, production | 12–20 | 8.5 |
+| C1 | Accounts and data, then the DAS pilot (decision #61): e-mail set-up, access control, catalogue, production speed check, pilot readiness and the two-week pilot; Phase 2 features 15.4–15.6 are built during the pilot (not yet estimated) | 5.5–8.5 (without 15.4–15.6) | 2.5 |
+| C2 | Certificate AI: platform, reading certificate files, import clean-up, questions, monthly summary, evaluation | 10–15 | 5.5 |
+| C3 | Validate and go live: hosting, real-file trial, accessibility, interviews, G1, production | 9–15 | 8.5 |
 | Later | Skill Matrix, quarterly goals, the AI that needs them, role growth, Rust backend | 31–45.5 | Not scheduled |
 
 - **Cert Core open work:** 27.5–42.5 developer days (about 6–9 weeks for one developer). The pilot (9.2) also needs two calendar weeks of real use.
 - **Production today:** the code is live, but the cloud database holds 2 members, no courses and no certificates (checked 2026-11-05), so no user has validated it yet.
 - **Before real staff data:** 9.3 (hosting), 9.1 (sending domain, backup, data owner's agreement) and 15.1 must be done.
+- **Pilot order (decision #61):** the DAS pilot (9.1, 9.2) runs in `C1`, before the AI (`C2`). For the pilot period 9.3 is answered by spec 2026-11-06 §8 item 1 (stay on the free tiers; the paid-hosting decision comes after); it stays open here until it is recorded in `decisions.md`. 1.3 is measured on the file DAS imports (`SM-2`) and keeps its `C3` report.
 - **Waiting:** 1.7 and 1.8 wait on the DC manager. 13.1 cannot send real data to DeepSeek before 1.8 is answered; it can be built and tested with sample data.
 - **Moved to Later because they need the Skill Matrix or goals:** 13.3, 13.4, 13.6, 13.9. 12.3 (exam reminders) also moves; say if exam reminders should come back into Cert Core.
 
