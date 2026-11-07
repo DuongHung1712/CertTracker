@@ -210,10 +210,11 @@ export function RecordSheet({
                   placeholder="Choose a course"
                   emptyText="No courses found"
                   aria-invalid={!!errors.courseId}
+                  aria-describedby="record-course-hint"
                 />
               )}
             />
-            <FieldDescription>Can&apos;t find your course? Ask your admin to add it.</FieldDescription>
+            <FieldDescription id="record-course-hint">Can&apos;t find your course? Ask your admin to add it.</FieldDescription>
             <FieldError errors={[errors.courseId]} />
           </Field>
           <Field>
