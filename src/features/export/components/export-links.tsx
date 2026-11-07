@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const LINK = cn(
   buttonVariants({ variant: "outline", size: "sm" }),
-  "min-h-[44px] sm:min-h-[36px] gap-1.5"
+  "gap-1.5"
 );
 
 /** Plain anchors (not Base UI `render` on a non-button): the browser downloads the response itself. */

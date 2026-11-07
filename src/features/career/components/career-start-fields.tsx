@@ -33,7 +33,7 @@ export function CareerStartFields({
       <Field className="w-44">
         <FieldLabel htmlFor={`${idPrefix}-month`}>Month (optional)</FieldLabel>
         <Select value={value.month} onValueChange={(month) => onChange({ ...value, month: month ?? NO_MONTH })} disabled={disabled}>
-          <SelectTrigger id={`${idPrefix}-month`} className="h-9 w-full" aria-invalid={!!error}>
+          <SelectTrigger id={`${idPrefix}-month`} size="lg" className="w-full" aria-invalid={!!error}>
             <SelectValue>
               {(month: string) => (month === NO_MONTH ? "No month" : (MONTH_NAMES[Number(month) - 1] ?? "No month"))}
             </SelectValue>

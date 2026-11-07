@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { FileText, UploadCloud } from "lucide-react";
+import { CloudUpload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
 import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE, EVIDENCE_WRONG_TYPE_MESSAGE } from "@/lib/storage/evidence";
@@ -96,12 +96,11 @@ export function FileDropzone({
       ) : (
         <label
           htmlFor={id}
-          className="flex w-full cursor-pointer items-center gap-2.5 text-muted-foreground transition-colors hover:text-foreground"
+          className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
         >
-          <UploadCloud aria-hidden className="size-5 shrink-0 text-muted-foreground" />
+          <CloudUpload aria-hidden className="size-4 shrink-0 text-muted-foreground" />
           <span className="text-body">
-            <span className="font-medium text-foreground underline underline-offset-2">Choose file</span>
-            {" or drag and drop (PDF, JPG, PNG or WebP up to 4 MB)"}
+            Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB
           </span>
         </label>
       )}

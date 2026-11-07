@@ -44,18 +44,16 @@ export function DcDialog({
             <Input id="dc-name" className="h-9" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
-          <DialogFooter className="gap-2 pt-2 border-t border-border">
+          <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              className="min-h-[44px] sm:min-h-[36px]"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="min-h-[44px] sm:min-h-[36px]"
               disabled={form.formState.isSubmitting}
             >
               {form.formState.isSubmitting ? "Saving…" : "Save"}

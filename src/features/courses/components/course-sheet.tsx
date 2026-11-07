@@ -179,7 +179,7 @@ export function CourseSheet({
                       value={toCurrency(typeof field.value === "string" ? field.value : null)}
                       onValueChange={(value) => field.onChange(toCurrency(value))}
                     >
-                      <SelectTrigger id="course-currency" className="h-9" aria-invalid={!!form.formState.errors.costCurrency}>
+                      <SelectTrigger id="course-currency" size="lg" aria-invalid={!!form.formState.errors.costCurrency}>
                         <SelectValue placeholder="Currency">{(value: string | null) => value ?? "Currency"}</SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -227,14 +227,12 @@ export function CourseSheet({
             <Button
               type="button"
               variant="outline"
-              className="min-h-[44px] sm:min-h-[36px]"
               onClick={() => onOpenChange(false)}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="min-h-[44px] sm:min-h-[36px]"
               disabled={form.formState.isSubmitting}
             >
               {form.formState.isSubmitting ? "Saving…" : "Save"}

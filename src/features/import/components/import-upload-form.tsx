@@ -102,7 +102,6 @@ export function ImportUploadForm() {
       <div>
         <Button
           type="submit"
-          className="min-h-[44px] sm:min-h-[36px]"
           disabled={pending || !file}
         >
           {pending ? "Reading the file…" : "Upload and check"}

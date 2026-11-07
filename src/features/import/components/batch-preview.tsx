@@ -160,13 +160,13 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
             <>
               <Button
                 variant="outline"
-                className="min-h-[44px] sm:min-h-[36px]"
+                size="sm"
                 onClick={() => setConfirming("discard")}
               >
                 Discard batch
               </Button>
               <Button
-                className="min-h-[44px] sm:min-h-[36px]"
+                size="sm"
                 disabled={importable === 0 || incomplete}
                 onClick={() => setConfirming("commit")}
               >

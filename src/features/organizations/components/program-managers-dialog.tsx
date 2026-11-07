@@ -60,18 +60,16 @@ export function ProgramManagersDialog({
             {error}
           </p>
         )}
-        <DialogFooter className="gap-2 pt-2 border-t border-border">
+        <DialogFooter>
           <Button
             type="button"
             variant="outline"
-            className="min-h-[44px] sm:min-h-[36px]"
             onClick={onClose}
           >
             Cancel
           </Button>
           <Button
             type="button"
-            className="min-h-[44px] sm:min-h-[36px]"
             disabled={pending}
             onClick={handleSave}
           >

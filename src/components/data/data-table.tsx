@@ -29,6 +29,13 @@ export type DataTableProps<TData, TValue> = {
   getRowId?: (row: TData, index: number) => string;
 };
 
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData, TValue> {
+    align?: "left" | "right" | "center";
+  }
+}
+
 // Sorts Vietnamese names correctly by default (d-stroke between d and e,
 // diacritics ignored) and compares numbers numerically. A column with its own meaning
 // of "order" — e.g. an expiry column that should sort by days left, not by
@@ -89,7 +96,7 @@ export function DataTable<TData, TValue>({
                 {group.headers.map((header) => {
                   const sorted = header.column.getIsSorted();
                   const SortIcon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
-                  const meta = header.column.columnDef.meta as { align?: "left" | "right" | "center" } | undefined;
+                  const meta = header.column.columnDef.meta;
                   const alignClass =
                     meta?.align === "right"
                       ? "text-right"
@@ -160,7 +167,7 @@ export function DataTable<TData, TValue>({
               rows.map((row) => (
                 <TableRow key={row.id} className="group h-8 hover:bg-accent">
                   {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta as { align?: "left" | "right" | "center" } | undefined;
+                    const meta = cell.column.columnDef.meta;
                     const alignClass =
                       meta?.align === "right"
                         ? "text-right"

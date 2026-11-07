@@ -174,7 +174,14 @@ export function CoursesTable({
         getRowId={(row) => row.id}
         empty={
           courses.length === 0 ? (
-            <EmptyState title="No courses yet" description="Add the first course to make it available for certificates." />
+            <EmptyState
+              title="No courses yet"
+              description={
+                canManage
+                  ? "Add the first course to make it available for certificates."
+                  : "No courses are available yet."
+              }
+            />
           ) : (
             <EmptyState title="No courses found" description="Try a different search or clear the filters." />
           )

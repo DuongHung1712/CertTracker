@@ -48,7 +48,7 @@ export function LoginForm() {
       )}
       <Button
         type="submit"
-        className="w-full h-9 min-h-[44px] sm:min-h-[36px] font-medium transition-colors"
+        className="w-full h-9 font-medium transition-colors"
         disabled={pending}
       >
         {pending ? "Signing in…" : "Sign in"}

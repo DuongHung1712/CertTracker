@@ -383,14 +383,12 @@ export function RecordSheet({
             <Button
               type="button"
               variant="outline"
-              className="min-h-[44px] sm:min-h-[36px]"
               onClick={() => handleOpenChange(false)}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="min-h-[44px] sm:min-h-[36px]"
               disabled={form.formState.isSubmitting}
             >
               {form.formState.isSubmitting ? "Saving…" : "Save"}

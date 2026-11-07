@@ -125,7 +125,6 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
           <Button
             size="sm"
             variant={typeFilter === null ? "secondary" : "outline"}
-            className="min-h-[44px] sm:min-h-[32px]"
             aria-pressed={typeFilter === null}
             onClick={() => setTypeFilter(null)}
           >
@@ -136,7 +135,6 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
               key={type}
               size="sm"
               variant={typeFilter === type ? "secondary" : "outline"}
-              className="min-h-[44px] sm:min-h-[32px]"
               aria-pressed={typeFilter === type}
               onClick={() => setTypeFilter(typeFilter === type ? null : type)}
             >

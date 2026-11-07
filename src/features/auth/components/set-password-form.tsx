@@ -25,10 +25,10 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
           minLength={8}
           required
           className="h-9"
-          aria-describedby={state && !state.ok ? "set-password-error" : undefined}
+          aria-describedby={state && !state.ok ? "set-password-error password-hint" : "password-hint"}
           aria-invalid={state && !state.ok ? true : undefined}
         />
-        <p className="text-caption text-muted-foreground">Minimum 8 characters</p>
+        <p id="password-hint" className="text-caption text-muted-foreground">Minimum 8 characters</p>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="confirmPassword" className="text-body font-medium">
@@ -52,7 +52,7 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
       )}
       <Button
         type="submit"
-        className="w-full h-9 min-h-[44px] sm:min-h-[36px] font-medium transition-colors"
+        className="w-full h-9 font-medium transition-colors"
         disabled={pending}
       >
         {pending ? "Saving…" : "Save password"}
