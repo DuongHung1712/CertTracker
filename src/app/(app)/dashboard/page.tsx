@@ -28,7 +28,6 @@ import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard
 import { settle } from "@/features/dashboard/settle";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { formatDateTimeVn, formatNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 const RANKING_DESCRIPTION =
   "Ranked by valid certificates, then by total completed. Equal numbers share a rank.";
@@ -54,11 +53,8 @@ export default async function DashboardPage() {
   const noRecords = kpis.ok && kpis.data.totalRecords === 0;
 
   // Breakdown rows used for hero chart dimensions
-  const breakdownForHero = canSeeTeams && teams?.ok
-    ? teams.data
-    : certTypes.ok
-      ? certTypes.data
-      : [];
+  const heroBreakdownResult = canSeeTeams ? teams : certTypes;
+  const heroBreakdownRows = heroBreakdownResult?.ok ? heroBreakdownResult.data : [];
 
   // Build Explorer tabs
   const explorerTabs = [
@@ -69,7 +65,7 @@ export default async function DashboardPage() {
             label: "By team",
             groupLabel: "Team",
             peopleLabel: "Members",
-            rows: teams.ok ? teams.data : [],
+            result: teams,
             emptyHint,
           },
         ]
@@ -79,7 +75,7 @@ export default async function DashboardPage() {
       label: "By certificate type",
       groupLabel: "Certificate type",
       peopleLabel: "Learners",
-      rows: certTypes.ok ? certTypes.data : [],
+      result: certTypes,
       emptyHint,
     },
     {
@@ -87,7 +83,7 @@ export default async function DashboardPage() {
       label: "By provider",
       groupLabel: "Provider",
       peopleLabel: "Learners",
-      rows: providers.ok ? providers.data : [],
+      result: providers,
       emptyHint,
     },
     {
@@ -95,7 +91,7 @@ export default async function DashboardPage() {
       label: "Popular courses",
       groupLabel: "Course",
       peopleLabel: "Learners",
-      rows: courses.ok ? courses.data : [],
+      result: courses,
       emptyHint,
     },
   ];
@@ -122,7 +118,21 @@ export default async function DashboardPage() {
                 value={kpis.data.totalRecords}
                 icon={<Award className="size-4 text-foreground" />}
                 hint="Total tracked across teams"
-                visual={<RecordsMiniChart rows={breakdownForHero} />}
+                visual={
+                  heroBreakdownResult && !heroBreakdownResult.ok ? (
+                    <div
+                      role="alert"
+                      className="flex h-24 flex-col items-center justify-center gap-1 rounded border border-destructive/20 bg-destructive/5 px-2 text-center text-caption text-destructive"
+                    >
+                      <p className="font-medium">Could not load chart.</p>
+                    </div>
+                  ) : (
+                    <RecordsMiniChart
+                      rows={heroBreakdownRows}
+                      totalRecords={kpis.data.totalRecords}
+                    />
+                  )
+                }
               />
               <KpiCard
                 label="Valid"
@@ -150,16 +160,25 @@ export default async function DashboardPage() {
                 hint="Completed certificates past their expiry date"
                 valueClassName={kpis.data.expiredCerts > 0 ? "text-destructive font-semibold" : undefined}
                 visual={
-                  <ExpiredMiniChart
-                    totalExpired={kpis.data.expiredCerts}
-                    rows={breakdownForHero}
-                  />
+                  kpis.data.expiredCerts > 0 && heroBreakdownResult && !heroBreakdownResult.ok ? (
+                    <div
+                      role="alert"
+                      className="flex h-24 flex-col items-center justify-center gap-1 rounded border border-destructive/20 bg-destructive/5 px-2 text-center text-caption text-destructive"
+                    >
+                      <p className="font-medium">Could not load chart.</p>
+                    </div>
+                  ) : (
+                    <ExpiredMiniChart
+                      totalExpired={kpis.data.expiredCerts}
+                      rows={heroBreakdownRows}
+                    />
+                  )
                 }
               />
             </dl>
 
             {/* Slim compact stat strip: 3 inline stats replacing large separate boxes */}
-            <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card shadow-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
                 <dt className="text-label uppercase tracking-wider text-muted-foreground">Active members</dt>
                 <dd className="text-xl font-semibold tabular-nums text-foreground">
@@ -198,7 +217,7 @@ export default async function DashboardPage() {
         <>
           {/* 3. Certificate expiry: Compact horizontal strip sitting directly above Explorer */}
           <Section title="Certificate expiry" description="Completed certificates, by time left">
-            <div className="rounded-lg border border-border bg-card p-3.5 shadow-xs">
+            <div className="rounded-lg border border-border bg-card p-3.5">
               {kpis.ok ? (
                 <ExpiryChart buckets={expiryBuckets(kpis.data)} compact />
               ) : (
@@ -244,14 +263,14 @@ export default async function DashboardPage() {
 function emptyAction(role: string | undefined, memberId: string | null) {
   if (role === "admin" || role === "manager") {
     return (
-      <Link href="/records" className={cn(buttonVariants(), "min-h-[44px] sm:min-h-[36px]")}>
+      <Link href="/records" className={buttonVariants()}>
         Go to records
       </Link>
     );
   }
   if (role === "member" && memberId) {
     return (
-      <Link href="/me" className={cn(buttonVariants(), "min-h-[44px] sm:min-h-[36px]")}>
+      <Link href="/me" className={buttonVariants()}>
         Go to my certificates
       </Link>
     );

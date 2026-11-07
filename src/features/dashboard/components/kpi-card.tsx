@@ -1,6 +1,8 @@
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+export const HERO_CARD_MIN_HEIGHT = "min-h-[235px]";
+
 /**
  * Tall Hero KPI card for the Overview row on /dashboard (~220-260px).
  * Conforms to the `dl > div > dt + dd.first()` contract required by e2e assertions.
@@ -28,7 +30,8 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "flex min-w-0 min-h-[235px] flex-col justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors",
+        "flex min-w-0 flex-col justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors",
+        HERO_CARD_MIN_HEIGHT,
         className,
       )}
     >

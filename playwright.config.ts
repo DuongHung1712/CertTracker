@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// Target web server URL for Playwright tests.
+// Set PLAYWRIGHT_BASE_URL=http://localhost:3200 when running against a local dev server
+// running on port 3200 (to avoid port 3000/3100 collisions with other services).
+// When PLAYWRIGHT_BASE_URL is provided, webServer spawn is bypassed, allowing tests to run
+// immediately against the already-running server instance.
 const baseURL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3000";
 
 export default defineConfig({

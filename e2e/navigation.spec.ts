@@ -11,8 +11,8 @@ test("member sees only personal sections", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(nav.getByRole("link", { name: "My certificates" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "Organisation" })).toHaveCount(0);
-  await expect(nav.getByRole("link", { name: "Members" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Organisation" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Members" })).toHaveCount(0);
 });
 
 test("sidebar link navigates, marks the breadcrumb and the active item", async ({ page }) => {

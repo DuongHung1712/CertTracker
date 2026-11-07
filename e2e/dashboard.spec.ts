@@ -27,7 +27,7 @@ function tileValue(page: Page, label: string): Locator {
 
 /** Row that contains every given text. */
 function rowWith(scope: Locator, ...texts: string[]): Locator {
-  let row = scope.getByRole("row");
+  let row = scope.getByRole("option").or(scope.getByRole("row"));
   for (const text of texts) row = row.filter({ hasText: text });
   return row;
 }
@@ -91,6 +91,10 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   const anRow = rowWith(ranking, "Nguyễn Văn An");
   await expect(anRow).toBeVisible();
   await expect(anRow.getByRole("cell").first()).toHaveText("1");
+
+  // Filter selects display human-readable labels, not raw values ("all", "0")
+  await expect(page.getByRole("combobox", { name: "Filter by certificate status" })).toContainText("All groups");
+  await expect(page.getByRole("combobox", { name: "Filter by minimum records" })).toContainText("Min records: Any");
 
   // Study completion split in Explorer detail panel exposes accessible image
   const completionSplit = page.getByRole("img", { name: /^Study completion:/ });

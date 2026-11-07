@@ -9,9 +9,12 @@ export function DashboardHeaderActions({ isMember }: { isMember: boolean }) {
   function handleScrollToFilters() {
     const el = document.getElementById("dashboard-filters");
     if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const prefersReducedMotion =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "center" });
       const input = document.getElementById("explorer-search-input");
-      input?.focus();
+      input?.focus({ preventScroll: true });
     }
   }
 
@@ -21,7 +24,7 @@ export function DashboardHeaderActions({ isMember }: { isMember: boolean }) {
         variant="outline"
         size="sm"
         onClick={handleScrollToFilters}
-        className="min-h-[44px] gap-1.5 sm:min-h-[36px]"
+        className="gap-1.5"
         aria-label="Scroll to filters"
       >
         <SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />
@@ -29,7 +32,7 @@ export function DashboardHeaderActions({ isMember }: { isMember: boolean }) {
       </Button>
       <Link
         href={isMember ? "/me" : "/records"}
-        className={cn(buttonVariants(), "min-h-[44px] gap-1.5 sm:min-h-[36px]")}
+        className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
       >
         <ListChecks className="size-4" aria-hidden />
         <span>{isMember ? "My certificates" : "View records"}</span>

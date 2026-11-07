@@ -279,28 +279,28 @@ export function DashboardRedesignDemo() {
       label: "By team",
       groupLabel: "Team",
       peopleLabel: "Members",
-      rows: BREAKDOWN_ROWS,
+      result: { ok: true as const, data: BREAKDOWN_ROWS },
     },
     {
       id: "cert_type",
       label: "By certificate type",
       groupLabel: "Type",
       peopleLabel: "Learners",
-      rows: BREAKDOWN_ROWS.slice(0, 4),
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 4) },
     },
     {
       id: "provider",
       label: "By provider",
       groupLabel: "Provider",
       peopleLabel: "Learners",
-      rows: BREAKDOWN_ROWS.slice(2, 6),
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(2, 6) },
     },
     {
       id: "course",
       label: "Popular courses",
       groupLabel: "Course",
       peopleLabel: "Learners",
-      rows: BREAKDOWN_ROWS.slice(0, 5),
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 5) },
     },
   ];
 
@@ -360,7 +360,7 @@ export function DashboardRedesignDemo() {
 
       <div>
         <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Expiry Strip</h3>
-        <div className="rounded-lg border border-border bg-card p-3.5 shadow-xs">
+        <div className="rounded-lg border border-border bg-card p-3.5">
           <ExpiryChart buckets={sampleBuckets} compact />
         </div>
       </div>

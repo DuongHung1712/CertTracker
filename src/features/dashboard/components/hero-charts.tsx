@@ -19,7 +19,13 @@ import { formatNumber } from "@/lib/format";
  * Shows records per team (or cert type), top 6 bars + "Others" grouped.
  * Fill uses --chart-1, visible value labels, no animation.
  */
-export function RecordsMiniChart({ rows }: { rows: BreakdownRow[] }) {
+export function RecordsMiniChart({
+  rows,
+  totalRecords,
+}: {
+  rows: BreakdownRow[];
+  totalRecords?: number;
+}) {
   const sorted = [...rows].sort((a, b) => b.records - a.records);
   const top6 = sorted.slice(0, 6);
   const remaining = sorted.slice(6);
@@ -31,8 +37,8 @@ export function RecordsMiniChart({ rows }: { rows: BreakdownRow[] }) {
 
   if (data.length === 0) {
     return (
-      <div className="flex h-24 items-center justify-center text-caption text-muted-foreground">
-        No records yet
+      <div className="flex h-20 sm:h-24 items-center justify-center text-center px-2 text-caption text-muted-foreground">
+        {(totalRecords ?? 0) > 0 ? "Not enough group data to chart" : "No records yet"}
       </div>
     );
   }
@@ -40,8 +46,8 @@ export function RecordsMiniChart({ rows }: { rows: BreakdownRow[] }) {
   const summary = data.map((d) => `${d.label} ${d.records}`).join(", ");
 
   return (
-    <div className="flex flex-col gap-1 w-full min-w-0 [&_.recharts-text]:fill-muted-foreground [&_.recharts-text]:text-[10px]">
-      <div role="img" aria-label={`Certificate records by group: ${summary}`} className="h-24 w-full min-w-0">
+    <div className="flex flex-col gap-1 w-full min-w-0 [&_.recharts-text]:fill-muted-foreground [&_.recharts-text]:text-caption [&_.recharts-text]:font-sans">
+      <div role="img" aria-label={`Certificate records by group: ${summary}`} className="h-20 sm:h-24 w-full min-w-0">
         <div aria-hidden className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data} margin={{ top: 14, right: 2, bottom: 0, left: 2 }}>
@@ -54,14 +60,14 @@ export function RecordsMiniChart({ rows }: { rows: BreakdownRow[] }) {
                   const text = String(payload.value || "");
                   const truncated = text.length > 7 ? `${text.slice(0, 6)}…` : text;
                   return (
-                    <text x={x} y={Number(y) + 8} textAnchor="middle" fill="var(--muted-foreground)" fontSize={9}>
+                    <text x={x} y={Number(y) + 8} textAnchor="middle" fill="var(--muted-foreground)" className="text-caption font-sans">
                       {truncated}
                     </text>
                   );
                 }}
               />
               <Bar dataKey="records" fill="var(--chart-1)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
-                <LabelList dataKey="records" position="top" fill="var(--foreground)" fontSize={10} fontWeight={600} />
+                <LabelList dataKey="records" position="top" fill="var(--foreground)" className="text-caption font-sans font-semibold" />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -88,12 +94,12 @@ export function ValidMiniChart({
 }) {
   const summary = buckets.map((b) => `${b.label} ${b.count}`).join(", ");
 
-  // Short labels for axis
+  // Short labels for axis mapped from real metrics.ts bucket keys
   const shortLabels: Record<string, string> = {
-    valid_long: "> 60d",
-    expiring_60: "31-60d",
-    expiring_30: "≤ 30d",
-    no_expiry: "No exp",
+    active: "> 60d",
+    "expiring-60": "31-60d",
+    "expiring-soon": "≤ 30d",
+    "no-expiry": "No expiry",
   };
 
   const chartData = buckets.map((b) => ({
@@ -102,8 +108,8 @@ export function ValidMiniChart({
   }));
 
   return (
-    <div className="flex flex-col gap-1 w-full min-w-0 [&_.recharts-text]:fill-muted-foreground [&_.recharts-text]:text-[10px]">
-      <div role="img" aria-label={`Valid certificates: ${summary}`} className="h-24 w-full min-w-0">
+    <div className="flex flex-col gap-1 w-full min-w-0 [&_.recharts-text]:fill-muted-foreground [&_.recharts-text]:text-caption [&_.recharts-text]:font-sans">
+      <div role="img" aria-label={`Valid certificates: ${summary}`} className="h-20 sm:h-24 w-full min-w-0">
         <div aria-hidden className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartData} margin={{ top: 14, right: 2, bottom: 0, left: 2 }}>
@@ -113,16 +119,16 @@ export function ValidMiniChart({
                 axisLine={false}
                 interval={0}
                 tick={({ x, y, payload }) => (
-                  <text x={x} y={Number(y) + 8} textAnchor="middle" fill="var(--muted-foreground)" fontSize={9}>
+                  <text x={x} y={Number(y) + 8} textAnchor="middle" fill="var(--muted-foreground)" className="text-caption font-sans">
                     {payload.value}
                   </text>
                 )}
               />
-              <Bar dataKey="count" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+              <Bar dataKey="count" radius={[3, 3, 0, 0]} minPointSize={3} isAnimationActive={false}>
                 {chartData.map((entry) => (
                   <Cell key={entry.key} fill={entry.color} />
                 ))}
-                <LabelList dataKey="count" position="top" fill="var(--foreground)" fontSize={10} fontWeight={600} />
+                <LabelList dataKey="count" position="top" fill="var(--foreground)" className="text-caption font-sans font-semibold" />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
@@ -158,11 +164,11 @@ export function ExpiringGaugeMiniChart({
   ];
 
   return (
-    <div className="relative flex flex-col items-center justify-end w-full min-w-0 h-24">
+    <div className="relative flex flex-col items-center justify-end w-full min-w-0 h-20 sm:h-24">
       <div
         role="img"
         aria-label={`Expiring within 60 days: ${expiringCount} certificates (${percentage}% of completed)`}
-        className="relative h-24 w-full flex items-center justify-center"
+        className="relative h-20 sm:h-24 w-full flex items-center justify-center"
       >
         <div aria-hidden className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -174,8 +180,8 @@ export function ExpiringGaugeMiniChart({
                 cy="85%"
                 startAngle={180}
                 endAngle={0}
-                innerRadius="65%"
-                outerRadius="95%"
+                innerRadius="70%"
+                outerRadius="100%"
                 paddingAngle={expiringCount > 0 && otherCount > 0 ? 3 : 0}
                 isAnimationActive={false}
               >
@@ -187,11 +193,11 @@ export function ExpiringGaugeMiniChart({
           </ResponsiveContainer>
         </div>
         {/* Center count and percentage */}
-        <div className="pointer-events-none absolute bottom-0 inset-x-0 flex flex-col items-center justify-center">
+        <div className="pointer-events-none absolute bottom-2.5 inset-x-0 flex flex-col items-center justify-center">
           <span className="text-sm font-bold tabular-nums text-foreground">
             {formatNumber(expiringCount)}
           </span>
-          <span className="text-[10px] text-muted-foreground tabular-nums">
+          <span className="text-caption text-muted-foreground tabular-nums">
             {percentage}% of completed
           </span>
         </div>
@@ -220,11 +226,11 @@ export function ExpiredMiniChart({
       <div
         role="img"
         aria-label="No expired certificates. All completed certificates are up to date."
-        className="flex h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border/80 bg-muted/20 p-2 text-center"
+        className="flex h-20 sm:h-24 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border/80 bg-muted/20 p-2 text-center"
       >
         <CheckCircle2 className="size-5 text-[var(--status-active-fg)]" aria-hidden />
         <span className="text-xs font-semibold text-foreground">No expired certificates</span>
-        <span className="text-[10px] text-muted-foreground">All completed certificates are up to date</span>
+        <span className="text-caption text-muted-foreground">All completed certificates are up to date</span>
       </div>
     );
   }
@@ -238,8 +244,8 @@ export function ExpiredMiniChart({
   const summary = expiredRows.map((r) => `${r.label} ${r.expired}`).join(", ");
 
   return (
-    <div className="flex flex-col gap-1 w-full min-w-0 [&_.recharts-text]:fill-muted-foreground [&_.recharts-text]:text-[10px]">
-      <div role="img" aria-label={`Expired certificates by group: ${summary}`} className="h-24 w-full min-w-0">
+    <div className="flex flex-col gap-1 w-full min-w-0 [&_.recharts-text]:fill-muted-foreground [&_.recharts-text]:text-caption [&_.recharts-text]:font-sans">
+      <div role="img" aria-label={`Expired certificates by group: ${summary}`} className="h-20 sm:h-24 w-full min-w-0">
         <div aria-hidden className="h-full w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={expiredRows} margin={{ top: 14, right: 2, bottom: 0, left: 2 }}>
@@ -252,14 +258,14 @@ export function ExpiredMiniChart({
                   const text = String(payload.value || "");
                   const truncated = text.length > 7 ? `${text.slice(0, 6)}…` : text;
                   return (
-                    <text x={x} y={Number(y) + 8} textAnchor="middle" fill="var(--muted-foreground)" fontSize={9}>
+                    <text x={x} y={Number(y) + 8} textAnchor="middle" fill="var(--muted-foreground)" className="text-caption font-sans">
                       {truncated}
                     </text>
                   );
                 }}
               />
-              <Bar dataKey="expired" fill="var(--status-expired-fg)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
-                <LabelList dataKey="expired" position="top" fill="var(--foreground)" fontSize={10} fontWeight={600} />
+              <Bar dataKey="expired" fill="var(--status-expired-fg)" radius={[3, 3, 0, 0]} minPointSize={3} isAnimationActive={false}>
+                <LabelList dataKey="expired" position="top" fill="var(--foreground)" className="text-caption font-sans font-semibold" />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
