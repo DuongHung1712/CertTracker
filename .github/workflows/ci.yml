@@ -25,3 +25,48 @@ jobs:
       - run: pnpm supabase db start
       - run: pnpm test:db
       - run: pnpm build
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm supabase start
+      # Values come from the throwaway local stack; mask them anyway so no step log can show them.
+      - name: Export e2e environment
+        run: |
+          status=$(pnpm supabase status -o env)
+          value() { printf '%s\n' "$status" | sed -n "s/^$1=\"\(.*\)\"$/\1/p"; }
+          anon_key=$(value ANON_KEY)
+          service_role_key=$(value SERVICE_ROLE_KEY)
+          if [ -z "$anon_key" ] || [ -z "$service_role_key" ]; then
+            echo "supabase status did not print ANON_KEY and SERVICE_ROLE_KEY" >&2
+            exit 1
+          fi
+          cron_secret=$(openssl rand -hex 16)
+          for secret in "$anon_key" "$service_role_key" "$cron_secret"; do
+            echo "::add-mask::$secret"
+          done
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$anon_key"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$service_role_key"
+            echo "CRON_SECRET=$cron_secret"
+            echo "EMAIL_TRANSPORT=console"
+          } >> "$GITHUB_ENV"
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
