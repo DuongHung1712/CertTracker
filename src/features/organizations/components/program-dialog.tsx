@@ -50,7 +50,7 @@ export function ProgramDialog({
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
             <FieldLabel htmlFor="program-name">Program name</FieldLabel>
-            <Input id="program-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
+            <Input id="program-name" className="h-9" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Field>
@@ -83,11 +83,20 @@ export function ProgramDialog({
               {form.formState.errors.root.message}
             </p>
           )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="gap-2 pt-2 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-[44px] sm:min-h-[36px]"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              className="min-h-[44px] sm:min-h-[36px]"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

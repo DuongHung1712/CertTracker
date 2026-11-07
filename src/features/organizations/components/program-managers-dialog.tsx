@@ -60,11 +60,21 @@ export function ProgramManagersDialog({
             {error}
           </p>
         )}
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+        <DialogFooter className="gap-2 pt-2 border-t border-border">
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-[44px] sm:min-h-[36px]"
+            onClick={onClose}
+          >
             Cancel
           </Button>
-          <Button type="button" disabled={pending} onClick={handleSave}>
+          <Button
+            type="button"
+            className="min-h-[44px] sm:min-h-[36px]"
+            disabled={pending}
+            onClick={handleSave}
+          >
             {pending ? "Saving…" : "Save managers"}
           </Button>
         </DialogFooter>

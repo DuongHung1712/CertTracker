@@ -72,7 +72,7 @@ export function TeamDialog({
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
             <FieldLabel htmlFor="team-name">Team name</FieldLabel>
-            <Input id="team-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
+            <Input id="team-name" className="h-9" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Field>
@@ -114,11 +114,20 @@ export function TeamDialog({
               {form.formState.errors.root.message}
             </p>
           )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="gap-2 pt-2 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-[44px] sm:min-h-[36px]"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              className="min-h-[44px] sm:min-h-[36px]"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
