@@ -61,6 +61,7 @@ const UI_PAIRS: Array<[string, string]> = [
 
 // Expiry-chart bars are graphic objects drawn straight on the card (WCAG 1.4.11).
 const CHART_STATUS_IDS = ["active", "expiring-60", "expiring-soon", "expired", "no-expiry"];
+const CHART_TOKEN_IDS = ["chart-1", "chart-2", "chart-3"];
 
 describe("design tokens", () => {
   it.each(TEXT_PAIRS)("text --%s on --%s reaches 4.5:1", (fg, bg) => {
@@ -73,6 +74,10 @@ describe("design tokens", () => {
 
   it.each(CHART_STATUS_IDS)("chart bar --status-%s-fg on --card reaches 3:1", (id) => {
     expect(contrastRatio(hex(`status-${id}-fg`), hex("card"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(CHART_TOKEN_IDS)("chart token --%s on --card reaches 3:1", (id) => {
+    expect(contrastRatio(hex(id), hex("card"))).toBeGreaterThanOrEqual(3);
   });
 });
 
@@ -87,5 +92,9 @@ describe("dark design tokens", () => {
 
   it.each(CHART_STATUS_IDS)("dark chart bar --status-%s-fg on --card reaches 3:1", (id) => {
     expect(contrastRatio(darkHex(`status-${id}-fg`), darkHex("card"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(CHART_TOKEN_IDS)("dark chart token --%s on --card reaches 3:1", (id) => {
+    expect(contrastRatio(darkHex(id), darkHex("card"))).toBeGreaterThanOrEqual(3);
   });
 });

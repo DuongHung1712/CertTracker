@@ -104,8 +104,8 @@ Shadows are only for floating layers (popovers, menus, dialogs, toasts). Cards a
 
 ### 2.5 Charts
 
-- **Chart palette.** Rates (completion) are drawn as a `primary` bar on a `muted` track, with no chart tokens. The expiry distribution chart uses exactly the 5 `--status-*-fg` colours (`active`, `expiring-60`, `expiring-soon`, `expired`, `no-expiry`; the only exception to the rule "status colours are only for expiry"); every bar always carries a text label and a number; a chart must have a text version for screen readers. No animation. `--chart-1…5` are kept for multi-series charts later.
-- **Contrast.** Bar colours are graphical objects, so they must be at least 3:1 against `card` (WCAG 1.4.11); `src/app/tokens.test.ts` checks the 5 colours above.
+- **Chart palette.** Rates (completion) are drawn as a `primary` bar on a `muted` track, with no chart tokens. The expiry distribution chart uses exactly the 5 `--status-*-fg` colours (`active`, `expiring-60`, `expiring-soon`, `expired`, `no-expiry`; the only exception to the rule "status colours are only for expiry"); every bar always carries a text label and a number; a chart must have a text version for screen readers. No animation. Study status (Completed / In progress / Not started) uses `--chart-1` (done, teal), `--chart-2` (in progress, slate), `--chart-3` (not started, grey) with visible numbers and labels beside every segment.
+- **Contrast.** Bar and chart graphic colours must be at least 3:1 against `card` (WCAG 1.4.11) in both light and dark modes; `src/app/tokens.test.ts` checks both the status and chart tokens.
 
 ---
 
@@ -133,6 +133,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `EntityCombobox` | `components/entity-combobox.tsx` | Searchable select: member, course, team | ✓ |
 | | Date input | `Input` | Typed dd/mm/yyyy, checked with `toIsoDate` (decisions #16) | ✓ |
 | | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop an image or PDF as evidence | ✓ |
+| Navigation | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `components/ui/tabs.tsx` | shadcn `tabs` (Base UI); keyboard navigation (arrows, Home, End); horizontal scrollable strip on mobile | ✓ |
 | Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
 | | `ConfirmDialog` | `components/confirm-dialog.tsx` | The title names the object; the description states the consequence; the `destructive` confirm button names the exact action | ✓ |
 | Feedback | `Toast` | shadcn `sonner` | Bottom right; success 4s, errors stay until dismissed (`duration: Infinity`) | ✓ |
@@ -207,6 +208,13 @@ When the database **blocks** the delete (for example a course that certificate r
 ¹ Shown only when the account is linked to a member (`profiles.member_id` is not null).
 
 Hiding is only UX; every permission is still enforced by RLS.
+
+### 4.6 Dashboard
+- **Header:** Title, subtitle timestamp, and one primary action ("View records" for admin/manager, "My certificates" for member).
+- **Overview:** 4 hero cards with small stacked visuals, followed by 3 compact tiles. All inside region "Overview", `dl > div` with bare number in the first `dd`.
+- **Health:** Expiry distribution chart (2/3) + Completion donut (1/3).
+- **Explorer:** Tabbed selector ("By team", "By certificate type", "By provider", "Popular courses") with compact table on left and live detail panel on right.
+- **Ranking:** Individual leaderboard (admin/manager only).
 
 ---
 
