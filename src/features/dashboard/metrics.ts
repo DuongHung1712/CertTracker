@@ -1,5 +1,5 @@
 import type { ExpiryStatus } from "@/components/status/expiry";
-import type { DashboardKpis, RankingRow } from "@/features/dashboard/schema";
+import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 import { formatPercent } from "@/lib/format";
 
 /** Completion % rounded DOWN; 100 only when everything is done; `null` when there is nothing to divide. */
@@ -79,6 +79,36 @@ export function studyStatusSplit(counts: { done: number; inProgress: number; not
     { key: "notStarted", label: "Not started", count: counts.notStarted, color: "var(--chart-3)" },
   ];
 }
+
+export type GroupBar = { label: string; records: number };
+
+/** The `max` biggest groups by records; every group beyond them is folded into one "Others" bar. */
+export function topGroupsWithOthers(rows: BreakdownRow[], max: number): GroupBar[] {
+  const sorted = [...rows].sort((a, b) => b.records - a.records);
+  const top = sorted.slice(0, max).map((r) => ({ label: r.label, records: r.records }));
+  const othersSum = sorted.slice(max).reduce((sum, r) => sum + r.records, 0);
+  return othersSum > 0 ? [...top, { label: "Others", records: othersSum }] : top;
+}
+
+/** The `max` groups with the most expired certificates; groups with none are left out. */
+export function topExpiredGroups(rows: BreakdownRow[], max: number): BreakdownRow[] {
+  return rows
+    .filter((r) => r.expired > 0)
+    .sort((a, b) => b.expired - a.expired)
+    .slice(0, max);
+}
+
+/** Axis label of at most `maxChars` characters; a longer one keeps `maxChars - 1` characters and an ellipsis. */
+export function truncateLabel(text: string, maxChars: number): string {
+  return text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text;
+}
+
+/** `part` of `total` as a whole percent, rounded to nearest (0 when `total` is 0). For display-only gauges; completion rates use `ratePercent`. */
+export function roundedShare(part: number, total: number): number {
+  return total > 0 ? Math.round((part / total) * 100) : 0;
+}
+
+export const clampPercent = (value: number): number => Math.min(100, Math.max(0, value));
 
 /** Valid vs Expired split for breakdown row detail panel. */
 export function validVsExpiredSplit(counts: { valid: number; expired: number }): VisualSegment[] {

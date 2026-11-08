@@ -1,16 +1,21 @@
 import { describe, expect, it } from "vitest";
 import {
+  clampPercent,
   expiringCerts,
   expiryBuckets,
   formatRate,
   rankingForDisplay,
   ratePercent,
+  roundedShare,
   studyStatusSplit,
+  topExpiredGroups,
+  topGroupsWithOthers,
+  truncateLabel,
   validBuckets,
   validCerts,
   validVsExpiredSplit,
 } from "@/features/dashboard/metrics";
-import type { DashboardKpis, RankingRow } from "@/features/dashboard/schema";
+import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 
 const kpis: DashboardKpis = {
   totalMembers: 5, totalRecords: 8, doneRecords: 5, inProgressRecords: 2, notStartedRecords: 1,
@@ -126,5 +131,66 @@ describe("new visual helpers (spec §2 & §4)", () => {
       { key: "valid", label: "Valid", count: 6, color: "var(--status-active-fg)" },
       { key: "expired", label: "Expired", count: 2, color: "var(--status-expired-fg)" },
     ]);
+  });
+});
+
+function group(label: string, records: number, expired = 0): BreakdownRow {
+  return { key: label, label, headcount: null, people: 1, records, done: 0, inProgress: 0, notStarted: 0, valid: 0, expired };
+}
+
+describe("topGroupsWithOthers", () => {
+  it("keeps every group, biggest first, when there are no more than max", () => {
+    expect(topGroupsWithOthers([group("a", 1), group("b", 5)], 6)).toEqual([
+      { label: "b", records: 5 },
+      { label: "a", records: 1 },
+    ]);
+  });
+
+  it("folds the groups beyond max into one Others bar that sums them", () => {
+    const rows = [group("a", 5), group("b", 4), group("c", 3), group("d", 2), group("e", 1)];
+    expect(topGroupsWithOthers(rows, 3)).toEqual([
+      { label: "a", records: 5 },
+      { label: "b", records: 4 },
+      { label: "c", records: 3 },
+      { label: "Others", records: 3 },
+    ]);
+  });
+
+  it("adds no Others bar when the groups beyond max have no records", () => {
+    expect(topGroupsWithOthers([group("a", 2), group("b", 1), group("c", 0)], 2)).toHaveLength(2);
+  });
+
+  it("returns nothing for no rows and does not reorder the input", () => {
+    expect(topGroupsWithOthers([], 6)).toEqual([]);
+    const rows = [group("a", 1), group("b", 2)];
+    topGroupsWithOthers(rows, 6);
+    expect(rows.map((r) => r.label)).toEqual(["a", "b"]);
+  });
+});
+
+describe("topExpiredGroups", () => {
+  it("drops groups without expired certificates, sorts by expired and caps at max", () => {
+    const rows = [group("a", 9, 0), group("b", 9, 2), group("c", 9, 5), group("d", 9, 1)];
+    expect(topExpiredGroups(rows, 2).map((r) => r.label)).toEqual(["c", "b"]);
+  });
+});
+
+describe("truncateLabel", () => {
+  it("leaves a label of max characters alone and cuts a longer one to max with an ellipsis", () => {
+    expect(truncateLabel("1234567", 7)).toBe("1234567");
+    expect(truncateLabel("12345678", 7)).toBe("123456…");
+  });
+});
+
+describe("roundedShare and clampPercent", () => {
+  it("rounds to nearest and is 0 for an empty total", () => {
+    expect(roundedShare(0, 0)).toBe(0);
+    expect(roundedShare(1, 3)).toBe(33);
+    expect(roundedShare(2, 3)).toBe(67);
+    expect(roundedShare(199, 200)).toBe(100);
+  });
+
+  it("clamps into 0..100", () => {
+    expect([clampPercent(-5), clampPercent(40), clampPercent(130)]).toEqual([0, 40, 100]);
   });
 });

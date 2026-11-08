@@ -18,6 +18,7 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
+import { clampPercent } from "@/features/dashboard/metrics";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
@@ -250,7 +251,7 @@ export function MemberCertificatesList({
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
                           className="h-full bg-primary"
-                          style={{ width: `${Math.min(100, Math.max(0, record.progress))}%` }}
+                          style={{ width: `${clampPercent(record.progress)}%` }}
                         />
                       </div>
                     </div>

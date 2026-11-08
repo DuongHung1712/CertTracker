@@ -1,4 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { HERO_CARD_MIN_HEIGHT } from "@/features/dashboard/components/chart-constants";
+import { cn } from "@/lib/utils";
 
 // Shaped like the redesigned dashboard:
 // 1. Header with Filters + Primary action
@@ -37,7 +39,7 @@ export default function DashboardLoading() {
           {Array.from({ length: 4 }, (_, i) => (
             <div
               key={`hero-${i}`}
-              className="flex min-h-[235px] flex-col justify-between rounded-lg border border-border bg-card p-4"
+              className={cn("flex flex-col justify-between rounded-lg border border-border bg-card p-4", HERO_CARD_MIN_HEIGHT)}
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">

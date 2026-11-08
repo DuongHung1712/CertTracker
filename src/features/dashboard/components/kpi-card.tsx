@@ -1,7 +1,6 @@
+import { HERO_CARD_MIN_HEIGHT } from "@/features/dashboard/components/chart-constants";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-export const HERO_CARD_MIN_HEIGHT = "min-h-[235px]";
 
 /**
  * Tall Hero KPI card for the Overview row on /dashboard (~220-260px).
