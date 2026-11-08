@@ -71,11 +71,9 @@ test("typing digits in a date field inserts the slashes", async ({ page }) => {
   await issued.pressSequentially("01082026");
   await expect(issued).toHaveValue("01/08/2026");
 
-  // Backspace removes digits without a slash getting stuck.
-  await issued.press("Backspace");
-  await issued.press("Backspace");
-  await issued.press("Backspace");
-  await issued.press("Backspace");
+  // Backspace removes the year, then the slash it leaves behind, then the month digits one by one.
+  for (let press = 0; press < 5; press++) await issued.press("Backspace");
+  await expect(issued).toHaveValue("01/08");
   await issued.press("Backspace");
   await expect(issued).toHaveValue("01/0");
 });
