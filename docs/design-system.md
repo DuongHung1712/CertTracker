@@ -126,6 +126,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `FilterBar` | `components/data/` | Search box + filters (children) + "Clear filters" (shown only when a filter is active) | ✓ |
 | | `EmptyState` | `components/data/` | One sentence of explanation + one action button; no illustration | ✓ |
 | Status | `ExpiryBadge` | `components/status/` | Takes `expiry_status` + `days_to_expiry` + `expiry_date`; tooltip "23 days left · expires 19/10/2026" / "Expired 5 days ago · 19/10/2026" | ✓ |
+| | `ComingSoonCard` | `components/status/` | Dashed 1px border `border-border`, small outlined chip with `Clock` icon and "Coming soon" in neutral tokens, title, description, full contrast text, disabled controls | ✓ |
 | | `RecordStatusLabel` | `components/status/` | Completed `circle-check` · In progress `loader-circle` · Not started `circle-dashed`; `foreground` text, no status colour | ✓ |
 | | `ProgressInline` | `components/status/` | 4px `primary` bar on `muted` + the % on the right | ✓ |
 | | `RoleBadge` | `components/status/` | Admin / Manager / Member; `secondary` badge | ✓ |
@@ -217,6 +218,20 @@ Hiding is only UX; every permission is still enforced by RLS.
 - **Filter Row:** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
 - **Explorer:** Master-Detail board with tab pills and count chips on top, solid `bg-primary` row for selected item (contrast ≥ 4.5:1, visible focus ring), and live detail dossier on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open in records).
 - **Ranking:** Individual leaderboard (admin/manager only).
+
+### 4.7 Member Dashboard
+- **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate" opening the record sheet).
+- **Attention Banner:** Expiry palette alert banner for the certificate expiring soonest within 30 days (expiring-soon tokens) or already expired (expired tokens, "Expired on <date>"), with "Upload proof" action button opening the record sheet. Hidden when nothing expires within 60 days.
+- **Overview:** 4 personal KPI cards for the member's own records inside region "Overview" (`dl > div` with bare numbers in the first `dd`):
+  1. "Recorded certificates": inverted solid-teal highlight card with "N valid of M".
+  2. "Expiring soon": the one with the least days left, with the course and "N days left".
+  3. "In progress": count plus up to two mini progress bars with course name and percent.
+  4. "Expired": count; 0 shows a check icon and "All up to date".
+- **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Specialization focus" coming-soon card.
+- **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
+- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()` with the privacy note *"Only groups with at least 3 learners are shown."*
+- **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Compliance copilot" (with disabled prompt and suggested question chips), "My skills matrix", "Quarterly objective", "Target role", and "Audit verification".
+- **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
 
 ---
 
