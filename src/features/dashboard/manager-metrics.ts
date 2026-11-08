@@ -56,6 +56,7 @@ export type ManagerKpis = {
   doneCount: number;
   validCount: number;
   expiringCount: number;
+  urgentCount: number;
   expiredCount: number;
   inProgressCount: number;
   notStartedCount: number;
@@ -67,6 +68,7 @@ export function calculateManagerKpis(records: RecordRow[]): ManagerKpis {
   let doneCount = 0;
   let validCount = 0;
   let expiringCount = 0;
+  let urgentCount = 0;
   let expiredCount = 0;
   let inProgressCount = 0;
   let notStartedCount = 0;
@@ -82,6 +84,7 @@ export function calculateManagerKpis(records: RecordRow[]): ManagerKpis {
           expiredCount++;
         } else if (r.daysToExpiry <= EXPIRING_WINDOW_DAYS) {
           expiringCount++;
+          if (r.daysToExpiry <= URGENT_WINDOW_DAYS) urgentCount++;
         }
       }
     } else if (r.status === "in_progress") {
@@ -98,6 +101,7 @@ export function calculateManagerKpis(records: RecordRow[]): ManagerKpis {
     doneCount,
     validCount,
     expiringCount,
+    urgentCount,
     expiredCount,
     inProgressCount,
     notStartedCount,
@@ -289,44 +293,20 @@ export function getPlannedExams(
   });
 }
 
-export type NeedsAttentionUrgency = "expired" | "urgent";
-
 export type NeedsAttentionItem = {
   record: RecordRow;
-  urgency: NeedsAttentionUrgency;
-  title: string;
   description: string;
 };
 
+/** Expired certificates, most overdue first. Upcoming expiries are listed in Next to expire. */
 export function getNeedsAttentionItems(records: RecordRow[]): NeedsAttentionItem[] {
-  const items: NeedsAttentionItem[] = [];
-
-  for (const r of records) {
-    if (isExpired(r)) {
-      const days = -(r.daysToExpiry ?? 0);
-      items.push({
-        record: r,
-        urgency: "expired",
-        title: "Expired certificate",
-        description: `${r.memberName}'s ${r.courseName} expired ${pluralize(days, "day")} ago.`,
-      });
-    } else if (isExpiring30(r)) {
-      const days = r.daysToExpiry ?? 0;
-      items.push({
-        record: r,
-        urgency: "urgent",
-        title: "Expires within 30 days",
-        description: `${r.memberName}'s ${r.courseName} expires in ${pluralize(days, "day")}.`,
-      });
-    }
-  }
-
-  return items.sort((a, b) => {
-    if (a.urgency !== b.urgency) {
-      return a.urgency === "expired" ? -1 : 1;
-    }
-    return (a.record.daysToExpiry ?? 0) - (b.record.daysToExpiry ?? 0);
-  });
+  return records
+    .filter(isExpired)
+    .sort((a, b) => (a.daysToExpiry ?? 0) - (b.daysToExpiry ?? 0))
+    .map((record) => ({
+      record,
+      description: `${record.memberName}'s ${record.courseName} expired ${pluralize(-(record.daysToExpiry ?? 0), "day")} ago.`,
+    }));
 }
 
 /** Returns members who have no completed certificates yet. */

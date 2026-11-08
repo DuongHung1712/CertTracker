@@ -6,7 +6,6 @@ import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { DepartmentSummaryCard } from "@/features/dashboard/components/member/department-summary-card";
-import { RankingTable } from "@/features/dashboard/components/ranking-table";
 import { Section, SectionError } from "@/features/dashboard/components/section";
 import { AllocatedScopeCard } from "@/features/dashboard/components/manager/allocated-scope-card";
 import { AutomatedRemindersCard } from "@/features/dashboard/components/manager/automated-reminders-card";
@@ -32,10 +31,10 @@ import {
   calculateManagerKpis,
   getMembersWithoutCerts,
   getTeamReadinessLeague,
-  isExpired,
+  getNeedsAttentionItems,
   isExpiring30,
 } from "@/features/dashboard/manager-metrics";
-import type { DashboardKpis, RankingRow } from "@/features/dashboard/schema";
+import type { DashboardKpis } from "@/features/dashboard/schema";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import type { RecordRow } from "@/features/records/queries";
@@ -50,8 +49,6 @@ export function ManagerDashboardView({
   membersError,
   departmentKpis,
   departmentKpisError,
-  ranking,
-  rankingError,
 }: {
   greeting: string;
   subtitle: string;
@@ -62,8 +59,6 @@ export function ManagerDashboardView({
   membersError?: string;
   departmentKpis: DashboardKpis | null;
   departmentKpisError?: string;
-  ranking: RankingRow[];
-  rankingError?: string;
 }) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const hasTeams = managedTeamNames.length > 0;
@@ -98,10 +93,8 @@ export function ManagerDashboardView({
     [filteredMembers, filteredRecords],
   );
 
-  const earliestExpired = useMemo(() => filteredRecords.find(isExpired), [filteredRecords]);
-  const pastDueText = earliestExpired
-    ? `${earliestExpired.memberName} (${earliestExpired.courseName})`
-    : undefined;
+  const mostOverdue = useMemo(() => getNeedsAttentionItems(filteredRecords)[0]?.record, [filteredRecords]);
+  const pastDueText = mostOverdue ? `${mostOverdue.memberName} (${mostOverdue.courseName})` : undefined;
 
   const mostUrgent = useMemo(() => filteredRecords.find(isExpiring30), [filteredRecords]);
 
@@ -250,18 +243,6 @@ export function ManagerDashboardView({
               <GoalsComingSoon />
               <SkillsComingSoon />
             </div>
-
-            {/* Individual ranking */}
-            <Section
-              title="Individual ranking"
-              description="Ranked by valid certificates, then by total completed. Equal numbers share a rank. Only members of the teams you manage are included."
-            >
-              {rankingError ? (
-                <SectionError title="Individual ranking" />
-              ) : (
-                <RankingTable rows={ranking} />
-              )}
-            </Section>
 
             {/* Across the department (Anonymous org totals) */}
             {departmentKpisError ? (

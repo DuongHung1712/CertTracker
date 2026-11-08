@@ -64,19 +64,16 @@ export async function loadMemberDashboard(
 export async function loadManagerDashboard(
   user: SignedInUser,
 ): Promise<ComponentProps<typeof ManagerDashboardView>> {
-  const [recordsResult, membersResult, kpisResult, rankingResult, managedTeamsResult] =
-    await Promise.all([
-      settle(listRecords()),
-      settle(listMembers()),
-      settle(getDashboardKpis()),
-      settle(getRanking()),
-      settle(listTeamOptionsForCurrentUser()),
-    ]);
+  const [recordsResult, membersResult, kpisResult, managedTeamsResult] = await Promise.all([
+    settle(listRecords()),
+    settle(listMembers()),
+    settle(getDashboardKpis()),
+    settle(listTeamOptionsForCurrentUser()),
+  ]);
 
   const now = new Date();
   const allRecords = recordsResult.ok ? recordsResult.data : [];
   const allMembers = membersResult.ok ? membersResult.data : [];
-  const ranking = rankingResult.ok ? rankingResult.data : [];
 
   const managedTeamOptions = managedTeamsResult.ok ? managedTeamsResult.data : [];
   const managedTeamNames = managedTeamOptions.map((t) => t.name);
@@ -106,7 +103,5 @@ export async function loadManagerDashboard(
     membersError: membersResult.ok ? undefined : membersResult.error,
     departmentKpis: kpisResult.ok ? kpisResult.data : null,
     departmentKpisError: kpisResult.ok ? undefined : kpisResult.error,
-    ranking,
-    rankingError: rankingResult.ok ? undefined : rankingResult.error,
   };
 }
