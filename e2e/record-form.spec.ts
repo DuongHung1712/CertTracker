@@ -43,29 +43,29 @@ test("switching status resets progress and clears the dates that no longer apply
   const dialog = await openAddForm(page);
 
   await pickSelect(page, dialog, "Status", "Completed");
-  await dialog.getByLabel("Issue date").fill("01/06/2026");
+  await dialog.getByLabel("Issue date", { exact: true }).fill("01/06/2026");
   await dialog.getByLabel("Certificate link").fill("https://example.com/cert");
 
   // Completed (100) -> In progress starts again from 0.
   await pickSelect(page, dialog, "Status", "In progress");
   await expect(dialog.getByLabel("Progress (%)")).toHaveValue("0");
-  await dialog.getByLabel("Planned exam date").fill("15/12/2026");
+  await dialog.getByLabel("Planned exam date", { exact: true }).fill("15/12/2026");
 
   // Back to Completed: the issue date and link were cleared when they were hidden.
   await pickSelect(page, dialog, "Status", "Completed");
-  await expect(dialog.getByLabel("Issue date")).toHaveValue("");
+  await expect(dialog.getByLabel("Issue date", { exact: true })).toHaveValue("");
   await expect(dialog.getByLabel("Certificate link")).toHaveValue("");
 
   // And the planned exam date was cleared on the way to Completed.
   await pickSelect(page, dialog, "Status", "In progress");
-  await expect(dialog.getByLabel("Planned exam date")).toHaveValue("");
+  await expect(dialog.getByLabel("Planned exam date", { exact: true })).toHaveValue("");
 });
 
 test("typing digits in a date field inserts the slashes", async ({ page }) => {
   const dialog = await openAddForm(page);
   await pickSelect(page, dialog, "Status", "Completed");
 
-  const issued = dialog.getByLabel("Issue date");
+  const issued = dialog.getByLabel("Issue date", { exact: true });
   await issued.pressSequentially("01082026");
   await expect(issued).toHaveValue("01/08/2026");
 
@@ -92,5 +92,5 @@ test("the calendar button fills the date field as dd/mm/yyyy", async ({ page }) 
     element.dispatchEvent(new Event("input", { bubbles: true }));
     element.dispatchEvent(new Event("change", { bubbles: true }));
   });
-  await expect(dialog.getByLabel("Issue date")).toHaveValue("01/08/2026");
+  await expect(dialog.getByLabel("Issue date", { exact: true })).toHaveValue("01/08/2026");
 });

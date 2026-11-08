@@ -67,7 +67,7 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   await pickSelect(page, dialog, "Status", "Completed");
   // Completed hides Progress (it is saved as 100).
   await expect(dialog.getByLabel("Progress (%)")).toHaveCount(0);
-  await dialog.getByLabel("Issue date").fill("01/06/2026");
+  await dialog.getByLabel("Issue date", { exact: true }).fill("01/06/2026");
   await dialog.getByLabel("Evidence").setInputFiles("e2e/fixtures/evidence.pdf");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Added certificate")).toBeVisible();
@@ -155,11 +155,11 @@ test("status rules are enforced in the form", async ({ page }) => {
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("A completed course needs an issue date")).toBeVisible();
 
-  await dialog.getByLabel("Issue date").fill("31/02/2026");
+  await dialog.getByLabel("Issue date", { exact: true }).fill("31/02/2026");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Enter a valid issue date (dd/mm/yyyy)")).toBeVisible();
 
-  await dialog.getByLabel("Issue date").fill("01/01/2099");
+  await dialog.getByLabel("Issue date", { exact: true }).fill("01/01/2099");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("The issue date cannot be in the future")).toBeVisible();
 
