@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { ADMIN_EMAIL, signIn } from "./helpers";
+import { ADMIN_EMAIL, fieldLabel, signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import { acceptInvitation, pilotEmail, removePilotPeople } from "./support/pilot-member";
 import { signInAsSeedAdmin, signInAsSeedUser } from "./support/restore-seed";
@@ -45,7 +45,7 @@ async function expectOrgWideTiles(page: Page) {
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
 async function pickSelect(page: Page, dialog: Locator, label: string, optionName: string) {
-  await dialog.getByLabel(label, { exact: true }).click();
+  await dialog.getByLabel(fieldLabel(label)).click();
   await page.getByRole("option", { name: optionName, exact: true }).click();
 }
 

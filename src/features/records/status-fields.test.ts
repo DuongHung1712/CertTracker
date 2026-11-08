@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { valuesOnStatusChange, visibleFields } from "@/features/records/status-fields";
 
-// R1: which status-dependent fields the certificate form renders.
+// R1 + R11: which status-dependent fields the certificate form renders (Notes is role based, not part of this).
 describe("visibleFields", () => {
   it("Not started shows only the planned exam date", () => {
     expect(visibleFields("not_started")).toEqual({
@@ -9,6 +9,7 @@ describe("visibleFields", () => {
       plannedExamDate: true,
       issuedDate: false,
       certificateUrl: false,
+      evidence: false,
     });
   });
 
@@ -18,6 +19,7 @@ describe("visibleFields", () => {
       plannedExamDate: true,
       issuedDate: false,
       certificateUrl: false,
+      evidence: false,
     });
   });
 
@@ -27,8 +29,13 @@ describe("visibleFields", () => {
       plannedExamDate: false,
       issuedDate: true,
       certificateUrl: true,
+      evidence: true,
     });
   });
+});
+
+it("R10: Notes is not a status-dependent field", () => {
+  for (const status of ["not_started", "in_progress", "done"] as const) expect(visibleFields(status)).not.toHaveProperty("notes");
 });
 
 // R2: values set or cleared when the status changes (order of `clear` is not part of the contract).

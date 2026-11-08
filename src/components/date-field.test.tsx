@@ -58,4 +58,26 @@ describe("DateField", () => {
   it("shows the current value in the text input", () => {
     expect(textInput(render({ value: "01/08/2026" }))).toContain('value="01/08/2026"');
   });
+
+  // R12: Issue date is required when Completed; the sheet passes `required` to DateField.
+  it("marks a required field with a red star in the label and aria-required on the text input", () => {
+    const html = render({ required: true });
+    const label = html.match(/<label[^>]*>([\s\S]*?)<\/label>/);
+    expect(label).not.toBeNull();
+    expect(label![1]).toMatch(/Issue date[\s\S]*<\w+[^>]*aria-hidden="true"[^>]*>\*</);
+    expect(label![1]).toContain("text-destructive");
+    expect(textInput(html)).toContain('aria-required="true"');
+  });
+
+  it("has no star and no aria-required when the field is optional", () => {
+    const html = render();
+    expect(html.match(/<label[^>]*>([\s\S]*?)<\/label>/)![1]).not.toContain("*");
+    expect(textInput(html)).not.toContain("aria-required");
+    expect(html).not.toContain("(optional)");
+  });
+
+  // R13: a stale value in the hidden date input must not block the native form submit; it starts empty.
+  it("renders the hidden date input without a value, whatever the text says", () => {
+    expect(dateInput(render({ value: "01/01/2099", max: "2026-11-08" }))).not.toMatch(/\svalue="[^"]+"/);
+  });
 });

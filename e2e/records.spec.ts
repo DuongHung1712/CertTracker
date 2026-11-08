@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { signIn } from "./helpers";
+import { fieldLabel, signIn } from "./helpers";
+import { signInAsSeedAdmin } from "./support/restore-seed";
 
 // Seed rows (supabase/seed.sql): An–AWS done, Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
 const AWS = "AWS Solutions Architect Associate";
@@ -13,14 +14,14 @@ function recordRow(page: Page, ...texts: string[]): Locator {
 
 /** Opens a searchable combobox in the sheet, types a query and picks the option with `optionName`. */
 async function pickOption(page: Page, dialog: Locator, label: string, query: string, optionName: string) {
-  await dialog.getByLabel(label, { exact: true }).fill(query);
+  await dialog.getByLabel(fieldLabel(label)).fill(query);
   // The popup is portalled outside the dialog.
   await page.getByRole("option", { name: optionName }).click();
 }
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
 async function pickSelect(page: Page, dialog: Locator, label: string, optionName: string) {
-  await dialog.getByLabel(label, { exact: true }).click();
+  await dialog.getByLabel(fieldLabel(label)).click();
   await page.getByRole("option", { name: optionName, exact: true }).click();
 }
 
@@ -67,7 +68,7 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   await pickSelect(page, dialog, "Status", "Completed");
   // Completed hides Progress (it is saved as 100).
   await expect(dialog.getByLabel("Progress (%)")).toHaveCount(0);
-  await dialog.getByLabel("Issue date", { exact: true }).fill("01/06/2026");
+  await dialog.getByLabel(fieldLabel("Issue date")).fill("01/06/2026");
   await dialog.getByLabel("Evidence").setInputFiles("e2e/fixtures/evidence.pdf");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Added certificate")).toBeVisible();
@@ -155,17 +156,98 @@ test("status rules are enforced in the form", async ({ page }) => {
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("A completed course needs an issue date")).toBeVisible();
 
-  await dialog.getByLabel("Issue date", { exact: true }).fill("31/02/2026");
+  await dialog.getByLabel(fieldLabel("Issue date")).fill("31/02/2026");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Enter a valid issue date (dd/mm/yyyy)")).toBeVisible();
 
-  await dialog.getByLabel("Issue date", { exact: true }).fill("01/01/2099");
+  await dialog.getByLabel(fieldLabel("Issue date")).fill("01/01/2099");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("The issue date cannot be in the future")).toBeVisible();
 
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs")).toHaveCount(0);
+});
+
+test("R13: a future date left in the calendar never blocks Save silently", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+  await page.goto("/records");
+
+  await page.getByRole("button", { name: "Add certificate" }).click();
+  const dialog = page.getByRole("dialog");
+  await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
+  await pickOption(page, dialog, "Course", "nvidia", "NVIDIA Generative AI LLMs");
+  await pickSelect(page, dialog, "Status", "Completed");
+  const row = recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs");
+  try {
+    // The schema shows the errors; the browser's own validation must not get in first.
+    expect(await dialog.locator("form").evaluate((form: HTMLFormElement) => form.noValidate)).toBe(true);
+
+    const issued = dialog.getByLabel(fieldLabel("Issue date"));
+    await issued.fill("01/01/2099");
+    await dialog.getByRole("button", { name: "Choose Issue date from calendar" }).click();
+    const picker = dialog.locator('input[type="date"]');
+    // Close the calendar the way the user would (on the hidden date input, so Escape cannot reach the sheet).
+    await picker.evaluate((element: HTMLInputElement) => element.blur());
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(dialog.getByText("The issue date cannot be in the future")).toBeVisible();
+
+    // Correcting the text must not leave the old date behind in the hidden calendar input.
+    await issued.fill("01/06/2026");
+    expect(await picker.evaluate((element: HTMLInputElement) => element.validity.valid)).toBe(true);
+    expect(await dialog.locator("form").evaluate((form: HTMLFormElement) => form.checkValidity())).toBe(true);
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Added certificate")).toBeVisible();
+    await expect(row).toBeVisible();
+  } finally {
+    const openSheet = page.getByRole("dialog");
+    if ((await openSheet.count()) > 0) await openSheet.getByRole("button", { name: "Cancel" }).click();
+    await expect(openSheet).toHaveCount(0);
+    if ((await row.count()) > 0) {
+      await clickMenuItem(page, row, "Delete");
+      await page.getByRole("button", { name: "Delete certificate" }).click();
+      await expect(page.getByText("Deleted certificate")).toBeVisible();
+    }
+    await expect(row).toHaveCount(0);
+  }
+});
+
+test("R10: a member's save keeps the notes an admin wrote", async ({ page }) => {
+  const CHAU = "5eed0000-0000-0000-0000-00000000b003";
+  const AWS_ID = "5eed0000-0000-0000-0000-00000000e001";
+  const admin = await signInAsSeedAdmin();
+  const seed = await admin.from("training_records").select("notes").eq("member_id", CHAU).eq("course_id", AWS_ID).single();
+  if (seed.error) throw new Error(`read seed note: ${seed.error.message}`);
+  const note = `Admin note ${Date.now()}`;
+  const set = await admin.from("training_records").update({ notes: note }).eq("member_id", CHAU).eq("course_id", AWS_ID).select("id");
+  if (set.error || set.data.length !== 1) throw new Error(`set note: ${set.error?.message ?? "no row"}`);
+
+  try {
+    await signIn(page, "member@certtracker.test");
+    await page.goto("/records");
+    await expect(page).toHaveURL(/\/me$/);
+    const row = recordRow(page, AWS);
+    await openRowMenu(row);
+    await page.getByRole("menuitem", { name: "Edit" }).click();
+    const dialog = page.getByRole("dialog");
+    await pickSelect(page, dialog, "Status", "In progress");
+    await dialog.getByLabel("Progress (%)").fill("30");
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Saved certificate").first()).toBeVisible();
+    await expect(row).toContainText("30%");
+
+    const after = await admin.from("training_records").select("notes, progress").eq("member_id", CHAU).eq("course_id", AWS_ID).single();
+    expect(after.data).toEqual({ notes: note, progress: 30 });
+  } finally {
+    // Seed state: Not started / 0, the seed note.
+    const restore = await admin
+      .from("training_records")
+      .update({ status: "not_started", progress: 0, notes: seed.data.notes })
+      .eq("member_id", CHAU)
+      .eq("course_id", AWS_ID)
+      .select("id");
+    if (restore.error || restore.data.length !== 1) throw new Error(`restore seed record: ${restore.error?.message ?? "no row"}`);
+  }
 });
 
 test("manager sees only the managed team and can only pick managed members", async ({ page }) => {
@@ -179,7 +261,7 @@ test("manager sees only the managed team and can only pick managed members", asy
 
   await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Member", { exact: true }).click();
+  await dialog.getByLabel(fieldLabel("Member")).click();
   await expect(page.getByRole("option", { name: /Nguyễn Văn An/ })).toBeVisible();
   await expect(page.getByRole("option", { name: /Lê Minh Châu/ })).toBeVisible();
   await expect(page.getByRole("option", { name: /Trần Thị Bình/ })).toHaveCount(0);
@@ -217,10 +299,10 @@ test("member updates own progress and cannot see company fields", async ({ page 
     await page.getByRole("menuitem", { name: "Edit" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel("Course", { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel(fieldLabel("Course"))).toBeVisible();
     await expect(dialog.getByLabel("Registered through the company")).toHaveCount(0);
     await expect(dialog.getByLabel("Refund status")).toHaveCount(0);
-    await expect(dialog.getByLabel("Member", { exact: true })).toHaveCount(0);
+    await expect(dialog.getByLabel(fieldLabel("Member"))).toHaveCount(0);
 
     await pickSelect(page, dialog, "Status", "In progress");
     await dialog.getByLabel("Progress (%)").fill("40");
@@ -245,7 +327,7 @@ test("the certificate form says what to do when a course is missing", async ({ p
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
 
-  await dialog.getByLabel("Course", { exact: true }).fill("zzzz-no-such-course");
+  await dialog.getByLabel(fieldLabel("Course")).fill("zzzz-no-such-course");
   // The popup is portalled outside the dialog.
   await expect(page.getByText("No courses found", { exact: true })).toBeVisible();
   await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
@@ -266,8 +348,12 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     await expect(evidenceLink).toHaveCount(0);
     await page.getByRole("menuitem", { name: "Edit" }).click();
     let dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel("Course", { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel(fieldLabel("Course"))).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Remove evidence" })).toHaveCount(0);
+    // R11: evidence is only offered for a Completed certificate.
+    await expect(dialog.getByLabel("Evidence", { exact: true })).toHaveCount(0);
+    await pickSelect(page, dialog, "Status", "Completed");
+    await dialog.getByLabel(fieldLabel("Issue date")).fill("01/06/2026");
     await dialog.getByLabel("Evidence", { exact: true }).setInputFiles("e2e/fixtures/evidence.pdf");
     await dialog.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Saved certificate").first()).toBeVisible();
@@ -290,6 +376,13 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     await clickMenuItem(page, row, "Edit");
     dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("link", { name: "View current evidence" })).toBeVisible();
+    // R11: leaving Completed hides the whole evidence block (the stored file is left alone; nothing is saved here).
+    await pickSelect(page, dialog, "Status", "In progress");
+    await expect(dialog.getByRole("link", { name: "View current evidence" })).toHaveCount(0);
+    await expect(dialog.getByRole("button", { name: "Remove evidence" })).toHaveCount(0);
+    await expect(dialog.getByLabel("Evidence", { exact: true })).toHaveCount(0);
+    await pickSelect(page, dialog, "Status", "Completed");
+    await expect(dialog.getByRole("link", { name: "View current evidence" })).toBeVisible();
     await dialog.getByRole("button", { name: "Remove evidence" }).click();
     await expect(page.getByText("Removed evidence")).toBeVisible();
     await dialog.getByRole("button", { name: "Cancel" }).click();
@@ -305,7 +398,9 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     await page.keyboard.press("Escape");
   } finally {
     // Leave the seed record without evidence so the suite can run again on the same database.
-    await page.keyboard.press("Escape");
+    const openSheet = page.getByRole("dialog");
+    if ((await openSheet.count()) > 0) await openSheet.getByRole("button", { name: "Cancel" }).click();
+    await expect(openSheet).toHaveCount(0);
     await openRowMenu(row);
     await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
     if ((await evidenceLink.count()) > 0) {
@@ -314,6 +409,8 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
       await expect(page.getByText("Removed evidence").first()).toBeVisible();
     }
     await page.keyboard.press("Escape");
+    // Back to the seed state (Not started / 0, no issue date); going to Not started clears the issue date.
+    await editStatus(page, row, "Not started", "0");
   }
 });
 
