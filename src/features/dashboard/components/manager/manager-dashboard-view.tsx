@@ -131,56 +131,19 @@ export function ManagerDashboardView({
             onSelectTeam={setSelectedTeam}
           />
 
-          {/* Row 1: Top Overview (Cols 1 & 2) and Needs Attention (Col 3) */}
+          {/* Three independent columns (as in the Figma): each one flows down on its own, so a tall card
+              in one column never leaves a gap in the next. The centre column comes first in the markup
+              so that on a phone the KPIs and the work lists lead; from lg up the columns are reordered. */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Overview Section wrapping the 4 KPI Tiles */}
-            <div className="flex flex-col gap-3 lg:col-span-9">
+            {/* Centre column (6 cols) */}
+            <div className="flex flex-col gap-6 lg:order-2 lg:col-span-6">
               <section aria-label="Overview" className="flex flex-col gap-3">
                 <h2 className="sr-only">Overview</h2>
-                {recordsError ? (
-                  <SectionError title="Overview" />
-                ) : (
-                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-9">
-                    {/* Left: Donut Readiness Card (3 cols) */}
-                    <div className="lg:col-span-3">
-                      <TeamReadinessDonutCard
-                        kpis={kpis}
-                        noCertCount={membersWithoutCerts.length}
-                      />
-                    </div>
-                    {/* Center: Top 3 KPI Cards (6 cols) */}
-                    <div className="lg:col-span-6">
-                      <TopKpiRow kpis={kpis} pastDueText={pastDueText} />
-                    </div>
-                  </div>
-                )}
+                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} pastDueText={pastDueText} />}
               </section>
-            </div>
 
-            {/* Right: Needs Attention Card (3 cols) */}
-            <div className="lg:col-span-3">
-              {recordsError ? (
-                <SectionError title="Needs attention" />
-              ) : (
-                <NeedsAttentionFeed records={filteredRecords} />
-              )}
-            </div>
-          </div>
-
-          {/* Row 2: 3 Continuous Columns matching Figma */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Column 1 (Left sidebar - 3 cols) */}
-            <div className="flex flex-col gap-4 lg:col-span-3">
-              <AllocatedScopeCard teams={teamsWithCounts} />
-              <QuickActionsCard />
-              <MonthlyEarnedChart records={filteredRecords} />
-            </div>
-
-            {/* Column 2 (Center main column - 6 cols) */}
-            <div className="flex flex-col gap-6 lg:col-span-6">
               <ManagerTabStrip />
 
-              {/* Next to expire */}
               <Section
                 title="Next to expire"
                 description="Completed certificates with 60 days or less left, soonest first."
@@ -192,7 +155,6 @@ export function ManagerDashboardView({
                 )}
               </Section>
 
-              {/* Team readiness: ranked members with details */}
               <Section
                 title="Team readiness"
                 description="Status breakdown for members across your managed teams."
@@ -204,10 +166,8 @@ export function ManagerDashboardView({
                 )}
               </Section>
 
-              {/* People without certificates yet */}
               <PeopleWithoutCertsCard members={membersWithoutCerts} />
 
-              {/* Planned exams */}
               <Section
                 title="Planned exams"
                 description="Scheduled exams within the next 60 days."
@@ -220,10 +180,29 @@ export function ManagerDashboardView({
               </Section>
             </div>
 
-            {/* Column 3 (Right sidebar - 3 cols) */}
-            <div className="flex flex-col gap-4 lg:col-span-3">
+            {/* Right column (3 cols) */}
+            <div className="flex flex-col gap-4 lg:order-3 lg:col-span-3">
+              {recordsError ? (
+                <SectionError title="Needs attention" />
+              ) : (
+                <NeedsAttentionFeed records={filteredRecords} />
+              )}
               <AutomatedRemindersCard />
               <AskAboutMyTeamComingSoon />
+            </div>
+
+            {/* Left column (3 cols) */}
+            <div className="flex flex-col gap-4 lg:order-1 lg:col-span-3">
+              <section aria-label="Readiness summary">
+                {recordsError ? (
+                  <SectionError title="Readiness summary" />
+                ) : (
+                  <TeamReadinessDonutCard kpis={kpis} noCertCount={membersWithoutCerts.length} />
+                )}
+              </section>
+              <AllocatedScopeCard teams={teamsWithCounts} />
+              <QuickActionsCard />
+              <MonthlyEarnedChart records={filteredRecords} />
             </div>
           </div>
 

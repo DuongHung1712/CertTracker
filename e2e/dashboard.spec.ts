@@ -18,9 +18,9 @@ function section(page: Page, name: string): Locator {
   return page.getByRole("region", { name, exact: true });
 }
 
-/** The value of one KPI tile inside the "Overview" `dl`. */
-function tileValue(page: Page, label: string): Locator {
-  return section(page, "Overview")
+/** The value of one KPI tile inside a region ("Overview" unless said otherwise). */
+function tileValue(page: Page, label: string, region = "Overview"): Locator {
+  return section(page, region)
     .locator("dl > div")
     .filter({ has: page.getByText(label, { exact: true }) })
     .locator("dd")
@@ -113,7 +113,7 @@ test("manager sees team-scoped numbers, org-wide totals once, and no separate ra
 
   // Scoped team KPI numbers: Team Cloud has 1 completed valid cert (expires in ~25 days) and 1 not_started cert.
   // Valid share of completed = 100%, Expiring = 1, Expired = 0. Approvals do not exist yet, so no number.
-  await expect(tileValue(page, "Team readiness")).toHaveText("100%");
+  await expect(tileValue(page, "Team readiness", "Readiness summary")).toHaveText("100%");
   await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
   await expect(tileValue(page, "Expired")).toHaveText("0");
   await expect(tileValue(page, "Waiting for approval")).toHaveText("—");
