@@ -108,15 +108,15 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   await expect(detailPanel.getByRole("heading", { name: "Team Cloud" })).toBeVisible();
 });
 
-test("manager sees the same org-wide numbers but a ranking limited to their team", async ({ page }) => {
+test("manager sees team-scoped numbers, org-wide totals once, and no separate ranking", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
   // Scoped team KPI numbers: Team Cloud has 1 completed valid cert (expires in ~25 days) and 1 not_started cert.
-  // Valid share of completed = 100%, Expiring = 1, Expired = 0, Waiting for approval = 0.
+  // Valid share of completed = 100%, Expiring = 1, Expired = 0. Approvals do not exist yet, so no number.
   await expect(tileValue(page, "Team readiness")).toHaveText("100%");
   await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
   await expect(tileValue(page, "Expired")).toHaveText("0");
-  await expect(tileValue(page, "Waiting for approval")).toHaveText("0");
+  await expect(tileValue(page, "Waiting for approval")).toHaveText("—");
 
   // Org-wide totals appear in "Across the department"
   const dept = section(page, "Across the department");
@@ -125,11 +125,12 @@ test("manager sees the same org-wide numbers but a ranking limited to their team
   await expect(dept.getByText("Expiring within 60 days")).toBeVisible();
   await expect(dept.getByText("Expired")).toBeVisible();
 
-  // Individual ranking contains only managed team members (An, Châu), excluding unmanaged Bình
-  const ranking = section(page, "Individual ranking");
-  await expect(rowWith(ranking, "Nguyễn Văn An")).toBeVisible();
-  await expect(rowWith(ranking, "Lê Minh Châu")).toBeVisible();
-  await expect(rowWith(ranking, "Trần Thị Bình")).toHaveCount(0);
+  // The Team readiness list is the only ranking: managed members (An, Châu) only, unmanaged Bình excluded.
+  await expect(section(page, "Individual ranking")).toHaveCount(0);
+  const readiness = section(page, "Team readiness");
+  await expect(rowWith(readiness, "Nguyễn Văn An")).toBeVisible();
+  await expect(rowWith(readiness, "Lê Minh Châu")).toBeVisible();
+  await expect(rowWith(readiness, "Trần Thị Bình")).toHaveCount(0);
 });
 
 test("manager next-to-expire displays urgent renewals ordered soonest first", async ({ page }) => {
@@ -139,47 +140,73 @@ test("manager next-to-expire displays urgent renewals ordered soonest first", as
   await expect(nextSection).toBeVisible();
   await expect(rowWith(nextSection, "Nguyễn Văn An", AWS)).toBeVisible();
   await expect(nextSection.getByRole("link", { name: "View" })).toHaveAttribute("href", /\/records\?search=/);
+
+  // Needs attention lists expired certificates only; the seed has none, so An's AWS is not listed twice.
+  const attention = section(page, "Needs attention");
+  await expect(attention).toBeVisible();
+  await expect(attention.getByText(AWS)).toHaveCount(0);
+  await expect(attention.getByText("Nothing needs attention")).toBeVisible();
 });
 
-test("manager team readiness league displays member status breakdown numbers", async ({ page }) => {
+test("manager team readiness list displays member status breakdown numbers", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
   const readinessSection = section(page, "Team readiness");
   await expect(readinessSection).toBeVisible();
   await expect(rowWith(readinessSection, "Nguyễn Văn An", "1 valid")).toBeVisible();
   await expect(rowWith(readinessSection, "Lê Minh Châu", "0 valid")).toBeVisible();
+  await expect(readinessSection.getByRole("link", { name: "View member certificates" })).toHaveAttribute(
+    "href",
+    /\/records\?search=/,
+  );
 });
 
-test("manager coming soon cards and tab strip are present and controls are disabled", async ({ page }) => {
+test("manager sees later modules once, as disabled tabs and one Coming soon card, with no mock data", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
-  // Tab strip
+  // Tab strip: the only place Approvals, Goals and Skills appear (plus the one approvals KPI tile).
   await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("tab", { name: "Approvals Soon" })).toBeDisabled();
   await expect(page.getByRole("tab", { name: "Goals Soon" })).toBeDisabled();
   await expect(page.getByRole("tab", { name: "Skills Soon" })).toBeDisabled();
 
-  // Coming soon cards with disabled controls
-  const approvalsCard = page.getByRole("region", { name: "Approvals queue (Coming soon)" });
-  await expect(approvalsCard).toBeVisible();
-  await expect(approvalsCard.getByRole("button", { name: "Review queued evidence" })).toBeDisabled();
+  // The three bottom Coming soon cards and the separate Risk alerts card are gone.
+  for (const name of ["Approvals queue", "Goals", "Skills", "Risk alerts"]) {
+    await expect(page.getByRole("region", { name: `${name} (Coming soon)` })).toHaveCount(0);
+  }
 
-  const goalsCard = page.getByRole("region", { name: "Goals (Coming soon)" });
-  await expect(goalsCard).toBeVisible();
-  await expect(goalsCard.getByRole("button", { name: "Set quarterly goal" })).toBeDisabled();
+  // One merged card, no controls.
+  const askCard = page.getByRole("region", { name: "Ask about my team (Coming soon)" });
+  await expect(askCard).toBeVisible();
+  await expect(askCard.getByText(/Not available yet\.$/)).toBeVisible();
+  await expect(askCard.getByRole("button")).toHaveCount(0);
+  await expect(askCard.getByRole("textbox")).toHaveCount(0);
 
-  const skillsCard = page.getByRole("region", { name: "Skills (Coming soon)" });
-  await expect(skillsCard).toBeVisible();
-  await expect(skillsCard.getByRole("button", { name: "View skill matrix" })).toBeDisabled();
+  // Automated reminders: the two scheduled facts only.
+  const reminders = section(page, "Automated reminders");
+  await expect(reminders.getByText("Members get an expiry email every Monday at 08:00 (Vietnam time).")).toBeVisible();
+  await expect(reminders.getByText("The monthly report goes out on the 1st of each month.")).toBeVisible();
+  await expect(reminders.getByRole("link")).toHaveCount(0);
 
-  const copilotCard = page.getByRole("region", { name: "Ask about my team (Coming soon)" });
-  await expect(copilotCard).toBeVisible();
-  await expect(copilotCard.getByPlaceholder("Ask about team qualifications or skill gaps…")).toBeDisabled();
-  await expect(copilotCard.getByRole("button", { name: "Cloud certification coverage?" })).toBeDisabled();
-
-  const riskCard = page.getByRole("region", { name: "Risk alerts (Coming soon)" });
-  await expect(riskCard).toBeVisible();
-  await expect(riskCard.getByRole("button", { name: "View risk assessment" })).toBeDisabled();
+  // No invented values or dead actions anywhere on the page.
+  const main = page.getByRole("main");
+  for (const fake of [
+    "DAS",
+    "+28%",
+    "Last sent",
+    "Joined",
+    "Send reminder",
+    "Notify member",
+    "Remediate",
+    "Suggest certification",
+    "Assign goal",
+    "Open queue",
+  ]) {
+    await expect(main.getByText(fake)).toHaveCount(0);
+  }
+  for (const label of ["Month", "Quarter", "Year"]) {
+    await expect(main.getByRole("button", { name: label, exact: true })).toHaveCount(0);
+  }
 });
 
 test("a manager with no teams sees the empty state", async ({ page }) => {

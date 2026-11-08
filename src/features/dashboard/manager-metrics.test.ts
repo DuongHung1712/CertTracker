@@ -113,6 +113,13 @@ describe("manager-metrics", () => {
       expect(kpis.notStartedCount).toBe(0);
       expect(kpis.teamReadinessRate).toBe(0);
       expect(kpis.teamReadinessFormatted).toBe("0%");
+      expect(kpis.urgentCount).toBe(0);
+    });
+
+    it("counts completed certificates with 30 days or less left as urgentCount (boundaries -1, 0, 30, 31)", () => {
+      const kpis = calculateManagerKpis([doneRecord(-1), doneRecord(0), doneRecord(30), doneRecord(31), doneRecord(60)]);
+      expect(kpis.urgentCount).toBe(2);
+      expect(kpis.expiringCount).toBe(4);
     });
 
     it("calculates rates and breakdown accurately", () => {
@@ -246,24 +253,30 @@ describe("manager-metrics", () => {
   });
 
   describe("getNeedsAttentionItems", () => {
-    it("triages expired certificates first, then expiring within 30 days", () => {
-      const exp1 = doneRecord(-5, { memberName: "Minh", courseName: "PMP" });
-      const exp2 = doneRecord(-1, { memberName: "Tuan", courseName: "CKA" });
-      const soon1 = doneRecord(12, { memberName: "Linh", courseName: "AWS SAA" });
-      const later = doneRecord(50, { memberName: "An", courseName: "Terraform" }); // not urgent (>30d)
+    it("lists only expired certificates, most overdue first (upcoming ones belong to Next to expire)", () => {
+      const exp1 = doneRecord(-5, { id: "e1", memberName: "Minh", courseName: "PMP" });
+      const exp2 = doneRecord(-1, { id: "e2", memberName: "Tuan", courseName: "CKA" });
+      const soon1 = doneRecord(12, { id: "s1", memberName: "Linh", courseName: "AWS SAA" });
+      const today = doneRecord(0, { id: "s0", memberName: "Hoa", courseName: "GCP" });
+      const later = doneRecord(50, { id: "l1", memberName: "An", courseName: "Terraform" });
 
-      const items = getNeedsAttentionItems([later, soon1, exp1, exp2]);
-      expect(items).toHaveLength(3);
-      expect(items[0].urgency).toBe("expired");
-      expect(items[0].record.memberName).toBe("Minh");
+      const items = getNeedsAttentionItems([later, soon1, today, exp2, exp1]);
+      expect(items.map((i) => i.record.id)).toEqual(["e1", "e2"]);
       expect(items[0].description).toContain("expired 5 days ago");
+      expect(items[1].description).toContain("expired 1 day ago");
+    });
 
-      expect(items[1].urgency).toBe("expired");
-      expect(items[1].record.memberName).toBe("Tuan");
-
-      expect(items[2].urgency).toBe("urgent");
-      expect(items[2].record.memberName).toBe("Linh");
-      expect(items[2].description).toContain("expires in 12 days");
+    it("never lists a certificate that Next to expire lists (one expired, one 20-day, one 45-day)", () => {
+      const records = [
+        doneRecord(-3, { id: "expired" }),
+        doneRecord(20, { id: "in-20" }),
+        doneRecord(45, { id: "in-45" }),
+      ];
+      const attention = getNeedsAttentionItems(records).map((i) => i.record.id);
+      const next = getNextToExpire(records).map((r) => r.id);
+      expect(attention).toEqual(["expired"]);
+      expect(next).toEqual(["in-20", "in-45"]);
+      expect(attention.filter((id) => next.includes(id))).toEqual([]);
     });
   });
 

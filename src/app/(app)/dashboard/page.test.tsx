@@ -22,7 +22,10 @@ vi.mock("@/features/dashboard/queries", () => ({
   getRanking: () => getRanking(),
 }));
 vi.mock("@/features/records/components/records-realtime", () => ({ RecordsRealtime: () => null }));
-vi.mock("@/features/members/queries", () => ({ listMembers: vi.fn(async () => []) }));
+vi.mock("@/features/members/queries", () => ({
+  listMembers: vi.fn(async () => []),
+  listTeamOptionsForCurrentUser: vi.fn(async () => [{ id: "t1", name: "Team Zephyr" }]),
+}));
 vi.mock("@/features/career/queries", () => ({ getMemberCareer: vi.fn(async () => ({})) }));
 vi.mock("@/features/records/queries", () => ({
   listRecords: vi.fn(async () => []),
@@ -157,5 +160,21 @@ describe("DashboardPage error isolation (admin)", () => {
     expect(html).toContain("Could not load &quot;Individual ranking&quot;");
     expect(html).toContain("4,321");
     expect(html).toContain("Team Zephyr");
+  });
+});
+
+describe("DashboardPage (manager)", () => {
+  beforeEach(() => {
+    getCurrentUser.mockResolvedValue({ id: "u2", email: "manager@certtracker.test", role: "manager", memberId: null });
+    getRanking.mockClear();
+  });
+
+  it("does not load or show the individual ranking (the Team readiness list already ranks the team)", async () => {
+    const html = await renderPage();
+    expect(getRanking).not.toHaveBeenCalled();
+    expect(html).not.toContain("Individual ranking");
+    expect(html).not.toContain("Ranked Person");
+    // The anonymous org totals stay.
+    expect(html).toContain('aria-label="Across the department"');
   });
 });
