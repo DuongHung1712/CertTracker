@@ -133,7 +133,8 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `MemberCode` | `components/status/` | `M001` in the mono font, `muted-foreground` | ✓ |
 | Form | `Field`, `FieldLabel`, `FieldError`…, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn `field` | Label above the input; error below it in `destructive`; shares the Zod schema with the server | ✓ (combined with React Hook Form in week 2) |
 | | `EntityCombobox` | `components/entity-combobox.tsx` | Searchable select: member, course, team | ✓ |
-| | `DateField` | `components/date-field.tsx` | Label + one text input (`dd/mm/yyyy`, numeric keypad) that inserts the slashes while typing (`formatDateInput`) + a calendar button (`CalendarDays`, `aria-label` "Choose <label> from calendar") that opens the browser's date picker through a hidden `type="date"` input; optional `max` (`YYYY-MM-DD`) limits the picker only; checked with `toIsoDate` (decisions #16) | ✓ |
+| | `DateField` | `components/date-field.tsx` | Label + one text input (`dd/mm/yyyy`, numeric keypad) that inserts the slashes while typing (`formatDateInput`) + a calendar button (`CalendarDays`, `aria-label` "Choose <label> from calendar") that opens the browser's date picker through a hidden `type="date"` input; optional `max` (`YYYY-MM-DD`) limits the picker only; checked with `toIsoDate` (decisions #16); slashes the user typed are kept, and a day or month of 1-9 is padded once the next part starts; `required` adds the red star and `aria-required` | ✓ |
+| | `RequiredMark` | `components/required-mark.tsx` | A red `*` (`text-destructive`, `aria-hidden`) after a required field's label; the control also gets `aria-required` | ✓ |
 | | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop an image or PDF as evidence | ✓ |
 | Navigation | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `components/ui/tabs.tsx` | shadcn `tabs` (Base UI); keyboard navigation (arrows, Home, End); horizontal scrollable strip on mobile | ✓ |
 | Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
@@ -172,6 +173,8 @@ The save button sits at the end of the form, on the right; "Cancel" is the secon
 ### 4.2a Fields that depend on a status
 
 When one field (a status) decides which other inputs make sense, render only the inputs that apply; do not hide the rest with CSS. A hidden input would still be validated and could block Save. Keep the rules as a pure module next to the schema (`features/records/status-fields.ts`: `visibleFields(status)` for what to show, `valuesOnStatusChange(next, current)` for the value to set and the fields to empty). On change, apply the value, empty the listed fields and clear their errors (`form.clearErrors`). The schema and the submitted payload do not change.
+
+In the certificate form, mark the required fields with `RequiredMark` after the label text and `aria-required` on the control, and put one `* Required` line (caption, `muted-foreground`) at the top of the form. Optional fields get no mark and no "(optional)" text. Progress is required when In progress and Issue date when Completed. Notes is shown to Admin and Manager only (a member's save leaves stored notes untouched), and the Evidence upload only when the status is Completed. A field whose rule is not obvious gets a `FieldDescription` (Issue date: the expiry date is worked out from the course). The form has `noValidate`, so the schema shows every error.
 
 ### 4.3 Destructive actions
 
