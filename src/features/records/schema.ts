@@ -38,13 +38,13 @@ export function recordRuleIssues(
 ): { path: "progress" | "issuedDate"; message: string }[] {
   const issues: { path: "progress" | "issuedDate"; message: string }[] = [];
   if (value.status === "done" && value.progress !== 100) {
-    issues.push({ path: "progress", message: "A completed record must have progress 100%" });
+    issues.push({ path: "progress", message: "A completed course must have progress 100%" });
   }
   if (value.status === "done" && !value.issuedDate) {
-    issues.push({ path: "issuedDate", message: "A completed record needs an issue date" });
+    issues.push({ path: "issuedDate", message: "A completed course needs an issue date" });
   }
   if (value.status === "not_started" && value.progress !== 0) {
-    issues.push({ path: "progress", message: "A record that has not started must have progress 0%" });
+    issues.push({ path: "progress", message: "A course that has not started must have progress 0%" });
   }
   if (value.status === "in_progress" && value.progress > 99) {
     issues.push({ path: "progress", message: "Set the status to Completed when progress is 100%" });

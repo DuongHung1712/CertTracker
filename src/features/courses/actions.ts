@@ -129,7 +129,7 @@ export async function deleteCourse(input: { id: string }): Promise<Result<null>>
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("courses").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "Someone has a record for this course, so it cannot be deleted." }));
+  if (error) return err(mapPostgresError(error, { restricted: "Someone has a certificate for this course, so it cannot be deleted." }));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");

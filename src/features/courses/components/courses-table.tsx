@@ -216,7 +216,7 @@ export function CoursesTable({
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
             title={`Delete course ${confirming?.name}?`}
-            description="A course can only be deleted when nobody has a record for it. This cannot be undone."
+            description="A course can only be deleted when nobody has a certificate for it. This cannot be undone."
             confirmLabel="Delete course"
             pendingLabel="Deleting…"
             pending={pending}

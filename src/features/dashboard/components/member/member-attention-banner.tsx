@@ -20,6 +20,7 @@ export function MemberAttentionBanner({
   return (
     <aside
       aria-label="Certificate attention required"
+      data-tone={isExpired ? "expired" : "expiring-soon"}
       className={
         isExpired
           ? "flex flex-col gap-3 rounded-lg border border-[var(--status-expired-border)] bg-[var(--status-expired-bg)] p-3.5 text-[var(--status-expired-fg)] sm:flex-row sm:items-center sm:justify-between"

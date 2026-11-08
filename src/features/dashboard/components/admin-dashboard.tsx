@@ -40,7 +40,7 @@ export function AdminDashboard({ role, data }: { role: Exclude<Role, "member">; 
           description="Add certificates and the statistics will appear here."
           action={
             <Link href="/records" className={buttonVariants()}>
-              Go to records
+              Go to certificates
             </Link>
           }
         />

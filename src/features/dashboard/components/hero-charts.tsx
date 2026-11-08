@@ -106,7 +106,7 @@ export function RecordsMiniChart({
   if (groups.length === 0) {
     return (
       <div className={`flex ${MINI_CHART_HEIGHT} items-center justify-center text-center px-2 text-caption text-muted-foreground`}>
-        {(totalRecords ?? 0) > 0 ? "Not enough data for a chart yet" : "No records yet"}
+        {(totalRecords ?? 0) > 0 ? "Not enough data for a chart yet" : "No certificates yet"}
       </div>
     );
   }
@@ -122,7 +122,7 @@ export function RecordsMiniChart({
 }
 
 const VALID_BUCKET_TICKS: Record<string, string> = {
-  active: "60+ days",
+  active: "61+ days",
   "expiring-60": "31–60 days",
   "expiring-soon": "0–30 days",
   "no-expiry": "No expiry",
@@ -157,7 +157,7 @@ export function ExpiringGaugeMiniChart({
 
   const gaugeData = [
     { name: "Expiring within 60 days", value: expiringCount, fill: "var(--status-expiring-soon-fg)" },
-    { name: "Other valid", value: otherCount, fill: "var(--secondary)" },
+    { name: "Other", value: otherCount, fill: "var(--secondary)" },
   ];
 
   return (

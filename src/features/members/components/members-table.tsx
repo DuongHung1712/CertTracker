@@ -228,7 +228,7 @@ export function MembersTable({
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
           title={`Delete member ${confirming?.code} · ${confirming?.fullName}?`}
-          description="A member can only be deleted when they have no certificate records. This cannot be undone."
+          description="A member can only be deleted when they have no certificates. This cannot be undone."
           confirmLabel="Delete member"
           pendingLabel="Deleting…"
           pending={pending}

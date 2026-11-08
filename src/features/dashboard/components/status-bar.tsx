@@ -22,7 +22,7 @@ export function StatusBar({
   const activeSegments = segments.filter((s) => s.count > 0);
   const computedAriaLabel =
     ariaLabel ??
-    (total === 0 ? "No records" : segments.map((s) => `${s.label}: ${s.count}`).join(", "));
+    (total === 0 ? "No certificates" : segments.map((s) => `${s.label}: ${s.count}`).join(", "));
 
   if (total === 0) {
     return (

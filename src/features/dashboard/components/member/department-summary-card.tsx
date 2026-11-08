@@ -51,7 +51,7 @@ export function DepartmentSummaryCard({ kpis }: { kpis: DashboardKpis }) {
       </dl>
 
       <p className="text-caption text-muted-foreground">
-        To protect privacy, groups with fewer than 3 members are hidden.
+        Totals for the whole department.
       </p>
     </section>
   );

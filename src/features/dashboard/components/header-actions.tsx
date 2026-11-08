@@ -25,7 +25,6 @@ export function DashboardHeaderActions() {
         size="sm"
         onClick={handleScrollToFilters}
         className="gap-1.5"
-        aria-label="Scroll to filters"
       >
         <SlidersHorizontal className="size-4 text-muted-foreground" aria-hidden />
         <span>Filters</span>

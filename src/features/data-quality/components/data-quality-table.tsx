@@ -149,7 +149,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         getRowId={(row) => `${row.type}:${row.subjectId}`}
         empty={
           issues.length === 0 ? (
-            <EmptyState title="The data is clean" description="No records need a review or fix right now." />
+            <EmptyState title="The data is clean" description="Nothing needs a review or fix right now." />
           ) : (
             <EmptyState title="No results found" description="Try a different search or clear the filters." />
           )

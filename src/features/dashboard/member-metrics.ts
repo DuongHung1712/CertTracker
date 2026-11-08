@@ -160,7 +160,7 @@ export function filterMemberRecords(
   tab: MemberTab,
   sort: MemberSort = "expiry",
 ): RecordRow[] {
-  const filtered = records.filter(TAB_FILTERS[tab]);
+  const filtered = records.filter(TAB_FILTERS[tab] ?? TAB_FILTERS.all);
 
   return [...filtered].sort((a, b) => {
     if (sort === "name") {

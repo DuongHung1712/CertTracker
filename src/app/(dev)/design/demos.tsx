@@ -141,7 +141,7 @@ export function ConfirmDemo() {
         open={open}
         onOpenChange={setOpen}
         title="Delete member M004 · Pham Quoc Dung?"
-        description="This member's 5 certificate records will be deleted too. This cannot be undone."
+        description="This member's 5 certificates will be deleted too. This cannot be undone."
         confirmLabel="Delete member"
         onConfirm={() => {
           setOpen(false);
@@ -345,7 +345,7 @@ export function DashboardRedesignDemo() {
           <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
             <dt className="text-label uppercase tracking-wider text-muted-foreground">Completed</dt>
             <dd className="text-xl font-semibold tabular-nums text-foreground">48</dd>
-            <dd className="text-caption text-muted-foreground">78.7% of records</dd>
+            <dd className="text-caption text-muted-foreground">78.7% of all certificates</dd>
           </div>
           <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
             <dt className="text-label uppercase tracking-wider text-muted-foreground">In progress</dt>

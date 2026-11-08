@@ -107,8 +107,6 @@ export function roundedShare(part: number, total: number): number {
   return total > 0 ? Math.round((part / total) * 100) : 0;
 }
 
-export const clampPercent = (value: number): number => Math.min(100, Math.max(0, value));
-
 /** Valid vs Expired split for breakdown row detail panel. */
 export function validVsExpiredSplit(counts: { valid: number; expired: number }): VisualSegment[] {
   return [

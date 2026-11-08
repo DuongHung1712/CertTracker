@@ -4,13 +4,16 @@ import { formatRate, ratePercent } from "@/features/dashboard/metrics";
 import { daysLeftLabel, pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
+/** Keeps the four tiles the same height whatever they hold. */
+const KPI_TILE_MIN_HEIGHT = "min-h-[175px]";
+
 export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
   const compliance = formatRate(ratePercent(kpis.validCount, kpis.total));
 
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
       {/* 1. All certificates, in solid primary */}
-      <div className="flex min-h-[175px] flex-col justify-between rounded-lg border border-transparent bg-primary p-3.5 text-primary-foreground">
+      <div className={cn("flex flex-col justify-between rounded-lg border border-transparent bg-primary p-3.5 text-primary-foreground", KPI_TILE_MIN_HEIGHT)}>
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <dt className="text-label uppercase tracking-wider text-primary-foreground/80 font-mono">
@@ -22,7 +25,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.total}
           </dd>
           <dd className="text-caption text-primary-foreground/80 leading-tight">
-            Including courses in progress
+            Including courses not started or in progress
           </dd>
         </div>
 
@@ -40,7 +43,8 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
       {/* 2. Expiring within 60 days: amber border and warning accent */}
       <div
         className={cn(
-          "flex min-h-[175px] flex-col justify-between rounded-lg border p-3.5 bg-card",
+          "flex flex-col justify-between rounded-lg border p-3.5 bg-card",
+          KPI_TILE_MIN_HEIGHT,
           kpis.expiringCount > 0
             ? "border-[var(--status-expiring-soon-border)]"
             : "border-border",
@@ -100,7 +104,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
       </div>
 
       {/* 3. In progress: active study goals */}
-      <div className="flex min-h-[175px] flex-col justify-between rounded-lg border border-border bg-card p-3.5">
+      <div className={cn("flex flex-col justify-between rounded-lg border border-border bg-card p-3.5", KPI_TILE_MIN_HEIGHT)}>
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <dt className="text-label uppercase tracking-wider font-mono text-muted-foreground">
@@ -136,7 +140,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
       </div>
 
       {/* 4. Expired: status check and compliance note */}
-      <div className="flex min-h-[175px] flex-col justify-between rounded-lg border border-border bg-card p-3.5">
+      <div className={cn("flex flex-col justify-between rounded-lg border border-border bg-card p-3.5", KPI_TILE_MIN_HEIGHT)}>
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <dt className="text-label uppercase tracking-wider font-mono text-muted-foreground">

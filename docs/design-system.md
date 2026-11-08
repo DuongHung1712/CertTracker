@@ -174,10 +174,10 @@ The save button sits at the end of the form, on the right; "Cancel" is the secon
 `ConfirmDialog`, for example:
 
 > **Delete member M004 · Nguyen Van An?**
-> This member's 5 certificate records will be deleted too. This cannot be undone.
+> This member's 5 certificates will be deleted too. This cannot be undone.
 > [Cancel] [Delete member]
 
-When the database **blocks** the delete (for example a course that certificate records still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course is used by 3 records. Move the records to another course before deleting it."*).
+When the database **blocks** the delete (for example a course that certificates still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course is used by 3 certificates. Move the certificates to another course before deleting it."*).
 
 ### 4.4 Feedback
 
@@ -212,7 +212,7 @@ When the database **blocks** the delete (for example a course that certificate r
 Hiding is only UX; every permission is still enforced by RLS.
 
 ### 4.6 Dashboard
-- **Header:** Title, subtitle timestamp, and action buttons: "Filters" button (scrolls to/focuses filter controls) and primary action with 16px icon ("View records" for admin/manager, "My certificates" for member).
+- **Header:** Title, subtitle timestamp, and action buttons: "Filters" button (scrolls to/focuses filter controls) and primary action with 16px icon ("View certificates").
 - **Overview:** 4 tall hero KPI cards (~240px, `KpiCard`) with numbers in the upper half and real mini charts in the lower half (`RecordsMiniChart`, `ValidMiniChart`, `ExpiringGaugeMiniChart`, and positive empty state `ExpiredMiniChart`), followed by a slim compact stat strip (Active members, Completed, In progress). All inside region "Overview", `dl > div` with bare number in the first `dd`.
 - **Certificate Expiry:** Compact horizontal strip (~120px) positioned directly above Explorer, with exact `role="img"` and `aria-label` contract.
 - **Filter Row:** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
@@ -228,9 +228,9 @@ Hiding is only UX; every permission is still enforced by RLS.
   3. "In progress": count plus up to two mini progress bars with course name and percent.
   4. "Expired": count; 0 shows a check icon and "All up to date".
 - **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Specialization focus" coming-soon card.
-- **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
-- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()` with the privacy note *"Only groups with at least 3 learners are shown."*
-- **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Compliance copilot" (with disabled prompt and suggested question chips), "My skills matrix", "Quarterly objective", "Target role", and "Audit verification".
+- **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring within 60 days`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
+- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()` with the caption *"Totals for the whole department."*
+- **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Ask about certificates" (with a disabled question box), "My skills", "Quarterly goals", "Next career role", "Certificate review" and, inside the profile card, "Focus area". Each has the chip "Coming soon" and a one-line description ending "Not available yet.".
 - **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
 
 ---

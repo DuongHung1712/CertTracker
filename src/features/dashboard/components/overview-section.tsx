@@ -78,7 +78,7 @@ export function OverviewSection({
           <StatStripItem
             label="Completed"
             value={formatNumber(k.doneRecords)}
-            caption={`${formatRate(ratePercent(k.doneRecords, k.totalRecords))} of records`}
+            caption={`${formatRate(ratePercent(k.doneRecords, k.totalRecords))} of all certificates`}
           />
           <StatStripItem label="In progress" value={formatNumber(k.inProgressRecords)} />
         </dl>

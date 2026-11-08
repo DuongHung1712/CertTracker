@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/data/empty-state";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
+import { clampPercent } from "@/components/status/labels";
 import { RecordStatusLabel } from "@/components/status/record-status";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,7 +19,6 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
-import { clampPercent } from "@/features/dashboard/metrics";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";

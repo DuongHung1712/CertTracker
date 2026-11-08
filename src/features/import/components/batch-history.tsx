@@ -68,7 +68,7 @@ export function BatchHistory({ batches }: { batches: ImportBatch[] }) {
       empty={
         <EmptyState
           title="No imports yet"
-          description="Upload an Excel file above to preview and import records."
+          description="Upload an Excel file above to preview and import rows."
         />
       }
     />
