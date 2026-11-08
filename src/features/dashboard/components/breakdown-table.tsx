@@ -5,15 +5,13 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { ProgressInline } from "@/components/status/progress-inline";
-import { ratePercent } from "@/features/dashboard/metrics";
+import { rateOf } from "@/features/dashboard/components/explorer/types";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /** Rows with nothing to divide (`records === 0`) have no rate; sort them below every real rate. */
 const NO_RATE = -1;
-
-const rateOf = (row: BreakdownRow): number | null => ratePercent(row.done, row.records);
 
 export function BreakdownTable({
   rows,
@@ -44,11 +42,17 @@ export function BreakdownTable({
         header: peopleLabel,
         accessorFn: (row) => row.headcount ?? row.people,
         cell: ({ getValue }) => formatNumber(getValue<number>()),
+        meta: { align: "right" },
       },
-      { accessorKey: "records", header: "Bản ghi", cell: ({ row }) => formatNumber(row.original.records) },
+      {
+        accessorKey: "records",
+        header: "Certificates",
+        cell: ({ row }) => formatNumber(row.original.records),
+        meta: { align: "right" },
+      },
       {
         id: "rate",
-        header: "Hoàn thành",
+        header: "Completed",
         accessorFn: (row) => rateOf(row) ?? NO_RATE,
         cell: ({ row }) => {
           const rate = rateOf(row.original);
@@ -63,17 +67,28 @@ export function BreakdownTable({
           );
         },
       },
-      { accessorKey: "inProgress", header: "Đang học", cell: ({ row }) => formatNumber(row.original.inProgress) },
-      { accessorKey: "valid", header: "Còn hiệu lực", cell: ({ row }) => formatNumber(row.original.valid) },
+      {
+        accessorKey: "inProgress",
+        header: "In progress",
+        cell: ({ row }) => formatNumber(row.original.inProgress),
+        meta: { align: "right" },
+      },
+      {
+        accessorKey: "valid",
+        header: "Valid",
+        cell: ({ row }) => formatNumber(row.original.valid),
+        meta: { align: "right" },
+      },
       {
         accessorKey: "expired",
-        header: "Đã hết hạn",
+        header: "Expired",
         // The number stays visible: colour alone must not carry the warning.
         cell: ({ row }) => (
           <span className={cn(row.original.expired > 0 && "font-medium text-destructive")}>
             {formatNumber(row.original.expired)}
           </span>
         ),
+        meta: { align: "right" },
       },
     ],
     [groupLabel, peopleLabel],
@@ -85,7 +100,7 @@ export function BreakdownTable({
       data={rows}
       pageSize={10}
       getRowId={(row) => row.key}
-      empty={<EmptyState title="Chưa có dữ liệu" description={emptyHint ?? "Chưa có bản ghi nào để thống kê."} />}
+      empty={<EmptyState title="No data yet" description={emptyHint ?? "Add certificates to see this breakdown."} />}
     />
   );
 }

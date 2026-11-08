@@ -12,7 +12,7 @@ import { foldText } from "@/lib/text";
 
 export type ComboboxOption = { id: string; label: string; hint?: string };
 
-/** Diacritic-insensitive match on label + hint, so `nguyen` finds `Nguyễn`. */
+/** Diacritic-insensitive match on label + hint, so a search for `nguyen` finds a name with accents. */
 function matches(option: ComboboxOption, query: string): boolean {
   return foldText(`${option.label} ${option.hint ?? ""}`).includes(foldText(query));
 }
@@ -31,6 +31,7 @@ export function EntityCombobox({
   emptyText,
   disabled,
   "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: {
   id: string;
   value: string;
@@ -40,6 +41,7 @@ export function EntityCombobox({
   emptyText: string;
   disabled?: boolean;
   "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 }) {
   // Base UI resolves the displayed text from the selected *item*, so pass the option object
   // rather than the id — otherwise the closed control would show the raw id.
@@ -61,6 +63,7 @@ export function EntityCombobox({
         placeholder={placeholder}
         disabled={disabled}
         aria-invalid={ariaInvalid}
+        aria-describedby={ariaDescribedBy}
         className="w-full"
       />
       <ComboboxContent>

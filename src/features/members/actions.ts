@@ -1,32 +1,46 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { idSchema, memberSchema, type MemberInput } from "@/features/members/schema";
+import { careerStartToDate } from "@/features/career/schema";
+import { getCurrentUser } from "@/features/auth/queries";
+import { idSchema, makeMemberSchema, memberAccessSchema, type MemberAccessInput, type MemberInput } from "@/features/members/schema";
 import { assertAffected } from "@/lib/assert-affected";
 import { err, ok, type Result } from "@/lib/result";
 import { mapPostgresError } from "@/lib/postgres-error";
 import { createClient } from "@/lib/supabase/server";
 
+/**
+ * Career columns to write, only the ones the caller sent: a manager's form sends neither, so nothing career-related
+ * reaches the update (the database trigger rejects a manager changing either column anyway).
+ */
+function careerColumns({ careerRoleId, careerStart }: Pick<MemberInput, "careerRoleId" | "careerStart">) {
+  return {
+    ...(careerRoleId !== undefined && { career_role_id: careerRoleId }),
+    ...(careerStart !== undefined && { career_start: careerStart === null ? null : careerStartToDate(careerStart) }),
+  };
+}
+
 /** Admin only — RLS has no insert policy for members for Manager (supabase/migrations/20260928000004_rls.sql). */
 export async function createMember(input: MemberInput): Promise<Result<null>> {
-  const parsed = memberSchema.safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  const parsed = makeMemberSchema(new Date()).safeParse(input);
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const supabase = await createClient();
   const { error } = await supabase.from("members").insert({
     full_name: parsed.data.fullName,
     email: parsed.data.email,
     team_id: parsed.data.teamId,
     is_active: parsed.data.isActive,
+    ...careerColumns(parsed.data),
   });
-  if (error) return err(mapPostgresError(error, { duplicate: `Email "${parsed.data.email}" đã được dùng.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `The email "${parsed.data.email}" is already in use.` }));
   revalidatePath("/members");
   return ok(null);
 }
 
 /** Admin: any member. Manager: members in a team they manage — and `teamId` must stay one of those teams (RLS with-check). */
 export async function updateMember(input: MemberInput & { id: string }): Promise<Result<null>> {
-  const parsed = memberSchema.extend({ id: idSchema.shape.id }).safeParse(input);
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ");
+  const parsed = makeMemberSchema(new Date()).extend({ id: idSchema.shape.id }).safeParse(input);
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, fullName, email, teamId, isActive } = parsed.data;
   const supabase = await createClient();
   const { data: rows, error } = await supabase
@@ -36,10 +50,11 @@ export async function updateMember(input: MemberInput & { id: string }): Promise
       email,
       team_id: teamId,
       is_active: isActive,
+      ...careerColumns(parsed.data),
     })
     .eq("id", id)
     .select("id");
-  if (error) return err(mapPostgresError(error, { duplicate: `Email "${email}" đã được dùng.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `The email "${email}" is already in use.` }));
   const guard = assertAffected(rows);
   if (guard) return guard;
   revalidatePath("/members");
@@ -59,7 +74,7 @@ export async function updateMember(input: MemberInput & { id: string }): Promise
  */
 export async function deleteMember(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
-  if (!parsed.success) return err("Dữ liệu không hợp lệ");
+  if (!parsed.success) return err("Invalid data");
   const { id } = parsed.data;
   const supabase = await createClient();
 
@@ -69,17 +84,38 @@ export async function deleteMember(input: { id: string }): Promise<Result<null>>
     .eq("member_id", id);
   if (countError) return err(mapPostgresError(countError));
   if (count && count > 0) {
-    return err("Thành viên đang có chứng chỉ. Xóa các bản ghi chứng chỉ trước.");
+    return err("This member still has certificates. Delete their certificates first.");
   }
 
   const { data, error } = await supabase.from("members").delete().eq("id", id).select("id");
   if (error) {
     // Other Postgres errors only — the FK is cascade, so 23503 for the "has records" case can't
     // fire here anymore (the count check above already caught it).
-    return err(mapPostgresError(error, { restricted: "Thành viên đang có chứng chỉ. Xóa các bản ghi chứng chỉ trước." }));
+    return err(mapPostgresError(error, { restricted: "This member still has certificates. Delete their certificates first." }));
   }
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/members");
+  return ok(null);
+}
+
+/**
+ * Admin only (RLS on profiles). Changing your own access is refused so the app always keeps the admin who is using
+ * it. Manager scopes are kept when someone stops being a manager; they grant nothing until the role comes back.
+ */
+export async function setMemberAccess(input: MemberAccessInput): Promise<Result<null>> {
+  const parsed = memberAccessSchema.safeParse(input);
+  if (!parsed.success) return err("Invalid data");
+  const { userId, role } = parsed.data;
+  const user = await getCurrentUser();
+  if (user?.id === userId) return err("You cannot change your own access. Ask another admin.");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("profiles").update({ role }).eq("user_id", userId).select("user_id");
+  if (error) return err(mapPostgresError(error));
+  const guard = assertAffected(data);
+  if (guard) return guard;
+  revalidatePath("/members");
+  revalidatePath("/org");
   return ok(null);
 }

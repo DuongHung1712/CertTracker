@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Concept: skill gap for a team</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+<style>
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.panel h3 { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.panel p { font-size: 13px; line-height: 18px; }
+.cov { display: flex; align-items: center; gap: 8px; }
+.cov .pbar { width: 90px; }
+.cov span { font-size: 12px; color: var(--muted-foreground); }
+.holder { font-size: 12px; color: var(--muted-foreground); }
+.selects { display: flex; gap: 12px; align-items: flex-end; }
+.selects .field { gap: 4px; }
+.selects label { font-size: 12px; font-weight: 500; color: var(--muted-foreground); }
+.risks { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.risk { border-left: 3px solid var(--status-expiring-soon-fg); }
+.table td.wrap { white-space: normal; }
+</style>
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review<span class="concept">CONCEPT — Phase 2, gated by G1, not a commitment</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="var(--card)" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16L15 19L24.5 9.5" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Cert<b>Tracker</b></span>
+    </div>
+    <a class="nav"><i class="ic ic-layout-dashboard"></i>Dashboard</a>
+    <a class="nav"><i class="ic ic-users"></i>Members</a>
+    <a class="nav"><i class="ic ic-list-checks"></i>Certificates by person</a>
+    <a class="nav active"><i class="ic ic-users-round"></i>Skill gap<span class="new">Concept</span></a>
+    <a class="nav"><i class="ic ic-shield-check"></i>Data quality</a>
+    <a class="nav"><i class="ic ic-book-open"></i>Courses</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="ic ic-panel-left"></i><span class="sep"></span>
+      <span class="crumb">Skill gap</span>
+      <div class="user"><span>manager@certtracker.test</span><span class="badge plain">Manager</span><i class="ic ic-chevron-down"></i></div>
+    </header>
+    <div class="page" style="gap:16px">
+      <div class="page-header">
+        <div><h1>Skill gap</h1><p>Team certificates compared with what a project needs.</p></div>
+      </div>
+
+      <div class="selects">
+        <div class="field"><label>Team</label><div class="input lg filled" style="width:200px">Team Cloud<i class="ic ic-chevron-down caret"></i></div></div>
+        <div class="field"><label>Project need</label><div class="input lg filled" style="width:320px">Cloud and AI platform (draft)<i class="ic ic-chevron-down caret"></i></div></div>
+        <span class="btn outline lg">Edit needs</span>
+      </div>
+
+      <dl class="kpis" style="grid-template-columns:repeat(3,1fr)">
+        <div class="kpi"><div class="label">Needs covered</div><div class="value">1 / 4</div><div class="hint">Seats filled by a valid certificate</div></div>
+        <div class="kpi"><div class="label">Gaps</div><div class="value">2</div><div class="hint">Certificates with no valid holder</div></div>
+        <div class="kpi"><div class="label">Key-person risks</div><div class="value">1</div><div class="hint">Covered by one person only</div></div>
+      </dl>
+
+      <div class="table tall">
+        <table>
+          <thead><tr><th style="width:300px">Certificate needed</th><th>Needed</th><th>Valid holders</th><th>Studying</th><th>Coverage</th><th>Flag</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>AWS Solutions Architect Associate</td><td>2</td>
+              <td>1 <span class="holder">· Nguyễn Văn An</span></td><td>1 <span class="holder">· Lê Minh Châu (0%)</span></td>
+              <td><div class="cov"><span class="pbar"><i style="width:50%"></i></span><span>1 of 2</span></div></td>
+              <td><span class="badge expiring-soon"><i class="ic ic-triangle-alert"></i>Key-person risk</span></td>
+            </tr>
+            <tr>
+              <td>Microsoft Azure Administrator (AZ-104)</td><td>1</td>
+              <td>0</td><td>0</td>
+              <td><div class="cov"><span class="pbar"><i style="width:0"></i></span><span>0 of 1</span></div></td>
+              <td><span class="badge expired"><i class="ic ic-circle-x"></i>Gap</span></td>
+            </tr>
+            <tr>
+              <td>NVIDIA Generative AI LLMs</td><td>1</td>
+              <td>0</td><td>0 <span class="holder">· 1 in Team AI</span></td>
+              <td><div class="cov"><span class="pbar"><i style="width:0"></i></span><span>0 of 1</span></div></td>
+              <td><span class="badge expired"><i class="ic ic-circle-x"></i>Gap</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="risks">
+        <section class="panel risk">
+          <h3><i class="ic ic-triangle-alert" style="color:var(--status-expiring-soon-fg)"></i>Key-person risk</h3>
+          <p><b>Nguyễn Văn An</b> is the only valid holder of AWS Solutions Architect Associate, and it expires in 18 days (25 Oct 2026). Lê Minh Châu is studying it but has not started.</p>
+        </section>
+        <section class="panel">
+          <h3><i class="ic ic-sparkles" style="color:var(--primary)"></i>Summary <span class="badge primary">AI</span></h3>
+          <p>Two of the three needs have no valid holder in Team Cloud, and the only AWS holder is close to expiry. Renewing that certificate removes the most risk.</p>
+        </section>
+      </div>
+      <p class="muted" style="font-size:12px;line-height:16px;display:flex;gap:6px;align-items:center"><i class="ic ic-lock" style="width:14px;height:14px"></i>Counts come from certificate data you are allowed to see. The AI only writes the summary. Illustrative values.</p>
+    </div>
+  </div>
+
+  <div class="pin" style="left:258px;top:156px">1</div>
+  <div class="pin" style="left:258px;top:248px">2</div>
+  <div class="pin" style="left:258px;top:344px">3</div>
+  <div class="pin" style="left:843px;top:530px">4</div>
+  <div class="legend" style="left:700px;top:664px;width:700px;display:grid;grid-template-columns:1fr 1fr;column-gap:20px;padding:10px 14px;z-index:30">
+    <h4 style="grid-column:1/3">Reviewer notes — not part of the UI</h4>
+    <p><b>1</b><span>R-23: a manager picks a team and a project need. Where the needs come from is an open question (typed in by the manager?).</span></p>
+    <p><b>2</b><span>Plain counts first: needed, valid holders, people studying.</span></p>
+    <p><b>3</b><span>Gaps and key-person risk are flagged with text and icons, not colour alone.</span></p>
+    <p><b>4</b><span>The AI only explains. It does not decide who should train for what.</span></p>
+  </div>
+</div>
+</body>
+</html>

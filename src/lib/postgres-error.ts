@@ -1,4 +1,4 @@
-/** Postgres SQLSTATE codes this app maps to a Vietnamese message. */
+/** Postgres SQLSTATE codes this app maps to a message. */
 const DUPLICATE = "23505";
 const RESTRICTED = "23503";
 const FORBIDDEN = "42501";
@@ -11,14 +11,14 @@ export function mapPostgresError(
 ): string {
   switch (error.code) {
     case DUPLICATE:
-      return messages.duplicate ?? "Dữ liệu này đã tồn tại.";
+      return messages.duplicate ?? "This already exists.";
     case RESTRICTED:
-      return messages.restricted ?? "Không thể xóa vì đang được dữ liệu khác sử dụng.";
+      return messages.restricted ?? "This cannot be deleted because other data still uses it.";
     case INVALID:
-      return messages.invalid ?? "Dữ liệu không khớp quy tắc của hệ thống.";
+      return messages.invalid ?? "These values break a rule of the system. Check them and try again.";
     case FORBIDDEN:
-      return "Bạn không có quyền thực hiện thao tác này.";
+      return "You do not have permission to do this.";
     default:
-      return "Có lỗi xảy ra. Vui lòng thử lại.";
+      return "Something went wrong. Try again.";
   }
 }

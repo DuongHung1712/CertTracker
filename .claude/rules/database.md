@@ -16,3 +16,4 @@ paths:
 - Email dùng `citext`.
 - Sau migration: `pnpm db:types`, thêm/cập nhật test pgTAP trong `supabase/tests/`.
 - `supabase/config.toml`: chặn tự đăng ký bằng `[auth] enable_signup = false`; **giữ** `[auth.email] enable_signup = true` (đặt false sẽ tắt luôn đăng nhập email).
+- Ngoại lệ có kiểm soát: hàm chỉ cấp EXECUTE cho `service_role` (cron: `notification_staff`, `claim_notification`) được phép trả email — xem decisions #35.

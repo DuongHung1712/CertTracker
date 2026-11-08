@@ -5,6 +5,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { assertLocalSupabaseUrl } from "../../src/lib/assert-local-supabase-url";
 import type { Database } from "../../src/types/database";
 import { SEED_PASSWORD } from "../helpers";
+import { readEnvFile } from "./env";
 
 /**
  * Puts the data the legacy-workbook import touches back to its `supabase/seed.sql` state, so the import spec
@@ -48,16 +49,6 @@ const RECORD_COLUMNS =
 // Seed dates are relative to the day of `supabase db reset`, so the seed values are captured from the pristine
 // database instead of being recomputed. The file survives a crashed run; it is removed after a successful restore.
 const SNAPSHOT_FILE = path.join(tmpdir(), "certtracker-e2e-import-seed-snapshot.json");
-
-function readEnvFile(file: string): Record<string, string> {
-  if (!existsSync(file)) return {};
-  const values: Record<string, string> = {};
-  for (const line of readFileSync(file, "utf8").split(/\r?\n/)) {
-    const match = /^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/.exec(line);
-    if (match) values[match[1]] = match[2].replace(/^(["'])(.*)\1$/, "$2");
-  }
-  return values;
-}
 
 /** The Playwright process does not load `.env.local` (only Next does), so read it here when the env is not set. */
 function supabaseConfig(): { url: string; anonKey: string } {

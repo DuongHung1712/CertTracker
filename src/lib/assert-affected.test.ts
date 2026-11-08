@@ -9,7 +9,7 @@ describe("assertAffected", () => {
   it("returns an error when RLS silently discarded the write (empty array)", () => {
     const result = assertAffected([]);
     expect(result?.ok).toBe(false);
-    if (!result?.ok) expect(result?.error).toContain("không có quyền");
+    if (!result?.ok) expect(result?.error).toContain("do not have permission");
   });
 
   it("returns an error when data is null", () => {

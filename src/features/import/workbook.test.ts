@@ -54,7 +54,7 @@ describe("readImportTable", () => {
 
   it("rejects a header that maps one field twice", () => {
     const result = readImportTable(toBytes([["Email", "E-mail", "Khóa học"], ["a@x.vn", "a@x.vn", "AWS"]]));
-    expect(result).toEqual({ ok: false, error: 'Cột "E-mail" trùng nghĩa với một cột khác. Xóa hoặc đổi tên một trong hai.' });
+    expect(result).toEqual({ ok: false, error: 'Column "E-mail" means the same as another column. Delete or rename one of them.' });
   });
 
   it("rejects more than 2000 data rows", () => {
@@ -132,7 +132,7 @@ describe("merged-cell bounds (untrusted !merges)", () => {
     const started = Date.now();
     const result = readImportTable(toBytes(rows, { merges: [whole, whole, whole] }));
     expect(Date.now() - started).toBeLessThan(2000);
-    expect(result).toEqual({ ok: false, error: "File có vùng gộp ô quá lớn." });
+    expect(result).toEqual({ ok: false, error: "The file has merged cell ranges that are too large." });
   });
 
   it("rejects a sheet that declares more than 200 columns", () => {
@@ -151,12 +151,12 @@ describe("merged-cell bounds (untrusted !merges)", () => {
 });
 
 describe("zip bomb guard (runs before XLSX.read)", () => {
-  const TOO_BIG = "File Excel giải nén quá lớn (tối đa 50 MB). Chia nhỏ file rồi nhập từng phần.";
+  const TOO_BIG = "The Excel file is too large once unpacked (50 MB at most). Split it and import it in parts.";
 
   it("rejects input larger than 4 MB", () => {
     const bytes = new Uint8Array(4 * 1024 * 1024 + 1);
     bytes.set([0x50, 0x4b, 0x03, 0x04]);
-    expect(readImportTable(bytes)).toEqual({ ok: false, error: "File lớn hơn 4 MB. Chia nhỏ file rồi nhập từng phần." });
+    expect(readImportTable(bytes)).toEqual({ ok: false, error: "The file is larger than 4 MB. Split it and import it in parts." });
   });
 
   it("rejects a central directory that declares a huge uncompressed size", () => {
@@ -194,11 +194,11 @@ describe("zip bomb guard (runs before XLSX.read)", () => {
 
   it("does not apply the zip check to OLE input", () => {
     const ole = new Uint8Array([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1, 9, 9, 9, 9]);
-    expect(readImportTable(ole)).toEqual({ ok: false, error: "Không đọc được file. File có thể bị hỏng hoặc được đặt mật khẩu." });
+    expect(readImportTable(ole)).toEqual({ ok: false, error: "Could not read the file. It may be damaged or password protected." });
   });
 });
 
-const BAD_ZIP_MESSAGE = "File Excel không hợp lệ (cấu trúc zip bị hỏng).";
+const BAD_ZIP_MESSAGE = "The Excel file is not valid (its zip structure is damaged).";
 const bomb = (megabytes: number) => deflateRawSync(new Uint8Array(megabytes * 1024 * 1024));
 
 describe("zip guard bypasses (SheetJS and the guard must agree on the archive)", () => {
@@ -273,7 +273,7 @@ describe("zip guard bypasses (SheetJS and the guard must agree on the archive)",
     const started = Date.now();
     const result = readImportTable(zip);
     expect(result.ok).toBe(false);
-    expect(!result.ok && result.error).toMatch(/zip|giải nén/);
+    expect(!result.ok && result.error).toMatch(/zip|unpacked/);
     expect(Date.now() - started).toBeLessThan(1000);
   });
 
@@ -310,7 +310,7 @@ describe("workbook-wide limits", () => {
     });
     const started = Date.now();
     const result = readImportTable(multiSheetBytes(["S1", "S2", "S3", "S4", "S5"].map(lying)));
-    expect(result).toEqual({ ok: false, error: "File có vùng gộp ô quá lớn." });
+    expect(result).toEqual({ ok: false, error: "The file has merged cell ranges that are too large." });
     expect(Date.now() - started).toBeLessThan(3000);
   });
 
@@ -328,7 +328,7 @@ describe("workbook-wide limits", () => {
     expect(result.ok && result.value.sheetName).toBe("Data");
     const onlyWide = readImportTable(multiSheetBytes([wide]));
     expect(onlyWide.ok).toBe(false);
-    expect(!onlyWide.ok && onlyWide.error).toMatch(/Không tìm thấy hàng tiêu đề/);
+    expect(!onlyWide.ok && onlyWide.error).toMatch(/No header row with an Email column and a Course column/);
   });
 });
 
@@ -385,7 +385,7 @@ describe("formatted-but-empty ranges (legacy files)", () => {
     const bytes = withFormattedBlanks(plain(2001), "A1:B5000", '<row r="5000"><c r="A5000" s="1"/></row>');
     expect(readImportTable(bytes)).toEqual({
       ok: false,
-      error: "File có 2001 dòng dữ liệu, tối đa 2000. Chia nhỏ file rồi nhập từng phần.",
+      error: "The file has 2001 data rows, 2000 at most. Split it and import it in parts.",
     });
   });
 
@@ -395,7 +395,7 @@ describe("formatted-but-empty ranges (legacy files)", () => {
     sheet["!ref"] = "A1:HZ4";
     const result = readImportTable(writeSheet(sheet));
     expect(result.ok).toBe(false);
-    expect(!result.ok && result.error).toContain('Sheet "Data" bị bỏ qua vì có quá nhiều cột (hơn 200).');
+    expect(!result.ok && result.error).toContain('Sheet "Data" was skipped because it has too many columns (more than 200).');
   });
 
   it("fails closed when a value sits in the last row the reader is willing to read", () => {
@@ -403,7 +403,7 @@ describe("formatted-but-empty ranges (legacy files)", () => {
     sheet["A20000"] = { t: "s", v: "stray" };
     sheet["!ref"] = "A1:B30000";
     const result = readImportTable(writeSheet(sheet));
-    expect(result).toEqual({ ok: false, error: "Sheet có dữ liệu ở dòng quá xa (sau dòng 20000). Xóa các dòng thừa rồi thử lại." });
+    expect(result).toEqual({ ok: false, error: "The sheet has data too far down (past row 20000). Delete the extra rows and try again." });
   });
 
   it("fails closed on a hostile file with real values in 25 000 rows", () => {
@@ -418,6 +418,6 @@ describe("formatted-but-empty ranges (legacy files)", () => {
     const rows = [header, ...Array.from({ length: 2100 }, (_, i) => [`m${i}@x.vn`, "AWS", ...Array.from({ length: 198 }, () => 1)])];
     const bytes = writeSheet(XLSX.utils.aoa_to_sheet(rows), true);
     expect(bytes.length).toBeLessThan(4 * 1024 * 1024); // gets past the size check, so the cell budget is what rejects it
-    expect(readImportTable(bytes)).toEqual({ ok: false, error: "File có quá nhiều ô chứa dữ liệu. Chia nhỏ file rồi nhập từng phần." });
+    expect(readImportTable(bytes)).toEqual({ ok: false, error: "The file has too many cells with data. Split it and import it in parts." });
   }, 60_000);
 });

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Proposed mockup: loading feedback on Members</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review</div>
+<div class="app">
+  <!-- Thin top progress bar: shown while the server prepares the next page -->
+  <div style="position:absolute;left:0;top:0;width:100%;height:3px;z-index:10">
+    <div style="width:62%;height:3px;background:var(--primary);box-shadow:0 0 8px var(--ring)"></div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="var(--card)" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16L15 19L24.5 9.5" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Cert<b>Tracker</b></span>
+    </div>
+    <a class="nav"><i class="ic ic-layout-dashboard"></i>Dashboard</a>
+    <a class="nav active"><i class="ic ic-users"></i>Members</a>
+    <a class="nav"><i class="ic ic-list-checks"></i>Certificates by person</a>
+    <a class="nav"><i class="ic ic-shield-check"></i>Data quality</a>
+    <a class="nav"><i class="ic ic-book-open"></i>Courses</a>
+    <a class="nav"><i class="ic ic-building-2"></i>Organisation</a>
+    <a class="nav"><i class="ic ic-file-spreadsheet"></i>Import / Export</a>
+    <a class="nav"><i class="ic ic-settings"></i>Settings</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="ic ic-panel-left"></i><span class="sep"></span>
+      <span class="crumb">Members</span>
+      <div class="user"><span>admin@certtracker.test</span><span class="badge plain">Admin</span><i class="ic ic-chevron-down"></i></div>
+    </header>
+
+    <div class="page">
+      <div class="page-header">
+        <div>
+          <h1>Members</h1>
+          <p>All members and their teams.</p>
+        </div>
+      </div>
+
+      <div>
+        <div class="toolbar" style="margin-bottom:12px">
+          <span class="sk" style="width:288px;height:32px"></span>
+          <span class="grow"></span>
+          <span class="sk" style="width:132px;height:32px"></span>
+        </div>
+        <div class="table" aria-busy="true">
+          <table>
+            <thead><tr><th style="width:90px">Code</th><th style="width:230px">Full name</th><th style="width:330px">E-mail</th><th style="width:170px">Team</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr><td colspan="5" style="padding:4px 10px"><span class="sk" style="height:16px"></span></td></tr>
+              <tr><td colspan="5" style="padding:4px 10px"><span class="sk" style="height:16px"></span></td></tr>
+              <tr><td colspan="5" style="padding:4px 10px"><span class="sk" style="height:16px"></span></td></tr>
+              <tr><td colspan="5" style="padding:4px 10px"><span class="sk" style="height:16px"></span></td></tr>
+              <tr><td colspan="5" style="padding:4px 10px"><span class="sk" style="height:16px"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reviewer aids -->
+    <div class="pin" style="left:-26px;top:89px">1</div>
+    <div class="pin" style="left:640px;top:-9px">2</div>
+    <div class="pin" style="left:1px;top:225px">3</div>
+    <div class="pin" style="left:1px;top:74px">4</div>
+    <div class="legend" style="left:24px;top:480px;width:560px">
+      <h4>Reviewer notes — not part of the UI</h4>
+      <p><b>1</b><span>The sidebar item and the breadcrumb switch the instant "Members" is clicked, before any data arrives.</span></p>
+      <p><b>2</b><span>A thin progress bar runs along the top edge while the server prepares the page, and disappears when it is ready.</span></p>
+      <p><b>3</b><span>Placeholder rows have the shape of the real table, so nothing jumps when the data arrives. No full-page spinner.</span></p>
+      <p><b>4</b><span>The title, the description and the column headers are static, so they appear immediately.</span></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -12,7 +12,7 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="email" className="text-caption font-medium text-foreground">
+        <Label htmlFor="email" className="text-body font-medium">
           Email
         </Label>
         <Input
@@ -20,31 +20,38 @@ export function LoginForm() {
           name="email"
           type="email"
           autoComplete="email"
-          placeholder="ten@congty.com"
-          className="h-9 bg-card"
           required
+          className="h-9"
+          aria-describedby={state && !state.ok ? "login-error" : undefined}
+          aria-invalid={state && !state.ok ? true : undefined}
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="password" className="text-caption font-medium text-foreground">
-          Mật khẩu
+        <Label htmlFor="password" className="text-body font-medium">
+          Password
         </Label>
         <Input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
-          className="h-9 bg-card"
           required
+          className="h-9"
+          aria-describedby={state && !state.ok ? "login-error" : undefined}
+          aria-invalid={state && !state.ok ? true : undefined}
         />
       </div>
       {state && !state.ok && (
-        <p role="alert" className="text-caption text-destructive">
+        <p id="login-error" role="alert" className="text-sm font-medium text-destructive">
           {state.error}
         </p>
       )}
-      <Button type="submit" size="lg" className="w-full mt-2 font-medium" disabled={pending}>
-        {pending ? "Đang đăng nhập..." : "Đăng nhập"}
+      <Button
+        type="submit"
+        className="w-full h-9 font-medium transition-colors"
+        disabled={pending}
+      >
+        {pending ? "Signing in…" : "Sign in"}
       </Button>
     </form>
   );

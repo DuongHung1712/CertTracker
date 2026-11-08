@@ -4,7 +4,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 
 ## Trạng thái hiện tại
 
-- Giai đoạn 1, **tuần 1–5 xong** (schema, RLS, đăng nhập, CI, deploy; CRUD tổ chức/danh mục; chứng chỉ + minh chứng + Realtime; Import/Export Excel; Dashboard), trừ bước chạy thử với file Excel thật. Tiếp theo: tuần 6 — cron + email + trang chất lượng dữ liệu.
+- **Release Cert Core trước** (decision #59, thay #54): phần chứng chỉ, phạm vi manager, role/YoE, chi phí khóa học, UI tiếng Anh **đã chạy trên `main` và production** (2026-11-05), cloud chưa có dữ liệu thật. Theo `docs/process/04-wbs.md`: C0 duyệt phạm vi → C1 tài khoản qua e-mail (decision #60), danh mục khóa học và **pilot DAS giai đoạn 1** (decision #61, tiếp theo: 20 người, gói miễn phí; runbook ở `docs/deploy/`, checklist `docs/deploy/pilot-checklist.md`), **giai đoạn 2** (gửi và duyệt chứng chỉ, lĩnh vực quan tâm, số liệu theo tháng/quý; WBS 15.4–15.6) làm trong lúc pilot chạy → C2 AI phục vụ chứng chỉ (DeepSeek, decision #52, sau mục A) → C3 hosting, G1, production. Spec: `docs/superpowers/specs/2026-11-06-cert-core-das-pilot-design.md`. Sau đó (Later): Skill Matrix, mục tiêu theo quý, lộ trình role, chuyển backend sang Rust. 3 vai trò: Admin (= DC lead), Manager phạm vi team/program, Member (decision #55). Giai đoạn 1 nằm trên nhánh `feat/cert-core-accounts`, **chưa merge**; migration `20261106000001_link_account_to_member.sql` **chưa `db push` lên production**. Tiếp theo: PR vào `dev`, rồi owner làm các bước production (spec §8, thứ tự: backup, `supabase db push`, merge vào `main`). Còn nợ: migration xóa `team_managers` (decision #58).
 - Cập nhật dòng này khi chuyển tuần/giai đoạn.
 
 ## Nguồn sự thật (đọc khi cần, đừng đọc hết mỗi phiên)
@@ -14,8 +14,10 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 | Data model, RLS, luồng, lộ trình | `docs/superpowers/specs/2026-09-26-certtracker-design.md` |
 | Các quyết định đã chốt + lý do | `docs/decisions.md` |
 | Token, component, pattern UI | `docs/design-system.md` (xem trực quan: `/design` khi chạy dev) |
+| Phạm vi (use case, FR/NFR), WBS và mốc C0–C3, Later | BRD v3.0 `exports/CertTracker-BRD-v3.0-2026-10-31.docx` (ngoài git), `docs/process/04-wbs.md` |
 | Kế hoạch triển khai | `docs/superpowers/plans/` |
 | Yêu cầu gốc | `CertTracker - Feature List.pdf` |
+| Quy trình theo thứ tự (ý tưởng, CA, yêu cầu, WBS, SAD gọn, thiết kế, PoC/MVP, production), cổng G1 | `docs/process/` 00–08 (bắt đầu từ `README.md`) |
 
 Không bàn lại quyết định đã có trong `docs/decisions.md` trừ khi người dùng yêu cầu. Quyết định mới → thêm một mục vào file đó.
 
@@ -43,7 +45,7 @@ supabase db reset   # chạy lại migrations + seed local
 
 ## Quy ước
 
-- **Ngôn ngữ:** trao đổi với người dùng bằng tiếng Việt; code, tên biến, comment, commit bằng tiếng Anh; text trên UI bằng tiếng Việt.
+- **Ngôn ngữ:** trao đổi với người dùng bằng tiếng Việt; code, tên biến, comment, commit bằng tiếng Anh; text trên UI bằng tiếng Anh (English first; song ngữ Anh–Việt sau Release 1, decision #51).
 - **Tổ chức code theo nghiệp vụ:** `src/features/<feature>/{actions.ts, queries.ts, schema.ts, components/}`.
 - Server Action trả về `Result<T>`; không throw ra UI.
 - Commit: Conventional Commits (`feat:`, `fix:`, `docs:`, `test:`, `chore:`). Branch: `feat/<tên>`, `fix/<tên>`.

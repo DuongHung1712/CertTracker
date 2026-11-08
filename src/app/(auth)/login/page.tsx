@@ -1,21 +1,23 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/app-shell/logo";
-import { Card, CardContent } from "@/components/ui/card";
 import { LoginForm } from "@/features/auth/components/login-form";
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordSet?: string }> }) {
+  const { passwordSet } = await searchParams;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-background p-4 sm:p-6">
-      <Card className="w-full max-w-sm">
-        <div className="flex flex-col items-center text-center px-6 pt-6 pb-2">
-          <Logo size={44} className="mb-3" />
-          <h1 className="text-page-title font-semibold text-foreground tracking-tight">
-            CertTracker
-          </h1>
-          <p className="text-caption text-muted-foreground mt-1">
-            Đăng nhập bằng tài khoản được cấp
-          </p>
-        </div>
-        <CardContent className="px-6 pb-6 pt-2">
+    <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
+      <Card className="w-full max-w-sm border-border bg-card">
+        <CardHeader className="flex flex-col items-center space-y-2 text-center pb-4">
+          <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground mb-1">
+            <Logo size={24} />
+          </div>
+          <CardTitle className="text-page-title font-semibold tracking-tight">CertTracker</CardTitle>
+          <CardDescription className="text-body text-muted-foreground text-balance">
+            {passwordSet ? "Password saved. Sign in with your new password." : "Sign in with the account you were given"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           <LoginForm />
         </CardContent>
       </Card>

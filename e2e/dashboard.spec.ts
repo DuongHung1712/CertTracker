@@ -1,31 +1,26 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { signIn } from "./helpers";
-import { signInAsSeedUser } from "./support/restore-seed";
+import { ADMIN_EMAIL, signIn } from "./helpers";
+import { inviteLink } from "./support/accounts";
+import { acceptInvitation, pilotEmail, removePilotPeople } from "./support/pilot-member";
+import { signInAsSeedAdmin, signInAsSeedUser } from "./support/restore-seed";
+import { assertSeedFresh } from "./support/seed-fresh";
 
 // Seed (supabase/seed.sql): An–AWS done (expires in ~25 days), Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
 // Manager manages Team Cloud (An, Châu). Earlier specs can leave extra members without records, so the members
 // tile is asserted `>= 3`; every records-based number is exact.
 const AWS = "AWS Solutions Architect Associate";
 
-// The tile numbers below depend on the seed's relative dates: An's certificate expires ~26 days after
-// `supabase db reset`. On an older database it silently becomes Active/Expired, so fail with the real reason.
-test.beforeAll(async () => {
-  const admin = await signInAsSeedUser("admin@certtracker.test");
-  const { data, error } = await admin.from("v_training_records").select("expiry_status").eq("member_email", "an@certtracker.test");
-  if (error) throw new Error(`Could not read the seed state: ${error.message}`);
-  if (data?.length !== 1 || data[0].expiry_status !== "Expiring Soon") {
-    throw new Error("The seed's relative dates have aged (An's certificate is no longer 'Expiring Soon'): run `pnpm supabase db reset`.");
-  }
-});
+// The tile numbers below depend on the seed's relative dates (see assertSeedFresh).
+test.beforeAll(assertSeedFresh);
 
 /** A named section (`Section` sets `aria-label`). Role queries ignore the hidden duplicate Next streams in dev. */
 function section(page: Page, name: string): Locator {
   return page.getByRole("region", { name, exact: true });
 }
 
-/** The value of one KPI tile inside the "Tổng quan" `dl`. */
-function tileValue(page: Page, label: string): Locator {
-  return section(page, "Tổng quan")
+/** The value of one KPI tile inside a region ("Overview" unless said otherwise). */
+function tileValue(page: Page, label: string, region = "Overview"): Locator {
+  return section(page, region)
     .locator("dl > div")
     .filter({ has: page.getByText(label, { exact: true }) })
     .locator("dd")
@@ -34,18 +29,18 @@ function tileValue(page: Page, label: string): Locator {
 
 /** Row that contains every given text. */
 function rowWith(scope: Locator, ...texts: string[]): Locator {
-  let row = scope.getByRole("row");
+  let row = scope.getByRole("option").or(scope.getByRole("row"));
   for (const text of texts) row = row.filter({ hasText: text });
   return row;
 }
 
 async function expectOrgWideTiles(page: Page) {
-  await expect(tileValue(page, "Bản ghi chứng chỉ")).toHaveText("3");
-  await expect(tileValue(page, "Hoàn thành")).toHaveText("1");
-  await expect(tileValue(page, "Đang học")).toHaveText("1");
-  await expect(tileValue(page, "Còn hiệu lực")).toHaveText("1");
-  await expect(tileValue(page, "Sắp hết hạn (≤ 60 ngày)")).toHaveText("1");
-  await expect(tileValue(page, "Đã hết hạn")).toHaveText("0");
+  await expect(tileValue(page, "Certificates")).toHaveText("3");
+  await expect(tileValue(page, "Completed")).toHaveText("1");
+  await expect(tileValue(page, "In progress")).toHaveText("1");
+  await expect(tileValue(page, "Valid")).toHaveText("1");
+  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
+  await expect(tileValue(page, "Expired")).toHaveText("0");
 }
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
@@ -56,63 +51,243 @@ async function pickSelect(page: Page, dialog: Locator, label: string, optionName
 
 /** Admin edit of a record's status + progress through the row menu; waits for the save toast. */
 async function editStatus(page: Page, row: Locator, status: string, progress: string) {
-  await row.getByRole("button", { name: /Thao tác/ }).click();
-  await page.getByRole("menuitem", { name: "Sửa" }).click();
+  await row.getByRole("button", { name: /Actions for/ }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
-  await pickSelect(page, dialog, "Trạng thái", status);
-  await dialog.getByLabel("Tiến độ (%)").fill(progress);
-  await dialog.getByRole("button", { name: "Lưu" }).click();
-  await expect(page.getByText("Đã lưu chứng chỉ").first()).toBeVisible();
+  await pickSelect(page, dialog, "Status", status);
+  await dialog.getByLabel("Progress (%)").fill(progress);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Saved certificate").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
 }
 
-test("admin sees org-wide KPIs, the expiry chart and the personal ranking", async ({ page }) => {
+test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal ranking", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
 
   await expectOrgWideTiles(page);
   // Seed has 3 active members; members.spec leaks more (members without records), so never assert equality.
-  const members = (await tileValue(page, "Thành viên đang hoạt động").innerText()).replace(/\D/g, "");
+  const members = (await tileValue(page, "Active members").innerText()).replace(/\D/g, "");
   expect(Number(members)).toBeGreaterThanOrEqual(3);
 
-  const chart = section(page, "Hạn chứng chỉ").getByRole("img", { name: /^Hạn chứng chỉ:/ });
+  // Hero KPI cards contain accessible mini charts with role="img"
+  await expect(page.getByRole("img", { name: /^Certificates by team:/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Valid certificates:/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Expiring within 60 days:/ })).toBeVisible();
+
+  // Expired card shows positive empty state when total = 0 (seed has 0)
+  const expiredPositive = page.getByRole("img", { name: /^No expired certificates/ });
+  await expect(expiredPositive).toBeVisible();
+
+  // Expiry chart sits above explorer with exact aria-label contract
+  const chart = section(page, "Certificate expiry").getByRole("img", { name: /^Certificate expiry:/ });
   await expect(chart).toBeVisible();
   // Chart labels are day ranges, distinct from the tile labels; anchored so "…1" does not also match "…10".
-  await expect(chart).toHaveAttribute("aria-label", /(: |, )Còn ≤ 30 ngày 1(,|$)/);
-  await expect(chart).toHaveAttribute("aria-label", /(: |, )Còn > 60 ngày 0(,|$)/);
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )Expires within 30 days 1(,|$)/);
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )More than 60 days 0(,|$)/);
 
-  await expect(section(page, "Theo team")).toBeVisible();
-  await expect(rowWith(section(page, "Theo team"), "Team Cloud")).toBeVisible();
+  await expect(section(page, "By team")).toBeVisible();
+  await expect(rowWith(section(page, "By team"), "Team Cloud")).toBeVisible();
 
-  const ranking = section(page, "Xếp hạng cá nhân");
+  const ranking = section(page, "Individual ranking");
   await expect(ranking).toBeVisible();
   const anRow = rowWith(ranking, "Nguyễn Văn An");
   await expect(anRow).toBeVisible();
   await expect(anRow.getByRole("cell").first()).toHaveText("1");
+
+  // Filter selects display human-readable labels, not raw values ("all", "0")
+  await expect(page.getByRole("combobox", { name: "Filter by certificate status" })).toContainText("Any status");
+  await expect(page.getByRole("combobox", { name: "Filter by number of certificates" })).toContainText("Any number of certificates");
+
+  // Study completion split in Explorer detail panel exposes accessible image
+  const completionSplit = page.getByRole("img", { name: /^Study completion:/ });
+  await expect(completionSplit).toBeVisible();
+
+  // Explorer detail panel is visible for selected row
+  const detailPanel = page.getByRole("region", { name: "Selected item details" });
+  await expect(detailPanel).toBeVisible();
+  await expect(detailPanel.getByRole("heading", { name: "Team Cloud" })).toBeVisible();
 });
 
-test("manager sees the same org-wide numbers but a ranking limited to their team", async ({ page }) => {
+test("manager sees team-scoped numbers and no separate ranking", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
-  // Org-wide (3 records), not just the managed team's 2.
-  await expect(tileValue(page, "Bản ghi chứng chỉ")).toHaveText("3");
-  await expect(section(page, "Theo team")).toBeVisible();
+  // Scoped team KPI numbers: Team Cloud has 1 completed valid cert (expires in ~25 days) and 1 not_started cert.
+  // Valid share of completed = 100%, Expiring = 1, Expired = 0. Approvals do not exist yet, so no number.
+  await expect(tileValue(page, "Team readiness", "Readiness summary")).toHaveText("100%");
+  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
+  await expect(tileValue(page, "Expired")).toHaveText("0");
+  await expect(tileValue(page, "Waiting for approval")).toHaveText("—");
 
-  const ranking = section(page, "Xếp hạng cá nhân");
-  await expect(rowWith(ranking, "Nguyễn Văn An")).toBeVisible();
-  await expect(rowWith(ranking, "Lê Minh Châu")).toBeVisible();
-  await expect(rowWith(ranking, "Trần Thị Bình")).toHaveCount(0);
+  // No department-wide totals for a manager: the "Across the department" card was removed.
+  await expect(page.getByText("Across the department")).toHaveCount(0);
+  await expect(page.getByText("Totals for the whole department.")).toHaveCount(0);
+
+  // The Team readiness list is the only ranking: managed members (An, Châu) only, unmanaged Bình excluded.
+  await expect(section(page, "Individual ranking")).toHaveCount(0);
+  const readiness = section(page, "Team readiness");
+  await expect(rowWith(readiness, "Nguyễn Văn An")).toBeVisible();
+  await expect(rowWith(readiness, "Lê Minh Châu")).toBeVisible();
+  await expect(rowWith(readiness, "Trần Thị Bình")).toHaveCount(0);
+});
+
+test("manager next-to-expire displays urgent renewals ordered soonest first", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  const nextSection = section(page, "Next to expire");
+  await expect(nextSection).toBeVisible();
+  await expect(rowWith(nextSection, "Nguyễn Văn An", AWS)).toBeVisible();
+  await expect(nextSection.getByRole("link", { name: "View" })).toHaveAttribute("href", /\/records\?search=/);
+
+  // Needs attention lists expired certificates only; the seed has none, so An's AWS is not listed twice.
+  const attention = section(page, "Needs attention");
+  await expect(attention).toBeVisible();
+  await expect(attention.getByText(AWS)).toHaveCount(0);
+  await expect(attention.getByText("Nothing needs attention")).toBeVisible();
+});
+
+test("manager team readiness list displays member status breakdown numbers", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  const readinessSection = section(page, "Team readiness");
+  await expect(readinessSection).toBeVisible();
+  await expect(rowWith(readinessSection, "Nguyễn Văn An", "1 valid")).toBeVisible();
+  await expect(rowWith(readinessSection, "Lê Minh Châu", "0 valid")).toBeVisible();
+  await expect(readinessSection.getByRole("link", { name: "View member certificates" })).toHaveAttribute(
+    "href",
+    /\/records\?search=/,
+  );
+});
+
+test("manager sees later modules once, as disabled tabs and one Coming soon card, with no mock data", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  // Tab strip: the only place Approvals, Goals and Skills appear (plus the one approvals KPI tile).
+  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Approvals Soon" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "Goals Soon" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "Skills Soon" })).toBeDisabled();
+
+  // The three bottom Coming soon cards and the separate Risk alerts card are gone.
+  for (const name of ["Approvals queue", "Goals", "Skills", "Risk alerts"]) {
+    await expect(page.getByRole("region", { name: `${name} (Coming soon)` })).toHaveCount(0);
+  }
+
+  // One merged card, no controls.
+  const askCard = page.getByRole("region", { name: "Ask about my team (Coming soon)" });
+  await expect(askCard).toBeVisible();
+  await expect(askCard.getByText(/Not available yet\.$/)).toBeVisible();
+  await expect(askCard.getByRole("button")).toHaveCount(0);
+  await expect(askCard.getByRole("textbox")).toHaveCount(0);
+
+  // Automated reminders: the two scheduled facts only.
+  const reminders = section(page, "Automated reminders");
+  await expect(reminders.getByText("Members get an expiry email every Monday at 08:00 (Vietnam time).")).toBeVisible();
+  await expect(reminders.getByText("The monthly report goes out on the 1st of each month.")).toBeVisible();
+  await expect(reminders.getByRole("link")).toHaveCount(0);
+
+  // No invented values or dead actions anywhere on the page.
+  const main = page.getByRole("main");
+  for (const fake of [
+    /DAS/, // case-sensitive: a plain "DAS" text match would also hit the "Dashboard" heading
+    "+28%",
+    "Last sent",
+    "Joined",
+    "Send reminder",
+    "Notify member",
+    "Remediate",
+    "Suggest certification",
+    "Assign goal",
+    "Open queue",
+  ]) {
+    await expect(main.getByText(fake)).toHaveCount(0);
+  }
+  for (const label of ["Month", "Quarter", "Year"]) {
+    await expect(main.getByRole("button", { name: label, exact: true })).toHaveCount(0);
+  }
+});
+
+test("a manager with no teams sees the empty state", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  await admin.from("manager_scopes").delete().eq("user_id", "5eed0000-0000-0000-0000-00000000f00b");
+  try {
+    await signIn(page, "manager@certtracker.test");
+    await expect(page.getByText("No teams assigned yet", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Ask an admin to assign you as a manager to a team or program so your team's certificates show here."),
+    ).toBeVisible();
+  } finally {
+    const cleanupAdmin = await signInAsSeedAdmin();
+    await cleanupAdmin.from("manager_scopes").insert({
+      user_id: "5eed0000-0000-0000-0000-00000000f00b",
+      team_id: "5eed0000-0000-0000-0000-00000000a001",
+    });
+  }
 });
 
 test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
-  await expect(tileValue(page, "Bản ghi chứng chỉ")).toHaveText("3");
-  await expect(page.getByRole("heading", { name: /^Theo team$/ })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: /^Xếp hạng cá nhân$/ })).toHaveCount(0);
+  // Personal KPI cards match the seed member's records (Lê Minh Châu has 1 not_started record)
+  await expect(tileValue(page, "Certificates")).toHaveText("1");
+  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("0");
+  await expect(tileValue(page, "In progress")).toHaveText("0");
+  await expect(tileValue(page, "Expired")).toHaveText("0");
 
-  await expect(page.getByText("Chỉ hiển thị nhóm có từ 3 người học trở lên.")).toBeVisible();
-  // AWS has 2 learners and NVIDIA 1: every provider group is below the threshold, so none is shown.
-  await expect(section(page, "Theo nhà cung cấp").getByText("Chưa đủ dữ liệu để hiển thị")).toBeVisible();
+  // No department-wide totals for a member: the "Across the department" card was removed.
+  await expect(page.getByText("Across the department")).toHaveCount(0);
+  await expect(page.getByText("Totals for the whole department.")).toHaveCount(0);
+  await expect(page.getByText(/groups with fewer than 3/i)).toHaveCount(0);
+
+  // No ranking and no "By team"
+  await expect(page.getByRole("tab", { name: /^By team$/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /^By team$/ })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: /^Individual ranking$/ })).toHaveCount(0);
+
+  // Filter tabs with counts for member certificates
+  const certSection = page.getByRole("region", { name: "My certificates" });
+  await expect(certSection).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^All \(1\)$/ })).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^Valid \(0\)$/ })).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^Expiring within 60 days \(0\)$/ })).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^In progress \(0\)$/ })).toBeVisible();
+  await expect(certSection.getByText(AWS)).toBeVisible();
+
+  // Attention banner is hidden when nothing expires within 60 days
+  await expect(page.getByRole("complementary", { name: "Certificate attention required" })).toHaveCount(0);
+
+  // Coming soon cards are visible and non-interactive. Each card lists the controls it must show; each one
+  // must exist and be disabled, and the card must have at least that many controls, so removing one fails.
+  const comingSoon: { title: string; controls: { role: "textbox" | "button"; name: string }[] }[] = [
+    { title: "Ask about certificates", controls: [{ role: "textbox", name: "Your question" }] },
+    { title: "My skills", controls: [] },
+    { title: "Quarterly goals", controls: [] },
+    { title: "Next career role", controls: [] },
+    { title: "Certificate review", controls: [] },
+  ];
+  for (const { title, controls } of comingSoon) {
+    const card = page.getByRole("region", { name: `${title} (Coming soon)` });
+    await expect(card).toBeVisible();
+    for (const { role, name } of controls) {
+      await expect(card.getByRole(role, { name, exact: true })).toBeDisabled();
+    }
+    const all = card.getByRole("textbox").or(card.getByRole("button"));
+    expect(await all.count(), `${title}: number of controls`).toBeGreaterThanOrEqual(controls.length);
+    for (const control of await all.all()) {
+      await expect(control).toBeDisabled();
+    }
+  }
+});
+
+test("unlinked member account shows guidance empty state on dashboard", async ({ page }) => {
+  const email = pilotEmail("dash-unlinked");
+  const { hash } = await inviteLink(email);
+  try {
+    await acceptInvitation(page, email, hash);
+    await expect(page.getByText("Your account is not linked to a member")).toBeVisible();
+    await expect(page.getByText("Ask your admin to link your account to a member")).toBeVisible();
+  } finally {
+    await removePilotPeople();
+  }
 });
 
 test("a member cannot read the ranking or per-team numbers straight from the API", async () => {
@@ -148,22 +323,164 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
     await signIn(editor, "admin@certtracker.test");
     await editor.goto("/records");
 
-    await expect(tileValue(viewer, "Đang học")).toHaveText("1");
+    await expect(tileValue(viewer, "In progress")).toHaveText("1");
     // Pin the row by member and course so the edit never depends on row order.
     const row = rowWith(editor.locator("body"), "Lê Minh Châu", AWS);
     await expect(row).toBeVisible();
 
     try {
-      await editStatus(editor, row, "Đang học", "55");
+      await editStatus(editor, row, "In progress", "55");
       // No reload on the dashboard: Realtime must trigger the refresh.
-      await expect(tileValue(viewer, "Đang học")).toHaveText("2", { timeout: 10_000 });
+      await expect(tileValue(viewer, "In progress")).toHaveText("2", { timeout: 10_000 });
     } finally {
       await editor.keyboard.press("Escape");
-      await editStatus(editor, row, "Chưa bắt đầu", "0");
+      await editStatus(editor, row, "Not started", "0");
     }
-    await expect(tileValue(viewer, "Đang học")).toHaveText("1", { timeout: 10_000 });
+    await expect(tileValue(viewer, "In progress")).toHaveText("1", { timeout: 10_000 });
   } finally {
     await viewerContext.close();
     await editorContext.close();
   }
 });
+
+test("explorer tabs, filter row, clear filters, and keyboard row selection update detail panel", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+
+  // Switch to "Popular courses" tab
+  await page.getByRole("tab", { name: "Popular courses" }).click();
+  const courseSection = section(page, "Popular courses");
+  await expect(courseSection).toBeVisible();
+
+  // Detail panel reflects default first row (AWS course)
+  const detailPanel = page.getByRole("region", { name: "Selected item details" });
+  await expect(detailPanel).toBeVisible();
+  await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
+
+  // Filter input searches across courses
+  const searchInput = page.getByRole("textbox", { name: "Filter course" });
+  await searchInput.fill("NVIDIA");
+  await expect(rowWith(courseSection, "NVIDIA")).toBeVisible();
+  await expect(courseSection.getByText(AWS)).toHaveCount(0);
+
+  // Active filter chip shows 1
+  await expect(page.getByText("Active filters")).toBeVisible();
+
+  // Clear filters button restores all courses
+  const clearBtn = page.getByRole("button", { name: "Clear filters" }).first();
+  await clearBtn.click();
+  await expect(rowWith(courseSection, AWS)).toBeVisible();
+  await expect(searchInput).toHaveValue("");
+
+  // Keyboard navigation on rows: focus row and press Enter
+  const nvidiaRow = rowWith(courseSection, "NVIDIA");
+  await nvidiaRow.focus();
+  await page.keyboard.press("Enter");
+  await expect(nvidiaRow).toHaveAttribute("aria-selected", "true");
+  await expect(detailPanel.getByRole("heading", { name: /NVIDIA/ })).toBeVisible();
+
+  // Filtering that excludes the selected row falls back to first matching row
+  await searchInput.fill("AWS");
+  await expect(rowWith(courseSection, AWS)).toHaveAttribute("aria-selected", "true");
+  await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
+});
+
+test("admin Needs attention lists only real items computed from seed data", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+
+  const attention = section(page, "Needs attention");
+  await expect(attention).toBeVisible();
+
+  // In seed: An's AWS certificate expires in ~25 days (within 30 days)
+  await expect(attention.getByText("Nguyễn Văn An · AWS Solutions Architect Associate")).toBeVisible();
+  await expect(attention.getByText(/Expires in \d+ days/)).toBeVisible();
+
+  // In seed: 1 data quality issue (done record without evidence)
+  await expect(attention.getByText("Data quality", { exact: true })).toBeVisible();
+  await expect(attention.getByText("1 issue to check")).toBeVisible();
+  await expect(attention.getByText("All clear")).toHaveCount(0);
+
+  // No mock/fake strings from Figma
+  for (const fake of ["Send reminder", "HRIS sync", "Review submissions", "4 pending proofs", "Minh Pham", "PMP"]) {
+    await expect(attention.getByText(fake)).toHaveCount(0);
+  }
+});
+
+test("admin merged Coming soon card has no interactive controls", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+
+  const planned = [
+    "Approvals",
+    "Goals",
+    "Skills",
+    "Focus area",
+    "Ask about certificates",
+    "Monthly summary",
+    "Risk alerts",
+  ];
+  const card = section(page, "Planned features (Coming soon)");
+  await expect(card).toBeVisible();
+  for (const title of planned) {
+    await expect(card.getByRole("heading", { name: title, exact: true })).toBeVisible();
+  }
+
+  // Every planned feature ends with "Not available yet."; nothing else on the page says it.
+  await expect(card.getByText(/Not available yet\.$/)).toHaveCount(planned.length);
+  await expect(page.getByRole("main").getByText(/Not available yet\./)).toHaveCount(planned.length);
+  await expect(page.getByText("Waiting for approval")).toHaveCount(0);
+
+  // No buttons or textboxes
+  await expect(card.getByRole("button")).toHaveCount(0);
+  await expect(card.getByRole("textbox")).toHaveCount(0);
+});
+
+test("admin profile card renders correctly for admin without a member record", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+
+  const profile = section(page, "Your profile");
+  await expect(profile).toBeVisible();
+  await expect(profile.getByText("admin@certtracker.test")).toBeVisible();
+  await expect(profile.getByText("Admin", { exact: true })).toBeVisible();
+  await expect(profile.getByText("Not linked to a member")).toBeVisible();
+  await expect(profile.getByText("System administrator")).toHaveCount(0);
+  await expect(profile.getByText("Role not set")).toHaveCount(0);
+
+  // No fake badges from Figma
+  for (const fake of ["DC34", "Lead Auditor", "AUDIT READY"]) {
+    await expect(profile.getByText(fake)).toHaveCount(0);
+  }
+});
+
+test("admin header and Quick actions offer each action once, with plain names", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+  const main = page.getByRole("main");
+
+  const quick = section(page, "Quick actions");
+  await expect(quick.getByRole("link")).toHaveText(["Add certificate", "Add member", "Import from Excel"]);
+  await expect(quick.getByRole("link", { name: "Add member" })).toHaveAttribute("href", "/members");
+
+  await expect(main.getByRole("link", { name: "Add certificate" })).toHaveCount(1);
+  await expect(main.getByRole("link", { name: "Export CSV" })).toHaveCount(1);
+  await expect(main.getByText("Download data")).toHaveCount(0);
+  await expect(main.getByText(/Invite/)).toHaveCount(0);
+
+  // The header button moves focus to the Explorer group filters.
+  await expect(main.getByRole("button", { name: "Filters", exact: true })).toHaveCount(0);
+  await main.getByRole("button", { name: /^Filter groups/ }).click();
+  await expect(page.locator("#explorer-search-input")).toBeFocused();
+});
+
+for (const [role, email] of [
+  ["admin", ADMIN_EMAIL],
+  ["manager", "manager@certtracker.test"],
+] as const) {
+  test(`the ${role} dashboard does not scroll horizontally on a phone`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signIn(page, email);
+    await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+  });
+}

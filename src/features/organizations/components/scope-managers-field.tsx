@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 
 type Candidate = { userId: string; fullName: string; email: string };
 
-export function TeamManagersField({
+export function ScopeManagersField({
   candidates,
   selected,
   onChange,
@@ -15,7 +15,7 @@ export function TeamManagersField({
   onChange: (userIds: string[]) => void;
 }) {
   if (candidates.length === 0) {
-    return <p className="text-caption text-muted-foreground">Chưa có tài khoản nào mang vai trò Quản lý.</p>;
+    return <p className="text-caption text-muted-foreground">No account has the Manager role yet.</p>;
   }
 
   return (

@@ -1,6 +1,7 @@
 import type { RecordStatus } from "@/components/status/labels";
 import { REFUND_STATUS_LABEL, type RefundStatus } from "@/features/records/schema";
 import { toIsoDate } from "@/lib/dates";
+import type { Currency } from "@/lib/money";
 import { foldText } from "@/lib/text";
 
 export type Cell = string | number | boolean | null;
@@ -13,27 +14,30 @@ export const MAX_IMPORT_ROWS = 2000;
 export const MAX_IMPORT_BYTES = 4 * 1024 * 1024;
 
 export const IMPORT_FIELDS = [
-  "memberName", "email", "team", "courseName", "provider", "certType", "validityMonths", "status", "progress",
+  "memberName", "email", "team", "courseName", "provider", "certType", "validityMonths", "cost", "costCurrency", "estHours", "status", "progress",
   "plannedExamDate", "issuedDate", "certificateUrl", "viaCompany", "refundStatus", "notes",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 export type HeaderMap = Partial<Record<ImportField, number>>;
 
-/** Folded header text → field. Exact match only, so "Trạng thái hạn" does not become "Trạng thái". Extend after Task 8. */
+/** Folded header text → field. Exact match only, so "Expiry status" does not become "Status". Vietnamese aliases stay so legacy files import (decision #26). */
 export const HEADER_ALIASES: Record<ImportField, string[]> = {
   memberName: ["ho ten", "ho va ten", "ten", "full name", "name", "thanh vien", "member", "nhan vien"],
   email: ["email", "e-mail", "mail", "email cong ty"],
   team: ["team", "nhom"],
   courseName: ["khoa hoc", "ten khoa hoc", "chung chi", "ten chung chi", "course", "cert", "certification", "certificate"],
   provider: ["nha cung cap", "provider", "hang", "vendor", "to chuc cap"],
-  certType: ["loai", "loai chung chi", "cert type", "certtype", "type", "linh vuc"],
+  certType: ["loai", "loai chung chi", "cert type", "certtype", "certificate type", "type", "linh vuc"],
   validityMonths: ["thoi han", "thoi han (thang)", "validity", "validity months", "validity (months)"],
+  cost: ["cost", "chi phi"],
+  costCurrency: ["currency", "loai tien", "tien te"],
+  estHours: ["study hours", "so gio", "gio hoc"],
   status: ["trang thai", "status", "tinh trang"],
   progress: ["tien do", "tien do (%)", "progress", "progress (%)", "%"],
   plannedExamDate: ["ngay thi du kien", "ngay thi", "planned exam date", "exam date", "du kien thi"],
   issuedDate: ["ngay cap", "issued date", "issue date", "ngay dat", "ngay nhan"],
   certificateUrl: ["link chung chi", "certificate url", "certificate link", "link", "url"],
-  viaCompany: ["qua cong ty", "dang ky qua cong ty", "via company", "cong ty tai tro"],
+  viaCompany: ["qua cong ty", "dang ky qua cong ty", "via company", "registered through the company", "cong ty tai tro"],
   refundStatus: ["hoan tien", "trang thai hoan tien", "refund", "refund status"],
   notes: ["ghi chu", "notes", "note", "mo ta"],
 };
@@ -87,10 +91,10 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 export function normalizeEmail(cell: Cell | undefined): Cleaned<string> {
   const text = cellText(cell)?.replace(/^mailto:/i, "");
-  if (!text) return fail("Thiếu email");
-  if (text.length > MAX_EMAIL_LENGTH) return fail(`Email quá dài (tối đa ${MAX_EMAIL_LENGTH} ký tự)`);
+  if (!text) return fail("Email is missing");
+  if (text.length > MAX_EMAIL_LENGTH) return fail(`Email is too long (${MAX_EMAIL_LENGTH} characters at most)`);
   const email = text.toLowerCase();
-  return EMAIL.test(email) ? ok(email) : fail(`Email "${text}" không hợp lệ`);
+  return EMAIL.test(email) ? ok(email) : fail(`Email "${text}" is not valid`);
 }
 
 const STATUS_ALIASES: Record<RecordStatus, string[]> = {
@@ -111,7 +115,7 @@ export function normalizeStatus(cell: Cell | undefined): Cleaned<RecordStatus | 
   const text = cellText(cell);
   if (text === null) return ok(null);
   const status = STATUS_LOOKUP.get(foldText(text.replace(/[_-]+/g, " ")));
-  return status ? ok(status) : fail(`Không nhận ra trạng thái "${text}"`);
+  return status ? ok(status) : fail(`Unknown status "${text}"`);
 }
 
 export function parseNumber(cell: Cell | undefined): number | null {
@@ -140,11 +144,11 @@ export function progressToPercent(cell: Cell | undefined, mode: ProgressMode): C
   if (text === null) return ok(null);
   const isPercentText = text.endsWith("%");
   const value = parseNumber(isPercentText ? text.slice(0, -1) : (cell ?? null));
-  if (value === null) return fail(`Tiến độ "${text}" không phải là số`);
+  if (value === null) return fail(`Progress "${text}" is not a number`);
   const scaled = isPercentText || mode === "percent" ? value : value * 100;
   // toFixed first: 0.285 * 100 is 28.499999999999996 in floating point and would round down.
   const percent = Math.round(Number(scaled.toFixed(6)));
-  return percent < 0 || percent > 100 ? fail(`Tiến độ "${text}" nằm ngoài 0–100%`) : ok(percent);
+  return percent < 0 || percent > 100 ? fail(`Progress "${text}" is outside 0–100%`) : ok(percent);
 }
 
 const DAY_MS = 86_400_000;
@@ -166,20 +170,20 @@ export function isoToExcelSerial(iso: string): number {
 export function parseImportDate(cell: Cell | undefined, date1904: boolean): Cleaned<string | null> {
   if (typeof cell === "number") {
     const iso = excelSerialToDate(cell, date1904);
-    return iso ? ok(iso) : fail(`Ngày "${cell}" không hợp lệ`);
+    return iso ? ok(iso) : fail(`Date "${cell}" is not valid`);
   }
   const text = cellText(cell);
   if (text === null) return ok(null);
   if (/^\d{5}(\.\d+)?$/.test(text)) {
     const iso = excelSerialToDate(Number(text), date1904);
-    return iso ? ok(iso) : fail(`Ngày "${text}" không hợp lệ`);
+    return iso ? ok(iso) : fail(`Date "${text}" is not valid`);
   }
   const datePart = text.split(" ")[0]!;
   const isoLike = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(datePart);
   const iso = isoLike
     ? toIsoDate(`${isoLike[1]}-${isoLike[2]!.padStart(2, "0")}-${isoLike[3]!.padStart(2, "0")}`)
     : toIsoDate(datePart.replace(/[.-]/g, "/"));
-  return iso ? ok(iso) : fail(`Ngày "${text}" không hợp lệ (cần dd/mm/yyyy)`);
+  return iso ? ok(iso) : fail(`Date "${text}" is not valid (use dd/mm/yyyy)`);
 }
 
 const TRUE_WORDS = new Set(["x", "v", "yes", "y", "true", "1", "co", "dung"]);
@@ -192,23 +196,23 @@ export function normalizeBoolean(cell: Cell | undefined, label: string): Cleaned
   const key = foldText(text);
   if (TRUE_WORDS.has(key)) return ok(true);
   if (FALSE_WORDS.has(key)) return ok(false);
-  return fail(`${label}: không hiểu giá trị "${text}"`);
+  return fail(`${label}: unknown value "${text}"`);
 }
 
 const REFUND_LOOKUP = new Map<string, RefundStatus>([
   ...(Object.entries(REFUND_STATUS_LABEL) as [RefundStatus, string][]).map(([status, label]) => [foldText(label), status] as const),
-  ...(["n a", "na", "n/a", "khong", "n_a"] as const).map((alias) => [alias, "n_a" as const] as const),
-  ...(["pending", "cho", "dang cho"] as const).map((alias) => [alias, "pending" as const] as const),
-  ...(["approved", "duyet"] as const).map((alias) => [alias, "approved" as const] as const),
+  ...(["n a", "na", "n/a", "khong", "khong ap dung", "n_a"] as const).map((alias) => [alias, "n_a" as const] as const),
+  ...(["pending", "cho", "dang cho", "cho duyet"] as const).map((alias) => [alias, "pending" as const] as const),
+  ...(["approved", "duyet", "da duyet"] as const).map((alias) => [alias, "approved" as const] as const),
   ...(["rejected", "tu choi"] as const).map((alias) => [alias, "rejected" as const] as const),
-  ...(["paid", "da hoan", "da tra"] as const).map((alias) => [alias, "paid" as const] as const),
+  ...(["paid", "da hoan", "da hoan tien", "da tra"] as const).map((alias) => [alias, "paid" as const] as const),
 ]);
 
 export function normalizeRefund(cell: Cell | undefined): Cleaned<RefundStatus | null> {
   const text = cellText(cell);
   if (text === null) return ok(null);
   const status = REFUND_LOOKUP.get(foldText(text));
-  return status ? ok(status) : fail(`Không nhận ra trạng thái hoàn tiền "${text}"`);
+  return status ? ok(status) : fail(`Unknown refund status "${text}"`);
 }
 
 export function normalizeUrl(cell: Cell | undefined): Cleaned<string | null> {
@@ -216,7 +220,7 @@ export function normalizeUrl(cell: Cell | undefined): Cleaned<string | null> {
   if (text === null) return ok(null);
   return /^https?:\/\//i.test(text) && URL.canParse(text)
     ? ok(text)
-    : fail("Link chứng chỉ phải bắt đầu bằng http:// hoặc https://");
+    : fail("Certificate link must start with http:// or https://");
 }
 
 const NO_EXPIRY_WORDS = new Set(["khong het han", "khong thoi han", "vinh vien", "no expiry", "lifetime", "none", "khong"]);
@@ -230,8 +234,54 @@ export function parseValidityMonths(cell: Cell | undefined): Cleaned<number | nu
   const months = /^(\d+)\s*(thang|months?|m)?$/.exec(key);
   const years = /^(\d+)\s*(nam|years?|y)$/.exec(key);
   const value = months ? Number(months[1]) : years ? Number(years[1]) * 12 : NaN;
-  return Number.isInteger(value) && value > 0 && value <= 600 ? ok(value) : fail(`Thời hạn "${text}" không hợp lệ`);
+  return Number.isInteger(value) && value > 0 && value <= 600 ? ok(value) : fail(`Validity "${text}" is not valid`);
 }
+
+const MAX_COST = 9_999_999_999.99; // numeric(12,2)
+
+/** An amount such as `150`, `1,234.50`, `$150` or `3.500.000 ₫`; `null` = blank. Currency is read separately. */
+export function parseCost(cell: Cell | undefined): Cleaned<number | null> {
+  const text = cellText(cell);
+  if (text === null) return ok(null);
+  const bare = foldText(text).replace(/[$₫\s]|vnd|usd|d$/g, "");
+  const normalized = /^\d{1,3}(,\d{3})+(\.\d+)?$/.test(bare)
+    ? bare.replace(/,/g, "")
+    : /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(bare)
+      ? bare.replace(/\./g, "").replace(",", ".")
+      : bare;
+  const value = typeof cell === "number" ? cell : parseNumber(normalized);
+  return value !== null && value >= 0 && value <= MAX_COST ? ok(value) : fail(`Cost "${text}" is not a valid amount.`);
+}
+
+const CURRENCY_ALIASES: Record<Currency, string[]> = {
+  VND: ["vnd", "d", "₫", "dong", "viet nam dong"],
+  USD: ["usd", "$", "us$", "dollar", "dollars", "us dollar", "do la", "do la my", "do"],
+};
+const CURRENCY_LOOKUP = new Map<string, Currency>(
+  (Object.entries(CURRENCY_ALIASES) as [Currency, string[]][]).flatMap(([currency, aliases]) =>
+    aliases.map((alias) => [alias, currency] as const),
+  ),
+);
+
+/** `null` = blank. Anything that is not VND or USD (or a known spelling of them) is a row error. */
+export function parseCurrency(cell: Cell | undefined): Cleaned<Currency | null> {
+  const text = cellText(cell);
+  if (text === null) return ok(null);
+  const currency = CURRENCY_LOOKUP.get(foldText(text));
+  return currency ? ok(currency) : fail(`Unknown currency "${text}". Use VND or USD.`);
+}
+
+/** A positive whole number of hours, optionally followed by `h` / `hours` (or the Vietnamese `gio`, accents ignored); `null` = blank. */
+export function parseStudyHours(cell: Cell | undefined): Cleaned<number | null> {
+  const text = cellText(cell);
+  if (text === null) return ok(null);
+  const match = /^(\d+)\s*(h|hours?|gio)?$/.exec(foldText(text));
+  const value = match ? Number(match[1]) : NaN;
+  return Number.isInteger(value) && value > 0 && value <= MAX_HOURS
+    ? ok(value)
+    : fail(`Study hours "${text}" must be a whole number above 0.`);
+}
+const MAX_HOURS = 10_000;
 
 export function mapHeaders(row: (Cell | undefined)[]): { map: HeaderMap; unknown: string[]; duplicates: string[] } {
   const map: HeaderMap = {};

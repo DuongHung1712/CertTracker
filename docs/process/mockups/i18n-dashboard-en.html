@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>Proposed mockup: Dashboard in English</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="icons.css">
+<link rel="stylesheet" href="shell.css">
+</head>
+<body>
+<div class="banner"><i class="ic ic-triangle-alert"></i>PROPOSED MOCKUP — not built · for review<span class="lang">Language: English (proposed UI text)</span></div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="22" height="22" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="7" fill="var(--primary)"/><path d="M22 11C20.4 8.5 17.6 7 14.5 7C9.8 7 6 11 6 16C6 21 9.8 25 14.5 25C17.6 25 20.4 23.5 22 21" stroke="var(--card)" stroke-width="3.2" stroke-linecap="round"/><path d="M12 16L15 19L24.5 9.5" stroke="var(--accent)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Cert<b>Tracker</b></span>
+    </div>
+    <a class="nav active"><i class="ic ic-layout-dashboard"></i>Dashboard</a>
+    <a class="nav"><i class="ic ic-users"></i>Members</a>
+    <a class="nav"><i class="ic ic-list-checks"></i>Certificates by person</a>
+    <a class="nav"><i class="ic ic-shield-check"></i>Data quality</a>
+    <a class="nav"><i class="ic ic-book-open"></i>Courses</a>
+    <a class="nav"><i class="ic ic-building-2"></i>Organisation</a>
+    <a class="nav"><i class="ic ic-file-spreadsheet"></i>Import / Export</a>
+    <a class="nav"><i class="ic ic-settings"></i>Settings</a>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <i class="ic ic-panel-left"></i><span class="sep"></span>
+      <span class="crumb">Dashboard</span>
+      <div class="user"><span>admin@certtracker.test</span><span class="badge plain">Admin</span><i class="ic ic-chevron-down"></i></div>
+    </header>
+
+    <div class="page" style="gap:20px">
+      <div class="page-header">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Figures as of 07 Oct 2026, 19:41.</p>
+        </div>
+      </div>
+
+      <section class="section">
+        <h2>Overview</h2>
+        <dl class="kpis">
+          <div class="kpi"><div class="label">Active members</div><div class="value">3</div></div>
+          <div class="kpi"><div class="label">Certificate records</div><div class="value">3</div></div>
+          <div class="kpi"><div class="label">Completed</div><div class="value">1</div><div class="hint">33% of records</div></div>
+          <div class="kpi"><div class="label">In progress</div><div class="value">1</div></div>
+          <div class="kpi"><div class="label">Still valid</div><div class="value">1</div><div class="hint">Includes 0 with no expiry</div></div>
+          <div class="kpi"><div class="label">Expiring soon (≤ 60 days)</div><div class="value">1</div></div>
+          <div class="kpi"><div class="label">Expired</div><div class="value">0</div></div>
+        </dl>
+      </section>
+
+      <div class="cols-2">
+        <section class="section">
+          <div><h2>Certificate expiry</h2><p class="desc">Completed certificates, by time left</p></div>
+          <div class="bars">
+            <div class="row"><span class="lab">&gt; 60 days left</span><span class="tnum">0</span></div>
+            <div class="row"><span class="lab">31–60 days left</span><span class="tnum">0</span></div>
+            <div class="row"><span class="lab">≤ 30 days left</span><span class="bar" style="width:88px;background:var(--status-expiring-soon-fg)"></span><span class="tnum">1</span></div>
+            <div class="row"><span class="lab">Expired</span><span class="tnum">0</span></div>
+            <div class="row"><span class="lab">No expiry</span><span class="tnum">0</span></div>
+          </div>
+        </section>
+        <section class="section">
+          <div><h2>Popular courses</h2><p class="desc">The 10 courses with the most learners</p></div>
+          <div class="table">
+            <table>
+              <thead><tr><th>Course</th><th>Learners</th><th>Records</th><th>Completed</th></tr></thead>
+              <tbody>
+                <tr><td>AWS Solutions Architect Associate</td><td>2</td><td>2</td><td><div class="cell-prog"><span class="pbar"><i style="width:50%"></i></span><span>50% · 1/2</span></div></td></tr>
+                <tr><td>NVIDIA Generative AI LLMs</td><td>1</td><td>1</td><td><div class="cell-prog"><span class="pbar"><i style="width:0"></i></span><span>0% · 0/1</span></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
+      <section class="section">
+        <h2>By team</h2>
+        <div class="table">
+          <table>
+            <thead><tr><th>Team</th><th>Members</th><th>Records</th><th>Completed</th><th>In progress</th><th>Still valid</th><th>Expired</th></tr></thead>
+            <tbody>
+              <tr><td>Team Cloud</td><td>2</td><td>2</td><td><div class="cell-prog"><span class="pbar"><i style="width:50%"></i></span><span>50% · 1/2</span></div></td><td>0</td><td>1</td><td>0</td></tr>
+              <tr><td>Team AI</td><td>1</td><td>1</td><td><div class="cell-prog"><span class="pbar"><i style="width:0"></i></span><span>0% · 0/1</span></div></td><td>1</td><td>0</td><td>0</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,3 +1,4 @@
+import { toCurrency } from "@/lib/money";
 import { createClient } from "@/lib/supabase/server";
 
 export async function listCertTypes() {
@@ -19,7 +20,7 @@ export async function listCourses() {
   const { data, error } = await supabase
     .from("courses")
     .select(
-      "id, name, cert_type_id, provider_id, level, validity_months, refundable, cost, est_hours, url, cert_types(name), providers(name)",
+      "id, name, cert_type_id, provider_id, level, validity_months, refundable, cost, cost_currency, est_hours, url, cert_types(name), providers(name)",
     )
     .order("name");
   if (error) throw new Error(error.message);
@@ -34,6 +35,7 @@ export async function listCourses() {
     validityMonths: row.validity_months,
     refundable: row.refundable,
     cost: row.cost,
+    costCurrency: toCurrency(row.cost_currency),
     estHours: row.est_hours,
     url: row.url,
   }));

@@ -1,3 +1,4 @@
+import type { ManagerScope } from "@/features/organizations/schema";
 import { createClient } from "@/lib/supabase/server";
 
 export async function listDcs() {
@@ -32,7 +33,7 @@ export async function listTeams() {
   }));
 }
 
-/** Candidates to become a team's manager: signed-up users with role "manager" who also have a member profile (so we have a name/email to show). */
+/** Candidates to become a team or program manager: signed-up users with role "manager" who also have a member profile (so we have a name/email to show). */
 export async function listManagerCandidates() {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -46,10 +47,11 @@ export async function listManagerCandidates() {
     .map((row) => ({ userId: row.user_id, fullName: row.members!.full_name, email: row.members!.email }));
 }
 
-/** Manager user_ids currently assigned to a team. A user only ever sees their own team_managers row (RLS), so this is Admin-only in practice — called from the Admin-only /org page. */
-export async function listTeamManagerIds(teamId: string) {
+/** Manager user_ids currently assigned to a team or program. A user only ever sees their own manager_scopes rows (RLS), so this is Admin-only in practice — called from the Admin-only /org page. */
+export async function listScopeManagerIds(scope: ManagerScope): Promise<string[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("team_managers").select("user_id").eq("team_id", teamId);
+  const column = scope.kind === "team" ? "team_id" : "program_id";
+  const { data, error } = await supabase.from("manager_scopes").select("user_id").eq(column, scope.id);
   if (error) throw new Error(error.message);
   return data.map((row) => row.user_id);
 }

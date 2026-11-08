@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 export function FilterBar({
   search,
   onSearchChange,
-  searchPlaceholder = "Tìm kiếm…",
+  searchPlaceholder = "Search…",
   hasActiveFilters,
   onClear,
   children,
@@ -43,12 +43,12 @@ export function FilterBar({
           size="sm"
           onClick={() => {
             onClear();
-            // "Xóa lọc" removes itself from the DOM; without this, focus
+            // "Clear filters" removes itself from the DOM; without this, focus
             // would drop to <body>.
             searchInputRef.current?.focus();
           }}
         >
-          Xóa lọc
+          Clear filters
         </Button>
       )}
     </div>

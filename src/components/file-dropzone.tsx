@@ -1,8 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { CloudUpload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
+import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE, EVIDENCE_WRONG_TYPE_MESSAGE } from "@/lib/storage/evidence";
 import { cn } from "@/lib/utils";
 
 /**
@@ -33,9 +35,9 @@ export function FileDropzone({
   function pick(candidate: File | undefined) {
     if (!candidate) return;
     const allowed = accept.split(",").map((type) => type.trim());
-    if (candidate.size === 0) return onReject("Tệp rỗng.");
-    if (candidate.size > maxBytes) return onReject("Tệp lớn hơn 4 MB. Nén hoặc chụp lại rồi thử lại.");
-    if (!allowed.includes(candidate.type)) return onReject("Chỉ nhận tệp PDF, JPG, PNG hoặc WebP.");
+    if (candidate.size === 0) return onReject(EVIDENCE_EMPTY_MESSAGE);
+    if (candidate.size > maxBytes) return onReject(EVIDENCE_TOO_LARGE_MESSAGE);
+    if (!allowed.includes(candidate.type)) return onReject(EVIDENCE_WRONG_TYPE_MESSAGE);
     onChange(candidate);
   }
 
@@ -79,20 +81,27 @@ export function FileDropzone({
         }}
       />
       {file ? (
-        <>
-          <span className="flex min-w-0 flex-1 items-baseline gap-2">
-            <span className="truncate">{file.name}</span>
-            <span className="shrink-0 text-caption text-muted-foreground">
-              {formatNumber(Math.ceil(file.size / 1024))} KB
+        <div className="flex w-full items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <FileText aria-hidden className="size-4 shrink-0 text-primary" />
+            <span className="truncate text-body font-medium text-foreground">{file.name}</span>
+            <span className="shrink-0 text-caption tabular-nums text-muted-foreground">
+              ({formatNumber(Math.ceil(file.size / 1024))} KB)
             </span>
-          </span>
+          </div>
           <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={clear}>
-            Bỏ tệp
+            Remove file
           </Button>
-        </>
+        </div>
       ) : (
-        <label htmlFor={id} className="flex-1 cursor-pointer text-muted-foreground">
-          Kéo thả hoặc chọn tệp PDF, JPG, PNG, WebP (tối đa 4 MB)
+        <label
+          htmlFor={id}
+          className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <CloudUpload aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+          <span className="text-body">
+            Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB
+          </span>
         </label>
       )}
     </div>

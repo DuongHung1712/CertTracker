@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { AlertCircle, Award, CheckCircle2, Clock, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -16,10 +16,24 @@ import { RecordStatusLabel } from "@/components/status/record-status";
 import type { RecordStatus } from "@/components/status/labels";
 import { Button } from "@/components/ui/button";
 import { BreakdownTable } from "@/features/dashboard/components/breakdown-table";
+import { CompletionDonut } from "@/features/dashboard/components/completion-donut";
 import { ExpiryChart } from "@/features/dashboard/components/expiry-chart";
+import { Explorer } from "@/features/dashboard/components/explorer";
+import {
+  ExpiredMiniChart,
+  ExpiringGaugeMiniChart,
+  RecordsMiniChart,
+  ValidMiniChart,
+} from "@/features/dashboard/components/hero-charts";
+import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
-import type { ExpiryBucket } from "@/features/dashboard/metrics";
-import type { BreakdownRow, RankingRow } from "@/features/dashboard/schema";
+import {
+  EXPIRY_BUCKET_LABELS,
+  expiryBuckets,
+  validBuckets,
+  type ExpiryBucket,
+} from "@/features/dashboard/metrics";
+import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 
 type SampleRow = {
   id: string;
@@ -35,12 +49,12 @@ type SampleRow = {
 
 // Example rows for the showcase only.
 const SAMPLE_ROWS: SampleRow[] = [
-  { id: "1", code: "M001", name: "Nguyễn Văn An", course: "AWS Solutions Architect Associate", status: "done", progress: 100, expiryStatus: "Expiring Soon", daysToExpiry: 23, expiryDate: "2026-10-19" },
-  { id: "2", code: "M002", name: "Trần Thị Bình", course: "NVIDIA Generative AI LLMs", status: "in_progress", progress: 40, expiryStatus: "N/A", daysToExpiry: null, expiryDate: null },
-  { id: "3", code: "M003", name: "Lê Minh Châu", course: "Azure Fundamentals AZ-900", status: "done", progress: 100, expiryStatus: "No Expiry", daysToExpiry: null, expiryDate: null },
-  { id: "4", code: "M004", name: "Phạm Quốc Dũng", course: "CCNA", status: "done", progress: 100, expiryStatus: "Expired", daysToExpiry: -5, expiryDate: "2026-09-21" },
-  { id: "5", code: "M005", name: "Võ Thị Én", course: "Google Cloud Digital Leader", status: "done", progress: 100, expiryStatus: "Expiring in 60d", daysToExpiry: 48, expiryDate: "2026-11-13" },
-  { id: "6", code: "M006", name: "Đặng Gia Huy", course: "IBM Data Science", status: "not_started", progress: 0, expiryStatus: "Active", daysToExpiry: 400, expiryDate: "2027-10-31" },
+  { id: "1", code: "M001", name: "Nguyen Van An", course: "AWS Solutions Architect Associate", status: "done", progress: 100, expiryStatus: "Expiring Soon", daysToExpiry: 23, expiryDate: "2026-10-19" },
+  { id: "2", code: "M002", name: "Tran Thi Binh", course: "NVIDIA Generative AI LLMs", status: "in_progress", progress: 40, expiryStatus: "N/A", daysToExpiry: null, expiryDate: null },
+  { id: "3", code: "M003", name: "Le Minh Chau", course: "Azure Fundamentals AZ-900", status: "done", progress: 100, expiryStatus: "No Expiry", daysToExpiry: null, expiryDate: null },
+  { id: "4", code: "M004", name: "Pham Quoc Dung", course: "CCNA", status: "done", progress: 100, expiryStatus: "Expired", daysToExpiry: -5, expiryDate: "2026-09-21" },
+  { id: "5", code: "M005", name: "Vo Thi En", course: "Google Cloud Digital Leader", status: "done", progress: 100, expiryStatus: "Expiring in 60d", daysToExpiry: 48, expiryDate: "2026-11-13" },
+  { id: "6", code: "M006", name: "Dang Gia Huy", course: "IBM Data Science", status: "not_started", progress: 0, expiryStatus: "Active", daysToExpiry: 400, expiryDate: "2027-10-31" },
 ];
 
 // DataTable's default sort (Vietnamese collation) doesn't know what "order"
@@ -50,19 +64,19 @@ const SAMPLE_ROWS: SampleRow[] = [
 const STATUS_RANK: Record<RecordStatus, number> = { not_started: 0, in_progress: 1, done: 2 };
 
 const COLUMNS: ColumnDef<SampleRow, unknown>[] = [
-  { accessorKey: "code", header: "Mã", cell: ({ row }) => <MemberCode code={row.original.code} /> },
-  { accessorKey: "name", header: "Họ tên" },
-  { accessorKey: "course", header: "Khóa học" },
+  { accessorKey: "code", header: "Code", cell: ({ row }) => <MemberCode code={row.original.code} /> },
+  { accessorKey: "name", header: "Full name" },
+  { accessorKey: "course", header: "Course" },
   {
     accessorKey: "status",
-    header: "Trạng thái",
+    header: "Status",
     cell: ({ row }) => <RecordStatusLabel status={row.original.status} />,
     sortingFn: (a, b) => STATUS_RANK[a.original.status] - STATUS_RANK[b.original.status],
   },
-  { accessorKey: "progress", header: "Tiến độ", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
+  { accessorKey: "progress", header: "Progress", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
   {
     accessorKey: "expiryStatus",
-    header: "Hạn",
+    header: "Expiry",
     cell: ({ row }) => (
       <ExpiryBadge
         status={row.original.expiryStatus}
@@ -80,7 +94,7 @@ const COLUMNS: ColumnDef<SampleRow, unknown>[] = [
     header: "",
     enableSorting: false,
     cell: ({ row }) => (
-      <Button variant="ghost" size="icon-xs" aria-label={`Thao tác cho ${row.original.name}`}>
+      <Button variant="ghost" size="icon-xs" aria-label={`Actions for ${row.original.name}`}>
         <MoreHorizontal aria-hidden />
       </Button>
     ),
@@ -98,7 +112,7 @@ export function TableDemo() {
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Tìm theo tên, mã, khóa học…"
+        searchPlaceholder="Search by name, code, course…"
         hasActiveFilters={search.length > 0}
         onClear={() => setSearch("")}
       />
@@ -106,7 +120,7 @@ export function TableDemo() {
         columns={COLUMNS}
         data={rows}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="Không tìm thấy kết quả" description="Thử từ khóa khác hoặc xóa bộ lọc." />}
+        empty={<EmptyState title="No results found" description="Try another keyword or clear the filters." />}
       />
     </div>
   );
@@ -121,17 +135,17 @@ export function ConfirmDemo() {
   return (
     <>
       <Button variant="destructive" onClick={() => setOpen(true)}>
-        Mở hộp thoại xác nhận
+        Open confirmation dialog
       </Button>
       <ConfirmDialog
         open={open}
         onOpenChange={setOpen}
-        title="Xóa thành viên M004 · Phạm Quốc Dũng?"
-        description="5 bản ghi chứng chỉ của người này cũng sẽ bị xóa. Không thể hoàn tác."
-        confirmLabel="Xóa thành viên"
+        title="Delete member M004 · Pham Quoc Dung?"
+        description="This member's 5 certificates will be deleted too. This cannot be undone."
+        confirmLabel="Delete member"
         onConfirm={() => {
           setOpen(false);
-          toast.success("Đã xóa thành viên M004");
+          toast.success("Deleted member M004");
         }}
       />
     </>
@@ -141,23 +155,23 @@ export function ConfirmDemo() {
 export function ToastDemo() {
   return (
     <div className="flex flex-wrap gap-2">
-      <Button variant="outline" onClick={() => toast.success("Đã thêm thành viên M007")}>
-        Toast thành công
+      <Button variant="outline" onClick={() => toast.success("Added member M007")}>
+        Success toast
       </Button>
       <Button
         variant="outline"
-        onClick={() => toast.error("Không lưu được do mất kết nối. Kiểm tra mạng rồi thử lại.", { duration: Infinity })}
+        onClick={() => toast.error("Could not save because the connection was lost. Check your network and try again.", { duration: Infinity })}
       >
-        Toast lỗi
+        Error toast
       </Button>
     </div>
   );
 }
 
 const COMBOBOX_OPTIONS: ComboboxOption[] = [
-  { id: "m1", label: "Nguyễn Văn An", hint: "M001" },
-  { id: "m2", label: "Trần Thị Bình", hint: "M002" },
-  { id: "m3", label: "Đặng Gia Huy", hint: "M006" },
+  { id: "m1", label: "Nguyen Van An", hint: "M001" },
+  { id: "m2", label: "Tran Thi Binh", hint: "M002" },
+  { id: "m3", label: "Dang Gia Huy", hint: "M006" },
 ];
 
 export function ComboboxDemo() {
@@ -169,22 +183,22 @@ export function ComboboxDemo() {
         value={value}
         onChange={setValue}
         options={COMBOBOX_OPTIONS}
-        placeholder="Chọn thành viên…"
-        emptyText="Không tìm thấy thành viên"
+        placeholder="Choose a member…"
+        emptyText="No member found"
       />
       <p className="text-caption text-muted-foreground">
-        Giá trị (id): <code>{value === "" ? "(trống)" : value}</code>
+        Value (id): <code>{value === "" ? "(empty)" : value}</code>
       </p>
       <Button variant="outline" size="sm" className="w-fit" onClick={() => setValue("ghost-id")}>
-        Đặt id không có trong danh sách
+        Set an id that is not in the list
       </Button>
       <EntityCombobox
         id="demo-member-disabled"
         value="m2"
         onChange={() => {}}
         options={COMBOBOX_OPTIONS}
-        placeholder="Chọn thành viên…"
-        emptyText="Không tìm thấy thành viên"
+        placeholder="Choose a member…"
+        emptyText="No member found"
         disabled
       />
     </div>
@@ -193,10 +207,9 @@ export function ComboboxDemo() {
 
 // Dashboard blocks: the visual test for the Week 5 building blocks.
 const BUCKET_STATUSES = ["Active", "Expiring in 60d", "Expiring Soon", "Expired", "No Expiry"] as const;
-const BUCKET_LABELS = ["Còn > 60 ngày", "Còn 31–60 ngày", "Còn ≤ 30 ngày", "Đã hết hạn", "Không thời hạn"];
 
 function buckets(counts: number[]): ExpiryBucket[] {
-  return BUCKET_STATUSES.map((status, i) => ({ status, label: BUCKET_LABELS[i], count: counts[i] }));
+  return BUCKET_STATUSES.map((status, i) => ({ status, label: EXPIRY_BUCKET_LABELS[status], count: counts[i] }));
 }
 
 export function ChartDemo() {
@@ -212,7 +225,7 @@ export function ChartDemo() {
   );
 }
 
-const LONG_LABEL = "Chứng chỉ chuyên gia kiến trúc giải pháp đám mây nâng cao 2026";
+const LONG_LABEL = "Advanced cloud solutions architecture professional certificate 2026";
 
 function row(i: number, over: Partial<BreakdownRow> = {}): BreakdownRow {
   return {
@@ -224,22 +237,148 @@ function row(i: number, over: Partial<BreakdownRow> = {}): BreakdownRow {
 const BREAKDOWN_ROWS: BreakdownRow[] = [
   ...Array.from({ length: 9 }, (_, i) => row(i)),
   row(9, { label: LONG_LABEL }),
-  row(10, { label: "Team trống", headcount: 0, people: 0, records: 0, done: 0, inProgress: 0, notStarted: 0, valid: 0 }),
-  row(11, { label: "Team có chứng chỉ hết hạn", expired: 3 }),
+  row(10, { label: "Empty team", headcount: 0, people: 0, records: 0, done: 0, inProgress: 0, notStarted: 0, valid: 0 }),
+  row(11, { label: "Team with expired certificates", expired: 3 }),
 ];
 
 const RANKING_ROWS: RankingRow[] = [
-  { memberId: "00000000-0000-0000-0000-000000000001", memberCode: "M001", fullName: "Nguyễn Văn An", teamName: "DC34", validCerts: 4, doneCerts: 5, inProgress: 1, rank: 1 },
-  { memberId: "00000000-0000-0000-0000-000000000002", memberCode: "M002", fullName: "Đặng Gia Huy", teamName: null, validCerts: 3, doneCerts: 3, inProgress: 0, rank: 2 },
-  { memberId: "00000000-0000-0000-0000-000000000003", memberCode: "M003", fullName: "Trần Thị Bình", teamName: "DC34", validCerts: 3, doneCerts: 3, inProgress: 2, rank: 2 },
+  { memberId: "00000000-0000-0000-0000-000000000001", memberCode: "M001", fullName: "Nguyen Van An", teamName: "DC34", validCerts: 4, doneCerts: 5, inProgress: 1, rank: 1 },
+  { memberId: "00000000-0000-0000-0000-000000000002", memberCode: "M002", fullName: "Dang Gia Huy", teamName: null, validCerts: 3, doneCerts: 3, inProgress: 0, rank: 2 },
+  { memberId: "00000000-0000-0000-0000-000000000003", memberCode: "M003", fullName: "Tran Thi Binh", teamName: "DC34", validCerts: 3, doneCerts: 3, inProgress: 2, rank: 2 },
 ];
 
 export function BreakdownDemo() {
   return (
     <div className="flex flex-col gap-6">
-      <BreakdownTable rows={BREAKDOWN_ROWS} groupLabel="Team" peopleLabel="Thành viên" />
-      <BreakdownTable rows={[]} groupLabel="Khóa học" peopleLabel="Người học" />
+      <BreakdownTable rows={BREAKDOWN_ROWS} groupLabel="Team" peopleLabel="Members" />
+      <BreakdownTable rows={[]} groupLabel="Course" peopleLabel="Members" />
       <RankingTable rows={RANKING_ROWS} />
+    </div>
+  );
+}
+
+export function DashboardRedesignDemo() {
+  const sampleKpis: DashboardKpis = {
+    totalMembers: 20,
+    totalRecords: 61,
+    doneRecords: 38,
+    inProgressRecords: 14,
+    notStartedRecords: 9,
+    activeCerts: 42,
+    expiring60Certs: 6,
+    expiringSoonCerts: 3,
+    expiredCerts: 2,
+    noExpiryCerts: 8,
+  };
+  const sampleBuckets: ExpiryBucket[] = expiryBuckets(sampleKpis);
+  const validSegments = validBuckets(sampleKpis);
+
+  const demoTabs = [
+    {
+      id: "team",
+      label: "By team",
+      groupLabel: "Team",
+      result: { ok: true as const, data: BREAKDOWN_ROWS },
+    },
+    {
+      id: "cert_type",
+      label: "By certificate type",
+      groupLabel: "Type",
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 4) },
+    },
+    {
+      id: "provider",
+      label: "By provider",
+      groupLabel: "Provider",
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(2, 6) },
+    },
+    {
+      id: "course",
+      label: "Popular courses",
+      groupLabel: "Course",
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 5) },
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Tall Hero KPI cards</h3>
+        <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label="Certificates"
+            value={61}
+            icon={<Award className="size-4 text-foreground" />}
+            visual={<RecordsMiniChart rows={BREAKDOWN_ROWS} />}
+          />
+          <KpiCard
+            label="Valid"
+            value={50}
+            icon={<CheckCircle2 className="size-4 text-[var(--status-active-fg)]" />}
+            hint="Includes 8 with no expiry"
+            visual={<ValidMiniChart buckets={validSegments} />}
+          />
+          <KpiCard
+            label="Expiring within 60 days"
+            value={9}
+            icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
+            visual={<ExpiringGaugeMiniChart expiringCount={9} totalCompleted={48} />}
+          />
+          <KpiCard
+            label="Expired"
+            value={2}
+            icon={<AlertCircle className="size-4 text-destructive" />}
+            valueClassName="text-destructive font-semibold"
+            hint="Completed certificates past their expiry date"
+            visual={<ExpiredMiniChart totalExpired={2} rows={BREAKDOWN_ROWS} />}
+          />
+        </dl>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Stat Strip</h3>
+        <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">Active members</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">20</dd>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">Completed</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">48</dd>
+            <dd className="text-caption text-muted-foreground">78.7% of all certificates</dd>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">In progress</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">10</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Expiry Strip</h3>
+        <div className="rounded-lg border border-border bg-card p-3.5">
+          <ExpiryChart buckets={sampleBuckets} compact />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Explorer (Filter row + Master-Detail board)</h3>
+        <Explorer tabs={demoTabs} defaultTab="team" />
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Health row</h3>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="rounded-lg border border-border bg-card p-4 lg:col-span-2">
+            <h4 className="mb-4 text-section-title">Expiry horizon</h4>
+            <ExpiryChart buckets={sampleBuckets} />
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h4 className="mb-4 text-section-title">Study status</h4>
+            <CompletionDonut counts={{ done: 38, inProgress: 14, notStarted: 9 }} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

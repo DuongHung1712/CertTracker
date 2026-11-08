@@ -27,7 +27,7 @@ export function ConfirmDialog({
   title: string;
   description: string;
   confirmLabel: string;
-  /** Shown on the confirm button while `pending`. Defaults to "Đang xử lý…". */
+  /** Shown on the confirm button while `pending`. Defaults to "Working…". */
   pendingLabel?: string;
   onConfirm: () => void;
   pending?: boolean;
@@ -48,9 +48,9 @@ export function ConfirmDialog({
           <AlertDialogDescription className="text-body">{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Hủy</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
           <Button variant="destructive" disabled={pending} onClick={onConfirm}>
-            {pending ? (pendingLabel ?? "Đang xử lý…") : confirmLabel}
+            {pending ? (pendingLabel ?? "Working…") : confirmLabel}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

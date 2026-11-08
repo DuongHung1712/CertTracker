@@ -34,6 +34,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      career_roles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          sort_order: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cert_types: {
         Row: {
           created_at: string
@@ -59,6 +83,7 @@ export type Database = {
         Row: {
           cert_type_id: string | null
           cost: number | null
+          cost_currency: string | null
           created_at: string
           est_hours: number | null
           id: string
@@ -73,6 +98,7 @@ export type Database = {
         Insert: {
           cert_type_id?: string | null
           cost?: number | null
+          cost_currency?: string | null
           created_at?: string
           est_hours?: number | null
           id?: string
@@ -87,6 +113,7 @@ export type Database = {
         Update: {
           cert_type_id?: string | null
           cost?: number | null
+          cost_currency?: string | null
           created_at?: string
           est_hours?: number | null
           id?: string
@@ -219,8 +246,49 @@ export type Database = {
           },
         ]
       }
+      manager_scopes: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string | null
+          team_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id?: string | null
+          team_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string | null
+          team_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manager_scopes_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manager_scopes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       members: {
         Row: {
+          career_role_id: string | null
+          career_start: string | null
           code: string
           created_at: string
           email: string
@@ -231,6 +299,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          career_role_id?: string | null
+          career_start?: string | null
           code?: string
           created_at?: string
           email: string
@@ -241,6 +311,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          career_role_id?: string | null
+          career_start?: string | null
           code?: string
           created_at?: string
           email?: string
@@ -252,6 +324,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "members_career_role_id_fkey"
+            columns: ["career_role_id"]
+            isOneToOne: false
+            referencedRelation: "career_roles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "members_team_id_fkey"
             columns: ["team_id"]
             isOneToOne: false
@@ -259,6 +338,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notification_log: {
+        Row: {
+          attempts: number
+          claimed_at: string
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          period: string
+          provider_message_id: string | null
+          recipient_email: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          period: string
+          provider_message_id?: string | null
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          period?: string
+          provider_message_id?: string | null
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -289,6 +410,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "members"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "v_member_profiles"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -470,20 +598,66 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "training_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_profiles"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
     }
     Views: {
+      v_data_quality_issues: {
+        Row: {
+          course_id: string | null
+          course_name: string | null
+          days: number | null
+          issue_type: string | null
+          member_code: string | null
+          member_id: string | null
+          member_name: string | null
+          record_id: string | null
+          severity: string | null
+          since: string | null
+          subject_id: string | null
+          team_id: string | null
+          team_name: string | null
+        }
+        Relationships: []
+      }
+      v_member_profiles: {
+        Row: {
+          career_role_id: string | null
+          career_role_name: string | null
+          career_start: string | null
+          member_id: string | null
+          yoe_years: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "members_career_role_id_fkey"
+            columns: ["career_role_id"]
+            isOneToOne: false
+            referencedRelation: "career_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_training_records: {
         Row: {
           cert_type_id: string | null
           cert_type_name: string | null
           certificate_url: string | null
+          cost: number | null
+          cost_currency: string | null
           course_id: string | null
           course_name: string | null
           created_at: string | null
           created_by: string | null
           days_to_expiry: number | null
+          est_hours: number | null
           evidence_path: string | null
           expiry_date: string | null
           expiry_status: string | null
@@ -543,6 +717,13 @@ export type Database = {
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "training_records_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "v_member_profiles"
+            referencedColumns: ["member_id"]
+          },
         ]
       }
     }
@@ -552,6 +733,15 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       can_access_evidence: { Args: { object_name: string }; Returns: boolean }
+      claim_notification: {
+        Args: { p_email: string; p_kind: string; p_period: string }
+        Returns: {
+          claimed: boolean
+          log_attempts: number
+          log_id: string
+          log_status: string
+        }[]
+      }
       commit_import: { Args: { p_batch_id: string }; Returns: Json }
       dashboard_breakdown: {
         Args: { p_dimension: string; p_limit?: number }
@@ -603,9 +793,25 @@ export type Database = {
       format_member_code: { Args: { n: number }; Returns: string }
       managed_member_ids: { Args: never; Returns: string[] }
       managed_team_ids: { Args: never; Returns: string[] }
+      move_career_role: {
+        Args: { p_direction: string; p_id: string }
+        Returns: undefined
+      }
       my_member_id: { Args: never; Returns: string }
       next_member_code: { Args: never; Returns: string }
+      notification_staff: {
+        Args: never
+        Returns: {
+          email: string
+          member_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          team_ids: string[]
+          user_id: string
+        }[]
+      }
+      set_my_career_start: { Args: { p_start: string }; Returns: undefined }
       vn_today: { Args: never; Returns: string }
+      yoe_years: { Args: { p_start: string; p_today: string }; Returns: number }
     }
     Enums: {
       import_action: "create" | "update" | "skip"

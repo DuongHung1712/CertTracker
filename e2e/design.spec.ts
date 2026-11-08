@@ -5,15 +5,15 @@ test("design showcase renders tokens and components", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
 
   await page.goto("/design");
-  await expect(page.getByRole("heading", { name: "Trạng thái hết hạn" })).toBeVisible();
-  await expect(page.getByText("Đã hết hạn").first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Expiry status" })).toBeVisible();
+  await expect(page.getByText("Expired", { exact: true }).first()).toBeVisible();
 
   const table = page.getByRole("table").first();
   await expect(table.getByRole("row")).toHaveCount(7); // header + 6 sample rows
-  await page.getByLabel("Tìm theo tên, mã, khóa học…").fill("Châu");
+  await page.getByLabel("Search by name, code, course…").fill("Chau");
   await expect(table.getByRole("row")).toHaveCount(2);
 
-  await page.getByRole("button", { name: "Mở hộp thoại xác nhận" }).click();
+  await page.getByRole("button", { name: "Open confirmation dialog" }).click();
   await expect(page.getByRole("alertdialog")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
