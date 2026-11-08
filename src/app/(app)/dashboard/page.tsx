@@ -34,5 +34,5 @@ export default async function DashboardPage() {
     return <ManagerDashboardView {...(await loadManagerDashboard(user))} />;
   }
 
-  return <AdminDashboard role={user.role} data={await loadAdminDashboard()} />;
+  return <AdminDashboard role={user.role} data={await loadAdminDashboard(user)} />;
 }
