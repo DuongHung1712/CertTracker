@@ -466,5 +466,5 @@ test("admin header and Quick actions offer each action once, with plain names", 
   // The header button moves focus to the Explorer group filters.
   await expect(main.getByRole("button", { name: "Filters", exact: true })).toHaveCount(0);
   await main.getByRole("button", { name: /^Filter groups/ }).click();
-  await expect(page.locator("#dashboard-filters input").first()).toBeFocused();
+  await expect(page.locator("#explorer-search-input")).toBeFocused();
 });
