@@ -47,7 +47,8 @@ async function editStatus(page: Page, row: Locator, status: string, progress: st
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
   await pickSelect(page, dialog, "Status", status);
-  await dialog.getByLabel("Progress (%)").fill(progress);
+  // Progress is only shown for In progress; Not started resets it to 0 on its own.
+  if (status === "In progress") await dialog.getByLabel("Progress (%)").fill(progress);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Saved certificate").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
@@ -64,7 +65,8 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   await pickOption(page, dialog, "Member", "tran", "Trần Thị Bình");
   await pickOption(page, dialog, "Course", "aws", AWS);
   await pickSelect(page, dialog, "Status", "Completed");
-  await expect(dialog.getByLabel("Progress (%)")).toHaveValue("100");
+  // Completed hides Progress (it is saved as 100).
+  await expect(dialog.getByLabel("Progress (%)")).toHaveCount(0);
   await dialog.getByLabel("Issue date").fill("01/06/2026");
   await dialog.getByLabel("Evidence").setInputFiles("e2e/fixtures/evidence.pdf");
   await dialog.getByRole("button", { name: "Save" }).click();

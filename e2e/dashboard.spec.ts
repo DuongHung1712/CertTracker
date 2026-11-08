@@ -55,7 +55,8 @@ async function editStatus(page: Page, row: Locator, status: string, progress: st
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
   await pickSelect(page, dialog, "Status", status);
-  await dialog.getByLabel("Progress (%)").fill(progress);
+  // Progress is only shown for In progress; Not started resets it to 0 on its own.
+  if (status === "In progress") await dialog.getByLabel("Progress (%)").fill(progress);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Saved certificate").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
