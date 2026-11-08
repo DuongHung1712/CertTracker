@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { rateOf } from "@/features/dashboard/components/explorer/types";
+import { useListboxNavigation } from "@/features/dashboard/components/explorer/use-listbox-navigation";
 import { formatRate } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { pluralize } from "@/lib/plural";
@@ -24,57 +24,11 @@ export function MasterList({
   tabLabel: string;
   onClearFilters: () => void;
 }) {
-  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-
-  // Focus active item when activeKey changes via keyboard navigation
-  useEffect(() => {
-    if (activeKey) {
-      const el = itemRefs.current.get(activeKey);
-      if (el && document.activeElement && el.parentElement?.contains(document.activeElement)) {
-        el.focus();
-      }
-    }
-  }, [activeKey]);
-
-  function handleKeyDown(e: React.KeyboardEvent, index: number) {
-    if (rows.length === 0) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      const nextIndex = Math.min(index + 1, rows.length - 1);
-      const nextKey = rows[nextIndex]?.key;
-      if (nextKey) {
-        onSelectKey(nextKey);
-        itemRefs.current.get(nextKey)?.focus();
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      const prevIndex = Math.max(index - 1, 0);
-      const prevKey = rows[prevIndex]?.key;
-      if (prevKey) {
-        onSelectKey(prevKey);
-        itemRefs.current.get(prevKey)?.focus();
-      }
-    } else if (e.key === "Home") {
-      e.preventDefault();
-      const firstKey = rows[0]?.key;
-      if (firstKey) {
-        onSelectKey(firstKey);
-        itemRefs.current.get(firstKey)?.focus();
-      }
-    } else if (e.key === "End") {
-      e.preventDefault();
-      const lastKey = rows[rows.length - 1]?.key;
-      if (lastKey) {
-        onSelectKey(lastKey);
-        itemRefs.current.get(lastKey)?.focus();
-      }
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      const key = rows[index]?.key;
-      if (key) onSelectKey(key);
-    }
-  }
+  const { itemRef, onKeyDown } = useListboxNavigation(
+    rows.map((row) => row.key),
+    activeKey,
+    onSelectKey,
+  );
 
   return (
     <div className="flex flex-col gap-2.5 border-b border-border p-4 lg:col-span-5 lg:border-b-0 lg:border-r">
@@ -121,15 +75,12 @@ export function MasterList({
             return (
               <div
                 key={row.key}
-                ref={(el) => {
-                  if (el) itemRefs.current.set(row.key, el);
-                  else itemRefs.current.delete(row.key);
-                }}
+                ref={itemRef(row.key)}
                 role="option"
                 tabIndex={isSelected ? 0 : -1}
                 aria-selected={isSelected}
                 onClick={() => onSelectKey(row.key)}
-                onKeyDown={(e) => handleKeyDown(e, index)}
+                onKeyDown={(e) => onKeyDown(e, index)}
                 className={cn(
                   "group relative flex items-center justify-between gap-3 rounded-lg border p-3 cursor-pointer transition-all outline-none",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-card",

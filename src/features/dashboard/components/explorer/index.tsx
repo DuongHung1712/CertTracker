@@ -7,7 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { DetailPanel } from "@/features/dashboard/components/explorer/detail-panel";
 import { FilterRow } from "@/features/dashboard/components/explorer/filter-row";
 import { MasterList } from "@/features/dashboard/components/explorer/master-list";
-import type { TabConfig } from "@/features/dashboard/components/explorer/types";
+import { matchesGroupFilters, type TabConfig } from "@/features/dashboard/components/explorer/types";
 import { SectionError } from "@/features/dashboard/components/section";
 import { foldText } from "@/lib/text";
 
@@ -51,17 +51,8 @@ export function Explorer({
     if (q) {
       rows = rows.filter((r) => foldText(r.label).includes(q));
     }
-    if (statusFilter === "has_expired") {
-      rows = rows.filter((r) => r.expired > 0);
-    } else if (statusFilter === "has_in_progress") {
-      rows = rows.filter((r) => r.inProgress > 0);
-    } else if (statusFilter === "no_completed") {
-      rows = rows.filter((r) => r.done === 0);
-    }
-    const minRec = Number(minRecordsFilter);
-    if (minRec > 0) {
-      rows = rows.filter((r) => r.records >= minRec);
-    }
+    const minRecords = Number(minRecordsFilter);
+    rows = rows.filter((r) => matchesGroupFilters(r, statusFilter, minRecords));
     return rows;
   }, [sortedRows, search, statusFilter, minRecordsFilter]);
 
