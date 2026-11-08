@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RecordRow } from "@/features/records/queries";
+import { doneRecord, makeRecord, noExpiryRecord } from "@/features/records/__fixtures__/record-row";
 import {
   calculateMemberKpis,
   extractFirstName,
@@ -10,38 +10,9 @@ import {
   getMemberTabCounts,
 } from "./member-metrics";
 
-function makeRecord(partial: Partial<RecordRow>): RecordRow {
-  return {
-    id: "r1",
-    memberId: "m1",
-    memberCode: "M001",
-    memberName: "Lê Minh Châu",
-    memberEmail: "member@certtracker.test",
-    teamId: "t1",
-    teamName: "Team Cloud",
-    courseId: "c1",
-    courseName: "AWS Solutions Architect Associate",
-    certTypeName: "Cloud",
-    providerName: "AWS",
-    validityMonths: 36,
-    cost: 150,
-    costCurrency: "USD",
-    estHours: 40,
-    status: "done",
-    progress: 100,
-    plannedExamDate: null,
-    issuedDate: "2023-10-01",
-    certificateUrl: null,
-    hasEvidence: true,
-    viaCompany: false,
-    refundStatus: "n_a",
-    notes: null,
-    expiryDate: "2026-10-01",
-    daysToExpiry: 120,
-    expiryStatus: "active",
-    ...partial,
-  };
-}
+const notDated = { issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" } as const;
+const inProgress = (id: string) => makeRecord({ id, status: "in_progress", progress: 40, ...notDated });
+const notStarted = (id: string) => makeRecord({ id, status: "not_started", progress: 0, ...notDated });
 
 describe("extractFirstName", () => {
   it("extracts the given name from Vietnamese full names", () => {
@@ -65,84 +36,144 @@ describe("extractFirstName", () => {
 
 describe("getGreetingTimeOfDay & getGreeting", () => {
   it("determines morning, afternoon, and evening in Asia/Ho_Chi_Minh", () => {
-    // 08:30 VN is morning (UTC 01:30)
-    const morning = new Date("2026-11-08T01:30:00Z");
-    expect(getGreetingTimeOfDay(morning)).toBe("morning");
+    const morning = new Date("2026-11-08T01:30:00Z"); // 08:30 VN
     expect(getGreeting("Lê Minh Châu", morning)).toBe("Good morning, Châu");
-
-    // 14:00 VN is afternoon (UTC 07:00)
-    const afternoon = new Date("2026-11-08T07:00:00Z");
-    expect(getGreetingTimeOfDay(afternoon)).toBe("afternoon");
+    const afternoon = new Date("2026-11-08T07:00:00Z"); // 14:00 VN
     expect(getGreeting("Lê Minh Châu", afternoon)).toBe("Good afternoon, Châu");
-
-    // 20:00 VN is evening (UTC 13:00)
-    const evening = new Date("2026-11-08T13:00:00Z");
-    expect(getGreetingTimeOfDay(evening)).toBe("evening");
+    const evening = new Date("2026-11-08T13:00:00Z"); // 20:00 VN
     expect(getGreeting("Lê Minh Châu", evening)).toBe("Good evening, Châu");
+  });
+
+  // VN is UTC+7, so VN hh:mm = UTC (hh-7):mm.
+  it.each([
+    ["00:30", "2026-11-07T17:30:00Z", "evening"],
+    ["04:59", "2026-11-07T21:59:00Z", "evening"],
+    ["05:00", "2026-11-07T22:00:00Z", "morning"],
+    ["11:59", "2026-11-08T04:59:00Z", "morning"],
+    ["12:00", "2026-11-08T05:00:00Z", "afternoon"],
+    ["17:59", "2026-11-08T10:59:00Z", "afternoon"],
+    ["18:00", "2026-11-08T11:00:00Z", "evening"],
+  ] as const)("%s VN is %s", (_vn, utc, expected) => {
+    expect(getGreetingTimeOfDay(new Date(utc))).toBe(expected);
   });
 });
 
-describe("getAttentionRecord", () => {
-  it("returns null when records are empty or have no expiry", () => {
+/*
+ * Boundary days follow SQL `expiry_status()` (migration 20260928000003):
+ * < 0 Expired, 0–30 Expiring Soon, 31–60 Expiring in 60d, > 60 Active, null validity No Expiry.
+ * "Valid" = done and not Expired (No Expiry included); "Expiring" = Expiring Soon + Expiring in 60d.
+ * Characterization: these pass on 4a89dfd and must keep passing after the WP4 refactor.
+ */
+const BOUNDARIES = [
+  { days: -1, valid: false, expiring: false, expired: true, attention: "expired" },
+  { days: 0, valid: true, expiring: true, expired: false, attention: "urgent" },
+  { days: 30, valid: true, expiring: true, expired: false, attention: "urgent" },
+  { days: 31, valid: true, expiring: true, expired: false, attention: "expiring" },
+  { days: 60, valid: true, expiring: true, expired: false, attention: "expiring" },
+  { days: 61, valid: true, expiring: false, expired: false, attention: null },
+] as const;
+
+describe("threshold boundaries (-1, 0, 30, 31, 60, 61)", () => {
+  it.each(BOUNDARIES)("day $days: attention $attention", ({ days, attention }) => {
+    const result = getAttentionRecord([doneRecord(days)]);
+    expect(result?.urgency ?? null).toBe(attention);
+  });
+
+  it.each(BOUNDARIES)("day $days: KPI valid=$valid expiring=$expiring expired=$expired", ({ days, valid, expiring, expired }) => {
+    const kpis = calculateMemberKpis([doneRecord(days)]);
+    expect(kpis.validCount).toBe(valid ? 1 : 0);
+    expect(kpis.expiringCount).toBe(expiring ? 1 : 0);
+    expect(kpis.expiredCount).toBe(expired ? 1 : 0);
+    expect(kpis.leastDaysRecord?.daysToExpiry ?? null).toBe(expiring ? days : null);
+  });
+
+  it.each(BOUNDARIES)("day $days: tab counts valid=$valid expiring=$expiring", ({ days, valid, expiring }) => {
+    const counts = getMemberTabCounts([doneRecord(days)]);
+    expect(counts).toEqual({ all: 1, valid: valid ? 1 : 0, expiring: expiring ? 1 : 0, in_progress: 0 });
+  });
+
+  it.each(BOUNDARIES)("day $days: tab filters valid=$valid expiring=$expiring", ({ days, valid, expiring }) => {
+    const records = [doneRecord(days)];
+    expect(filterMemberRecords(records, "valid")).toHaveLength(valid ? 1 : 0);
+    expect(filterMemberRecords(records, "expiring")).toHaveLength(expiring ? 1 : 0);
+    expect(filterMemberRecords(records, "in_progress")).toHaveLength(0);
+    expect(filterMemberRecords(records, "all")).toHaveLength(1);
+  });
+
+  it("tab counts always equal the length of the matching filter", () => {
+    const records = [
+      ...BOUNDARIES.map((b, i) => doneRecord(b.days, { id: `d${i}` })),
+      noExpiryRecord({ id: "ne" }),
+      inProgress("ip"),
+      notStarted("ns"),
+    ];
+    const counts = getMemberTabCounts(records);
+    for (const tab of ["all", "valid", "expiring", "in_progress"] as const) {
+      expect(counts[tab], tab).toBe(filterMemberRecords(records, tab).length);
+    }
+  });
+});
+
+describe("null daysToExpiry (No Expiry, N/A, not done)", () => {
+  const records = [noExpiryRecord({ id: "ne" }), inProgress("ip"), notStarted("ns")];
+
+  it("No Expiry counts as valid, never as expiring or expired", () => {
+    const kpis = calculateMemberKpis(records);
+    expect(kpis).toMatchObject({ total: 3, validCount: 1, expiringCount: 0, expiredCount: 0, inProgressCount: 1 });
+    expect(kpis.leastDaysRecord).toBeNull();
+    expect(getMemberTabCounts(records)).toEqual({ all: 3, valid: 1, expiring: 0, in_progress: 1 });
+    expect(filterMemberRecords(records, "valid").map((r) => r.id)).toEqual(["ne"]);
+  });
+
+  it("needs no attention", () => {
+    expect(getAttentionRecord(records)).toBeNull();
+  });
+
+  it("an in-progress record never needs expiry attention even if it carries a past date", () => {
+    expect(getAttentionRecord([makeRecord({ status: "in_progress", daysToExpiry: -3, expiryStatus: "Expired" })])).toBeNull();
+  });
+});
+
+describe("no completed records", () => {
+  it("everything is zero and nothing needs attention", () => {
+    const records = [inProgress("ip"), notStarted("ns")];
+    expect(calculateMemberKpis(records)).toMatchObject({ validCount: 0, expiringCount: 0, expiredCount: 0 });
+    expect(getAttentionRecord(records)).toBeNull();
     expect(getAttentionRecord([])).toBeNull();
-    expect(
-      getAttentionRecord([
-        makeRecord({ status: "not_started", expiryDate: null, daysToExpiry: null }),
-        makeRecord({ status: "done", expiryDate: null, daysToExpiry: null, expiryStatus: "no-expiry" }),
-      ]),
-    ).toBeNull();
+  });
+});
+
+describe("getAttentionRecord ordering", () => {
+  it("picks the record with the fewest days left among expiring ones", () => {
+    const result = getAttentionRecord([
+      doneRecord(50, { id: "b", courseName: "Course B" }),
+      doneRecord(25, { id: "a", courseName: "Course A" }),
+    ]);
+    expect(result).toEqual({ record: expect.objectContaining({ id: "a" }), urgency: "urgent" });
   });
 
-  it("returns null when all completed certificates have > 60 days left", () => {
-    expect(
-      getAttentionRecord([
-        makeRecord({ daysToExpiry: 61, expiryStatus: "active" }),
-        makeRecord({ daysToExpiry: 180, expiryStatus: "active" }),
-      ]),
-    ).toBeNull();
-  });
-
-  it("returns urgent record when certificate expires within 30 days", () => {
-    const r1 = makeRecord({ id: "r1", courseName: "Course A", daysToExpiry: 25, expiryStatus: "expiring-soon" });
-    const r2 = makeRecord({ id: "r2", courseName: "Course B", daysToExpiry: 50, expiryStatus: "expiring-60" });
-    const result = getAttentionRecord([r1, r2]);
-    expect(result).not.toBeNull();
-    expect(result?.record.id).toBe("r1");
-    expect(result?.urgency).toBe("urgent");
-  });
-
-  it("returns expiring record when certificate expires between 31 and 60 days", () => {
-    const r = makeRecord({ id: "r1", daysToExpiry: 45, expiryStatus: "expiring-60" });
-    const result = getAttentionRecord([r]);
-    expect(result).not.toBeNull();
-    expect(result?.record.id).toBe("r1");
-    expect(result?.urgency).toBe("expiring");
-  });
-
-  it("prioritizes expired certificates over expiring ones", () => {
-    const expiring = makeRecord({ id: "expiring", daysToExpiry: 10, expiryStatus: "expiring-soon" });
-    const expired = makeRecord({ id: "expired", daysToExpiry: -5, expiryStatus: "expired" });
-    const result = getAttentionRecord([expiring, expired]);
-    expect(result).not.toBeNull();
-    expect(result?.record.id).toBe("expired");
-    expect(result?.urgency).toBe("expired");
+  it("prioritizes expired certificates over expiring ones, most recently expired first", () => {
+    const result = getAttentionRecord([
+      doneRecord(10, { id: "expiring" }),
+      doneRecord(-40, { id: "old" }),
+      doneRecord(-5, { id: "recent" }),
+    ]);
+    expect(result).toEqual({ record: expect.objectContaining({ id: "recent" }), urgency: "expired" });
   });
 });
 
 describe("calculateMemberKpis", () => {
   it("calculates correct counts for diverse member records", () => {
-    const records = [
-      makeRecord({ id: "1", status: "done", daysToExpiry: 120 }), // valid long
-      makeRecord({ id: "2", status: "done", daysToExpiry: 20 }), // valid & expiring soon
-      makeRecord({ id: "3", status: "done", daysToExpiry: -10 }), // expired
-      makeRecord({ id: "4", status: "in_progress", progress: 60 }), // in progress
-      makeRecord({ id: "5", status: "not_started" }), // not started
-    ];
-
-    const kpis = calculateMemberKpis(records);
+    const kpis = calculateMemberKpis([
+      doneRecord(120, { id: "1" }),
+      doneRecord(20, { id: "2" }),
+      doneRecord(-10, { id: "3" }),
+      inProgress("4"),
+      notStarted("5"),
+    ]);
     expect(kpis.total).toBe(5);
-    expect(kpis.validCount).toBe(2); // id 1 and 2
-    expect(kpis.expiringCount).toBe(1); // id 2
+    expect(kpis.validCount).toBe(2);
+    expect(kpis.expiringCount).toBe(1);
     expect(kpis.leastDaysRecord?.id).toBe("2");
     expect(kpis.inProgressCount).toBe(1);
     expect(kpis.inProgressRows).toHaveLength(1);
@@ -150,50 +181,36 @@ describe("calculateMemberKpis", () => {
   });
 
   it("handles empty records", () => {
-    const kpis = calculateMemberKpis([]);
-    expect(kpis.total).toBe(0);
-    expect(kpis.validCount).toBe(0);
-    expect(kpis.expiringCount).toBe(0);
-    expect(kpis.leastDaysRecord).toBeNull();
-    expect(kpis.inProgressCount).toBe(0);
-    expect(kpis.expiredCount).toBe(0);
+    expect(calculateMemberKpis([])).toEqual({
+      total: 0,
+      validCount: 0,
+      expiringCount: 0,
+      leastDaysRecord: null,
+      inProgressCount: 0,
+      inProgressRows: [],
+      expiredCount: 0,
+    });
   });
 });
 
-describe("getMemberTabCounts & filterMemberRecords", () => {
+describe("filterMemberRecords sorting", () => {
   const records = [
-    makeRecord({ id: "1", courseName: "AWS Solution", status: "done", daysToExpiry: 15 }),
-    makeRecord({ id: "2", courseName: "Google Cloud", status: "done", daysToExpiry: 90 }),
-    makeRecord({ id: "3", courseName: "Azure Dev", status: "done", daysToExpiry: -5 }),
-    makeRecord({ id: "4", courseName: "Python Basics", status: "in_progress", progress: 40 }),
+    doneRecord(15, { id: "1", courseName: "AWS Solution" }),
+    doneRecord(90, { id: "2", courseName: "Google Cloud" }),
+    doneRecord(-5, { id: "3", courseName: "Azure Dev" }),
+    makeRecord({ id: "4", courseName: "Python Basics", status: "in_progress", progress: 40, ...notDated }),
   ];
 
-  it("computes counts per tab accurately", () => {
-    const counts = getMemberTabCounts(records);
-    expect(counts.all).toBe(4);
-    expect(counts.valid).toBe(2); // AWS (15) and Google (90)
-    expect(counts.expiring).toBe(1); // AWS (15)
-    expect(counts.in_progress).toBe(1); // Python
+  it("sorts by expiry (default): dated ascending, undated last", () => {
+    expect(filterMemberRecords(records, "all", "expiry").map((r) => r.id)).toEqual(["3", "1", "2", "4"]);
   });
 
-  it("filters correctly by tab", () => {
-    expect(filterMemberRecords(records, "all")).toHaveLength(4);
-    expect(filterMemberRecords(records, "valid")).toHaveLength(2);
-    expect(filterMemberRecords(records, "expiring")).toHaveLength(1);
-    expect(filterMemberRecords(records, "in_progress")).toHaveLength(1);
-  });
-
-  it("sorts by expiry (default) and name", () => {
-    const byExpiry = filterMemberRecords(records, "all", "expiry");
-    expect(byExpiry[0].id).toBe("3"); // -5 days
-    expect(byExpiry[1].id).toBe("1"); // 15 days
-    expect(byExpiry[2].id).toBe("2"); // 90 days
-    expect(byExpiry[3].id).toBe("4"); // null days
-
-    const byName = filterMemberRecords(records, "all", "name");
-    expect(byName[0].courseName).toBe("AWS Solution");
-    expect(byName[1].courseName).toBe("Azure Dev");
-    expect(byName[2].courseName).toBe("Google Cloud");
-    expect(byName[3].courseName).toBe("Python Basics");
+  it("sorts by name (Vietnamese collation)", () => {
+    expect(filterMemberRecords(records, "all", "name").map((r) => r.courseName)).toEqual([
+      "AWS Solution",
+      "Azure Dev",
+      "Google Cloud",
+      "Python Basics",
+    ]);
   });
 });

@@ -1,44 +1,42 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Explorer } from "@/features/dashboard/components/explorer";
-import { KpiCard } from "@/features/dashboard/components/kpi-card";
-import { RecordsMiniChart } from "@/features/dashboard/components/hero-charts";
 
 describe("dashboard error isolation", () => {
-  it("renders SectionError for a failed tab and never shows 'No data yet'", () => {
-    const tabs = [
-      {
-        id: "team",
-        label: "By team",
-        groupLabel: "Team",
-        peopleLabel: "Members",
-        result: { ok: false as const, error: "Database timeout" },
+  const tabs = [
+    {
+      id: "team",
+      label: "By team",
+      groupLabel: "Team",
+      peopleLabel: "Members",
+      result: { ok: false as const, error: "Database timeout" },
+    },
+    {
+      id: "provider",
+      label: "By provider",
+      groupLabel: "Provider",
+      peopleLabel: "Learners",
+      result: {
+        ok: true as const,
+        data: [
+          {
+            key: "aws",
+            label: "AWS",
+            people: 5,
+            records: 10,
+            done: 8,
+            inProgress: 2,
+            notStarted: 0,
+            valid: 8,
+            expired: 0,
+            headcount: null,
+          },
+        ],
       },
-      {
-        id: "provider",
-        label: "By provider",
-        groupLabel: "Provider",
-        peopleLabel: "Learners",
-        result: {
-          ok: true as const,
-          data: [
-            {
-              key: "aws",
-              label: "AWS",
-              people: 5,
-              records: 10,
-              done: 8,
-              inProgress: 2,
-              notStarted: 0,
-              valid: 8,
-              expired: 0,
-              headcount: null,
-            },
-          ],
-        },
-      },
-    ];
+    },
+];
 
+it("renders SectionError for a failed tab and never shows 'No data yet'", () => {
     const html = renderToStaticMarkup(<Explorer tabs={tabs} defaultTab="team" />);
 
     // Must show SectionError for the failed tab
@@ -49,29 +47,14 @@ describe("dashboard error isolation", () => {
     expect(html).not.toContain("No data yet");
   });
 
-  it("renders inline alert error inside hero card visual slot when source failed", () => {
-    const heroBreakdownResult = { ok: false as const, error: "Could not load the data." };
+  it("renders a healthy tab's content when another tab failed", () => {
+    const html = renderToStaticMarkup(<Explorer tabs={tabs} defaultTab="provider" />);
 
-    const html = renderToStaticMarkup(
-      <KpiCard
-        label="Certificate records"
-        value={42}
-        visual={
-          !heroBreakdownResult.ok ? (
-            <div role="alert" className="error-slot">
-              Could not load chart.
-            </div>
-          ) : (
-            <RecordsMiniChart rows={[]} />
-          )
-        }
-      />
-    );
-
-    // Number is preserved
-    expect(html).toContain("42");
-    // Visual slot renders error state, not empty chart
-    expect(html).toContain("Could not load chart.");
-    expect(html).not.toContain("No records yet");
+    expect(html).toContain("AWS");
+    expect(html).not.toContain("Could not load");
+    // The failed tab is still offered; it has no count badge because it has no data.
+    expect(html).toContain("By team");
   });
+
+  // The hero-card chart error is tested through the real page in src/app/(app)/dashboard/page.test.tsx.
 });
