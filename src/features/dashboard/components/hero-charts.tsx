@@ -16,15 +16,17 @@ import {
   GAUGE_INNER_RADIUS,
   GAUGE_OUTER_RADIUS,
   GAUGE_SEGMENT_GAP_DEGREES,
+  MINI_CHART_AXIS_HEIGHT,
   MINI_CHART_BAR_RADIUS,
   MINI_CHART_HEIGHT,
   MINI_CHART_MARGIN,
   MINI_CHART_MAX_BARS,
   MINI_CHART_MIN_BAR_SIZE,
+  MINI_CHART_TICK_LINE_HEIGHT,
   MINI_CHART_TICK_MAX_CHARS,
   MINI_CHART_TICK_Y_OFFSET,
 } from "@/features/dashboard/components/chart-constants";
-import { roundedShare, topExpiredGroups, topGroupsWithOthers, truncateLabel } from "@/features/dashboard/metrics";
+import { roundedShare, splitTickLabel, topExpiredGroups, topGroupsWithOthers, truncateLabel } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { formatNumber } from "@/lib/format";
 import { pluralize } from "@/lib/plural";
@@ -62,6 +64,7 @@ function MiniBarChart({
                 tickLine={false}
                 axisLine={false}
                 interval={0}
+                height={MINI_CHART_AXIS_HEIGHT}
                 tick={({ x, y, payload }) => (
                   <text
                     x={x}
@@ -70,7 +73,11 @@ function MiniBarChart({
                     fill="var(--muted-foreground)"
                     className="text-caption font-sans"
                   >
-                    {payload.value}
+                    {splitTickLabel(String(payload.value)).map((line, i) => (
+                      <tspan key={`${i}-${line}`} x={x} dy={i === 0 ? 0 : MINI_CHART_TICK_LINE_HEIGHT}>
+                        {line}
+                      </tspan>
+                    ))}
                   </text>
                 )}
               />

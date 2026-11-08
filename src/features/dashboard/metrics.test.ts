@@ -12,6 +12,7 @@ import {
   studyStatusSplit,
   topExpiredGroups,
   topGroupsWithOthers,
+  splitTickLabel,
   truncateLabel,
   validBuckets,
   validCerts,
@@ -204,5 +205,15 @@ describe("roundedShare and clampPercent", () => {
 
   it("has no clampPercent of its own (I2: one helper, in @/components/status/labels)", () => {
     expect("clampPercent" in metrics).toBe(false);
+  });
+});
+
+describe("splitTickLabel", () => {
+  it("splits on the first space only and leaves a one-word label whole", () => {
+    expect(splitTickLabel("31–60 days")).toEqual(["31–60", "days"]);
+    expect(splitTickLabel("No expiry")).toEqual(["No", "expiry"]);
+    expect(splitTickLabel("Team C…")).toEqual(["Team", "C…"]);
+    expect(splitTickLabel("a b c")).toEqual(["a", "b c"]);
+    expect(splitTickLabel("Others")).toEqual(["Others"]);
   });
 });

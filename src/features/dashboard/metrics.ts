@@ -102,6 +102,12 @@ export function truncateLabel(text: string, maxChars: number): string {
   return text.length > maxChars ? `${text.slice(0, maxChars - 1)}…` : text;
 }
 
+/** Splits an axis label on its first space, so "31–60 days" is drawn as "31–60" over "days". */
+export function splitTickLabel(label: string): string[] {
+  const space = label.indexOf(" ");
+  return space === -1 ? [label] : [label.slice(0, space), label.slice(space + 1)];
+}
+
 /** `part` of `total` as a whole percent, rounded to nearest (0 when `total` is 0). For display-only gauges; completion rates use `ratePercent`. */
 export function roundedShare(part: number, total: number): number {
   return total > 0 ? Math.round((part / total) * 100) : 0;

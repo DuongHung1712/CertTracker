@@ -12,6 +12,7 @@ import {
   type BarShapeProps,
 } from "recharts";
 import { expiryMeta } from "@/components/status/expiry";
+import { EXPIRY_CHART_LABEL_WIDTH } from "@/features/dashboard/components/chart-constants";
 import type { ExpiryBucket } from "@/features/dashboard/metrics";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -51,7 +52,7 @@ export function ExpiryChart({
               <YAxis
                 type="category"
                 dataKey="label"
-                width={compact ? 144 : 168}
+                width={compact ? EXPIRY_CHART_LABEL_WIDTH.compact : EXPIRY_CHART_LABEL_WIDTH.full}
                 tickLine={false}
                 axisLine={false}
                 interval={0}
