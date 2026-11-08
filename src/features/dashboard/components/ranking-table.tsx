@@ -48,7 +48,12 @@ export function RankingTable({ rows }: { rows: RankingRow[] }) {
       data={data}
       pageSize={10}
       getRowId={(row) => row.memberId}
-      empty={<EmptyState title="No members to rank" />}
+      empty={
+        <EmptyState
+          title="No members to rank"
+          description="Members appear here after their first completed certificate."
+        />
+      }
     />
   );
 }

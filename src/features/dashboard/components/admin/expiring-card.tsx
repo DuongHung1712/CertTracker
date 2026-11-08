@@ -13,14 +13,20 @@ function ExpirySummary({ split }: { split: ExpirySplit }) {
         aria-label={`Certificate expiry: Expires within 30 days ${split.urgent}, Expires in 31–60 days ${split.soon}, More than 60 days ${split.later}`}
         className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-caption text-muted-foreground"
       >
-        <span className="inline-flex items-center gap-1">
-          <span className="size-2 rounded-full bg-status-expiring-soon-fg" aria-hidden="true" />
-          {`30 days or less: ${split.urgent}`}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <span className="size-2 rounded-full bg-status-expiring-60-fg" aria-hidden="true" />
-          {`31–60 days: ${split.soon}`}
-        </span>
+        {split.urgent + split.soon === 0 ? (
+          "None expire within 60 days"
+        ) : (
+          <>
+            <span className="inline-flex items-center gap-1">
+              <span className="size-2 rounded-full bg-status-expiring-soon-fg" aria-hidden="true" />
+              {`30 days or less: ${split.urgent}`}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <span className="size-2 rounded-full bg-status-expiring-60-fg" aria-hidden="true" />
+              {`31–60 days: ${split.soon}`}
+            </span>
+          </>
+        )}
       </div>
     </section>
   );
