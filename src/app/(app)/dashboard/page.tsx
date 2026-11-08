@@ -2,9 +2,14 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { getCurrentUser } from "@/features/auth/queries";
-import { AdminDashboard } from "@/features/dashboard/components/admin-dashboard";
+import { AdminDashboardView } from "@/features/dashboard/components/admin/admin-dashboard-view";
+import { ManagerDashboardView } from "@/features/dashboard/components/manager/manager-dashboard-view";
 import { MemberDashboardView } from "@/features/dashboard/components/member/member-dashboard-view";
-import { loadAdminDashboard, loadMemberDashboard } from "@/features/dashboard/load";
+import {
+  loadAdminDashboard,
+  loadManagerDashboard,
+  loadMemberDashboard,
+} from "@/features/dashboard/load";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -25,5 +30,9 @@ export default async function DashboardPage() {
     return <MemberDashboardView {...(await loadMemberDashboard(user, user.memberId))} />;
   }
 
-  return <AdminDashboard role={user.role} data={await loadAdminDashboard()} />;
+  if (user.role === "manager") {
+    return <ManagerDashboardView {...(await loadManagerDashboard(user))} />;
+  }
+
+  return <AdminDashboardView {...(await loadAdminDashboard(user))} />;
 }

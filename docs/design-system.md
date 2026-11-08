@@ -211,13 +211,25 @@ When the database **blocks** the delete (for example a course that certificates 
 
 Hiding is only UX; every permission is still enforced by RLS.
 
-### 4.6 Dashboard
-- **Header:** Title, subtitle timestamp, and action buttons: "Filters" button (scrolls to/focuses filter controls) and primary action with 16px icon ("View certificates").
-- **Overview:** 4 tall hero KPI cards (~240px, `KpiCard`) with numbers in the upper half and real mini charts in the lower half (`RecordsMiniChart`, `ValidMiniChart`, `ExpiringGaugeMiniChart`, and positive empty state `ExpiredMiniChart`), followed by a slim compact stat strip (Active members, Completed, In progress). All inside region "Overview", `dl > div` with bare number in the first `dd`.
-- **Certificate Expiry:** Compact horizontal strip (~120px) positioned directly above Explorer, with exact `role="img"` and `aria-label` contract.
-- **Filter Row:** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
-- **Explorer:** Master-Detail board with tab pills and count chips on top, solid `bg-primary` selected row (outlined avatar and count chip, `primary-foreground-muted` subtitle; no permanent ring), keyboard focus shown only by a `focus-visible` ring with a `ring-offset-card` offset (the ring has to reach 3:1 on the card gap, not on the teal; checked in `tokens.test.ts`), and a live detail panel on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open the certificates).
-- **Ranking:** Individual leaderboard (admin/manager only).
+### 4.6 Admin Dashboard
+- **Layout:** header, then the **Overview** (3 KPI cards and a stat strip) at full width, then three independent columns (`lg:grid-cols-12`: Left `lg:col-span-3`, Centre `lg:col-span-6`, Right `lg:col-span-3`, all `gap-6`), then **Individual ranking** at full width. In the markup the Centre column comes first, then Right, then Left; from `lg` up `lg:order-2/3/1` shows them as Left, Centre, Right. On a phone the order is Overview, Explorer, Needs attention, Planned features, profile, Quick actions, chart, ranking. `e2e/column-heights.spec.ts` guards the balance at 1440px: the tallest and the shortest column may differ by at most 350px (measured with the seed: Left 555, Centre 897, Right 808, a gap of 342px).
+- **Header:** title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), the "Filter groups" button (smooth scroll and focus to the search box in `#dashboard-filters`, honouring `prefers-reduced-motion`) and "Export CSV" (`ExportLinks`). "Add certificate" lives only in Quick actions.
+- **Overview (`aria-label="Overview"`):** 3 cards in `dl > div` (`dt` label, bare number in the `dd`), built from `KpiTile`, then the stat strip. Cards use status tokens and `text-primary-foreground-muted`; no `amber-`/`rose-` utility colours and no `opacity-<n>` text.
+  1. "Valid certificates" (`ValidCard`): solid `bg-primary` card, "<n>% valid" chip, "<valid>" with "of <completed> completed", a progress ring whose dash length is `2πr` of a radius constant, and "<n> certificates issued this month" or "None issued this month". When the records query fails the caption is left out.
+  2. "Expiry" (`ExpiringCard`): "<n>% of completed" chip, the count of "Expiring within 60 days", a thin share bar, and the `Certificate expiry` region with one image summary ("30 days or less: n", "31–60 days: n"; the accessible label also carries "More than 60 days n").
+  3. "Expired" (`ExpiredCard`): the count, an "Action needed" badge and "Past expiry date. Members need to renew these." when above 0, or "No expired certificates" when 0. It never uses the teams query.
+  - **Stat strip (`StatStrip`):** Active members, Certificates, Completed, In progress, plus one screen-reader image "Certificates by team: …".
+- **Centre column:** tab strip (`DashboardTabStrip`, shared with the manager page: live `Overview` plus disabled `Approvals`, `Goals`, `Skills` chips marked "Soon"), then the **Explorer** (filter row `#dashboard-filters`, tabs `By team`, `By certificate type`, `By provider`, `Popular courses`, master list and detail panel; the selected row is solid `bg-primary`, keyboard focus is a `focus-visible` ring with a `ring-offset-card` offset, checked in `tokens.test.ts`). With no certificates at all the Explorer is replaced by the "No certificates yet" empty state with a "Go to certificates" link.
+- **Right column:**
+  - **Needs attention:** live feed from the records: expired certificates (most overdue first), then certificates expiring within 30 days (soonest first), at most `ADMIN_ATTENTION_LIMIT` (10), then one "Data quality" row ("<n> issues to check") that the cut never drops. When the list is cut it ends with "Showing 10 of N. View all certificates" (link to `/records`). One `AttentionRow` with a tone map (`expired`, `expiring_soon`, `data_quality`); each row is a link with a `focus-visible` ring. Empty: "Nothing needs attention". If the data quality query fails the row says "Data quality could not be loaded" and the empty state is not shown.
+  - **Planned features (`Planned features (Coming soon)`):** one card with a "Coming soon" chip and seven items: Approvals, Goals, Skills, Focus area, Ask about certificates, Monthly summary, Risk alerts. Each ends with "Not available yet."; no buttons or inputs.
+- **Left column:**
+  - **Your profile (`AdminProfileCard`):** initials avatar (`getInitials` from `src/lib/initials.ts`), full name (the e-mail when the admin has no member record), an "Admin" badge, and the role, team and experience of a linked admin or "Not linked to a member". If the members or career query fails it shows `SectionError` "Your profile".
+  - **Quick actions (`AdminQuickActionsCard`):** "Add certificate" (`/records`), "Add member" (`/members`), "Import from Excel" (`/import`). No keyboard-shortcut chips.
+  - **Certificates earned** chart (`MonthlyEarnedChart`, shared with the manager page).
+- **Failures:** every query settles on its own and a failure shows in its own region (`SectionError`, or the honest row above); a failed query is never shown as "All clear", "None issued" or a default value. `loadAdminDashboard(user)` takes the signed-in user (no placeholder e-mail).
+- **Card headers** on the admin page are sentence case (no `uppercase`).
+- **Real data constraints and banned copy:** no invented mock strings ("Audit Hash", "Legal Expiration Guard", "HRIS sync", "Lead: Minh Pham", "4 pending proofs"), no audit, pool, department, credential or "verified" wording, no dead controls. `admin-copy.test.ts` scans the admin components and fails on them.
 
 ### 4.7 Member Dashboard
 - **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate" opening the record sheet).
@@ -229,9 +241,29 @@ Hiding is only UX; every permission is still enforced by RLS.
   4. "Expired": count; 0 shows a check icon and "All up to date".
 - **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Specialization focus" coming-soon card.
 - **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring within 60 days`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
-- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()` with the caption *"Totals for the whole department."*
 - **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Ask about certificates" (with a disabled question box), "My skills", "Quarterly goals", "Next career role", "Certificate review" and, inside the profile card, "Focus area". Each has the chip "Coming soon" and a one-line description ending "Not available yet.".
 - **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
+
+### 4.8 Manager Dashboard
+- **Header:** Title "Dashboard", server-built greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), subtitle "You look after <team names> (<N> members)." (or "No teams assigned yet." if unassigned), primary button "View certificates" (`/records`), and an outlined "Download team data" using `ExportLinks`.
+- **Team filter:** Group "Filter by team scope" with pills "All teams" and one per managed team (no counts, no period selector). The only download is the header "Download team data"; the only "View certificates" button is in the header.
+- **Overview:** region "Overview" with the readiness donut and three KPI tiles scoped to the manager's teams (`dl > div` with bare numbers in the first `dd`):
+  1. "Team readiness" donut: centre percentage (valid share of completed certificates), "{valid} of {completed} completed certificates" under the ring, and one legend row "Members without a completed certificate: {n}". With no completed certificates the centre shows an em dash. Valid and Expired counts are not repeated (the Expired tile shows the latter).
+  2. "Expiring within 60 days": count of in-scope completed certificates with 0-60 days left, caption "{n} with 30 days or less".
+  3. "Expired": count of in-scope overdue certificates; "Past due: <most overdue member (course)>".
+  4. "Waiting for approval": dashed placeholder tile with the value "—" (no number that looks real) and a Soon chip.
+- **Needs attention:** region "Needs attention" next to the Overview: expired certificates only, most overdue first, each with a "Resolve" link (no count badge: the rows are the count) to `/records?search=<name>`. Certificates that are still valid are in Next to expire, so no certificate appears in both.
+- **Allocated scope / Quick actions:** team names with member counts; links "Add certificate" (`/records`) and "View team data quality" (`/data-quality`) only.
+- **Tab Strip:** View switcher tab pills with `Overview` (active), and coming-soon disabled tabs `Approvals`, `Goals`, `Skills` (accessible names "Approvals Soon", "Goals Soon", "Skills Soon"). These and the "Waiting for approval" tile are the only places approvals, goals and skills appear.
+- **Next to Expire:** Table of in-scope completed certificates with 0-60 days left (max 8, soonest first) with member initials avatar, course, expiry date, `ExpiryBadge`, and link "View" to `/records`.
+- **Team Readiness:** ranked list of in-scope members (rank `#n`, valid / in progress counts, segmented bar) plus the selected member's details and the link "View member certificates" (`/records?search=<name>`). It is the only ranking on this page (the manager loader does not call `getRanking`).
+- **People without certificates yet:** names, team and count only.
+- **Certificates Earned by Month:** 6-month bar chart (`MonthlyEarnedChart`) with the real total and a screen reader summary, no growth percentage.
+- **Planned Exams:** List of upcoming exams scheduled within 60 days with member name, course, formatted date, and days left label.
+- **Automated reminders:** region with two facts from `vercel.json`: "Members get an expiry email every Monday at 08:00 (Vietnam time)." and "The monthly report goes out on the 1st of each month." No links (`/settings` is admin only).
+- **Coming Soon Card:** one `ComingSoonCard` "Ask about my team" (also covers risk alerts), a static line ending "Not available yet.", no input, chips or buttons.
+- **No mock data:** no invented values or strings (no program badge, growth percentage, "last sent" data, fallback team name or job title) and no button without a real link or handler. The test `manager-copy.test.ts` scans the manager folder for this.
+- **Responsive:** Multi-column layout collapsing gracefully to a single column on mobile (390px) with zero horizontal scroll.
 
 ---
 
