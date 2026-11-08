@@ -6,13 +6,7 @@ import { getNextToExpire } from "@/features/dashboard/manager-metrics";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+import { getInitials } from "@/lib/initials";
 
 export function NextToExpireTable({ records }: { records: RecordRow[] }) {
   const rows = getNextToExpire(records, 8);
@@ -31,7 +25,7 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="overflow-x-auto rounded border border-border">
+      <div className="relative overflow-x-auto rounded border border-border">
         <table className="w-full text-table text-left">
           <thead className="border-b border-border bg-muted/40 text-label uppercase tracking-wider text-muted-foreground font-mono">
             <tr>

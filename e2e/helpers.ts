@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 // Local Supabase seed only (supabase/seed.sql) — never a real credential.
 export const SEED_PASSWORD = "Password123!";
+export const ADMIN_EMAIL = "admin@certtracker.test";
 
 export async function signIn(page: Page, email: string) {
   await page.goto("/login");

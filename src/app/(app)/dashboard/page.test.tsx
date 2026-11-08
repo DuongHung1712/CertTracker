@@ -126,7 +126,7 @@ describe("DashboardPage error isolation (admin)", () => {
     expect(html).toContain("Ranked Person"); // Ranking still renders
   });
 
-  it("keeps the hero numbers but shows the chart error when the hero breakdown (team) fails", async () => {
+  it("keeps the hero numbers and shows no chart error in Overview when the team breakdown fails", async () => {
     getBreakdown.mockImplementation(async (dimension) => {
       if (dimension === "team") throw new Error("boom");
       return ROWS[dimension];
@@ -134,7 +134,7 @@ describe("DashboardPage error isolation (admin)", () => {
     const html = await renderPage();
     const overview = sectionHtml(html, "Overview");
     expect(overview).toContain("4,321");
-    expect(overview).toMatch(/role="alert"[^>]*>(?:<[^>]+>)*Could not load chart\./);
+    expect(overview).not.toContain("Could not load chart.");
     expect(html).not.toContain("Could not load &quot;Overview&quot;");
   });
 

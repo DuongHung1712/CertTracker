@@ -8,13 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import type { MemberReadinessRow } from "@/features/dashboard/manager-metrics";
 import type { RecordRow } from "@/features/records/queries";
 import { cn } from "@/lib/utils";
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 0 || !parts[0]) return "??";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return ((parts[0][0] ?? "") + (parts[parts.length - 1][0] ?? "")).toUpperCase();
-}
+import { getInitials } from "@/lib/initials";
 
 export function TeamReadinessDossier({
   rows,

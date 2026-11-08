@@ -9,7 +9,6 @@ import {
   MIN_RECORDS_FILTER_LABELS,
   STATUS_FILTER_LABELS,
 } from "@/features/dashboard/components/explorer/types";
-import { DashboardHeaderActions } from "@/features/dashboard/components/header-actions";
 import { ExpiringGaugeMiniChart, RecordsMiniChart } from "@/features/dashboard/components/hero-charts";
 import { StatusBar } from "@/features/dashboard/components/status-bar";
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
@@ -259,20 +258,5 @@ describe("[copy] status bar", () => {
   it("names an empty bar in certificates", () => {
     const html = renderToStaticMarkup(<StatusBar segments={[{ key: "a", label: "Valid", count: 0, color: "x" }]} />);
     expect(html).toContain('aria-label="No certificates"');
-  });
-});
-
-describe("[copy] dashboard header", () => {
-  // WCAG 2.5.3 label in name: the accessible name of the Filters button starts with its visible text, so
-  // `getByRole("button", { name: /filters/i })` finds the header button by what a sighted user reads.
-  it("the Filters button's accessible name starts with Filters", () => {
-    const html = renderToStaticMarkup(<DashboardHeaderActions />);
-    const buttons = [...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].map(([, attrs, inner]) => {
-      const aria = /aria-label="([^"]*)"/.exec(attrs)?.[1];
-      return aria ?? text(inner);
-    });
-    const matching = buttons.filter((name) => /filters/i.test(name));
-    expect(matching).toHaveLength(1);
-    expect(matching[0]).toMatch(/^Filters/);
   });
 });

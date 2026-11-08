@@ -90,13 +90,13 @@ export function Explorer({
             className="flex flex-col"
           >
             {/* Top Tab Strip with Count Badges */}
-            <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-2.5">
-              <TabsList className="h-9 gap-1.5 bg-muted/60 p-1">
+            <div className="flex items-center justify-between border-b border-border bg-muted/30 px-4 py-2">
+              <TabsList className="h-auto flex-wrap gap-1 overflow-visible bg-muted/60 p-1 group-data-horizontal/tabs:h-auto">
                 {tabs.map((tab) => (
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="h-7 rounded-md px-3 text-xs font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground"
+                    className="h-7 flex-none whitespace-nowrap rounded-md px-3 text-xs font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground"
                   >
                     <span>{tab.label}</span>
                     {tab.result.ok && (

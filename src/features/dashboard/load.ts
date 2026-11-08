@@ -8,6 +8,7 @@ import { getGreeting } from "@/features/dashboard/member-metrics";
 import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard/queries";
 import { settle } from "@/features/dashboard/settle";
 import { resolveMemberProfile } from "@/features/dashboard/view-model";
+import { listDataQualityIssues } from "@/features/data-quality/queries";
 import { listMembers, listTeamOptionsForCurrentUser } from "@/features/members/queries";
 import { listCourseOptions, listRecords } from "@/features/records/queries";
 import { formatDateTimeVn } from "@/lib/format";
@@ -15,16 +16,60 @@ import { formatDateTimeVn } from "@/lib/format";
 type SignedInUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
 /** Each query settles on its own, so one failure only blanks its own section. */
-export async function loadAdminDashboard() {
-  const [kpis, courses, teams, certTypes, providers, ranking] = await Promise.all([
+export async function loadAdminDashboard(user: SignedInUser) {
+  const { memberId } = user;
+  const [
+    kpis,
+    courses,
+    teams,
+    certTypes,
+    providers,
+    ranking,
+    records,
+    dqIssues,
+    careerResult,
+    membersResult,
+  ] = await Promise.all([
     settle(getDashboardKpis()),
     settle(getBreakdown("course", 10)),
     settle(getBreakdown("team")),
     settle(getBreakdown("cert_type")),
     settle(getBreakdown("provider")),
     settle(getRanking()),
+    settle(listRecords()),
+    settle(listDataQualityIssues()),
+    settle(memberId ? getMemberCareer(memberId) : Promise.resolve(null)),
+    settle(memberId ? listMembers() : Promise.resolve([])),
   ]);
-  return { kpis, courses, teams, certTypes, providers, ranking };
+
+  const now = new Date();
+  const currentMember = (membersResult.ok && membersResult.data.find((m) => m.id === memberId)) || null;
+  const profileFailure = [careerResult, membersResult].find((r) => !r.ok);
+
+  const profile = resolveMemberProfile({
+    member: currentMember,
+    firstRecord: undefined,
+    career: careerResult.ok ? careerResult.data : null,
+    email: user.email,
+  });
+
+  const greeting = getGreeting(profile.fullName, now);
+  const subtitle = `Figures as of ${formatDateTimeVn(now.toISOString())}.`;
+
+  return {
+    greeting,
+    subtitle,
+    profile,
+    profileError: profileFailure && !profileFailure.ok ? profileFailure.error : undefined,
+    kpis,
+    courses,
+    teams,
+    certTypes,
+    providers,
+    ranking,
+    records,
+    dqIssues,
+  };
 }
 
 export type AdminDashboardData = Awaited<ReturnType<typeof loadAdminDashboard>>;

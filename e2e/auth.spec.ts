@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { signIn } from "./helpers";
-
-const ADMIN_EMAIL = "admin@certtracker.test";
+import { ADMIN_EMAIL, signIn } from "./helpers";
 
 test("unauthenticated visitor is sent to login", async ({ page }) => {
   await page.goto("/");
@@ -10,9 +8,11 @@ test("unauthenticated visitor is sent to login", async ({ page }) => {
 
 test("admin signs in, sees dashboard, and signs out", async ({ page }) => {
   await signIn(page, ADMIN_EMAIL);
-  await expect(page.getByText("Admin", { exact: true })).toBeVisible();
+  // Scoped to the shell's account button: the dashboard profile card also shows an "Admin" badge.
+  const account = page.getByRole("button", { name: /^Account:/ });
+  await expect(account.getByText("Admin", { exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: "Account" }).click();
+  await account.click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
