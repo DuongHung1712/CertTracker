@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { doneRecord, makeRecord, noExpiryRecord } from "@/features/records/__fixtures__/record-row";
 import {
   calculateMemberKpis,
+  expiryWindow,
   extractFirstName,
   filterMemberRecords,
   getAttentionRecord,
@@ -212,5 +213,19 @@ describe("filterMemberRecords sorting", () => {
       "Google Cloud",
       "Python Basics",
     ]);
+  });
+});
+
+describe("expiryWindow (mirrors SQL expiry_status())", () => {
+  it.each([
+    [null, "none"],
+    [-1, "expired"],
+    [0, "urgent"],
+    [30, "urgent"],
+    [31, "expiring"],
+    [60, "expiring"],
+    [61, "later"],
+  ] as const)("%s days -> %s", (days, window) => {
+    expect(expiryWindow(days)).toBe(window);
   });
 });

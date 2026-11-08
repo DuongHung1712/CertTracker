@@ -61,70 +61,78 @@ export function getGreeting(fullName: string, now: Date = new Date()): string {
 }
 
 /**
+ * Day thresholds of the SQL view column `expiry_status()` (20260928000003_expiry_view.sql):
+ * `< 0` Expired, `0..URGENT_WINDOW_DAYS` Expiring Soon, `..EXPIRING_WINDOW_DAYS` Expiring in 60d, above that Active.
+ * Keep these in step with the SQL.
+ */
+export const EXPIRING_WINDOW_DAYS = 60;
+export const URGENT_WINDOW_DAYS = 30;
+
+export type ExpiryWindow = "expired" | "urgent" | "expiring" | "later" | "none";
+
+/** Where a certificate's days-to-expiry falls; `none` means no date (No Expiry or N/A). */
+export function expiryWindow(daysToExpiry: number | null): ExpiryWindow {
+  if (daysToExpiry === null) return "none";
+  if (daysToExpiry < 0) return "expired";
+  if (daysToExpiry <= URGENT_WINDOW_DAYS) return "urgent";
+  if (daysToExpiry <= EXPIRING_WINDOW_DAYS) return "expiring";
+  return "later";
+}
+
+const isDone = (r: RecordRow): boolean => r.status === "done";
+const isExpired = (r: RecordRow): boolean => isDone(r) && expiryWindow(r.daysToExpiry) === "expired";
+/** Done and not expired; a certificate without an expiry date counts as valid. */
+const isValid = (r: RecordRow): boolean => isDone(r) && expiryWindow(r.daysToExpiry) !== "expired";
+const isExpiring = (r: RecordRow): boolean => {
+  const window = expiryWindow(r.daysToExpiry);
+  return isDone(r) && (window === "urgent" || window === "expiring");
+};
+const isInProgress = (r: RecordRow): boolean => r.status === "in_progress";
+
+const TAB_FILTERS: Record<MemberTab, (r: RecordRow) => boolean> = {
+  all: () => true,
+  valid: isValid,
+  expiring: isExpiring,
+  in_progress: isInProgress,
+};
+
+type DatedRecord = RecordRow & { daysToExpiry: number };
+const hasDays = (r: RecordRow): r is DatedRecord => r.daysToExpiry !== null;
+
+/**
  * Finds the certificate needing member attention.
  * Returns null when nothing expires within 60 days and nothing is expired.
  * Expired certificates take highest priority.
  */
 export function getAttentionRecord(records: RecordRow[]): AttentionRecord | null {
-  const completed = records.filter((r) => r.status === "done" && r.expiryDate !== null && r.daysToExpiry !== null);
-  if (completed.length === 0) return null;
+  const dated = records.filter((r): r is DatedRecord => isDone(r) && r.expiryDate !== null && hasDays(r));
 
-  // 1. Check for expired certificates (< 0 days)
-  const expired = completed.filter((r) => r.daysToExpiry! < 0);
-  if (expired.length > 0) {
-    // Pick the most recently expired (closest to 0 or first)
-    const sorted = [...expired].sort((a, b) => b.daysToExpiry! - a.daysToExpiry!);
-    return { record: sorted[0], urgency: "expired" };
-  }
+  // Pick the most recently expired (closest to 0)
+  const expired = dated.filter(isExpired).sort((a, b) => b.daysToExpiry - a.daysToExpiry);
+  if (expired.length > 0) return { record: expired[0], urgency: "expired" };
 
-  // 2. Check for certificates expiring within 60 days
-  const expiring = completed.filter((r) => r.daysToExpiry! >= 0 && r.daysToExpiry! <= 60);
+  // Otherwise the one with the least days left within the window
+  const expiring = dated.filter(isExpiring).sort((a, b) => a.daysToExpiry - b.daysToExpiry);
   if (expiring.length === 0) return null;
-
-  // Pick the one with least days left
-  const leastDays = [...expiring].sort((a, b) => a.daysToExpiry! - b.daysToExpiry!)[0];
-  const urgency: AttentionUrgency = leastDays.daysToExpiry! <= 30 ? "urgent" : "expiring";
-  return { record: leastDays, urgency };
+  const urgency: AttentionUrgency = expiryWindow(expiring[0].daysToExpiry) === "urgent" ? "urgent" : "expiring";
+  return { record: expiring[0], urgency };
 }
 
 /**
  * Calculates member personal KPIs from their own records.
  */
 export function calculateMemberKpis(records: RecordRow[]): MemberKpis {
-  let validCount = 0;
-  let expiringCount = 0;
-  let expiredCount = 0;
-  const inProgressRows: RecordRow[] = [];
-  const expiringRows: RecordRow[] = [];
-
-  for (const r of records) {
-    if (r.status === "in_progress") {
-      inProgressRows.push(r);
-    } else if (r.status === "done") {
-      if (r.daysToExpiry !== null && r.daysToExpiry < 0) {
-        expiredCount++;
-      } else {
-        // Valid (active, no expiry, or expiring soon)
-        validCount++;
-        if (r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= 60) {
-          expiringCount++;
-          expiringRows.push(r);
-        }
-      }
-    }
-  }
-
-  const leastDaysRecord =
-    expiringRows.length > 0 ? [...expiringRows].sort((a, b) => a.daysToExpiry! - b.daysToExpiry!)[0] : null;
+  const expiringRows = records.filter((r): r is DatedRecord => isExpiring(r) && hasDays(r));
+  const inProgressRows = records.filter(isInProgress);
 
   return {
     total: records.length,
-    validCount,
-    expiringCount,
-    leastDaysRecord,
+    validCount: records.filter(isValid).length,
+    expiringCount: expiringRows.length,
+    leastDaysRecord: expiringRows.sort((a, b) => a.daysToExpiry - b.daysToExpiry)[0] ?? null,
     inProgressCount: inProgressRows.length,
     inProgressRows,
-    expiredCount,
+    expiredCount: records.filter(isExpired).length,
   };
 }
 
@@ -132,28 +140,11 @@ export function calculateMemberKpis(records: RecordRow[]): MemberKpis {
  * Tab counts for "My certificates" filter tabs.
  */
 export function getMemberTabCounts(records: RecordRow[]): Record<MemberTab, number> {
-  let valid = 0;
-  let expiring = 0;
-  let inProgress = 0;
-
-  for (const r of records) {
-    if (r.status === "in_progress") {
-      inProgress++;
-    } else if (r.status === "done") {
-      if (r.daysToExpiry === null || r.daysToExpiry >= 0) {
-        valid++;
-        if (r.daysToExpiry !== null && r.daysToExpiry <= 60) {
-          expiring++;
-        }
-      }
-    }
-  }
-
   return {
-    all: records.length,
-    valid,
-    expiring,
-    in_progress: inProgress,
+    all: records.filter(TAB_FILTERS.all).length,
+    valid: records.filter(TAB_FILTERS.valid).length,
+    expiring: records.filter(TAB_FILTERS.expiring).length,
+    in_progress: records.filter(TAB_FILTERS.in_progress).length,
   };
 }
 
@@ -167,20 +158,7 @@ export function filterMemberRecords(
   tab: MemberTab,
   sort: MemberSort = "expiry",
 ): RecordRow[] {
-  const filtered = records.filter((r) => {
-    switch (tab) {
-      case "all":
-        return true;
-      case "valid":
-        return r.status === "done" && (r.daysToExpiry === null || r.daysToExpiry >= 0);
-      case "expiring":
-        return r.status === "done" && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= 60;
-      case "in_progress":
-        return r.status === "in_progress";
-      default:
-        return true;
-    }
-  });
+  const filtered = records.filter(TAB_FILTERS[tab]);
 
   return [...filtered].sort((a, b) => {
     if (sort === "name") {
