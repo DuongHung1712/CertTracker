@@ -184,6 +184,23 @@ test("manager sees only the managed team and can only pick managed members", asy
   await expect(page.getByRole("option")).toHaveCount(2);
 });
 
+test("/records?search=<member> opens the admin's list already searched", async ({ page }) => {
+  // The dashboard's Resolve / View links point here.
+  await signIn(page, "admin@certtracker.test");
+  await page.goto(`/records?search=${encodeURIComponent("Trần Thị Bình")}`);
+  await expect(page.getByRole("cell", { name: "Trần Thị Bình", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("cell", { name: "Lê Minh Châu", exact: true })).toHaveCount(0);
+  await expect(page.getByPlaceholder(/Search by/)).toHaveValue("Trần Thị Bình");
+});
+
+test("/records?search=<member> opens the manager's list already searched", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+  await page.goto(`/records?search=${encodeURIComponent("Lê Minh Châu")}`);
+  await expect(page.getByRole("cell", { name: "Lê Minh Châu", exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toHaveCount(0);
+});
+
 test("member updates own progress and cannot see company fields", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   await page.goto("/records");

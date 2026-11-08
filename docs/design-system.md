@@ -229,9 +229,29 @@ Hiding is only UX; every permission is still enforced by RLS.
   4. "Expired": count; 0 shows a check icon and "All up to date".
 - **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Specialization focus" coming-soon card.
 - **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring within 60 days`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
-- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()` with the caption *"Totals for the whole department."*
 - **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Ask about certificates" (with a disabled question box), "My skills", "Quarterly goals", "Next career role", "Certificate review" and, inside the profile card, "Focus area". Each has the chip "Coming soon" and a one-line description ending "Not available yet.".
 - **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
+
+### 4.8 Manager Dashboard
+- **Header:** Title "Dashboard", server-built greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), subtitle "You look after <team names> (<N> members)." (or "No teams assigned yet." if unassigned), primary button "View certificates" (`/records`), and an outlined "Download team data" using `ExportLinks`.
+- **Team filter:** Group "Filter by team scope" with pills "All teams" and one per managed team (no counts, no period selector). The only download is the header "Download team data"; the only "View certificates" button is in the header.
+- **Overview:** region "Overview" with the readiness donut and three KPI tiles scoped to the manager's teams (`dl > div` with bare numbers in the first `dd`):
+  1. "Team readiness" donut: centre percentage (valid share of completed certificates), "{valid} of {completed} completed certificates" under the ring, and one legend row "Members without a completed certificate: {n}". With no completed certificates the centre shows an em dash. Valid and Expired counts are not repeated (the Expired tile shows the latter).
+  2. "Expiring within 60 days": count of in-scope completed certificates with 0-60 days left, caption "{n} with 30 days or less".
+  3. "Expired": count of in-scope overdue certificates; "Past due: <most overdue member (course)>".
+  4. "Waiting for approval": dashed placeholder tile with the value "—" (no number that looks real) and a Soon chip.
+- **Needs attention:** region "Needs attention" next to the Overview: expired certificates only, most overdue first, each with a "Resolve" link (no count badge: the rows are the count) to `/records?search=<name>`. Certificates that are still valid are in Next to expire, so no certificate appears in both.
+- **Allocated scope / Quick actions:** team names with member counts; links "Add certificate" (`/records`) and "View team data quality" (`/data-quality`) only.
+- **Tab Strip:** View switcher tab pills with `Overview` (active), and coming-soon disabled tabs `Approvals`, `Goals`, `Skills` (accessible names "Approvals Soon", "Goals Soon", "Skills Soon"). These and the "Waiting for approval" tile are the only places approvals, goals and skills appear.
+- **Next to Expire:** Table of in-scope completed certificates with 0-60 days left (max 8, soonest first) with member initials avatar, course, expiry date, `ExpiryBadge`, and link "View" to `/records`.
+- **Team Readiness:** ranked list of in-scope members (rank `#n`, valid / in progress counts, segmented bar) plus the selected member's details and the link "View member certificates" (`/records?search=<name>`). It is the only ranking on this page (the manager loader does not call `getRanking`).
+- **People without certificates yet:** names, team and count only.
+- **Certificates Earned by Month:** 6-month bar chart (`MonthlyEarnedChart`) with the real total and a screen reader summary, no growth percentage.
+- **Planned Exams:** List of upcoming exams scheduled within 60 days with member name, course, formatted date, and days left label.
+- **Automated reminders:** region with two facts from `vercel.json`: "Members get an expiry email every Monday at 08:00 (Vietnam time)." and "The monthly report goes out on the 1st of each month." No links (`/settings` is admin only).
+- **Coming Soon Card:** one `ComingSoonCard` "Ask about my team" (also covers risk alerts), a static line ending "Not available yet.", no input, chips or buttons.
+- **No mock data:** no invented values or strings (no program badge, growth percentage, "last sent" data, fallback team name or job title) and no button without a real link or handler. The test `manager-copy.test.ts` scans the manager folder for this.
+- **Responsive:** Multi-column layout collapsing gracefully to a single column on mobile (390px) with zero horizontal scroll.
 
 ---
 

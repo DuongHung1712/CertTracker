@@ -52,6 +52,7 @@ export function RecordsTable({
   canDelete,
   showCompanyFields,
   fixedMemberId,
+  initialSearch = "",
 }: {
   records: RecordRow[];
   memberOptions: ComboboxOption[];
@@ -61,9 +62,11 @@ export function RecordsTable({
   canDelete: boolean;
   showCompanyFields: boolean;
   fixedMemberId?: string;
+  /** Starting value of the search box (the dashboard links here with ?search=<name>). */
+  initialSearch?: string;
 }) {
   const isTeam = mode === "team";
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [teamFilter, setTeamFilter] = useState(ALL);
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [expiryFilter, setExpiryFilter] = useState(ALL);

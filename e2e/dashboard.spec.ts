@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import { acceptInvitation, pilotEmail, removePilotPeople } from "./support/pilot-member";
-import { signInAsSeedUser } from "./support/restore-seed";
+import { signInAsSeedAdmin, signInAsSeedUser } from "./support/restore-seed";
 import { assertSeedFresh } from "./support/seed-fresh";
 
 // Seed (supabase/seed.sql): An–AWS done (expires in ~25 days), Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
@@ -18,9 +18,9 @@ function section(page: Page, name: string): Locator {
   return page.getByRole("region", { name, exact: true });
 }
 
-/** The value of one KPI tile inside the "Overview" `dl`. */
-function tileValue(page: Page, label: string): Locator {
-  return section(page, "Overview")
+/** The value of one KPI tile inside a region ("Overview" unless said otherwise). */
+function tileValue(page: Page, label: string, region = "Overview"): Locator {
+  return section(page, region)
     .locator("dl > div")
     .filter({ has: page.getByText(label, { exact: true }) })
     .locator("dd")
@@ -108,17 +108,120 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   await expect(detailPanel.getByRole("heading", { name: "Team Cloud" })).toBeVisible();
 });
 
-test("manager sees the same org-wide numbers but a ranking limited to their team", async ({ page }) => {
+test("manager sees team-scoped numbers and no separate ranking", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
-  // Org-wide (3 records), not just the managed team's 2.
-  await expect(tileValue(page, "Certificates")).toHaveText("3");
-  await expect(section(page, "By team")).toBeVisible();
+  // Scoped team KPI numbers: Team Cloud has 1 completed valid cert (expires in ~25 days) and 1 not_started cert.
+  // Valid share of completed = 100%, Expiring = 1, Expired = 0. Approvals do not exist yet, so no number.
+  await expect(tileValue(page, "Team readiness", "Readiness summary")).toHaveText("100%");
+  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
+  await expect(tileValue(page, "Expired")).toHaveText("0");
+  await expect(tileValue(page, "Waiting for approval")).toHaveText("—");
 
-  const ranking = section(page, "Individual ranking");
-  await expect(rowWith(ranking, "Nguyễn Văn An")).toBeVisible();
-  await expect(rowWith(ranking, "Lê Minh Châu")).toBeVisible();
-  await expect(rowWith(ranking, "Trần Thị Bình")).toHaveCount(0);
+  // No department-wide totals for a manager: the "Across the department" card was removed.
+  await expect(page.getByText("Across the department")).toHaveCount(0);
+  await expect(page.getByText("Totals for the whole department.")).toHaveCount(0);
+
+  // The Team readiness list is the only ranking: managed members (An, Châu) only, unmanaged Bình excluded.
+  await expect(section(page, "Individual ranking")).toHaveCount(0);
+  const readiness = section(page, "Team readiness");
+  await expect(rowWith(readiness, "Nguyễn Văn An")).toBeVisible();
+  await expect(rowWith(readiness, "Lê Minh Châu")).toBeVisible();
+  await expect(rowWith(readiness, "Trần Thị Bình")).toHaveCount(0);
+});
+
+test("manager next-to-expire displays urgent renewals ordered soonest first", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  const nextSection = section(page, "Next to expire");
+  await expect(nextSection).toBeVisible();
+  await expect(rowWith(nextSection, "Nguyễn Văn An", AWS)).toBeVisible();
+  await expect(nextSection.getByRole("link", { name: "View" })).toHaveAttribute("href", /\/records\?search=/);
+
+  // Needs attention lists expired certificates only; the seed has none, so An's AWS is not listed twice.
+  const attention = section(page, "Needs attention");
+  await expect(attention).toBeVisible();
+  await expect(attention.getByText(AWS)).toHaveCount(0);
+  await expect(attention.getByText("Nothing needs attention")).toBeVisible();
+});
+
+test("manager team readiness list displays member status breakdown numbers", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  const readinessSection = section(page, "Team readiness");
+  await expect(readinessSection).toBeVisible();
+  await expect(rowWith(readinessSection, "Nguyễn Văn An", "1 valid")).toBeVisible();
+  await expect(rowWith(readinessSection, "Lê Minh Châu", "0 valid")).toBeVisible();
+  await expect(readinessSection.getByRole("link", { name: "View member certificates" })).toHaveAttribute(
+    "href",
+    /\/records\?search=/,
+  );
+});
+
+test("manager sees later modules once, as disabled tabs and one Coming soon card, with no mock data", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  // Tab strip: the only place Approvals, Goals and Skills appear (plus the one approvals KPI tile).
+  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Approvals Soon" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "Goals Soon" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "Skills Soon" })).toBeDisabled();
+
+  // The three bottom Coming soon cards and the separate Risk alerts card are gone.
+  for (const name of ["Approvals queue", "Goals", "Skills", "Risk alerts"]) {
+    await expect(page.getByRole("region", { name: `${name} (Coming soon)` })).toHaveCount(0);
+  }
+
+  // One merged card, no controls.
+  const askCard = page.getByRole("region", { name: "Ask about my team (Coming soon)" });
+  await expect(askCard).toBeVisible();
+  await expect(askCard.getByText(/Not available yet\.$/)).toBeVisible();
+  await expect(askCard.getByRole("button")).toHaveCount(0);
+  await expect(askCard.getByRole("textbox")).toHaveCount(0);
+
+  // Automated reminders: the two scheduled facts only.
+  const reminders = section(page, "Automated reminders");
+  await expect(reminders.getByText("Members get an expiry email every Monday at 08:00 (Vietnam time).")).toBeVisible();
+  await expect(reminders.getByText("The monthly report goes out on the 1st of each month.")).toBeVisible();
+  await expect(reminders.getByRole("link")).toHaveCount(0);
+
+  // No invented values or dead actions anywhere on the page.
+  const main = page.getByRole("main");
+  for (const fake of [
+    /DAS/, // case-sensitive: a plain "DAS" text match would also hit the "Dashboard" heading
+    "+28%",
+    "Last sent",
+    "Joined",
+    "Send reminder",
+    "Notify member",
+    "Remediate",
+    "Suggest certification",
+    "Assign goal",
+    "Open queue",
+  ]) {
+    await expect(main.getByText(fake)).toHaveCount(0);
+  }
+  for (const label of ["Month", "Quarter", "Year"]) {
+    await expect(main.getByRole("button", { name: label, exact: true })).toHaveCount(0);
+  }
+});
+
+test("a manager with no teams sees the empty state", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  await admin.from("manager_scopes").delete().eq("user_id", "5eed0000-0000-0000-0000-00000000f00b");
+  try {
+    await signIn(page, "manager@certtracker.test");
+    await expect(page.getByText("No teams assigned yet", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Ask an admin to assign you as a manager to a team or program so your team's certificates show here."),
+    ).toBeVisible();
+  } finally {
+    const cleanupAdmin = await signInAsSeedAdmin();
+    await cleanupAdmin.from("manager_scopes").insert({
+      user_id: "5eed0000-0000-0000-0000-00000000f00b",
+      team_id: "5eed0000-0000-0000-0000-00000000a001",
+    });
+  }
 });
 
 test("member sees anonymous aggregates only", async ({ page }) => {
@@ -130,14 +233,9 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(tileValue(page, "In progress")).toHaveText("0");
   await expect(tileValue(page, "Expired")).toHaveText("0");
 
-  // Anonymous department totals in "Across the department". The card shows no groups, so it makes no claim
-  // about hiding small groups (that rule lives in `dashboard_breakdown`, which a member never sees in the UI).
-  const dept = section(page, "Across the department");
-  await expect(dept).toBeVisible();
-  await expect(dept.getByText("Valid")).toBeVisible();
-  await expect(dept.getByText("Expiring")).toBeVisible();
-  await expect(dept.getByText("Expired")).toBeVisible();
-  await expect(dept.getByText("Totals for the whole department.")).toBeVisible();
+  // No department-wide totals for a member: the "Across the department" card was removed.
+  await expect(page.getByText("Across the department")).toHaveCount(0);
+  await expect(page.getByText("Totals for the whole department.")).toHaveCount(0);
   await expect(page.getByText(/groups with fewer than 3/i)).toHaveCount(0);
 
   // No ranking and no "By team"
