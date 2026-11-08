@@ -133,7 +133,8 @@ export function ManagerDashboardView({
 
           {/* Three independent columns (as in the Figma): each one flows down on its own, so a tall card
               in one column never leaves a gap in the next. The centre column comes first in the markup
-              so that on a phone the KPIs and the work lists lead; from lg up the columns are reordered. */}
+              so that on a phone the KPIs and the work lists lead; from lg up the columns are reordered.
+              The lists are spread so the three columns end at about the same height. */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
             {/* Centre column (6 cols) */}
             <div className="flex flex-col gap-6 lg:order-2 lg:col-span-6">
@@ -165,9 +166,16 @@ export function ManagerDashboardView({
                   <TeamReadinessDossier rows={readinessRows} records={filteredRecords} />
                 )}
               </Section>
+            </div>
 
+            {/* Right column (3 cols) */}
+            <div className="flex flex-col gap-4 lg:order-3 lg:col-span-3">
+              {recordsError ? (
+                <SectionError title="Needs attention" />
+              ) : (
+                <NeedsAttentionFeed records={filteredRecords} />
+              )}
               <PeopleWithoutCertsCard members={membersWithoutCerts} />
-
               <Section
                 title="Planned exams"
                 description="Scheduled exams within the next 60 days."
@@ -178,15 +186,6 @@ export function ManagerDashboardView({
                   <PlannedExamsList records={filteredRecords} />
                 )}
               </Section>
-            </div>
-
-            {/* Right column (3 cols) */}
-            <div className="flex flex-col gap-4 lg:order-3 lg:col-span-3">
-              {recordsError ? (
-                <SectionError title="Needs attention" />
-              ) : (
-                <NeedsAttentionFeed records={filteredRecords} />
-              )}
               <AutomatedRemindersCard />
               <AskAboutMyTeamComingSoon />
             </div>
