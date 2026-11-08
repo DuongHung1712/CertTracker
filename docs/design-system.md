@@ -211,13 +211,31 @@ When the database **blocks** the delete (for example a course that certificates 
 
 Hiding is only UX; every permission is still enforced by RLS.
 
-### 4.6 Dashboard
-- **Header:** Title, subtitle timestamp, and action buttons: "Filters" button (scrolls to/focuses filter controls) and primary action with 16px icon ("View certificates").
-- **Overview:** 4 tall hero KPI cards (~240px, `KpiCard`) with numbers in the upper half and real mini charts in the lower half (`RecordsMiniChart`, `ValidMiniChart`, `ExpiringGaugeMiniChart`, and positive empty state `ExpiredMiniChart`), followed by a slim compact stat strip (Active members, Completed, In progress). All inside region "Overview", `dl > div` with bare number in the first `dd`.
-- **Certificate Expiry:** Compact horizontal strip (~120px) positioned directly above Explorer, with exact `role="img"` and `aria-label` contract.
-- **Filter Row:** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
-- **Explorer:** Master-Detail board with tab pills and count chips on top, solid `bg-primary` selected row (outlined avatar and count chip, `primary-foreground-muted` subtitle; no permanent ring), keyboard focus shown only by a `focus-visible` ring with a `ring-offset-card` offset (the ring has to reach 3:1 on the card gap, not on the teal; checked in `tokens.test.ts`), and a live detail panel on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open the certificates).
-- **Ranking:** Individual leaderboard (admin/manager only).
+### 4.6 Admin Dashboard
+- **Layout:** 3-column independent flow grid on desktop (`lg:grid-cols-12`: Left `lg:col-span-3`, Center `lg:col-span-6`, Right `lg:col-span-3`). On mobile (<1024px), reordered with Center leading first (`lg:order-2`), Right second (`lg:order-3`), and Left third (`lg:order-1`) so high-priority KPI cards and Explorer are immediately visible without long scrolling.
+- **Header:** Title "Dashboard", server greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), "Filters" button (smooth scroll & focus to `#dashboard-filters`, honoring `prefers-reduced-motion`), "Download data" (`ExportLinks`), and "+ Add certificate" link.
+- **Left Column:**
+  - Workspace ledger / Admin profile card (`AdminProfileCard`): Initials avatar, full name (falls back to email and "System administrator" for unlinked admin accounts), "Admin" role badge, tenure / email, and embedded Phase 2 track specialization Coming Soon card.
+  - Quick actions card (`AdminQuickActionsCard`): 4 real actions ("Add certificate" -> `/records`, "Invite member" -> `/members`, "Import Excel" -> `/import`, "Export CSV" -> triggers export). No fake keyboard shortcut chips (⌘N, INV, XLS, CSV).
+  - Scope summary / Department metrics: active counts.
+- **Center Column:**
+  - **Overview (`role="region"` / `aria-label="Overview"`):** 4 tall KPI cards with numbers in `dl > div` (`dt` label, bare number in first `dd`):
+    1. "Valid certificates": Inverted solid-teal highlight card (`bg-primary text-primary-foreground`) with circular progress ring SVG (`valid` of `total` completed certificates).
+    2. "Expiring within 60 days": Amber-accented card with embedded accessible "Certificate expiry" region (`role="region"` / `aria-label="Certificate expiry"` with `role="img"` bar and `aria-label` screen reader summary), showing count with `<= 30` days left.
+    3. "Expired": Rose-accented card showing overdue count, positive empty state ("All up to date"), or `ChartLoadError` on query failure.
+    4. "Waiting for approval": Dashed placeholder tile with "—" and a single "Soon" chip.
+    - Followed by a slim compact stat strip for the e2e contract: Active members, Certificates, Completed, In progress.
+  - **Tab Strip:** View switcher tab pills with `Overview` (active), and coming-soon disabled tabs `Approvals`, `Goals`, `Skills` (accessible names "Approvals Soon", "Goals Soon", "Skills Soon").
+  - **Filter Row (`#dashboard-filters`):** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
+  - **Explorer (`By team` and `By provider` regions):** Master-Detail board with tab pills and count chips on top, solid `bg-primary` selected row (outlined avatar and count chip, `primary-foreground-muted` subtitle; no permanent ring), keyboard focus shown only by a `focus-visible` ring with a `ring-offset-card` offset (the ring has to reach 3:1 on the card gap, not on the teal; checked in `tokens.test.ts`), and a live detail panel on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open the certificates).
+  - **Individual ranking (`Individual ranking` region):** Individual leaderboard table with rank in the first cell, member info, counts, and completion.
+- **Right Column:**
+  - **Needs attention (`role="region"` / `aria-label="Needs attention"`):** Live feed of real issues requiring action (expired certificates most overdue first, certificates expiring within 30 days, data quality issue summary if issues exist) with direct links to `/records?search=...` or `/data-quality`.
+  - **Coming Soon Card:** Single consolidated `ComingSoonCard` previewing upcoming modules ("Compliance assistant", "Monthly summary", "Risk alerts"), with honest "Not available yet." descriptions and zero fake buttons or inputs.
+- **Real data constraints & banned copy:**
+  - No invented mock strings (no "Audit Hash #0E5C-TC9", "Legal Expiration Guard", "HRIS sync", "Lead: Minh Pham", "4 pending proofs").
+  - No dead controls or fake shortcut keys.
+  - Query failure error isolation via `SectionError` and `ChartLoadError`.
 
 ### 4.7 Member Dashboard
 - **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate" opening the record sheet).
