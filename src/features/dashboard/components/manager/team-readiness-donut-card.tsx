@@ -2,11 +2,9 @@ import type { ManagerKpis } from "@/features/dashboard/manager-metrics";
 
 export function TeamReadinessDonutCard({
   kpis,
-  totalMembers,
   noCertCount,
 }: {
   kpis: ManagerKpis;
-  totalMembers: number;
   noCertCount: number;
 }) {
   const radius = 48;
@@ -20,16 +18,13 @@ export function TeamReadinessDonutCard({
         <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
           Team readiness
         </span>
-        <span className="rounded border border-border px-1.5 py-0.5 text-caption font-mono text-muted-foreground">
-          N={totalMembers}
-        </span>
       </div>
 
       {/* Donut chart */}
       <div className="flex flex-col items-center justify-center py-2">
         <div
           role="img"
-          aria-label={`Team readiness donut: ${kpis.teamReadinessFormatted} ready, ${kpis.validCount} of ${totalMembers}`}
+          aria-label={`Team readiness donut: ${kpis.teamReadinessFormatted} ready, ${kpis.validCount} of ${kpis.doneCount}`}
           className="relative size-36 shrink-0 flex items-center justify-center"
         >
           <svg className="size-full -rotate-90" viewBox="0 0 120 120" aria-hidden="true">
@@ -61,7 +56,7 @@ export function TeamReadinessDonutCard({
               Ready
             </span>
             <span className="text-caption text-muted-foreground mt-0.5">
-              {kpis.validCount} of {totalMembers}
+              {kpis.validCount} of {kpis.doneCount}
             </span>
           </div>
         </div>
@@ -76,18 +71,6 @@ export function TeamReadinessDonutCard({
           </div>
           <span className="font-mono font-semibold tabular-nums text-foreground">
             {kpis.validCount}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span
-              className="size-2 rounded-full bg-[var(--status-expiring-soon-fg)] shrink-0"
-              aria-hidden="true"
-            />
-            <span className="text-muted-foreground">Expiring soon</span>
-          </div>
-          <span className="font-mono font-semibold tabular-nums text-foreground">
-            {kpis.expiringCount}
           </span>
         </div>
         <div className="flex items-center justify-between">

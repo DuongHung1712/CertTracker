@@ -51,15 +51,8 @@ export function TopKpiRow({
             </dd>
             <span className="text-caption text-muted-foreground">
               {kpis.expiringCount > 0
-                ? `${kpis.expiringCount} in ≤30d window`
+                ? `${kpis.urgentCount} with 30 days or less`
                 : "None in 60-day window"}
-            </span>
-          </div>
-
-          <div className="border-t border-border/60 pt-2 flex items-center justify-between text-caption font-mono text-muted-foreground">
-            <span>Next 60 days</span>
-            <span className="tabular-nums font-semibold text-foreground">
-              {kpis.expiringCount}
             </span>
           </div>
         </div>
@@ -144,11 +137,8 @@ export function TopKpiRow({
               </span>
             </div>
             <dd className="text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums font-mono text-muted-foreground mt-1">
-              0
+              —
             </dd>
-            <span className="text-caption text-muted-foreground">
-              0 proofs queued
-            </span>
           </div>
 
           <div className="border-t border-dashed border-border/60 pt-2 text-caption text-muted-foreground truncate">

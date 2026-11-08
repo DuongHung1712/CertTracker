@@ -1,8 +1,3 @@
-import Link from "next/link";
-import { Plus } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length === 0 || !parts[0]) return "??";
@@ -54,21 +49,10 @@ export function PeopleWithoutCertsCard({
                   {m.fullName}
                 </span>
                 <span className="text-caption text-muted-foreground truncate">
-                  {m.teamName ?? "No team assigned"} · Team member
+                  {m.teamName ?? "No team assigned"}
                 </span>
               </div>
             </div>
-
-            <Link
-              href="/records"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "sm" }),
-                "gap-1 text-caption shrink-0 font-medium",
-              )}
-            >
-              <Plus className="size-3.5" aria-hidden="true" />
-              <span>Suggest certification</span>
-            </Link>
           </div>
         ))}
       </div>

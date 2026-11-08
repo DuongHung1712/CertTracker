@@ -49,16 +49,9 @@ export function TeamReadinessDossier({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-sm font-semibold tracking-wide text-foreground uppercase font-mono">
-            Team readiness dossier · Compliance ranking
-          </h2>
-        </div>
-        <span className="text-caption text-muted-foreground hidden sm:inline">
-          Click person to inspect dossier
-        </span>
-      </div>
+      <p className="text-caption text-muted-foreground">
+        Ranked by valid certificates, then certificates in progress. Select a member to see their certificates.
+      </p>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         {/* Left Subpanel: Master List (5 cols on lg) */}
@@ -174,13 +167,13 @@ export function TeamReadinessDossier({
           })}
         </div>
 
-        {/* Right Subpanel: Detail Dossier (7 cols on lg) */}
+        {/* Right Subpanel: member details (7 cols on lg) */}
         {selectedRow && (
           <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 lg:col-span-7">
-            {/* Dossier Banner */}
+            {/* Details banner */}
             <div className="flex items-center justify-between border-b border-border pb-3">
               <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-                Detail view · Member dossier
+                Member details
               </span>
               <span
                 className={cn(
@@ -205,7 +198,7 @@ export function TeamReadinessDossier({
                   {selectedRow.memberName}
                 </h3>
                 <span className="text-caption text-muted-foreground truncate">
-                  {selectedRow.teamName ?? "No team assigned"} · Team member
+                  {selectedRow.teamName ?? "No team assigned"}
                 </span>
               </div>
             </div>
@@ -291,17 +284,6 @@ export function TeamReadinessDossier({
               >
                 View member certificates
               </Link>
-              <button
-                type="button"
-                disabled
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "sm" }),
-                  "border-dashed text-caption opacity-60 cursor-not-allowed",
-                )}
-                title="Goal assignment is not available yet."
-              >
-                Assign goal (Soon)
-              </button>
             </div>
           </div>
         )}

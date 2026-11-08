@@ -293,7 +293,7 @@ export function getPlannedExams(
   });
 }
 
-export type NeedsAttentionItem = {
+type NeedsAttentionItem = {
   record: RecordRow;
   description: string;
 };

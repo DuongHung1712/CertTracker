@@ -22,13 +22,6 @@ export function AllocatedScopeCard({
             </span>
           </div>
         ))}
-
-        <div className="flex items-center justify-between pt-2">
-          <span className="font-medium text-foreground">Program</span>
-          <span className="rounded border border-primary/20 bg-primary/10 px-2 py-0.5 font-mono text-caption text-primary">
-            DAS
-          </span>
-        </div>
       </div>
     </div>
   );

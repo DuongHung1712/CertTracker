@@ -10,12 +10,8 @@ import { Section, SectionError } from "@/features/dashboard/components/section";
 import { AllocatedScopeCard } from "@/features/dashboard/components/manager/allocated-scope-card";
 import { AutomatedRemindersCard } from "@/features/dashboard/components/manager/automated-reminders-card";
 import {
-  ApprovalsQueueComingSoon,
   AskAboutMyTeamComingSoon,
-  GoalsComingSoon,
   ManagerTabStrip,
-  RiskAlertsComingSoon,
-  SkillsComingSoon,
 } from "@/features/dashboard/components/manager/manager-coming-soon-stack";
 import { MonthlyEarnedChart } from "@/features/dashboard/components/manager/monthly-earned-chart";
 import { NeedsAttentionFeed } from "@/features/dashboard/components/manager/needs-attention-feed";
@@ -32,7 +28,6 @@ import {
   getMembersWithoutCerts,
   getTeamReadinessLeague,
   getNeedsAttentionItems,
-  isExpiring30,
 } from "@/features/dashboard/manager-metrics";
 import type { DashboardKpis } from "@/features/dashboard/schema";
 import { ExportLinks } from "@/features/export/components/export-links";
@@ -96,8 +91,6 @@ export function ManagerDashboardView({
   const mostOverdue = useMemo(() => getNeedsAttentionItems(filteredRecords)[0]?.record, [filteredRecords]);
   const pastDueText = mostOverdue ? `${mostOverdue.memberName} (${mostOverdue.courseName})` : undefined;
 
-  const mostUrgent = useMemo(() => filteredRecords.find(isExpiring30), [filteredRecords]);
-
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
@@ -127,7 +120,7 @@ export function ManagerDashboardView({
         />
       ) : (
         <>
-          {/* Subheader Filter Bar: Team Scope Pills + Period Selector + Download Report */}
+          {/* Subheader filter bar: team scope pills */}
           <TeamScopeFilter
             teams={teamsWithCounts}
             selectedTeam={selectedTeam}
@@ -148,7 +141,6 @@ export function ManagerDashboardView({
                     <div className="lg:col-span-3">
                       <TeamReadinessDonutCard
                         kpis={kpis}
-                        totalMembers={filteredMembers.length}
                         noCertCount={membersWithoutCerts.length}
                       />
                     </div>
@@ -176,7 +168,7 @@ export function ManagerDashboardView({
             {/* Column 1 (Left sidebar - 3 cols) */}
             <div className="flex flex-col gap-4 lg:col-span-3">
               <AllocatedScopeCard teams={teamsWithCounts} />
-              <QuickActionsCard expiringCount={kpis.expiringCount} />
+              <QuickActionsCard />
               <MonthlyEarnedChart records={filteredRecords} />
             </div>
 
@@ -196,7 +188,7 @@ export function ManagerDashboardView({
                 )}
               </Section>
 
-              {/* Team readiness dossier (Split Finnova Master-Detail) */}
+              {/* Team readiness: ranked members with details */}
               <Section
                 title="Team readiness"
                 description="Status breakdown for members across your managed teams."
@@ -226,24 +218,13 @@ export function ManagerDashboardView({
 
             {/* Column 3 (Right sidebar - 3 cols) */}
             <div className="flex flex-col gap-4 lg:col-span-3">
-              <AutomatedRemindersCard expiringCount={kpis.expiringCount} />
+              <AutomatedRemindersCard />
               <AskAboutMyTeamComingSoon />
-              <RiskAlertsComingSoon
-                urgentMemberName={mostUrgent?.memberName}
-                urgentCourseName={mostUrgent?.courseName}
-                urgentDays={mostUrgent?.daysToExpiry ?? undefined}
-              />
             </div>
           </div>
 
-          {/* Bottom Section: Remaining Coming Soon Tools, Individual Ranking & Across the Department */}
+          {/* Bottom section: Across the department */}
           <div className="flex flex-col gap-6 border-t border-border pt-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <ApprovalsQueueComingSoon />
-              <GoalsComingSoon />
-              <SkillsComingSoon />
-            </div>
-
             {/* Across the department (Anonymous org totals) */}
             {departmentKpisError ? (
               <SectionError title="Across the department" />

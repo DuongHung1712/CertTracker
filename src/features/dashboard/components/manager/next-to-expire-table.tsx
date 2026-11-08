@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { buttonVariants } from "@/components/ui/button";
 import { getNextToExpire } from "@/features/dashboard/manager-metrics";
@@ -31,16 +31,6 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Clock className="size-4 text-[var(--status-expiring-soon-fg)]" aria-hidden="true" />
-          <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-            Next to expire (upcoming deadlines)
-          </span>
-        </div>
-        <span className="text-caption text-muted-foreground">Showing urgent renewals</span>
-      </div>
-
       <div className="overflow-x-auto rounded border border-border">
         <table className="w-full text-table text-left">
           <thead className="border-b border-border bg-muted/40 text-label uppercase tracking-wider text-muted-foreground font-mono">
@@ -66,7 +56,7 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
                     <div className="flex flex-col min-w-0">
                       <span className="font-semibold text-foreground truncate">{row.memberName}</span>
                       <span className="font-mono text-caption text-muted-foreground">
-                        {row.teamName ?? "Team Cloud"}
+                        {row.teamName ?? "No team"}
                       </span>
                     </div>
                   </div>
