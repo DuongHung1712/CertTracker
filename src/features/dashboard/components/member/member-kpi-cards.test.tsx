@@ -4,7 +4,8 @@ import { calculateMemberKpis } from "@/features/dashboard/member-metrics";
 import { doneRecord, makeRecord } from "@/features/records/__fixtures__/record-row";
 import { MemberKpiCards } from "./member-kpi-cards";
 
-const compliance = (html: string) => /([^>\s]*)\s*Compliant/.exec(html)?.[1];
+// Copy WP6: the figure reads "{rate} valid ({valid} of {total})" ("Compliant" is not a term the app uses).
+const compliance = (html: string) => /([^>\s]*) valid \(\d+ of \d+\)/.exec(html)?.[1];
 
 // Review #5: the compliance figure must follow `ratePercent` (decision #31): rounded down,
 // 100 only when everything counts, and "—" (formatRate(null)) when there is nothing to divide.

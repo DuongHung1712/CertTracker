@@ -35,11 +35,11 @@ function rowWith(scope: Locator, ...texts: string[]): Locator {
 }
 
 async function expectOrgWideTiles(page: Page) {
-  await expect(tileValue(page, "Certificate records")).toHaveText("3");
+  await expect(tileValue(page, "Certificates")).toHaveText("3");
   await expect(tileValue(page, "Completed")).toHaveText("1");
   await expect(tileValue(page, "In progress")).toHaveText("1");
   await expect(tileValue(page, "Valid")).toHaveText("1");
-  await expect(tileValue(page, "Expiring (≤ 60 days)")).toHaveText("1");
+  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
   await expect(tileValue(page, "Expired")).toHaveText("0");
 }
 
@@ -70,7 +70,7 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   expect(Number(members)).toBeGreaterThanOrEqual(3);
 
   // Hero KPI cards contain accessible mini charts with role="img"
-  await expect(page.getByRole("img", { name: /^Certificate records by group:/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Certificates by group:/ })).toBeVisible();
   await expect(page.getByRole("img", { name: /^Valid certificates:/ })).toBeVisible();
   await expect(page.getByRole("img", { name: /^Expiring within 60 days:/ })).toBeVisible();
 
@@ -82,8 +82,8 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   const chart = section(page, "Certificate expiry").getByRole("img", { name: /^Certificate expiry:/ });
   await expect(chart).toBeVisible();
   // Chart labels are day ranges, distinct from the tile labels; anchored so "…1" does not also match "…10".
-  await expect(chart).toHaveAttribute("aria-label", /(: |, )≤ 30 days left 1(,|$)/);
-  await expect(chart).toHaveAttribute("aria-label", /(: |, )> 60 days left 0(,|$)/);
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )Expires within 30 days 1(,|$)/);
+  await expect(chart).toHaveAttribute("aria-label", /(: |, )More than 60 days 0(,|$)/);
 
   await expect(section(page, "By team")).toBeVisible();
   await expect(rowWith(section(page, "By team"), "Team Cloud")).toBeVisible();
@@ -95,8 +95,8 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   await expect(anRow.getByRole("cell").first()).toHaveText("1");
 
   // Filter selects display human-readable labels, not raw values ("all", "0")
-  await expect(page.getByRole("combobox", { name: "Filter by certificate status" })).toContainText("All groups");
-  await expect(page.getByRole("combobox", { name: "Filter by minimum records" })).toContainText("Min records: Any");
+  await expect(page.getByRole("combobox", { name: "Filter by certificate status" })).toContainText("Any status");
+  await expect(page.getByRole("combobox", { name: "Filter by number of certificates" })).toContainText("Any number of certificates");
 
   // Study completion split in Explorer detail panel exposes accessible image
   const completionSplit = page.getByRole("img", { name: /^Study completion:/ });
@@ -112,7 +112,7 @@ test("manager sees the same org-wide numbers but a ranking limited to their team
   await signIn(page, "manager@certtracker.test");
 
   // Org-wide (3 records), not just the managed team's 2.
-  await expect(tileValue(page, "Certificate records")).toHaveText("3");
+  await expect(tileValue(page, "Certificates")).toHaveText("3");
   await expect(section(page, "By team")).toBeVisible();
 
   const ranking = section(page, "Individual ranking");
@@ -125,8 +125,8 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
   // Personal KPI cards match the seed member's records (Lê Minh Châu has 1 not_started record)
-  await expect(tileValue(page, "Recorded certificates")).toHaveText("1");
-  await expect(tileValue(page, "Expiring soon")).toHaveText("0");
+  await expect(tileValue(page, "Certificates")).toHaveText("1");
+  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("0");
   await expect(tileValue(page, "In progress")).toHaveText("0");
   await expect(tileValue(page, "Expired")).toHaveText("0");
 
@@ -136,7 +136,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(dept.getByText("Valid")).toBeVisible();
   await expect(dept.getByText("Expiring")).toBeVisible();
   await expect(dept.getByText("Expired")).toBeVisible();
-  await expect(page.getByText("Only groups with at least 3 learners are shown.")).toBeVisible();
+  await expect(page.getByText("To protect privacy, groups with fewer than 3 members are hidden.")).toBeVisible();
 
   // No ranking and no "By team"
   await expect(page.getByRole("tab", { name: /^By team$/ })).toHaveCount(0);
@@ -148,7 +148,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(certSection).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^All \(1\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^Valid \(0\)$/ })).toBeVisible();
-  await expect(certSection.getByRole("tab", { name: /^Expiring \(0\)$/ })).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^Expiring within 60 days \(0\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^In progress \(0\)$/ })).toBeVisible();
   await expect(certSection.getByText(AWS)).toBeVisible();
 
@@ -156,14 +156,16 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(page.getByRole("complementary", { name: "Certificate attention required" })).toHaveCount(0);
 
   // Coming soon cards are visible and non-interactive (controls are disabled)
-  const copilot = page.getByRole("region", { name: "Compliance copilot (Coming soon)" });
-  await expect(copilot).toBeVisible();
-  await expect(copilot.getByPlaceholder("Ask about certification policy or exam budget…")).toBeDisabled();
-  await expect(copilot.getByRole("button", { name: "What is needed for AWS renewal?" })).toBeDisabled();
-  await expect(page.getByRole("region", { name: "My skills matrix (Coming soon)" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Quarterly objective (Coming soon)" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Target role (Coming soon)" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Audit verification (Coming soon)" })).toBeVisible();
+  const comingSoon = ["Ask about certificates", "My skills", "Quarterly goals", "Next career role", "Certificate review"];
+  for (const title of comingSoon) {
+    const card = page.getByRole("region", { name: `${title} (Coming soon)` });
+    await expect(card).toBeVisible();
+    for (const control of await card.getByRole("textbox").or(card.getByRole("button")).all()) {
+      await expect(control).toBeDisabled();
+    }
+  }
+  const ask = page.getByRole("region", { name: "Ask about certificates (Coming soon)" });
+  await expect(ask.getByRole("textbox")).toBeDisabled();
 });
 
 test("unlinked member account shows guidance empty state on dashboard", async ({ page }) => {
@@ -172,7 +174,7 @@ test("unlinked member account shows guidance empty state on dashboard", async ({
   try {
     await acceptInvitation(page, email, hash);
     await expect(page.getByText("Your account is not linked to a member")).toBeVisible();
-    await expect(page.getByText("Ask an admin to link your account to a member")).toBeVisible();
+    await expect(page.getByText("Ask your admin to link your account to a member")).toBeVisible();
   } finally {
     await removePilotPeople();
   }

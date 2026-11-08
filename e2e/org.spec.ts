@@ -26,9 +26,9 @@ test("admin manages the org tree end to end", async ({ page }) => {
   await expect(page.getByRole("cell", { name: programName })).toBeVisible();
 
   // The DC now has a Program: deleting it must fail with the restricted message, not a raw Postgres error.
-  // Scoped to the "Centres (DC)" section: the Program table also has a "Centre" column showing
+  // Scoped to the "Centres" section: the Program table also has a "Centre" column showing
   // this same DC name, so an unscoped `tr` filter on the page would match both tables' rows.
-  const dcSection = page.locator("section", { has: page.getByRole("heading", { name: "Centres (DC)" }) });
+  const dcSection = page.locator("section", { has: page.getByRole("heading", { name: "Centres", exact: true }) });
   await dcSection
     .locator("tr", { has: page.getByRole("cell", { name: dcName, exact: true }) })
     .getByRole("button", { name: "Delete" })
@@ -67,7 +67,7 @@ test("admin assigns a manager to a program and the manager sees every team of th
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("checkbox", { name: new RegExp(MANAGER_NAME) }).click();
     await dialog.getByRole("button", { name: "Save managers" }).click();
-    await expect(page.getByText(`Managers saved for ${SEED_PROGRAM_NAME}`)).toBeVisible();
+    await expect(page.getByText(`Saved managers for ${SEED_PROGRAM_NAME}`)).toBeVisible();
 
     // The seeded manager's own scope is Team Cloud only (An); the program scope adds Team AI (Bình).
     const managerContext = await browser.newContext();

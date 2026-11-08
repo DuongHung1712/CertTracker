@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { expiryMeta } from "@/components/status/expiry";
 import {
   clampPercent,
   expiringCerts,
@@ -77,14 +78,20 @@ describe("validCerts / expiringCerts", () => {
 });
 
 describe("expiryBuckets", () => {
-  it("lists the five buckets in display order, zeros included, labelled with the chart's own day-range labels (not the badge labels)", () => {
+  it("lists the five buckets in display order, zeros included, labelled with day ranges; the two expiring tiers use the badge labels", () => {
     expect(expiryBuckets({ ...kpis, expiring60Certs: 0 })).toEqual([
-      { status: "Active", label: "> 60 days left", count: 2 },
-      { status: "Expiring in 60d", label: "31–60 days left", count: 0 },
-      { status: "Expiring Soon", label: "≤ 30 days left", count: 1 },
+      { status: "Active", label: "More than 60 days", count: 2 },
+      { status: "Expiring in 60d", label: "Expires in 31–60 days", count: 0 },
+      { status: "Expiring Soon", label: "Expires within 30 days", count: 1 },
       { status: "Expired", label: "Expired", count: 1 },
       { status: "No Expiry", label: "No expiry", count: 1 },
     ]);
+  });
+
+  it("[copy] the 31–60 and 0–30 tiers read exactly like the badge (one source of words)", () => {
+    const labelOf = (status: string) => expiryBuckets(kpis).find((b) => b.status === status)?.label;
+    expect(labelOf("Expiring in 60d")).toBe(expiryMeta("Expiring in 60d").label);
+    expect(labelOf("Expiring Soon")).toBe(expiryMeta("Expiring Soon").label);
   });
 });
 
@@ -105,9 +112,9 @@ describe("new visual helpers (spec §2 & §4)", () => {
     const buckets = validBuckets(kpis);
     expect(buckets).toHaveLength(4);
     expect(buckets.map((b) => b.label)).toEqual([
-      "> 60 days left",
-      "31–60 days left",
-      "≤ 30 days left",
+      "More than 60 days",
+      "Expires in 31–60 days",
+      "Expires within 30 days",
       "No expiry",
     ]);
     const sum = buckets.reduce((acc, b) => acc + b.count, 0);

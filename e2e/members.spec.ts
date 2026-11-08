@@ -78,20 +78,20 @@ test("admin sees what a manager manages, and that the scopes go inactive when th
 
     const row = page.getByRole("row", { name: new RegExp(MANAGER_NAME) });
     await expect(row.getByText(`Manages: Team Cloud, ${SEED_PROGRAM_NAME}`)).toBeVisible();
-    await expect(row.getByText("Scopes inactive: not a manager")).toHaveCount(0);
+    await expect(row.getByText("Not a manager: team access not used")).toHaveCount(0);
 
     await setSeedManagerRole("member");
     await page.reload();
-    await expect(row.getByText("Scopes inactive: not a manager")).toBeVisible();
+    await expect(row.getByText("Not a manager: team access not used")).toBeVisible();
 
     // The admin can clear the inert scopes from the row.
-    await row.getByRole("button", { name: "Remove scopes" }).click();
-    await page.getByRole("alertdialog").getByRole("button", { name: "Remove scopes" }).click();
+    await row.getByRole("button", { name: "Remove access" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Remove access" }).click();
     // While the confirm dialog is open the table is aria-hidden, so `row` matches nothing and a count of 0 would
     // pass even if the removal failed. Wait for the dialog to close, then check the row is back and really cleared.
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
     await expect(row).toBeVisible();
-    await expect(row.getByText("Scopes inactive: not a manager")).toHaveCount(0);
+    await expect(row.getByText("Not a manager: team access not used")).toHaveCount(0);
     await expect(row.getByText(/^Manages:/)).toHaveCount(0);
     await expect(row.getByText("—", { exact: true })).toBeVisible();
   } finally {
@@ -116,7 +116,7 @@ test("admin changes a member's access from the member form", async ({ page }) =>
     await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(row.getByRole("cell", { name: "Member", exact: true })).toBeVisible();
-    await expect(row.getByText("Scopes inactive: not a manager")).toBeVisible();
+    await expect(row.getByText("Not a manager: team access not used")).toBeVisible();
   } finally {
     await setSeedManagerRole("manager");
     await cleanup();

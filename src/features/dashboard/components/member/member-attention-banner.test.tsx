@@ -21,10 +21,10 @@ describe("MemberAttentionBanner", () => {
     );
 
     expect(html).toContain('aria-label="Certificate attention required"');
-    expect(html).toContain("Action needed:");
+    expect(html).toContain("Expires soon:");
     expect(html).toContain("AWS Solutions Architect Associate");
     expect(html).toContain("12 days left");
-    expect(html).toContain("Upload proof");
+    expect(html).toContain("Upload evidence");
     expect(html).not.toContain("Certificate expired:");
   });
 
@@ -40,7 +40,7 @@ describe("MemberAttentionBanner", () => {
     expect(html).toContain('aria-label="Certificate attention required"');
     expect(html).toContain("Certificate expired:");
     expect(html).toContain("Expired on 01/11/2026");
-    expect(html).toContain("Upload proof");
-    expect(html).not.toContain("Action needed:");
+    expect(html).toContain("Upload evidence");
+    expect(html).not.toContain("Expires soon:");
   });
 });

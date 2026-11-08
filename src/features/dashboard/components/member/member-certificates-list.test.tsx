@@ -44,15 +44,15 @@ const EXPIRY_TONES: readonly string[] = ["active", "expiring-60", "expiring-soon
 // One row per real `expiry_status` value (SQL `expiry_status()`), plus study states.
 const CASES: { record: RecordRow; tone: ExpiryTone | "in-progress" | "neutral"; label: string }[] = [
   { record: doneRecord(120, { id: "a", courseName: "Course Active" }), tone: "active", label: "Valid" },
-  { record: doneRecord(45, { id: "b", courseName: "Course Sixty" }), tone: "expiring-60", label: "Expiring in 60 days" },
-  { record: doneRecord(12, { id: "c", courseName: "Course Soon" }), tone: "expiring-soon", label: "Expiring soon" },
+  { record: doneRecord(45, { id: "b", courseName: "Course Sixty" }), tone: "expiring-60", label: "Expires in 31–60 days" },
+  { record: doneRecord(12, { id: "c", courseName: "Course Soon" }), tone: "expiring-soon", label: "Expires within 30 days" },
   { record: doneRecord(-5, { id: "d", courseName: "Course Expired" }), tone: "expired", label: "Expired" },
   { record: noExpiryRecord({ id: "e", courseName: "Course Forever" }), tone: "no-expiry", label: "No expiry" },
   {
     // A done row the view cannot date (no issued date). The DB CHECK normally prevents it; the UI must still not lie.
     record: makeRecord({ id: "f", courseName: "Course Undated", issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
     tone: "na",
-    label: "Not issued",
+    label: "Not issued yet",
   },
   {
     record: makeRecord({ id: "g", courseName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
@@ -92,6 +92,6 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
     const odd: RecordRow = { ...makeRecord({ id: "z", courseName: "Course Odd" }), expiryStatus: "valid" };
     const row = rowsByCourse(render([odd])).get("Course Odd");
     expect(row?.tone).toBe("na");
-    expect(row?.html).toContain(">Not issued<");
+    expect(row?.html).toContain(">Not issued yet<");
   });
 });
