@@ -5,12 +5,16 @@ import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import { Button } from "@/components/ui/button";
+import { AuditVerificationCard } from "@/features/dashboard/components/member/audit-verification-card";
+import { ComplianceCopilotCard } from "@/features/dashboard/components/member/compliance-copilot-card";
 import { DepartmentSummaryCard } from "@/features/dashboard/components/member/department-summary-card";
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
 import { MemberCertificatesList } from "@/features/dashboard/components/member/member-certificates-list";
-import { MemberComingSoonStack } from "@/features/dashboard/components/member/member-coming-soon-stack";
 import { MemberKpiCards } from "@/features/dashboard/components/member/member-kpi-cards";
 import { MemberProfileCard } from "@/features/dashboard/components/member/member-profile-card";
+import { QuarterlyTargetCard } from "@/features/dashboard/components/member/quarterly-target-card";
+import { SkillsMatrixCard } from "@/features/dashboard/components/member/skills-matrix-card";
+import { TargetRoleCard } from "@/features/dashboard/components/member/target-role-card";
 import { Section, SectionError } from "@/features/dashboard/components/section";
 import {
   calculateMemberKpis,
@@ -81,21 +85,10 @@ export function MemberDashboardView({
 
       <RecordsRealtime />
 
-      {/* 1. Attention banner for urgent/expired records */}
-      <MemberAttentionBanner attention={attention} onUploadProof={handleUploadProof} />
-
-      {/* 2. Overview: Member personal KPIs */}
-      <Section title="Overview">
-        {recordsError ? (
-          <SectionError title="Overview" />
-        ) : (
-          <MemberKpiCards kpis={memberKpis} />
-        )}
-      </Section>
-
-      {/* 3. Main 2-column layout: Left (Profile + Certificates list), Right (Department totals + Coming Soon) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="flex flex-col gap-6 lg:col-span-8">
+      {/* Main 3-Zone Workspace Layout (Figma node-id 1:2) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 xl:grid-cols-12">
+        {/* Left Column: Profile, Skills Matrix, Quarterly Objective */}
+        <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-3">
           <MemberProfileCard
             fullName={fullName}
             teamName={teamName}
@@ -103,10 +96,28 @@ export function MemberDashboardView({
             yoeYears={yoeYears}
           />
 
+          <SkillsMatrixCard />
+
+          <QuarterlyTargetCard />
+        </div>
+
+        {/* Centre Column: Hero KPIs (Overview), Attention Banner, Registered Records */}
+        <div className="flex flex-col gap-6 lg:col-span-8 xl:col-span-6">
+          <Section title="Overview">
+            {recordsError ? (
+              <SectionError title="Overview" />
+            ) : (
+              <MemberKpiCards kpis={memberKpis} />
+            )}
+          </Section>
+
+          <MemberAttentionBanner attention={attention} onUploadProof={handleUploadProof} />
+
           {recordsError ? (
             <SectionError title="My certificates" />
           ) : (
             <MemberCertificatesList
+              fullName={fullName}
               records={records}
               courseOptions={courseOptions}
               memberId={memberId}
@@ -118,14 +129,19 @@ export function MemberDashboardView({
           )}
         </div>
 
-        <div className="flex flex-col gap-6 lg:col-span-4">
+        {/* Right Column: Audit Verification, Across the department, Copilot, Target Role */}
+        <div className="flex flex-col gap-6 lg:col-span-12 xl:col-span-3">
+          <AuditVerificationCard />
+
           {departmentKpisError || !departmentKpis ? (
             <SectionError title="Across the department" />
           ) : (
             <DepartmentSummaryCard kpis={departmentKpis} />
           )}
 
-          <MemberComingSoonStack />
+          <ComplianceCopilotCard />
+
+          <TargetRoleCard />
         </div>
       </div>
     </div>

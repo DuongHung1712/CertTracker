@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { FileText, Pencil, Plus } from "lucide-react";
+import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert } from "lucide-react";
 import { EmptyState } from "@/components/data/empty-state";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import type { ExpiryStatus } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
-import { ProgressInline } from "@/components/status/progress-inline";
 import { RecordStatusLabel } from "@/components/status/record-status";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -25,6 +24,7 @@ import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export function MemberCertificatesList({
+  fullName,
   records,
   courseOptions,
   memberId,
@@ -33,6 +33,7 @@ export function MemberCertificatesList({
   editingRecord,
   onEditRecord,
 }: {
+  fullName: string;
   records: RecordRow[];
   courseOptions: ComboboxOption[];
   memberId: string;
@@ -62,55 +63,60 @@ export function MemberCertificatesList({
   return (
     <section
       aria-label="My certificates"
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
+      className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
     >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-section-title font-semibold text-foreground">My certificates</h2>
-          <span className="text-caption text-muted-foreground">({records.length})</span>
+      {/* Header and Filter strip */}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col">
+            <h3 className="text-sm font-semibold text-foreground">Registered Records</h3>
+            <p className="text-xs text-muted-foreground">
+              {records.length} total certifications registered to {fullName}
+            </p>
+          </div>
+
+          {records.length > 0 && (
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              <span className="text-caption text-muted-foreground">Sort:</span>
+              <Select value={sort} onValueChange={(val) => setSort(val as MemberSort)}>
+                <SelectTrigger className="h-7 w-28 text-caption">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="expiry">Expiry</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {records.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-caption text-muted-foreground">Sort:</span>
-            <Select value={sort} onValueChange={(val) => setSort(val as MemberSort)}>
-              <SelectTrigger className="h-7 w-28 text-caption">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="expiry">Expiry</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Tabs value={tab} onValueChange={(val) => setTab(val as MemberTab)} className="w-full">
+            <TabsList className="flex flex-wrap gap-1 bg-muted/60 p-1 rounded-md">
+              <TabsTrigger value="all" className="text-caption">
+                All ({tabCounts.all})
+              </TabsTrigger>
+              <TabsTrigger value="valid" className="text-caption">
+                Valid ({tabCounts.valid})
+              </TabsTrigger>
+              <TabsTrigger value="expiring" className="text-caption">
+                Expiring ({tabCounts.expiring})
+              </TabsTrigger>
+              <TabsTrigger value="in_progress" className="text-caption">
+                In progress ({tabCounts.in_progress})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         )}
       </div>
-
-      {records.length > 0 ? (
-        <Tabs value={tab} onValueChange={(val) => setTab(val as MemberTab)} className="w-full">
-          <TabsList className="flex flex-wrap gap-1 bg-muted/60 p-1 rounded-md">
-            <TabsTrigger value="all" className="text-caption">
-              All ({tabCounts.all})
-            </TabsTrigger>
-            <TabsTrigger value="valid" className="text-caption">
-              Valid ({tabCounts.valid})
-            </TabsTrigger>
-            <TabsTrigger value="expiring" className="text-caption">
-              Expiring ({tabCounts.expiring})
-            </TabsTrigger>
-            <TabsTrigger value="in_progress" className="text-caption">
-              In progress ({tabCounts.in_progress})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      ) : null}
 
       {records.length === 0 ? (
         <EmptyState
           title="No certificates yet"
           description="Add your first certificate to start tracking your progress."
           action={
-            <Button onClick={handleAdd}>
+            <Button onClick={handleAdd} size="sm">
               <Plus className="size-4" aria-hidden="true" />
               Add your first certificate
             </Button>
@@ -122,32 +128,59 @@ export function MemberCertificatesList({
           description="Select another filter tab to view your certificates."
         />
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-table">
-            <thead className="border-b border-border bg-muted/20 text-label uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-3 py-2 font-medium">Course & Provider</th>
-                <th scope="col" className="px-3 py-2 font-medium">Status</th>
-                <th scope="col" className="px-3 py-2 font-medium">Date</th>
-                <th scope="col" className="px-3 py-2 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {visibleRecords.map((record) => (
-                <tr key={record.id} className="hover:bg-muted/30 transition-colors">
-                  {/* Course & Provider */}
-                  <td className="px-3 py-2.5">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-foreground">{record.courseName}</span>
-                      <span className="text-caption text-muted-foreground">
+        <div className="flex flex-col gap-3">
+          {visibleRecords.map((record) => {
+            const isExpiring = record.expiryStatus === "expiring-soon";
+            const isValid = record.expiryStatus === "valid";
+            const isExpired = record.expiryStatus === "expired";
+            const isInProgress = record.status === "in_progress";
+
+            return (
+              <div
+                key={record.id}
+                className="flex flex-col gap-2.5 rounded-lg border border-border/80 bg-background/50 p-3.5 transition-colors hover:border-border"
+              >
+                {/* Main Row */}
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div
+                      aria-hidden="true"
+                      className={cn(
+                        "size-9 shrink-0 rounded-md border flex items-center justify-center",
+                        isExpiring
+                          ? "border-[var(--status-expiring-soon-border)] bg-[var(--status-expiring-soon-bg)] text-[var(--status-expiring-soon-fg)]"
+                          : isValid
+                            ? "border-[var(--status-valid-border)] bg-[var(--status-valid-bg)] text-[var(--status-valid-fg)]"
+                            : isExpired
+                              ? "border-[var(--status-expired-border)] bg-[var(--status-expired-bg)] text-[var(--status-expired-fg)]"
+                              : isInProgress
+                                ? "border-primary/20 bg-primary/10 text-primary"
+                                : "border-border bg-muted text-muted-foreground",
+                      )}
+                    >
+                      {isExpiring ? (
+                        <Clock className="size-4" />
+                      ) : isValid ? (
+                        <Award className="size-4" />
+                      ) : isExpired ? (
+                        <ShieldAlert className="size-4" />
+                      ) : (
+                        <BookOpen className="size-4" />
+                      )}
+                    </div>
+
+                    <div className="flex flex-col min-w-0">
+                      <h4 className="text-sm font-semibold text-foreground leading-snug truncate">
+                        {record.courseName}
+                      </h4>
+                      <p className="text-xs font-mono text-muted-foreground truncate">
                         {record.providerName ?? "Provider not set"}
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
-                      </span>
+                      </p>
                     </div>
-                  </td>
+                  </div>
 
-                  {/* Status / ExpiryBadge */}
-                  <td className="px-3 py-2.5">
+                  <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                     {record.status === "done" && record.expiryStatus ? (
                       <ExpiryBadge
                         status={record.expiryStatus as ExpiryStatus}
@@ -155,32 +188,12 @@ export function MemberCertificatesList({
                         expiryDate={record.expiryDate}
                       />
                     ) : record.status === "in_progress" ? (
-                      <div className="flex items-center gap-2 max-w-[140px]">
-                        <ProgressInline value={record.progress} />
-                      </div>
+                      <RecordStatusLabel status={record.status} />
                     ) : (
                       <RecordStatusLabel status={record.status} />
                     )}
-                  </td>
 
-                  {/* Expiry / Target Date */}
-                  <td className="px-3 py-2.5 whitespace-nowrap text-caption text-muted-foreground">
-                    {record.status === "done" ? (
-                      record.expiryDate ? (
-                        formatDate(record.expiryDate)
-                      ) : (
-                        "No expiry"
-                      )
-                    ) : record.status === "in_progress" && record.plannedExamDate ? (
-                      `Target: ${formatDate(record.plannedExamDate)}`
-                    ) : (
-                      "—"
-                    )}
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
+                    <div className="flex items-center gap-1">
                       {record.hasEvidence && (
                         <Tooltip>
                           <TooltipTrigger
@@ -221,11 +234,40 @@ export function MemberCertificatesList({
                         <TooltipContent side="top">Edit certificate</TooltipContent>
                       </Tooltip>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+
+                {/* In Progress Study Progress Meter Row */}
+                {isInProgress && (
+                  <div className="flex flex-col gap-2 border-t border-border/50 pt-2 sm:flex-row sm:items-center sm:justify-between sm:pl-12">
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <div className="flex items-center justify-between text-caption">
+                        <span className="text-muted-foreground">Curriculum coverage</span>
+                        <span className="font-mono font-medium text-foreground">
+                          {record.progress}% completed
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${Math.min(100, Math.max(0, record.progress))}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {record.plannedExamDate && (
+                      <div className="flex flex-col items-start sm:items-end text-caption text-muted-foreground shrink-0 sm:pl-4">
+                        <span className="text-[10px]">Target exam date</span>
+                        <span className="font-mono text-xs font-medium text-foreground">
+                          {formatDate(record.plannedExamDate)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

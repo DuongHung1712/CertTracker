@@ -1,5 +1,5 @@
+import { Cloud, Timer } from "lucide-react";
 import { formatYoe } from "@/features/career/format";
-import { ComingSoonCard } from "@/components/status/coming-soon-card";
 
 export function MemberProfileCard({
   fullName,
@@ -19,35 +19,37 @@ export function MemberProfileCard({
       aria-label="Member profile"
       className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
     >
-      <div className="flex flex-col gap-3.5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3.5">
-          <div
-            aria-hidden="true"
-            className="flex size-12 shrink-0 items-center justify-center rounded-full bg-accent text-accent-foreground font-semibold text-base"
-          >
-            {initials}
-          </div>
-          <div className="flex flex-col">
-            <h2 className="text-section-title font-semibold text-foreground">{fullName}</h2>
-            <p className="text-body text-muted-foreground">
-              {careerRoleName ?? "Role not set"}
-              <span className="mx-1.5 opacity-50">·</span>
-              {teamName ?? "No team assigned"}
-            </p>
-          </div>
+      <div className="flex items-start gap-3">
+        <div
+          aria-hidden="true"
+          className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono font-bold text-sm"
+        >
+          {initials}
         </div>
-
-        <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-1.5 text-caption text-muted-foreground self-start sm:self-center">
-          <span className="font-medium text-foreground">{formatYoe(yoeYears)}</span> of experience
+        <div className="flex flex-col min-w-0">
+          <h2 className="text-sm font-semibold text-foreground truncate">{fullName}</h2>
+          <p className="text-xs text-muted-foreground truncate">
+            {careerRoleName ?? "Role not set"} · {teamName ?? "No team assigned"}
+          </p>
+          <div className="flex items-center gap-1 pt-1.5 text-xs font-mono text-muted-foreground">
+            <Timer className="size-3 shrink-0" aria-hidden="true" />
+            <span>{formatYoe(yoeYears)} tenure</span>
+          </div>
         </div>
       </div>
 
-      {/* Embedded Specialization focus coming-soon block */}
-      <ComingSoonCard
-        title="Specialization focus"
-        description="Choose a technology track to receive tailored course recommendations."
-        className="bg-background/50 border-border/80"
-      />
+      <div className="border-t border-border pt-3 flex flex-col gap-2">
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-foreground font-medium">Specialization Focus</span>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase">
+            SOON
+          </span>
+        </div>
+        <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs font-medium text-foreground">
+          <Cloud className="size-3.5 text-primary shrink-0" aria-hidden="true" />
+          <span>Cloud Architecture</span>
+        </div>
+      </div>
     </section>
   );
 }
