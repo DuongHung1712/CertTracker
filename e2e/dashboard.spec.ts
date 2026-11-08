@@ -468,3 +468,19 @@ test("admin header and Quick actions offer each action once, with plain names", 
   await main.getByRole("button", { name: /^Filter groups/ }).click();
   await expect(page.locator("#explorer-search-input")).toBeFocused();
 });
+
+for (const [role, email] of [
+  ["admin", ADMIN_EMAIL],
+  ["manager", "manager@certtracker.test"],
+] as const) {
+  test(`the ${role} dashboard does not scroll horizontally on a phone`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await signIn(page, email);
+    await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
+  });
+}
