@@ -8,14 +8,12 @@ describe("dashboard error isolation", () => {
       id: "team",
       label: "By team",
       groupLabel: "Team",
-      peopleLabel: "Members",
       result: { ok: false as const, error: "Database timeout" },
     },
     {
       id: "provider",
       label: "By provider",
       groupLabel: "Provider",
-      peopleLabel: "Learners",
       result: {
         ok: true as const,
         data: [

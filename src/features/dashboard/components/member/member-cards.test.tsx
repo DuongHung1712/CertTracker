@@ -99,6 +99,14 @@ describe("[copy] Coming soon cards", () => {
     }
   });
 
+  it("the Ask card keeps its disabled question box (the loop above is vacuous without it)", () => {
+    const card = cardHtml(renderToStaticMarkup(CARDS[0].element), CARDS[0].title);
+    const box = /<input\b[^>]*aria-label="Your question"[^>]*>/.exec(card)?.[0];
+    expect(box, "question box").toBeDefined();
+    expect(box).toMatch(/\sdisabled=""/);
+    expect(box).toContain('aria-disabled="true"');
+  });
+
   it.each(CARDS)("$name shows no fake data", ({ element }) => {
     const html = renderToStaticMarkup(element);
     for (const fake of FAKE) expect(html, fake).not.toContain(fake);

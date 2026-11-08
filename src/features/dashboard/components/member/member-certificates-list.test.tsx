@@ -95,3 +95,16 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
     expect(row?.html).toContain(">Not issued yet<");
   });
 });
+
+describe("study progress bar", () => {
+  // I2: the bar uses the shared, rounding `clampPercent` from `@/components/status/labels`.
+  it("rounds and clamps the bar width", () => {
+    const studying = (id: string, courseName: string, progress: number) =>
+      makeRecord({ id, courseName, status: "in_progress", progress, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
+    const html = render([studying("p", "Course Partial", 47.6), studying("o", "Course Over", 140)]);
+    expect(html).toContain("width:48%");
+    expect(html).toContain("width:100%");
+    expect(html).not.toContain("width:47.6%");
+    expect(html).not.toContain("width:140%");
+  });
+});

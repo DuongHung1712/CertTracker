@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { expiryMeta } from "@/components/status/expiry";
+import { clampPercent } from "@/components/status/labels";
+import * as metrics from "@/features/dashboard/metrics";
 import {
-  clampPercent,
   expiringCerts,
   expiryBuckets,
   formatRate,
@@ -197,7 +198,11 @@ describe("roundedShare and clampPercent", () => {
     expect(roundedShare(199, 200)).toBe(100);
   });
 
-  it("clamps into 0..100", () => {
-    expect([clampPercent(-5), clampPercent(40), clampPercent(130)]).toEqual([0, 40, 100]);
+  it("clamps into 0..100 with the shared, rounding clampPercent", () => {
+    expect([clampPercent(-5), clampPercent(40), clampPercent(130), clampPercent(47.6)]).toEqual([0, 40, 100, 48]);
+  });
+
+  it("has no clampPercent of its own (I2: one helper, in @/components/status/labels)", () => {
+    expect("clampPercent" in metrics).toBe(false);
   });
 });

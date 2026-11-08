@@ -101,17 +101,25 @@ describe("threshold boundaries (-1, 0, 30, 31, 60, 61)", () => {
     expect(filterMemberRecords(records, "all")).toHaveLength(1);
   });
 
-  it("tab counts always equal the length of the matching filter", () => {
+  it("counts a mixed list with known numbers per tab", () => {
+    // Done at -1, 0, 30, 31, 60, 61 days, one No Expiry, one in progress, one not started.
     const records = [
       ...BOUNDARIES.map((b, i) => doneRecord(b.days, { id: `d${i}` })),
       noExpiryRecord({ id: "ne" }),
       inProgress("ip"),
       notStarted("ns"),
     ];
-    const counts = getMemberTabCounts(records);
-    for (const tab of ["all", "valid", "expiring", "in_progress"] as const) {
-      expect(counts[tab], tab).toBe(filterMemberRecords(records, tab).length);
-    }
+    expect(getMemberTabCounts(records)).toEqual({ all: 9, valid: 6, expiring: 4, in_progress: 1 });
+    expect(filterMemberRecords(records, "valid").map((r) => r.id).sort()).toEqual(["d1", "d2", "d3", "d4", "d5", "ne"]);
+    expect(filterMemberRecords(records, "expiring").map((r) => r.id).sort()).toEqual(["d1", "d2", "d3", "d4"]);
+    expect(filterMemberRecords(records, "in_progress").map((r) => r.id)).toEqual(["ip"]);
+  });
+
+  it("an unknown tab falls back to all records instead of throwing", () => {
+    const records = [doneRecord(10, { id: "a" }), inProgress("b")];
+    // The list casts the Tabs value (`val as MemberTab`), so a stray value can reach the filter.
+    const unknown = "archived" as unknown as Parameters<typeof filterMemberRecords>[1];
+    expect(filterMemberRecords(records, unknown).map((r) => r.id).sort()).toEqual(["a", "b"]);
   });
 });
 

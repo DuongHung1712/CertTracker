@@ -74,6 +74,8 @@ describe("[copy] plain-English interface", () => {
   it("reads the text a user sees (self-check of the scanner)", () => {
     expect(pieces.some((p) => p.file === "src/components/status/coming-soon-card.tsx" && p.text === "Coming soon")).toBe(true);
     expect(pieces.some((p) => p.text.includes("@/lib/"))).toBe(false);
+    // Attribute literals (aria-label, title, placeholder) are scanned too, not only JSX text.
+    expect(pieces.some((p) => p.file === "src/features/dashboard/components/explorer/filter-row.tsx" && p.text === "Filter by certificate status")).toBe(true);
   });
 
   it("uses none of the rejected words", () => {
@@ -86,6 +88,17 @@ describe("[copy] plain-English interface", () => {
 
   it("has no hard-coded plural mistakes", () => {
     expect(offenders((p) => /\b1 (days|records|members|certificates)\b/.test(p.text))).toEqual([]);
+  });
+
+  it("says certificate, not record (record is a database word)", () => {
+    // Pieces without a space are code names (`accessorKey: "records"`, `"record-member"`), pieces starting with
+    // "/" are routes (`/records`, `/api/records/...`). Neither is shown to a user.
+    const visible = (p: Piece) => /\s/.test(p.text.trim()) && !p.text.trim().startsWith("/");
+    // Server-only text a user never sees: a `console.error` log line and the verb "record" in a cron warning.
+    const allowed = (p: Piece) =>
+      (p.file === "src/app/api/export/records/route.ts" && p.text === "export: could not load records") ||
+      (p.file === "src/features/notifications/deliver.ts" && p.text === ": could not record the failure (");
+    expect(offenders((p) => visible(p) && /\brecords?\b/i.test(p.text) && !allowed(p))).toEqual([]);
   });
 
   it("writes email without a hyphen", () => {

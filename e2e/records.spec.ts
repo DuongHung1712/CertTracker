@@ -151,7 +151,7 @@ test("status rules are enforced in the form", async ({ page }) => {
   await pickSelect(page, dialog, "Status", "Completed");
 
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog.getByText("A completed record needs an issue date")).toBeVisible();
+  await expect(dialog.getByText("A completed course needs an issue date")).toBeVisible();
 
   await dialog.getByLabel("Issue date").fill("31/02/2026");
   await dialog.getByRole("button", { name: "Save" }).click();

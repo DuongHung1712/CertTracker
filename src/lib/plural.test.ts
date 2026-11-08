@@ -33,6 +33,11 @@ describe("pluralize", () => {
     expect(pluralize(3, "box", "boxes")).toBe("3 boxes");
   });
 
+  it("formats the count with formatNumber (thousands separator)", () => {
+    expect(pluralize(1250, "certificate")).toBe("1,250 certificates");
+    expect(daysLeftLabel(1250)).toBe("1,250 days left");
+  });
+
   it("keeps multi-word nouns intact", () => {
     expect(pluralize(2, "certificate type")).toBe("2 certificate types");
   });

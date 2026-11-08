@@ -130,13 +130,15 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(tileValue(page, "In progress")).toHaveText("0");
   await expect(tileValue(page, "Expired")).toHaveText("0");
 
-  // Anonymous department totals and privacy note in "Across the department"
+  // Anonymous department totals in "Across the department". The card shows no groups, so it makes no claim
+  // about hiding small groups (that rule lives in `dashboard_breakdown`, which a member never sees in the UI).
   const dept = section(page, "Across the department");
   await expect(dept).toBeVisible();
   await expect(dept.getByText("Valid")).toBeVisible();
   await expect(dept.getByText("Expiring")).toBeVisible();
   await expect(dept.getByText("Expired")).toBeVisible();
-  await expect(page.getByText("To protect privacy, groups with fewer than 3 members are hidden.")).toBeVisible();
+  await expect(dept.getByText("Totals for the whole department.")).toBeVisible();
+  await expect(page.getByText(/groups with fewer than 3/i)).toHaveCount(0);
 
   // No ranking and no "By team"
   await expect(page.getByRole("tab", { name: /^By team$/ })).toHaveCount(0);
@@ -155,17 +157,27 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   // Attention banner is hidden when nothing expires within 60 days
   await expect(page.getByRole("complementary", { name: "Certificate attention required" })).toHaveCount(0);
 
-  // Coming soon cards are visible and non-interactive (controls are disabled)
-  const comingSoon = ["Ask about certificates", "My skills", "Quarterly goals", "Next career role", "Certificate review"];
-  for (const title of comingSoon) {
+  // Coming soon cards are visible and non-interactive. Each card lists the controls it must show; each one
+  // must exist and be disabled, and the card must have at least that many controls, so removing one fails.
+  const comingSoon: { title: string; controls: { role: "textbox" | "button"; name: string }[] }[] = [
+    { title: "Ask about certificates", controls: [{ role: "textbox", name: "Your question" }] },
+    { title: "My skills", controls: [] },
+    { title: "Quarterly goals", controls: [] },
+    { title: "Next career role", controls: [] },
+    { title: "Certificate review", controls: [] },
+  ];
+  for (const { title, controls } of comingSoon) {
     const card = page.getByRole("region", { name: `${title} (Coming soon)` });
     await expect(card).toBeVisible();
-    for (const control of await card.getByRole("textbox").or(card.getByRole("button")).all()) {
+    for (const { role, name } of controls) {
+      await expect(card.getByRole(role, { name, exact: true })).toBeDisabled();
+    }
+    const all = card.getByRole("textbox").or(card.getByRole("button"));
+    expect(await all.count(), `${title}: number of controls`).toBeGreaterThanOrEqual(controls.length);
+    for (const control of await all.all()) {
       await expect(control).toBeDisabled();
     }
   }
-  const ask = page.getByRole("region", { name: "Ask about certificates (Coming soon)" });
-  await expect(ask.getByRole("textbox")).toBeDisabled();
 });
 
 test("unlinked member account shows guidance empty state on dashboard", async ({ page }) => {

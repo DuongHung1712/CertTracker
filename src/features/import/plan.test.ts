@@ -409,7 +409,7 @@ describe("reconcileRecord (decision #22)", () => {
   });
   it("errors when nothing can be derived, when done lacks an issue date, or when it is in the future", () => {
     expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Status and progress are missing"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed record needs an issue date"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed course needs an issue date"]);
     expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The issue date cannot be in the future"]);
   });
   it("accepts a done record whose issue date already exists in the database", () => {

@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { DetailPanel } from "@/features/dashboard/components/explorer/detail-panel";
@@ -7,7 +9,9 @@ import {
   MIN_RECORDS_FILTER_LABELS,
   STATUS_FILTER_LABELS,
 } from "@/features/dashboard/components/explorer/types";
-import { ExpiringGaugeMiniChart } from "@/features/dashboard/components/hero-charts";
+import { DashboardHeaderActions } from "@/features/dashboard/components/header-actions";
+import { ExpiringGaugeMiniChart, RecordsMiniChart } from "@/features/dashboard/components/hero-charts";
+import { StatusBar } from "@/features/dashboard/components/status-bar";
 import { DepartmentSummaryCard } from "@/features/dashboard/components/member/department-summary-card";
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
 import { MemberCertificatesList } from "@/features/dashboard/components/member/member-certificates-list";
@@ -79,6 +83,12 @@ describe("[copy] member KPI cards", () => {
     expect(html).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|Expiring soon|≤|active study goals| exp |\d+ study\b/i);
     expect(render([])).toContain("No courses in progress");
   });
+
+  it("says the total covers courses not started or in progress, not only in progress", () => {
+    const html = render([doneRecord(120)]);
+    expect(html).toContain("Including courses not started or in progress");
+    expect(html).not.toContain("Including courses in progress");
+  });
 });
 
 describe("[copy] member attention banner", () => {
@@ -139,7 +149,7 @@ describe("[copy] member certificate list", () => {
 describe("[copy] explorer master list", () => {
   const render = (rows: BreakdownRow[], groupLabel = "Team") =>
     text(renderToStaticMarkup(
-      <MasterList rows={rows} activeKey={null} onSelectKey={() => {}} groupLabel={groupLabel} peopleLabel="Members" tabLabel="By team" onClearFilters={() => {}} />,
+      <MasterList rows={rows} activeKey={null} onSelectKey={() => {}} groupLabel={groupLabel} tabLabel="By team" onClearFilters={() => {}} />,
     ));
 
   it("team tab: members in the team, then members with certificates, then certificates", () => {
@@ -219,6 +229,53 @@ describe("[copy] hero expiring gauge", () => {
     expect(html).toContain("Expiring within 60 days: 1 certificate (");
     expect(text(html)).not.toMatch(PLURAL_BUGS);
   });
+
+  it("keeps the thousands separator in counts", () => {
+    const html = renderToStaticMarkup(<ExpiringGaugeMiniChart expiringCount={1250} totalCompleted={5000} />);
+    expect(html).toContain("Expiring within 60 days: 1,250 certificates (");
+  });
+});
+
+describe("[copy] hero charts: words the SVG draws", () => {
+  // Recharts draws ticks and segment names only in a browser, so read the literals in the source.
+  const source = readFileSync(join(process.cwd(), "src/features/dashboard/components/hero-charts.tsx"), "utf8");
+
+  it("labels the longest valid bucket 61+ days, since 60 belongs to 31–60 days", () => {
+    expect(source).toContain('"61+ days"');
+    expect(source).not.toContain('"60+ days"');
+  });
+
+  it("names the rest of the gauge Other: it also holds expired certificates, so not Other valid", () => {
+    expect(source).toContain('name: "Other",');
+    expect(source).not.toContain("Other valid");
+  });
+
+  it("says No certificates yet when there is nothing to chart", () => {
+    const html = text(renderToStaticMarkup(<RecordsMiniChart rows={[]} totalRecords={0} />));
+    expect(html).toBe("No certificates yet");
+  });
+});
+
+describe("[copy] status bar", () => {
+  it("names an empty bar in certificates", () => {
+    const html = renderToStaticMarkup(<StatusBar segments={[{ key: "a", label: "Valid", count: 0, color: "x" }]} />);
+    expect(html).toContain('aria-label="No certificates"');
+  });
+});
+
+describe("[copy] dashboard header", () => {
+  // WCAG 2.5.3 label in name: the accessible name of the Filters button starts with its visible text, so
+  // `getByRole("button", { name: /filters/i })` finds the header button by what a sighted user reads.
+  it("the Filters button's accessible name starts with Filters", () => {
+    const html = renderToStaticMarkup(<DashboardHeaderActions />);
+    const buttons = [...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].map(([, attrs, inner]) => {
+      const aria = /aria-label="([^"]*)"/.exec(attrs)?.[1];
+      return aria ?? text(inner);
+    });
+    const matching = buttons.filter((name) => /filters/i.test(name));
+    expect(matching).toHaveLength(1);
+    expect(matching[0]).toMatch(/^Filters/);
+  });
 });
 
 describe("[copy] department summary (member dashboard)", () => {
@@ -227,9 +284,11 @@ describe("[copy] department summary (member dashboard)", () => {
     activeCerts: 2, expiring60Certs: 3, expiringSoonCerts: 1, expiredCerts: 1, noExpiryCerts: 1,
   };
 
-  it("states the privacy rule in members and the totals plainly", () => {
+  it("states the totals plainly and makes no claim about hidden groups (it shows no groups)", () => {
     const html = text(renderToStaticMarkup(<DepartmentSummaryCard kpis={kpis} />));
-    expect(html).toContain("To protect privacy, groups with fewer than 3 members are hidden.");
+    expect(html).toContain("Totals for the whole department.");
+    expect(html).not.toContain("To protect privacy, groups with fewer than 3 members are hidden.");
+    expect(html).not.toMatch(/fewer than 3/i);
     expect(html).toContain("Totals only, no names");
     expect(html).toContain("Expiring within 60 days");
     expect(html).not.toMatch(/learners|Anonymous totals/i);
