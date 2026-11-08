@@ -15,6 +15,9 @@ export default defineConfig({
   // which is a dev-server artifact, not an app bug — each spec passes reliably run alone. Serializing
   // workers avoids that concurrency window; 14 specs still finish in well under a minute.
   workers: 1,
+  // `next dev` compiles each route on its first visit. On a 2-core CI runner the first sign-in (the
+  // dashboard, with its charts) can take longer than the default 5 s to render, so allow more time there.
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   use: { baseURL },
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
