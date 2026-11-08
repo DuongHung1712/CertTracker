@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import { acceptInvitation, pilotEmail, removePilotPeople } from "./support/pilot-member";
-import { signInAsSeedUser } from "./support/restore-seed";
+import { signInAsSeedAdmin, signInAsSeedUser } from "./support/restore-seed";
 import { assertSeedFresh } from "./support/seed-fresh";
 
 // Seed (supabase/seed.sql): An–AWS done (expires in ~25 days), Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
@@ -111,14 +111,93 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
 test("manager sees the same org-wide numbers but a ranking limited to their team", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
-  // Org-wide (3 records), not just the managed team's 2.
-  await expect(tileValue(page, "Certificates")).toHaveText("3");
-  await expect(section(page, "By team")).toBeVisible();
+  // Scoped team KPI numbers: Team Cloud has 1 completed valid cert (expires in ~25 days) and 1 not_started cert.
+  // Valid share of completed = 100%, Expiring = 1, Expired = 0, Waiting for approval = 0.
+  await expect(tileValue(page, "Team readiness")).toHaveText("100%");
+  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
+  await expect(tileValue(page, "Expired")).toHaveText("0");
+  await expect(tileValue(page, "Waiting for approval")).toHaveText("0");
 
+  // Org-wide totals appear in "Across the department"
+  const dept = section(page, "Across the department");
+  await expect(dept).toBeVisible();
+  await expect(dept.getByText("Valid")).toBeVisible();
+  await expect(dept.getByText("Expiring within 60 days")).toBeVisible();
+  await expect(dept.getByText("Expired")).toBeVisible();
+
+  // Individual ranking contains only managed team members (An, Châu), excluding unmanaged Bình
   const ranking = section(page, "Individual ranking");
   await expect(rowWith(ranking, "Nguyễn Văn An")).toBeVisible();
   await expect(rowWith(ranking, "Lê Minh Châu")).toBeVisible();
   await expect(rowWith(ranking, "Trần Thị Bình")).toHaveCount(0);
+});
+
+test("manager next-to-expire displays urgent renewals ordered soonest first", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  const nextSection = section(page, "Next to expire");
+  await expect(nextSection).toBeVisible();
+  await expect(rowWith(nextSection, "Nguyễn Văn An", AWS)).toBeVisible();
+  await expect(nextSection.getByRole("link", { name: "View" })).toHaveAttribute("href", /\/records\?search=/);
+});
+
+test("manager team readiness league displays member status breakdown numbers", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  const readinessSection = section(page, "Team readiness");
+  await expect(readinessSection).toBeVisible();
+  await expect(rowWith(readinessSection, "Nguyễn Văn An", "1 valid")).toBeVisible();
+  await expect(rowWith(readinessSection, "Lê Minh Châu", "0 valid")).toBeVisible();
+});
+
+test("manager coming soon cards and tab strip are present and controls are disabled", async ({ page }) => {
+  await signIn(page, "manager@certtracker.test");
+
+  // Tab strip
+  await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: "Approvals Soon" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "Goals Soon" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "Skills Soon" })).toBeDisabled();
+
+  // Coming soon cards with disabled controls
+  const approvalsCard = page.getByRole("region", { name: "Approvals queue (Coming soon)" });
+  await expect(approvalsCard).toBeVisible();
+  await expect(approvalsCard.getByRole("button", { name: "Review queued evidence" })).toBeDisabled();
+
+  const goalsCard = page.getByRole("region", { name: "Goals (Coming soon)" });
+  await expect(goalsCard).toBeVisible();
+  await expect(goalsCard.getByRole("button", { name: "Set quarterly goal" })).toBeDisabled();
+
+  const skillsCard = page.getByRole("region", { name: "Skills (Coming soon)" });
+  await expect(skillsCard).toBeVisible();
+  await expect(skillsCard.getByRole("button", { name: "View skill matrix" })).toBeDisabled();
+
+  const copilotCard = page.getByRole("region", { name: "Ask about my team (Coming soon)" });
+  await expect(copilotCard).toBeVisible();
+  await expect(copilotCard.getByPlaceholder("Ask about team qualifications or skill gaps…")).toBeDisabled();
+  await expect(copilotCard.getByRole("button", { name: "Cloud certification coverage?" })).toBeDisabled();
+
+  const riskCard = page.getByRole("region", { name: "Risk alerts (Coming soon)" });
+  await expect(riskCard).toBeVisible();
+  await expect(riskCard.getByRole("button", { name: "View risk assessment" })).toBeDisabled();
+});
+
+test("a manager with no teams sees the empty state", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  await admin.from("manager_scopes").delete().eq("user_id", "5eed0000-0000-0000-0000-00000000f00b");
+  try {
+    await signIn(page, "manager@certtracker.test");
+    await expect(page.getByText("No teams assigned yet", { exact: true })).toBeVisible();
+    await expect(
+      page.getByText("Ask an admin to assign you as a manager to a team or program so your team's certificates show here."),
+    ).toBeVisible();
+  } finally {
+    const cleanupAdmin = await signInAsSeedAdmin();
+    await cleanupAdmin.from("manager_scopes").insert({
+      user_id: "5eed0000-0000-0000-0000-00000000f00b",
+      team_id: "5eed0000-0000-0000-0000-00000000a001",
+    });
+  }
 });
 
 test("member sees anonymous aggregates only", async ({ page }) => {
