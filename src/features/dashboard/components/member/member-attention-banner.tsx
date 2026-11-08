@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import type { AttentionRecord } from "@/features/dashboard/member-metrics";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
+import { daysLeftLabel } from "@/lib/plural";
 
 export function MemberAttentionBanner({
   attention,
@@ -33,13 +34,15 @@ export function MemberAttentionBanner({
         )}
         <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-2 text-body">
           <span className="font-semibold">
-            {isExpired ? "Certificate expired:" : "Action needed:"}
+            {isExpired ? "Certificate expired:" : "Expires soon:"}
           </span>
           <span className="font-medium text-foreground">{record.courseName}</span>
           <span className="text-caption opacity-80 sm:text-body">
             {isExpired
               ? `Expired on ${formatDate(record.expiryDate!)}`
-              : `Expires on ${formatDate(record.expiryDate!)} (${record.daysToExpiry} ${record.daysToExpiry === 1 ? "day" : "days"} left)`}
+              : record.daysToExpiry === 0
+                ? `${daysLeftLabel(0)} (${formatDate(record.expiryDate!)})`
+                : `Expires on ${formatDate(record.expiryDate!)} (${daysLeftLabel(record.daysToExpiry!)})`}
           </span>
         </div>
       </div>
@@ -55,7 +58,7 @@ export function MemberAttentionBanner({
         onClick={() => onUploadProof(record)}
       >
         <Upload className="size-4" aria-hidden="true" />
-        Upload proof
+        Upload evidence
       </Button>
     </aside>
   );

@@ -20,7 +20,7 @@ export function CompletionDonut({ counts }: { counts: CompletionCounts }) {
   const rate = ratePercent(counts.done, total);
 
   if (total === 0) {
-    return <p className="text-body text-muted-foreground">No records to measure completion yet.</p>;
+    return <p className="text-body text-muted-foreground">No certificates yet.</p>;
   }
 
   const segments = [

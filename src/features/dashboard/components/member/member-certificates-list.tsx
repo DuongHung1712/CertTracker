@@ -22,6 +22,7 @@ import { clampPercent } from "@/features/dashboard/metrics";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
 type TileTone = ExpiryTone | "in-progress" | "neutral";
@@ -89,9 +90,9 @@ export function MemberCertificatesList({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-foreground">Registered Records</h3>
+            <h3 className="text-sm font-semibold text-foreground">My certificates</h3>
             <p className="text-xs text-muted-foreground">
-              {records.length} total certifications registered to {fullName}
+              {`${pluralize(records.length, "certificate")} for ${fullName}`}
             </p>
           </div>
 
@@ -115,16 +116,16 @@ export function MemberCertificatesList({
           <Tabs value={tab} onValueChange={(val) => setTab(val as MemberTab)} className="w-full">
             <TabsList className="flex flex-wrap gap-1 bg-muted/60 p-1 rounded-md">
               <TabsTrigger value="all" className="text-caption">
-                All ({tabCounts.all})
+                {`All (${tabCounts.all})`}
               </TabsTrigger>
               <TabsTrigger value="valid" className="text-caption">
-                Valid ({tabCounts.valid})
+                {`Valid (${tabCounts.valid})`}
               </TabsTrigger>
               <TabsTrigger value="expiring" className="text-caption">
-                Expiring ({tabCounts.expiring})
+                {`Expiring within 60 days (${tabCounts.expiring})`}
               </TabsTrigger>
               <TabsTrigger value="in_progress" className="text-caption">
-                In progress ({tabCounts.in_progress})
+                {`In progress (${tabCounts.in_progress})`}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -243,9 +244,9 @@ export function MemberCertificatesList({
                   <div className="flex flex-col gap-2 border-t border-border/50 pt-2 sm:flex-row sm:items-center sm:justify-between sm:pl-12">
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                       <div className="flex items-center justify-between text-caption">
-                        <span className="text-muted-foreground">Curriculum coverage</span>
+                        <span className="text-muted-foreground">Study progress</span>
                         <span className="font-mono font-medium text-foreground">
-                          {record.progress}% completed
+                          {record.progress}%
                         </span>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -258,7 +259,7 @@ export function MemberCertificatesList({
 
                     {record.plannedExamDate && (
                       <div className="flex flex-col items-start sm:items-end text-caption text-muted-foreground shrink-0 sm:pl-4">
-                        <span className="text-[10px]">Target exam date</span>
+                        <span className="text-[10px]">Planned exam date</span>
                         <span className="font-mono text-xs font-medium text-foreground">
                           {formatDate(record.plannedExamDate)}
                         </span>

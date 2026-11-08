@@ -27,6 +27,7 @@ import {
 import { roundedShare, topExpiredGroups, topGroupsWithOthers, truncateLabel } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { formatNumber } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 
 type MiniBar = {
   key: string;
@@ -92,7 +93,7 @@ function MiniBarChart({
   );
 }
 
-/** "Certificate records" card: records per group, the biggest groups plus "Others". */
+/** "Certificates" card: certificates per group, the biggest groups plus "Others". */
 export function RecordsMiniChart({
   rows,
   totalRecords,
@@ -105,7 +106,7 @@ export function RecordsMiniChart({
   if (groups.length === 0) {
     return (
       <div className={`flex ${MINI_CHART_HEIGHT} items-center justify-center text-center px-2 text-caption text-muted-foreground`}>
-        {(totalRecords ?? 0) > 0 ? "Not enough group data to chart" : "No records yet"}
+        {(totalRecords ?? 0) > 0 ? "Not enough data for a chart yet" : "No records yet"}
       </div>
     );
   }
@@ -117,13 +118,13 @@ export function RecordsMiniChart({
     value: g.records,
     color: "var(--chart-1)",
   }));
-  return <MiniBarChart bars={bars} title="Certificate records by group" />;
+  return <MiniBarChart bars={bars} title="Certificates by group" />;
 }
 
 const VALID_BUCKET_TICKS: Record<string, string> = {
-  active: "> 60d",
-  "expiring-60": "31-60d",
-  "expiring-soon": "≤ 30d",
+  active: "60+ days",
+  "expiring-60": "31–60 days",
+  "expiring-soon": "0–30 days",
   "no-expiry": "No expiry",
 };
 
@@ -143,7 +144,7 @@ export function ValidMiniChart({
   return <MiniBarChart bars={bars} title="Valid certificates" minBarSize={MINI_CHART_MIN_BAR_SIZE} />;
 }
 
-/** "Expiring (≤ 60 days)" card: half-donut with the share of completed certificates that expire within 60 days. */
+/** "Expiring within 60 days" card: half-donut with the share of completed certificates that expire within 60 days. */
 export function ExpiringGaugeMiniChart({
   expiringCount,
   totalCompleted,
@@ -155,15 +156,15 @@ export function ExpiringGaugeMiniChart({
   const otherCount = Math.max(0, totalCompleted - expiringCount);
 
   const gaugeData = [
-    { name: "Expiring (≤ 60d)", value: expiringCount, fill: "var(--status-expiring-soon-fg)" },
-    { name: "Remaining valid", value: otherCount, fill: "var(--secondary)" },
+    { name: "Expiring within 60 days", value: expiringCount, fill: "var(--status-expiring-soon-fg)" },
+    { name: "Other valid", value: otherCount, fill: "var(--secondary)" },
   ];
 
   return (
     <div className={`relative flex flex-col items-center justify-end w-full min-w-0 ${MINI_CHART_HEIGHT}`}>
       <div
         role="img"
-        aria-label={`Expiring within 60 days: ${expiringCount} certificates (${percentage}% of completed)`}
+        aria-label={`Expiring within 60 days: ${pluralize(expiringCount, "certificate")} (${percentage}% of completed)`}
         className={`relative ${MINI_CHART_HEIGHT} w-full flex items-center justify-center`}
       >
         <div aria-hidden className="h-full w-full">
@@ -198,7 +199,7 @@ export function ExpiringGaugeMiniChart({
         </div>
       </div>
       <span className="sr-only">
-        {`Expiring within 60 days: ${expiringCount} certificates (${percentage}% of completed certificates)`}
+        {`Expiring within 60 days: ${pluralize(expiringCount, "certificate")} (${percentage}% of completed certificates)`}
       </span>
     </div>
   );

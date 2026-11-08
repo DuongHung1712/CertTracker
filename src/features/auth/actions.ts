@@ -12,13 +12,13 @@ export async function signIn(_prev: Result<null> | null, formData: FormData): Pr
     password: formData.get("password"),
   });
   if (!parsed.success) {
-    return err(parsed.error.issues[0]?.message ?? "Enter a valid e-mail and password.");
+    return err(parsed.error.issues[0]?.message ?? "Enter a valid email and password.");
   }
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
-    return err("Wrong e-mail or password. Check them and try again.");
+    return err("Wrong email or password. Check them and try again.");
   }
 
   redirect("/dashboard");

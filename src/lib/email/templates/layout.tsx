@@ -51,7 +51,7 @@ export function EmailLayout({ preview, children, appUrl }: { preview: string; ch
           {children}
           <Hr style={{ borderColor: c.border, margin: "24px 0 12px" }} />
           <Section>
-            <Text style={styles.footer}>This is an automated e-mail from CertTracker. Please do not reply.</Text>
+            <Text style={styles.footer}>This is an automated email from CertTracker. Please do not reply.</Text>
             {appUrl ? (
               <Text style={styles.footer}>
                 <Link href={appUrl} style={styles.link}>

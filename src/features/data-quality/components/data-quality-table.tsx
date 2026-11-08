@@ -151,7 +151,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
           issues.length === 0 ? (
             <EmptyState title="The data is clean" description="No records need a review or fix right now." />
           ) : (
-            <EmptyState title="No results found" description="Try another search or clear the filters." />
+            <EmptyState title="No results found" description="Try a different search or clear the filters." />
           )
         }
       />

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBar } from "@/features/dashboard/components/status-bar";
-import { rateOf } from "@/features/dashboard/components/explorer/types";
+import { copySummaryText, rateOf } from "@/features/dashboard/components/explorer/types";
 import {
   formatRate,
   studyStatusSplit,
@@ -14,6 +14,7 @@ import {
 } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { formatNumber } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
 export function DetailPanel({
@@ -26,13 +27,11 @@ export function DetailPanel({
   peopleLabel: string;
 }) {
   async function handleCopySummary(row: BreakdownRow) {
-    const rate = rateOf(row);
-    const summaryText = `${row.label}: ${row.records} records, ${formatRate(rate)} completed (${row.done} done, ${row.inProgress} in progress, ${row.valid} valid, ${row.expired} expired).`;
     try {
-      await navigator.clipboard.writeText(summaryText);
+      await navigator.clipboard.writeText(copySummaryText(row));
       toast.success("Copied summary to clipboard");
     } catch {
-      toast.error("Failed to copy summary");
+      toast.error("Could not copy the summary. Your browser did not allow it.");
     }
   }
 
@@ -74,7 +73,7 @@ export function DetailPanel({
               </span>
               <span>•</span>
               <span>
-                Total records:{" "}
+                Certificates:{" "}
                 <strong className="font-semibold text-foreground tabular-nums">
                   {formatNumber(selectedRow.records)}
                 </strong>
@@ -96,7 +95,7 @@ export function DetailPanel({
                 </span>
                 <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />
               </div>
-              <span className="text-caption text-muted-foreground">Active certs</span>
+              <span className="text-caption text-muted-foreground">Not expired</span>
             </div>
 
             {/* Card 2: Completed */}
@@ -111,7 +110,7 @@ export function DetailPanel({
                 </span>
                 <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />
               </div>
-              <span className="text-caption text-muted-foreground">100% progress</span>
+              <span className="text-caption text-muted-foreground">Finished</span>
             </div>
 
             {/* Card 3: In progress */}
@@ -195,9 +194,8 @@ export function DetailPanel({
               <span>
                 Total:{" "}
                 <strong className="font-semibold text-foreground tabular-nums">
-                  {formatNumber(selectedRow.records)}
-                </strong>{" "}
-                records
+                  {pluralize(selectedRow.records, "certificate")}
+                </strong>
               </span>
               <span>•</span>
               <span>
@@ -220,7 +218,7 @@ export function DetailPanel({
               </span>
             </div>
 
-            {/* Right: 2 Icon action buttons with Tooltip + Primary View in records button */}
+            {/* Right: 2 Icon action buttons with Tooltip + Primary View certificates button */}
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger
@@ -250,13 +248,13 @@ export function DetailPanel({
                         buttonVariants({ variant: "outline", size: "sm" }),
                         "size-8 p-0",
                       )}
-                      aria-label="Open records in new tab"
+                      aria-label="Open in a new tab"
                     >
                       <ExternalLink className="size-4" aria-hidden />
                     </Link>
                   }
                 />
-                <TooltipContent>Open records in new tab</TooltipContent>
+                <TooltipContent>Open in a new tab</TooltipContent>
               </Tooltip>
 
               <Link
@@ -266,7 +264,7 @@ export function DetailPanel({
                   "h-8 gap-1.5 text-xs font-medium",
                 )}
               >
-                <span>View in records</span>
+                <span>View certificates</span>
                 <ArrowRight className="size-3.5" aria-hidden />
               </Link>
             </div>

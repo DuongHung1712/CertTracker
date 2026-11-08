@@ -3,7 +3,7 @@ import { careerStartShape, makeCareerStartSchema } from "@/features/career/schem
 
 export const memberSchema = z.object({
   fullName: z.string().trim().min(1, "Enter the full name"),
-  email: z.string().trim().email("Enter a valid e-mail address"),
+  email: z.string().trim().email("Enter a valid email address"),
   // z.guid(), not .uuid(): see the comment on `idSchema` below.
   teamId: z.guid("Choose a team"),
   isActive: z.boolean().default(true),

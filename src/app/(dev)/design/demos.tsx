@@ -28,6 +28,7 @@ import {
 import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
 import {
+  EXPIRY_BUCKET_LABELS,
   expiryBuckets,
   validBuckets,
   type ExpiryBucket,
@@ -206,10 +207,9 @@ export function ComboboxDemo() {
 
 // Dashboard blocks: the visual test for the Week 5 building blocks.
 const BUCKET_STATUSES = ["Active", "Expiring in 60d", "Expiring Soon", "Expired", "No Expiry"] as const;
-const BUCKET_LABELS = ["> 60 days left", "31–60 days left", "≤ 30 days left", "Expired", "No expiry"];
 
 function buckets(counts: number[]): ExpiryBucket[] {
-  return BUCKET_STATUSES.map((status, i) => ({ status, label: BUCKET_LABELS[i], count: counts[i] }));
+  return BUCKET_STATUSES.map((status, i) => ({ status, label: EXPIRY_BUCKET_LABELS[status], count: counts[i] }));
 }
 
 export function ChartDemo() {
@@ -251,7 +251,7 @@ export function BreakdownDemo() {
   return (
     <div className="flex flex-col gap-6">
       <BreakdownTable rows={BREAKDOWN_ROWS} groupLabel="Team" peopleLabel="Members" />
-      <BreakdownTable rows={[]} groupLabel="Course" peopleLabel="Learners" />
+      <BreakdownTable rows={[]} groupLabel="Course" peopleLabel="Members" />
       <RankingTable rows={RANKING_ROWS} />
     </div>
   );
@@ -285,21 +285,21 @@ export function DashboardRedesignDemo() {
       id: "cert_type",
       label: "By certificate type",
       groupLabel: "Type",
-      peopleLabel: "Learners",
+      peopleLabel: "Members",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 4) },
     },
     {
       id: "provider",
       label: "By provider",
       groupLabel: "Provider",
-      peopleLabel: "Learners",
+      peopleLabel: "Members",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(2, 6) },
     },
     {
       id: "course",
       label: "Popular courses",
       groupLabel: "Course",
-      peopleLabel: "Learners",
+      peopleLabel: "Members",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 5) },
     },
   ];
@@ -310,7 +310,7 @@ export function DashboardRedesignDemo() {
         <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Tall Hero KPI cards</h3>
         <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
-            label="Certificate records"
+            label="Certificates"
             value={61}
             icon={<Award className="size-4 text-foreground" />}
             visual={<RecordsMiniChart rows={BREAKDOWN_ROWS} />}
@@ -323,7 +323,7 @@ export function DashboardRedesignDemo() {
             visual={<ValidMiniChart buckets={validSegments} />}
           />
           <KpiCard
-            label="Expiring (≤ 60 days)"
+            label="Expiring within 60 days"
             value={9}
             icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
             visual={<ExpiringGaugeMiniChart expiringCount={9} totalCompleted={48} />}

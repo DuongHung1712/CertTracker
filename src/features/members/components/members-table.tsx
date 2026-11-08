@@ -79,7 +79,7 @@ export function MembersTable({
     { accessorKey: "careerRoleName", header: "Role", cell: ({ row }) => row.original.careerRoleName ?? "Not set" },
     {
       accessorKey: "yoeYears",
-      header: "YoE",
+      header: "Experience",
       cell: ({ row }) => formatYoe(row.original.yoeYears),
       // Not set (null) sorts below every number.
       sortingFn: (a, b) => (a.original.yoeYears ?? -1) - (b.original.yoeYears ?? -1),
@@ -170,7 +170,7 @@ export function MembersTable({
       setClearingScopes(null);
       return;
     }
-    toast.success(`Removed the manager scopes of ${clearingScopes.fullName}`);
+    toast.success(`Removed manager access for ${clearingScopes.fullName}`);
     setClearingScopes(null);
   }
 
@@ -215,9 +215,9 @@ export function MembersTable({
         <ConfirmDialog
           open={!!clearingScopes}
           onOpenChange={(open) => !open && setClearingScopes(null)}
-          title={`Remove the manager scopes of ${clearingScopes?.code} · ${clearingScopes?.fullName}?`}
-          description="They manage no team or program through these scopes now, because their role is not Manager. Removing the scopes cannot be undone."
-          confirmLabel="Remove scopes"
+          title={`Remove manager access to teams for ${clearingScopes?.fullName}?`}
+          description={`${clearingScopes?.fullName ?? "This member"} is no longer a Manager, so this team access is not used. You cannot undo this.`}
+          confirmLabel="Remove access"
           pendingLabel="Removing…"
           pending={pending}
           onConfirm={handleRemoveScopes}
@@ -249,9 +249,9 @@ function ScopesCell({ scopes, onRemove }: { scopes: Scope[] | undefined; onRemov
       </span>
       {inactive && (
         <span className="flex items-center gap-2">
-          <span className="text-caption text-destructive">Scopes inactive: not a manager</span>
+          <span className="text-caption text-destructive">Not a manager: team access not used</span>
           <Button variant="ghost" size="xs" onClick={onRemove}>
-            Remove scopes
+            Remove access
           </Button>
         </span>
       )}

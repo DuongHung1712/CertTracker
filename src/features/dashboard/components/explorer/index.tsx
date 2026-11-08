@@ -130,7 +130,7 @@ export function Explorer({
                     <div className="p-8 lg:col-span-12">
                       <EmptyState
                         title="No data yet"
-                        description="There are no records to count yet."
+                        description="Add certificates to see this breakdown."
                       />
                     </div>
                   ) : (

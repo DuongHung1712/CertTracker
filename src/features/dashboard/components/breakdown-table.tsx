@@ -46,7 +46,7 @@ export function BreakdownTable({
       },
       {
         accessorKey: "records",
-        header: "Records",
+        header: "Certificates",
         cell: ({ row }) => formatNumber(row.original.records),
         meta: { align: "right" },
       },
@@ -100,7 +100,7 @@ export function BreakdownTable({
       data={rows}
       pageSize={10}
       getRowId={(row) => row.key}
-      empty={<EmptyState title="No data yet" description={emptyHint ?? "There are no records to count yet."} />}
+      empty={<EmptyState title="No data yet" description={emptyHint ?? "Add certificates to see this breakdown."} />}
     />
   );
 }

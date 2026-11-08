@@ -28,7 +28,7 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
           aria-describedby={state && !state.ok ? "set-password-error password-hint" : "password-hint"}
           aria-invalid={state && !state.ok ? true : undefined}
         />
-        <p id="password-hint" className="text-caption text-muted-foreground">Minimum 8 characters</p>
+        <p id="password-hint" className="text-caption text-muted-foreground">At least 8 characters</p>
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="confirmPassword" className="text-body font-medium">

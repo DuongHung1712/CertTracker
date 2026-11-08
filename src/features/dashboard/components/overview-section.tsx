@@ -35,7 +35,7 @@ export function OverviewSection({
       <div className="flex flex-col gap-3.5">
         <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
           <KpiCard
-            label="Certificate records"
+            label="Certificates"
             value={k.totalRecords}
             icon={<Award className="size-4 text-foreground" />}
             hint="Total tracked across teams"
@@ -51,10 +51,10 @@ export function OverviewSection({
             visual={<ValidMiniChart buckets={validBuckets(k)} />}
           />
           <KpiCard
-            label="Expiring (≤ 60 days)"
+            label="Expiring within 60 days"
             value={expiringCerts(k)}
             icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
-            hint="31–60 days vs ≤ 30 days left"
+            hint="Valid, 60 days or less left"
             visual={<ExpiringGaugeMiniChart expiringCount={expiringCerts(k)} totalCompleted={k.doneRecords} />}
           />
           <KpiCard

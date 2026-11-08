@@ -25,7 +25,7 @@ export function SectionError({ title }: { title: string }) {
   return (
     <Alert variant="destructive">
       <AlertTitle>{`Could not load "${title}"`}</AlertTitle>
-      <AlertDescription>Reload the page to try again. If it keeps failing, tell an admin.</AlertDescription>
+      <AlertDescription>Reload the page to try again. If it keeps failing, ask your admin.</AlertDescription>
     </Alert>
   );
 }

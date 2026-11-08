@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { rateOf } from "@/features/dashboard/components/explorer/types";
 import { formatRate } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
-import { formatNumber } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
 export function MasterList({
@@ -13,7 +13,6 @@ export function MasterList({
   activeKey,
   onSelectKey,
   groupLabel,
-  peopleLabel,
   tabLabel,
   onClearFilters,
 }: {
@@ -82,7 +81,7 @@ export function MasterList({
       {/* Header row for list */}
       <div className="flex items-center justify-between px-1 text-label font-medium uppercase text-muted-foreground">
         <span>{groupLabel}</span>
-        <span>Records</span>
+        <span>Certificates</span>
       </div>
 
       {/* Master Item List */}
@@ -97,7 +96,7 @@ export function MasterList({
             aria-selected={false}
             className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-center"
           >
-            <p className="text-caption text-muted-foreground">No matching items found.</p>
+            <p className="text-caption text-muted-foreground">No groups match these filters.</p>
             <Button
               variant="outline"
               size="sm"
@@ -168,13 +167,14 @@ export function MasterList({
                         isSelected ? "text-[var(--primary-foreground-muted)]" : "text-muted-foreground",
                       )}
                     >
-                      {row.headcount !== null ? `${formatNumber(row.headcount)} headcount · ` : ""}
-                      {formatNumber(row.people)} {peopleLabel.toLowerCase()}
+                      {row.headcount !== null
+                        ? `${pluralize(row.headcount, "member")} · ${row.people} with certificates`
+                        : pluralize(row.people, "member")}
                     </span>
                   </div>
                 </div>
 
-                {/* Right: Record count chip + Completion % */}
+                {/* Right: certificate count chip + Completion % */}
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span
                     className={cn(
@@ -184,15 +184,7 @@ export function MasterList({
                         : "text-body font-semibold text-foreground",
                     )}
                   >
-                    {formatNumber(row.records)}{" "}
-                    <span
-                      className={cn(
-                        "font-normal",
-                        isSelected ? "text-[var(--primary-foreground-muted)]" : "text-caption text-muted-foreground",
-                      )}
-                    >
-                      records
-                    </span>
+                    {pluralize(row.records, "certificate")}
                   </span>
                   <div
                     className={cn(

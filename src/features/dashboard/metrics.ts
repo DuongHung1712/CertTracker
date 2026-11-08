@@ -1,4 +1,4 @@
-import type { ExpiryStatus } from "@/components/status/expiry";
+import { expiryMeta, type ExpiryStatus } from "@/components/status/expiry";
 import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 import { formatPercent } from "@/lib/format";
 
@@ -22,14 +22,13 @@ export const expiringCerts = (k: DashboardKpis): number => k.expiring60Certs + k
 export type ExpiryBucket = { status: ExpiryStatus; label: string; count: number };
 
 /**
- * Chart labels state the day range. They are NOT the per-record badge labels (`expiryMeta`): the KPI tiles
- * "Valid" / "Expiring (≤ 60 days)" (decision #31) span several buckets, so reusing the badge words
- * here would show different numbers under the same name.
+ * Chart labels state the day range. The two expiring tiers read exactly like the per-record badge
+ * (`expiryMeta`); "Valid" and "Expiring within 60 days" (decision #31) are the aggregate tiles and use their own words.
  */
 export const EXPIRY_BUCKET_LABELS = {
-  Active: "> 60 days left",
-  "Expiring in 60d": "31–60 days left",
-  "Expiring Soon": "≤ 30 days left",
+  Active: "More than 60 days",
+  "Expiring in 60d": expiryMeta("Expiring in 60d").label,
+  "Expiring Soon": expiryMeta("Expiring Soon").label,
   Expired: "Expired",
   "No Expiry": "No expiry",
 } as const;
@@ -64,10 +63,10 @@ export type VisualSegment = {
 /** The 4 valid buckets for the "Valid" hero card stacked bar (> 60d, 31-60d, ≤ 30d, no expiry). */
 export function validBuckets(k: DashboardKpis): VisualSegment[] {
   return [
-    { key: "active", label: "> 60 days left", count: k.activeCerts, color: "var(--status-active-fg)" },
-    { key: "expiring-60", label: "31–60 days left", count: k.expiring60Certs, color: "var(--status-expiring-60-fg)" },
-    { key: "expiring-soon", label: "≤ 30 days left", count: k.expiringSoonCerts, color: "var(--status-expiring-soon-fg)" },
-    { key: "no-expiry", label: "No expiry", count: k.noExpiryCerts, color: "var(--status-no-expiry-fg)" },
+    { key: "active", label: EXPIRY_BUCKET_LABELS.Active, count: k.activeCerts, color: "var(--status-active-fg)" },
+    { key: "expiring-60", label: EXPIRY_BUCKET_LABELS["Expiring in 60d"], count: k.expiring60Certs, color: "var(--status-expiring-60-fg)" },
+    { key: "expiring-soon", label: EXPIRY_BUCKET_LABELS["Expiring Soon"], count: k.expiringSoonCerts, color: "var(--status-expiring-soon-fg)" },
+    { key: "no-expiry", label: EXPIRY_BUCKET_LABELS["No Expiry"], count: k.noExpiryCerts, color: "var(--status-no-expiry-fg)" },
   ];
 }
 

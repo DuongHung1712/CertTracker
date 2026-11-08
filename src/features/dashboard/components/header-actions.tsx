@@ -35,7 +35,7 @@ export function DashboardHeaderActions() {
         className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
       >
         <ListChecks className="size-4" aria-hidden />
-        <span>View records</span>
+        <span>View certificates</span>
       </Link>
     </div>
   );

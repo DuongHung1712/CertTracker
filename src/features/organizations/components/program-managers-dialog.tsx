@@ -41,7 +41,7 @@ export function ProgramManagersDialog({
       setError(result.error);
       return;
     }
-    toast.success(`Managers saved for ${program.name}`);
+    toast.success(`Saved managers for ${program.name}`);
     onClose();
   }
 

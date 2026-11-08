@@ -11,11 +11,14 @@ export type AttentionRecord = {
   urgency: AttentionUrgency;
 };
 
+/** A record with a known number of days to expiry. */
+export type DatedRecord = RecordRow & { daysToExpiry: number };
+
 export type MemberKpis = {
   total: number;
   validCount: number;
   expiringCount: number;
-  leastDaysRecord: RecordRow | null;
+  leastDaysRecord: DatedRecord | null;
   inProgressCount: number;
   inProgressRows: RecordRow[];
   expiredCount: number;
@@ -96,7 +99,6 @@ const TAB_FILTERS: Record<MemberTab, (r: RecordRow) => boolean> = {
   in_progress: isInProgress,
 };
 
-type DatedRecord = RecordRow & { daysToExpiry: number };
 const hasDays = (r: RecordRow): r is DatedRecord => r.daysToExpiry !== null;
 
 /**

@@ -19,7 +19,7 @@ export default async function MePage() {
         <PageHeader title="My certificates" description="Certificates you hold and courses you are studying." />
         <EmptyState
           title="Your account is not linked to a member"
-          description="Ask an admin to link your account to a member so your certificates show here."
+          description="Ask your admin to link your account to a member so your certificates show here."
         />
       </div>
     );

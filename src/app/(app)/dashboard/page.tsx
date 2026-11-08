@@ -17,7 +17,7 @@ export default async function DashboardPage() {
           <PageHeader title="Dashboard" description="Personal certificates and progress." />
           <EmptyState
             title="Your account is not linked to a member"
-            description="Ask an admin to link your account to a member so your certificates show here."
+            description="Ask your admin to link your account to a member so your certificates show here."
           />
         </div>
       );

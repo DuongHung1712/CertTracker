@@ -243,6 +243,14 @@ Hiding is only UX; every permission is still enforced by RLS.
 - Dates: `dd/MM/yyyy` ("today" is taken in `Asia/Ho_Chi_Minh`, `src/lib/dates.ts`).
 - Numbers and money in the English format: `1,250,000`, `3,500,000 ₫`, `$150` (`src/lib/format.ts`, `src/lib/money.ts`); percentages `75%`. Mixed currencies are never summed.
 - No emoji in the interface.
+- **One word per thing**: certificate (not record, credential or badge), member (not learner, person or headcount), course, evidence, valid, expired. "Record" is a database word and stays out of the UI. `src/lib/ui-copy.test.ts` fails on the rejected words.
+- Plain, short English: sentences under about 15 words; no symbols or abbreviations in labels ("30 days or less", "years of experience", not "≤ 30d", "YoE", "exp").
+- Expiry words come from one place: `expiryMeta` (`src/components/status/expiry.ts`). The aggregate tile is "Expiring within 60 days"; the badge tiers are "Expires in 31–60 days" and "Expires within 30 days".
+- Count with `pluralize()` and show time left with `daysLeftLabel()` (`src/lib/plural.ts`); never write `n === 1 ? ... : ...` by hand. 0 days reads "Expires today".
+- Delete destroys a thing; Remove takes something off without destroying it (evidence, a file, manager access).
+- Errors say what happened, then how to fix it. No "please", no raw database text. Contact line: "Ask your admin".
+- No contractions ("cannot", "do not"); British spelling for existing words (organisation, centre, catalogue); "email" without a hyphen.
+- **Coming soon** uses `ComingSoonCard`: chip "Coming soon", a plain title, one line ending "Not available yet.", disabled controls only, no dates, no fake status, no numbers that look real.
 
 ---
 

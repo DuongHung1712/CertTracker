@@ -66,35 +66,37 @@ export function FilterRow({
         <Select value={statusFilter} onValueChange={(val) => onStatusFilterChange(val ?? "all")}>
           <SelectTrigger
             aria-label="Filter by certificate status"
-            className="h-8 w-[160px] text-xs"
+            className="h-8 w-56 text-xs"
           >
-            <SelectValue placeholder="All groups">
-              {(val: string) => STATUS_FILTER_LABELS[val] ?? "All groups"}
+            <SelectValue placeholder={STATUS_FILTER_LABELS.all}>
+              {(val: string) => STATUS_FILTER_LABELS[val] ?? STATUS_FILTER_LABELS.all}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All groups</SelectItem>
-            <SelectItem value="has_expired">Has expired certificates</SelectItem>
-            <SelectItem value="has_in_progress">Has in-progress</SelectItem>
-            <SelectItem value="no_completed">No completed yet</SelectItem>
+            {Object.entries(STATUS_FILTER_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
-        {/* Min Records Filter */}
+        {/* Minimum certificates filter */}
         <Select value={minRecordsFilter} onValueChange={(val) => onMinRecordsFilterChange(val ?? "0")}>
           <SelectTrigger
-            aria-label="Filter by minimum records"
-            className="h-8 w-[130px] text-xs"
+            aria-label="Filter by number of certificates"
+            className="h-8 w-52 text-xs"
           >
-            <SelectValue placeholder="Min records: Any">
-              {(val: string) => MIN_RECORDS_FILTER_LABELS[val] ?? "Min records: Any"}
+            <SelectValue placeholder={MIN_RECORDS_FILTER_LABELS["0"]}>
+              {(val: string) => MIN_RECORDS_FILTER_LABELS[val] ?? MIN_RECORDS_FILTER_LABELS["0"]}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">Min records: Any</SelectItem>
-            <SelectItem value="1">1+ records</SelectItem>
-            <SelectItem value="5">5+ records</SelectItem>
-            <SelectItem value="10">10+ records</SelectItem>
+            {Object.entries(MIN_RECORDS_FILTER_LABELS).map(([value, label]) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

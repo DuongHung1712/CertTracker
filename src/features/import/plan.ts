@@ -322,17 +322,17 @@ function warnAboutCatalogDifferences(
   if (certTypeText !== null) {
     const catalogName = course.certTypeId === null ? null : ctx.certTypeNameById.get(course.certTypeId) ?? null;
     if (catalogName === null || foldText(catalogName) !== foldText(certTypeText)) {
-      issues.warnings.push("Certificate type in the file differs from the catalog — keeping the catalog");
+      issues.warnings.push("Certificate type in the file differs from the catalogue — keeping the catalogue");
     }
   }
   if (validityMonths !== null && validityMonths !== course.validityMonths) {
-    issues.warnings.push("Validity in the file differs from the catalog — keeping the catalog");
+    issues.warnings.push("Validity in the file differs from the catalogue — keeping the catalogue");
   }
   if (hasCost(input) && (input.cost !== course.cost || input.costCurrency !== course.costCurrency)) {
-    issues.warnings.push("Cost in the file differs from the catalog — keeping the catalog");
+    issues.warnings.push("Cost in the file differs from the catalogue — keeping the catalogue");
   }
   if (input.estHours !== null && input.estHours !== course.estHours) {
-    issues.warnings.push("Study hours in the file differ from the catalog — keeping the catalog");
+    issues.warnings.push("Study hours in the file differ from the catalogue — keeping the catalogue");
   }
 }
 

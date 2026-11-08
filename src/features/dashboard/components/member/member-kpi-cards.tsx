@@ -1,6 +1,7 @@
 import { AlertCircle, Award, CheckCircle2, Clock, PlayCircle } from "lucide-react";
 import type { MemberKpis } from "@/features/dashboard/member-metrics";
 import { formatRate, ratePercent } from "@/features/dashboard/metrics";
+import { daysLeftLabel, pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
 export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
@@ -8,12 +9,12 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
 
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
-      {/* 1. Recorded certificates: Dossier Ledger in solid primary teal */}
+      {/* 1. All certificates, in solid primary */}
       <div className="flex min-h-[175px] flex-col justify-between rounded-lg border border-transparent bg-primary p-3.5 text-primary-foreground shadow-none">
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <dt className="text-label uppercase tracking-wider text-primary-foreground/80 font-mono text-[10px] sm:text-[11px]">
-              Recorded certificates
+              Certificates
             </dt>
             <Award className="size-3.5 text-primary-foreground/80 shrink-0" aria-hidden="true" />
           </div>
@@ -21,23 +22,22 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.total}
           </dd>
           <dd className="text-[11px] text-primary-foreground/80 leading-tight">
-            Recorded credentials
+            Including courses in progress
           </dd>
         </div>
 
         <div className="border-t border-primary-foreground/20 pt-2 flex flex-col gap-1.5">
           <div className="inline-flex items-center self-start rounded bg-black/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-            {compliance} Compliant · {kpis.validCount}/{kpis.total} active
+            {`${compliance} valid (${kpis.validCount} of ${kpis.total})`}
           </div>
           <div className="flex items-center gap-1 text-[9px] font-mono text-primary-foreground/90">
-            <span className="rounded bg-white/10 px-1 py-0.5">{kpis.validCount} valid</span>
-            <span className="rounded bg-white/10 px-1 py-0.5">{kpis.expiringCount} exp</span>
-            <span className="rounded bg-white/10 px-1 py-0.5">{kpis.inProgressCount} study</span>
+            <span className="rounded bg-white/10 px-1 py-0.5">{kpis.expiringCount} expiring</span>
+            <span className="rounded bg-white/10 px-1 py-0.5">{kpis.inProgressCount} in progress</span>
           </div>
         </div>
       </div>
 
-      {/* 2. Expiring soon: amber border and warning accent */}
+      {/* 2. Expiring within 60 days: amber border and warning accent */}
       <div
         className={cn(
           "flex min-h-[175px] flex-col justify-between rounded-lg border p-3.5 bg-card",
@@ -56,7 +56,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
                   : "text-muted-foreground",
               )}
             >
-              Expiring soon
+              Expiring within 60 days
             </dt>
             <Clock
               className={cn(
@@ -79,7 +79,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.expiringCount}
           </dd>
           <dd className="text-[11px] text-muted-foreground leading-tight">
-            ≤ 60 days left
+            Valid, 60 days or less left
           </dd>
         </div>
 
@@ -87,10 +87,10 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
           {kpis.leastDaysRecord ? (
             <>
               <span className="font-medium text-foreground truncate max-w-full" title={kpis.leastDaysRecord.courseName}>
-                Target: {kpis.leastDaysRecord.courseName}
+                Next to expire: {kpis.leastDaysRecord.courseName}
               </span>
               <span className="font-mono text-[10px] font-semibold text-[var(--status-expiring-soon-fg)]">
-                {kpis.leastDaysRecord.daysToExpiry} days left
+                {daysLeftLabel(kpis.leastDaysRecord.daysToExpiry)}
               </span>
             </>
           ) : (
@@ -112,7 +112,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.inProgressCount}
           </dd>
           <dd className="text-[11px] text-muted-foreground leading-tight">
-            Active study goals
+            Courses in progress
           </dd>
         </div>
 
@@ -130,7 +130,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
               </div>
             ))
           ) : (
-            <span className="text-muted-foreground text-[10px]">No active study goals</span>
+            <span className="text-muted-foreground text-[10px]">No courses in progress</span>
           )}
         </div>
       </div>
@@ -163,8 +163,8 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
 
         <div className="border-t border-border pt-2 text-[10px] text-muted-foreground leading-tight">
           {kpis.expiredCount === 0
-            ? "Audit compliance OK. Zero registry violations."
-            : `${kpis.expiredCount} certificates need renewal.`}
+            ? "No expired certificates."
+            : `${pluralize(kpis.expiredCount, "certificate")} ${kpis.expiredCount === 1 ? "needs" : "need"} renewal.`}
         </div>
       </div>
     </dl>

@@ -10,7 +10,7 @@ export async function listNotificationRuns(): Promise<RunRow[]> {
     .select("kind, period, status, sent_at, claimed_at, error")
     .order("claimed_at", { ascending: false })
     .limit(500);
-  if (error) throw new Error(`Could not load the e-mail history: ${error.message}`);
+  if (error) throw new Error(`Could not load the email history: ${error.message}`);
   return summarizeRuns(
     data.map((r) => ({
       kind: r.kind as NotificationKind,

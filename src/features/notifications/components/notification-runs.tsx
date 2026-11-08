@@ -12,7 +12,7 @@ const KIND_LABEL: Record<RunRow["kind"], string> = {
 
 const HEAD = "h-8 bg-muted px-2.5 text-label uppercase text-muted-foreground";
 
-/** Server Component: the history of automatic e-mails and whether the settings they need are present. */
+/** Server Component: the history of automatic emails and whether the settings they need are present. */
 export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: SetupCheck[] }) {
   const missing = checks.filter((c) => !c.ok);
   return (
@@ -41,7 +41,7 @@ export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: Set
                 <TableRow className="hover:bg-transparent">
                   <TableCell colSpan={8} className="whitespace-normal">
                     <EmptyState
-                      title="No e-mails sent yet"
+                      title="No emails sent yet"
                       description="Schedule: expiry alerts at 08:00 on Mondays, the monthly report at 08:00 on the 1st (Vietnam time)."
                     />
                   </TableCell>
@@ -82,7 +82,7 @@ export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: Set
         </div>
         {missing.length > 0 && (
           <Alert variant="destructive">
-            <AlertTitle>E-mails cannot be sent in production until every setting below is configured.</AlertTitle>
+            <AlertTitle>Emails cannot be sent in production until every setting below is configured.</AlertTitle>
             <AlertDescription>Missing: {missing.map((c) => c.label).join(", ")}.</AlertDescription>
           </Alert>
         )}

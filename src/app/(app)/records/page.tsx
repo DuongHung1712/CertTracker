@@ -19,7 +19,7 @@ export default async function RecordsPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Records"
+        title="Certificates"
         description="Who holds, or is studying, which certificate."
         actions={<ExportLinks />}
       />
