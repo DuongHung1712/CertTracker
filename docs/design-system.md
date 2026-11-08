@@ -133,7 +133,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `MemberCode` | `components/status/` | `M001` in the mono font, `muted-foreground` | ✓ |
 | Form | `Field`, `FieldLabel`, `FieldError`…, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn `field` | Label above the input; error below it in `destructive`; shares the Zod schema with the server | ✓ (combined with React Hook Form in week 2) |
 | | `EntityCombobox` | `components/entity-combobox.tsx` | Searchable select: member, course, team | ✓ |
-| | Date input | `Input` | Typed dd/mm/yyyy, checked with `toIsoDate` (decisions #16) | ✓ |
+| | `DateField` | `components/date-field.tsx` | Label + one text input (`dd/mm/yyyy`, numeric keypad) that inserts the slashes while typing (`formatDateInput`) + a calendar button (`CalendarDays`, `aria-label` "Choose <label> from calendar") that opens the browser's date picker through a hidden `type="date"` input; optional `max` (`YYYY-MM-DD`) limits the picker only; checked with `toIsoDate` (decisions #16) | ✓ |
 | | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop an image or PDF as evidence | ✓ |
 | Navigation | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `components/ui/tabs.tsx` | shadcn `tabs` (Base UI); keyboard navigation (arrows, Home, End); horizontal scrollable strip on mobile | ✓ |
 | Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
@@ -168,6 +168,10 @@ The first column identifies the row (code or name), the last column is the "⋯"
 | Quick view / quick edit of one record while keeping the table in view | `Sheet` on the right |
 
 The save button sits at the end of the form, on the right; "Cancel" is the secondary button to its left. While saving, the button reads "Saving…" and is disabled.
+
+### 4.2a Fields that depend on a status
+
+When one field (a status) decides which other inputs make sense, render only the inputs that apply; do not hide the rest with CSS. A hidden input would still be validated and could block Save. Keep the rules as a pure module next to the schema (`features/records/status-fields.ts`: `visibleFields(status)` for what to show, `valuesOnStatusChange(next, current)` for the value to set and the fields to empty). On change, apply the value, empty the listed fields and clear their errors (`form.clearErrors`). The schema and the submitted payload do not change.
 
 ### 4.3 Destructive actions
 
