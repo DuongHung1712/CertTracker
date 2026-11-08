@@ -25,7 +25,7 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="overflow-x-auto rounded border border-border">
+      <div className="relative overflow-x-auto rounded border border-border">
         <table className="w-full text-table text-left">
           <thead className="border-b border-border bg-muted/40 text-label uppercase tracking-wider text-muted-foreground font-mono">
             <tr>
