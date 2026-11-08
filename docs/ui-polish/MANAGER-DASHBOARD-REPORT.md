@@ -13,7 +13,7 @@ After the clean-up (branch `refactor/manager-dashboard-cleanup`): each fact appe
 | Figma Design Block (Node 4:1936) | Implementation Component | Contract & Evidence |
 |---|---|---|
 | **Subheader Scope Filter** | `TeamScopeFilter` | Pills "All teams" and one per managed team, no member counts, no period selector, no second download link. |
-| **Team Readiness Circular Donut** | `TeamReadinessDonutCard` (`{kpis, noCertCount}`) | SVG donut with the valid share, `{valid} of {completed}` certificates, legend Valid / Expired / No cert yet. Contains `dl > div` with `<dt>Team readiness</dt>` for `tileValue(page, "Team readiness")`. |
+| **Team Readiness Circular Donut** | `TeamReadinessDonutCard` (`{kpis, noCertCount}`) | SVG donut with the valid share, `{valid} of {completed} completed certificates`, one legend row `Members without a completed certificate`; an em dash when nothing is completed. Contains `dl > div` with `<dt>Team readiness</dt>` for `tileValue(page, "Team readiness")`. |
 | **Top KPI Cards** | `TopKpiRow` | `Expiring within 60 days` (caption `{urgentCount} with 30 days or less`), `Expired` (`Past due:` names the most overdue certificate), `Waiting for approval` (dashed, Soon chip, value `—`). |
 | **Needs Attention** | `NeedsAttentionFeed` | Region "Needs attention": expired certificates only, most overdue first, `Resolve` link to `/records?search=`. No approvals placeholder. |
 | **Allocated Scope Card** | `AllocatedScopeCard` | Team names with member counts. |

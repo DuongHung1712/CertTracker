@@ -3,7 +3,6 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { getNeedsAttentionItems } from "@/features/dashboard/manager-metrics";
 import type { RecordRow } from "@/features/records/queries";
-import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
 /** Expired certificates only; certificates still valid are listed in Next to expire. */
@@ -12,14 +11,9 @@ export function NeedsAttentionFeed({ records }: { records: RecordRow[] }) {
 
   return (
     <section aria-label="Needs attention" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-          Needs attention
-        </span>
-        <span className="rounded border border-border px-1.5 py-0.5 text-caption font-mono text-muted-foreground">
-          {pluralize(items.length, "item")}
-        </span>
-      </div>
+      <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
+        Needs attention
+      </span>
 
       <div className="flex flex-col gap-3">
         {items.length === 0 && (

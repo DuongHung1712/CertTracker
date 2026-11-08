@@ -108,8 +108,8 @@ describe("NeedsAttentionFeed", () => {
     expect(html).not.toContain("Open queue");
     expect(html).not.toContain("<button");
     expect(html).not.toContain("Team Cloud");
-    // The item count is the number of listed certificates, not +1 for a placeholder.
-    expect(html).toMatch(/>1 item</);
+    // No count badge: the list rows are the count (the Expired tile shows the number).
+    expect(html).not.toMatch(/>\d+ items?</);
   });
 });
 
@@ -156,11 +156,24 @@ describe("TeamReadinessDonutCard & TopKpiRow", () => {
     const html = renderToStaticMarkup(<TeamReadinessDonutCard kpis={kpis} noCertCount={2} />);
     expect(html).toContain("Team readiness");
     expect(html).toContain("50%");
-    expect(html).toContain("1 of 2");
+    expect(html).toContain("1 of 2 completed certificates");
     expect(html).not.toContain("N=");
-    expect(html).toContain("No cert yet");
+    expect(html).toContain("Members without a completed certificate");
+    expect(html).not.toContain("No cert yet");
+    // Valid and Expired are not repeated as legend rows (centre figure and the Expired tile show them).
+    expect(html).not.toContain(">Valid<");
+    expect(html).not.toContain(">Expired<");
     // The 60-day count is the KPI tile next to it, not a donut segment.
     expect(html).not.toContain("Expiring soon");
+  });
+
+  it("shows an em dash, not 0%, when there are no completed certificates", () => {
+    const kpis = calculateManagerKpis([]);
+    const html = renderToStaticMarkup(<TeamReadinessDonutCard kpis={kpis} noCertCount={3} />);
+    expect(html).toContain("No completed certificates");
+    expect(html).not.toContain("0%");
+    expect(html).not.toContain("0 of 0");
+    expect(html).toContain(">—<");
   });
 
   it("renders TopKpiRow with 3 tiles and only real numbers", () => {
