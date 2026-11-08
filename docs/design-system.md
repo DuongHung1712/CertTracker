@@ -233,6 +233,24 @@ Hiding is only UX; every permission is still enforced by RLS.
 - **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Ask about certificates" (with a disabled question box), "My skills", "Quarterly goals", "Next career role", "Certificate review" and, inside the profile card, "Focus area". Each has the chip "Coming soon" and a one-line description ending "Not available yet.".
 - **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
 
+### 4.8 Manager Dashboard
+- **Header:** Title "Dashboard", server-built greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), subtitle "You look after <team names> (<N> members)." (or "No teams assigned yet." if unassigned), primary button "View certificates" (`/records`), and an outlined "Download team data" using `ExportLinks`.
+- **Overview:** 4 KPI cards scoped to the manager's teams inside region "Overview" (`dl > div` with bare numbers in the first `dd`):
+  1. "Team readiness": inverted solid-teal highlight card with valid share of completed certificates in scope and an accessible SVG ring chart.
+  2. "Expiring within 60 days": count of in-scope certificates with 60 days or less remaining and `ExpiringGaugeMiniChart`.
+  3. "Expired": count of in-scope overdue certificates; 0 displays the positive state "No expired certificates".
+  4. "Waiting for approval": dashed placeholder card (`ComingSoonCard` styling) with count 0 and "Approvals workflow not available yet.".
+- **Tab Strip:** View switcher tab pills with `Overview` (active), and coming-soon disabled tabs `Approvals`, `Goals`, `Skills`.
+- **Next to Expire:** Table of in-scope completed certificates with 0–60 days left (max 8, soonest first) with member initials avatar, course, expiry date, `ExpiryBadge`, and link "View" to `/records`.
+- **Team Readiness League:** League table/list of in-scope members sorted by valid certificates, showing segmented status bars (valid, in progress, expired, not started) and breakdown counts.
+- **Certificates Earned by Month:** 6-month bar chart (`MonthlyEarnedChart`) tracking issued certificates with peak month solid highlighting and screen reader summary.
+- **Planned Exams:** List of upcoming exams scheduled within 60 days with member name, course, formatted date, and days left label.
+- **Needs Attention Feed:** Urgency feed triaging expired certificates (Resolve button) and certificates expiring within 30 days (View button).
+- **Individual Ranking:** Scoped leaderboard showing only members in the manager's managed teams.
+- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()`.
+- **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` controls) ending with "Not available yet." for: Approvals queue, Goals, Skills, Ask about my team, and Risk alerts.
+- **Responsive:** Multi-column layout collapsing gracefully to a single column on mobile (390px) with zero horizontal scroll.
+
 ---
 
 ## 5. Wording and formats

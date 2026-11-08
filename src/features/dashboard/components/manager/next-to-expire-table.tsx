@@ -1,0 +1,92 @@
+import Link from "next/link";
+import { CheckCircle2 } from "lucide-react";
+import { ExpiryBadge } from "@/components/status/expiry-badge";
+import { buttonVariants } from "@/components/ui/button";
+import { getNextToExpire } from "@/features/dashboard/manager-metrics";
+import type { RecordRow } from "@/features/records/queries";
+import { formatDate } from "@/lib/format";
+
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export function NextToExpireTable({ records }: { records: RecordRow[] }) {
+  const rows = getNextToExpire(records, 8);
+
+  if (rows.length === 0) {
+    return (
+      <div className="flex h-32 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-border/80 bg-muted/20 p-4 text-center">
+        <CheckCircle2 className="size-5 text-[var(--status-active-fg)]" aria-hidden="true" />
+        <p className="text-body font-medium text-foreground">No upcoming expirations</p>
+        <p className="text-caption text-muted-foreground">
+          All completed certificates have more than 60 days of validity remaining.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-border bg-card">
+      <table className="w-full text-table text-left">
+        <thead className="border-b border-border bg-muted/40 text-label uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th scope="col" className="px-3 py-2 font-medium">Member</th>
+            <th scope="col" className="px-3 py-2 font-medium">Course</th>
+            <th scope="col" className="px-3 py-2 font-medium">Expiry date</th>
+            <th scope="col" className="px-3 py-2 font-medium">Status</th>
+            <th scope="col" className="px-3 py-2 font-medium text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {rows.map((row) => (
+            <tr key={row.id} className="hover:bg-accent/40 transition-colors">
+              <td className="px-3 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary font-mono text-caption font-semibold"
+                  >
+                    {getInitials(row.memberName)}
+                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-medium text-foreground truncate">{row.memberName}</span>
+                    <span className="font-mono text-caption text-muted-foreground">{row.memberCode}</span>
+                  </div>
+                </div>
+              </td>
+              <td className="px-3 py-2.5">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-foreground truncate max-w-xs">{row.courseName}</span>
+                  {row.providerName && (
+                    <span className="text-caption text-muted-foreground">{row.providerName}</span>
+                  )}
+                </div>
+              </td>
+              <td className="px-3 py-2.5 font-mono text-caption text-foreground whitespace-nowrap">
+                {row.expiryDate ? formatDate(row.expiryDate) : "—"}
+              </td>
+              <td className="px-3 py-2.5 whitespace-nowrap">
+                <ExpiryBadge
+                  status={row.expiryStatus}
+                  daysToExpiry={row.daysToExpiry}
+                  expiryDate={row.expiryDate}
+                />
+              </td>
+              <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                <Link
+                  href={`/records?search=${encodeURIComponent(row.memberName)}`}
+                  className={buttonVariants({ variant: "ghost", size: "sm" })}
+                >
+                  View
+                </Link>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
