@@ -74,8 +74,6 @@ export function MonthlyEarnedChart({ records }: { records: RecordRow[] }) {
           Total earned: <strong className="font-semibold text-foreground font-mono">{pluralize(totalEarned, "certificate")}</strong>
         </span>
       </div>
-
-      <span className="sr-only">{`Certificates earned by month: ${summary}`}</span>
     </div>
   );
 }
