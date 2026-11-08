@@ -7,12 +7,14 @@ export function visibleFields(status: RecordStatus): {
   plannedExamDate: boolean;
   issuedDate: boolean;
   certificateUrl: boolean;
+  evidence: boolean;
 } {
   return {
     progress: status === "in_progress",
     plannedExamDate: status !== "done",
     issuedDate: status === "done",
     certificateUrl: status === "done",
+    evidence: status === "done",
   };
 }
 
