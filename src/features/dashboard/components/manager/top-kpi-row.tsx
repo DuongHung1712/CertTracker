@@ -115,7 +115,7 @@ export function TopKpiRow({
             <span className="truncate">
               {kpis.expiredCount > 0 && pastDueText
                 ? `Past due: ${pastDueText}`
-                : "All current valid"}
+                : "No expired certificates"}
             </span>
           </div>
         </div>

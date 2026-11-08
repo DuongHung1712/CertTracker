@@ -25,7 +25,7 @@ export function ManagerTabStrip() {
         className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 px-3.5 py-1 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
       >
         <span>Approvals</span>
-        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-mono">
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-caption text-muted-foreground font-mono">
           Soon
         </span>
       </button>
@@ -38,7 +38,7 @@ export function ManagerTabStrip() {
         className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 px-3.5 py-1 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
       >
         <span>Skills</span>
-        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-mono">
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-caption text-muted-foreground font-mono">
           Soon
         </span>
       </button>
@@ -51,7 +51,7 @@ export function ManagerTabStrip() {
         className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 px-3.5 py-1 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
       >
         <span>Goals</span>
-        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-mono">
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-caption text-muted-foreground font-mono">
           Soon
         </span>
       </button>

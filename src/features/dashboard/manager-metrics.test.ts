@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateManagerKpis,
-  EXPIRING_WINDOW_DAYS,
-  expiryWindow,
   formatManagerSubtitle,
-  formatTeamNames,
   getCertificatesEarnedByMonth,
   getMembersWithoutCerts,
   getNeedsAttentionItems,
@@ -13,91 +10,39 @@ import {
   getTeamReadinessLeague,
   isDone,
   isExpired,
-  isExpiring30,
   isExpiring60,
-  isInProgress,
-  isNotStarted,
-  isValid,
-  URGENT_WINDOW_DAYS,
 } from "@/features/dashboard/manager-metrics";
-import { doneRecord, makeRecord, noExpiryRecord } from "@/features/records/__fixtures__/record-row";
+import { doneRecord, makeRecord } from "@/features/records/__fixtures__/record-row";
 
 describe("manager-metrics", () => {
-  describe("formatTeamNames & formatManagerSubtitle", () => {
-    it("handles 0, 1, 2, and 3+ teams", () => {
-      expect(formatTeamNames([])).toBe("");
-      expect(formatTeamNames(["Team Cloud"])).toBe("Team Cloud");
-      expect(formatTeamNames(["Team Cloud", "Team AI"])).toBe("Team Cloud and Team AI");
-      expect(formatTeamNames(["Team Cloud", "Team AI", "Team Data"])).toBe("Team Cloud, Team AI and Team Data");
-    });
-
+  describe("formatManagerSubtitle", () => {
     it("formats subtitle correctly with member pluralization", () => {
       expect(formatManagerSubtitle([], 0)).toBe("No teams assigned yet.");
       expect(formatManagerSubtitle(["Team Cloud"], 1)).toBe("You look after Team Cloud (1 member).");
       expect(formatManagerSubtitle(["Team Cloud"], 2)).toBe("You look after Team Cloud (2 members).");
       expect(formatManagerSubtitle(["Team Cloud", "Team AI"], 14)).toBe("You look after Team Cloud and Team AI (14 members).");
-    });
-  });
-
-  describe("expiryWindow boundaries", () => {
-    it("classifies boundaries at -1, 0, 30, 31, 60, 61 days and null", () => {
-      expect(expiryWindow(null)).toBe("none");
-
-      // Boundary: -1 day -> expired
-      expect(expiryWindow(-1)).toBe("expired");
-      expect(expiryWindow(-10)).toBe("expired");
-
-      // Boundary: 0 days -> urgent (<= URGENT_WINDOW_DAYS = 30)
-      expect(expiryWindow(0)).toBe("urgent");
-      expect(expiryWindow(1)).toBe("urgent");
-
-      // Boundary: 30 days -> urgent (<= URGENT_WINDOW_DAYS)
-      expect(expiryWindow(URGENT_WINDOW_DAYS)).toBe("urgent");
-      expect(expiryWindow(30)).toBe("urgent");
-
-      // Boundary: 31 days -> expiring (<= EXPIRING_WINDOW_DAYS = 60)
-      expect(expiryWindow(URGENT_WINDOW_DAYS + 1)).toBe("expiring");
-      expect(expiryWindow(31)).toBe("expiring");
-
-      // Boundary: 60 days -> expiring (<= EXPIRING_WINDOW_DAYS)
-      expect(expiryWindow(EXPIRING_WINDOW_DAYS)).toBe("expiring");
-      expect(expiryWindow(60)).toBe("expiring");
-
-      // Boundary: 61 days -> later (> EXPIRING_WINDOW_DAYS)
-      expect(expiryWindow(EXPIRING_WINDOW_DAYS + 1)).toBe("later");
-      expect(expiryWindow(61)).toBe("later");
-      expect(expiryWindow(120)).toBe("later");
+      expect(formatManagerSubtitle(["Team Cloud", "Team AI", "Team Data"], 3)).toBe(
+        "You look after Team Cloud, Team AI and Team Data (3 members).",
+      );
     });
   });
 
   describe("predicate status helpers", () => {
-    it("identifies done, valid, expiring60, expiring30, expired, in_progress, not_started", () => {
+    it("identifies done, expiring60 and expired", () => {
       const active = doneRecord(100);
       const exp60 = doneRecord(45);
-      const exp30 = doneRecord(20);
       const expired = doneRecord(-5);
-      const noExp = noExpiryRecord();
-      const inProg = makeRecord({ status: "in_progress", daysToExpiry: null });
-      const notStarted = makeRecord({ status: "not_started", daysToExpiry: null });
 
       expect(isDone(active)).toBe(true);
-      expect(isValid(active)).toBe(true);
-      expect(isValid(noExp)).toBe(true);
-      expect(isValid(expired)).toBe(false);
 
       expect(isExpiring60(exp60)).toBe(true);
-      expect(isExpiring60(exp30)).toBe(true);
+      expect(isExpiring60(doneRecord(20))).toBe(true);
       expect(isExpiring60(active)).toBe(false);
       expect(isExpiring60(expired)).toBe(false);
-
-      expect(isExpiring30(exp30)).toBe(true);
-      expect(isExpiring30(exp60)).toBe(false);
 
       expect(isExpired(expired)).toBe(true);
       expect(isExpired(active)).toBe(false);
 
-      expect(isInProgress(inProg)).toBe(true);
-      expect(isNotStarted(notStarted)).toBe(true);
     });
   });
 
@@ -202,6 +147,14 @@ describe("manager-metrics", () => {
   });
 
   describe("getCertificatesEarnedByMonth", () => {
+    it("ends at the Vietnam calendar month: 18:00 UTC on 31 Oct is already 1 Nov in Vietnam", () => {
+      // issued_date is a plain date, so only the current month depends on the time zone.
+      const now = new Date("2026-10-31T18:00:00Z");
+      const months = getCertificatesEarnedByMonth([doneRecord(100, { issuedDate: "2026-11-01" })], 3, now);
+      expect(months.map((m) => m.monthKey)).toEqual(["2026-09", "2026-10", "2026-11"]);
+      expect(months[2].count).toBe(1);
+    });
+
     it("groups certificates by last 6 calendar months and identifies peak month", () => {
       const now = new Date("2026-06-15T00:00:00Z");
       const records = [

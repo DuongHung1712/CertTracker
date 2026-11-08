@@ -4,40 +4,14 @@ import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
 
-export { EXPIRING_WINDOW_DAYS, URGENT_WINDOW_DAYS };
-
-export type ExpiryWindow = "expired" | "urgent" | "expiring" | "later" | "none";
-
-/**
- * Classifies a certificate by days to expiry.
- * Strictly checks boundaries:
- * < 0: expired
- * 0..30 (URGENT_WINDOW_DAYS): urgent
- * 31..60 (EXPIRING_WINDOW_DAYS): expiring
- * > 60: later
- * null: none
- */
-export function expiryWindow(daysToExpiry: number | null): ExpiryWindow {
-  if (daysToExpiry === null) return "none";
-  if (daysToExpiry < 0) return "expired";
-  if (daysToExpiry <= URGENT_WINDOW_DAYS) return "urgent";
-  if (daysToExpiry <= EXPIRING_WINDOW_DAYS) return "expiring";
-  return "later";
-}
-
 export const isDone = (r: RecordRow): boolean => r.status === "done";
-export const isValid = (r: RecordRow): boolean => isDone(r) && (r.daysToExpiry === null || r.daysToExpiry >= 0);
 export const isExpiring60 = (r: RecordRow): boolean =>
   isDone(r) && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= EXPIRING_WINDOW_DAYS;
-export const isExpiring30 = (r: RecordRow): boolean =>
-  isDone(r) && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= URGENT_WINDOW_DAYS;
 export const isExpired = (r: RecordRow): boolean =>
   isDone(r) && r.daysToExpiry !== null && r.daysToExpiry < 0;
-export const isInProgress = (r: RecordRow): boolean => r.status === "in_progress";
-export const isNotStarted = (r: RecordRow): boolean => r.status === "not_started";
 
 /** Formats a list of team names: ["Cloud"], ["Cloud", "AI"] -> "Cloud and AI", ["A", "B", "C"] -> "A, B and C". */
-export function formatTeamNames(teamNames: string[]): string {
+function formatTeamNames(teamNames: string[]): string {
   if (teamNames.length === 0) return "";
   if (teamNames.length === 1) return teamNames[0];
   if (teamNames.length === 2) return `${teamNames[0]} and ${teamNames[1]}`;
@@ -205,8 +179,10 @@ export function getCertificatesEarnedByMonth(
   now: Date = new Date(),
 ): CertificatesEarnedMonth[] {
   const result: CertificatesEarnedMonth[] = [];
-  const currentYear = now.getUTCFullYear();
-  const currentMonth = now.getUTCMonth(); // 0-11
+  // Vietnam calendar month: between 00:00 and 07:00 ICT on the 1st, UTC is still the previous month.
+  const [vnYear, vnMonth] = todayVn(now).split("-").map(Number);
+  const currentYear = vnYear;
+  const currentMonth = vnMonth - 1; // 0-11
 
   for (let i = monthsCount - 1; i >= 0; i--) {
     let year = currentYear;

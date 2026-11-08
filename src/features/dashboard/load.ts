@@ -97,6 +97,7 @@ export async function loadManagerDashboard(
     greeting,
     subtitle,
     managedTeamNames,
+    teamsError: managedTeamsResult.ok ? undefined : managedTeamsResult.error,
     records,
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     members,

@@ -189,6 +189,7 @@ describe("TeamReadinessDonutCard & TopKpiRow", () => {
     expect(html).not.toContain("Next 60 days");
     // Approvals do not exist yet: no number that looks real.
     expect(html).not.toContain("proofs queued");
+    expect(html).not.toContain("All current valid");
     expect(html).toMatch(/Waiting for approval<\/dt>[\s\S]*?<dd[^>]*>—<\/dd>/);
   });
 });

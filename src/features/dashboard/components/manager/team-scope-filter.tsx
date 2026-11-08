@@ -15,6 +15,7 @@ export function TeamScopeFilter({
     <div className="flex flex-wrap items-center gap-1.5 border-b border-border pb-4" role="group" aria-label="Filter by team scope">
       <button
         type="button"
+        aria-pressed={selectedTeam === null}
         onClick={() => onSelectTeam(null)}
         className={cn(
           "rounded-full px-3 py-1 text-caption font-medium transition-colors font-mono",
@@ -32,6 +33,7 @@ export function TeamScopeFilter({
           <button
             type="button"
             key={t.name}
+            aria-pressed={isSelected}
             onClick={() => onSelectTeam(isSelected ? null : t.name)}
             className={cn(
               "rounded-full px-3 py-1 text-caption font-medium transition-colors font-mono",

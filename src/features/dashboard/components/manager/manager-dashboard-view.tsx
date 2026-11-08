@@ -38,6 +38,7 @@ export function ManagerDashboardView({
   greeting,
   subtitle,
   managedTeamNames,
+  teamsError,
   records,
   recordsError,
   members,
@@ -48,6 +49,7 @@ export function ManagerDashboardView({
   greeting: string;
   subtitle: string;
   managedTeamNames: string[];
+  teamsError?: string;
   records: RecordRow[];
   recordsError?: string;
   members: { id: string; fullName: string; teamName: string | null }[];
@@ -108,7 +110,9 @@ export function ManagerDashboardView({
 
       <RecordsRealtime />
 
-      {!hasTeams ? (
+      {teamsError ? (
+        <SectionError title="Your teams" />
+      ) : !hasTeams ? (
         <EmptyState
           title="No teams assigned yet"
           description="Ask an admin to assign you as a manager to a team or program so your team's certificates show here."

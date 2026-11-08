@@ -59,7 +59,8 @@ export function MonthlyEarnedChart({ records }: { records: RecordRow[] }) {
                 {months.map((entry) => (
                   <Cell
                     key={entry.monthKey}
-                    fill={entry.isPeak ? "var(--primary)" : "var(--primary)/30"}
+                    // --chart-3 is 3:1 against the card in light and dark; "var(--primary)/30" is not valid CSS.
+                    fill={entry.isPeak ? "var(--primary)" : "var(--chart-3)"}
                   />
                 ))}
               </Bar>

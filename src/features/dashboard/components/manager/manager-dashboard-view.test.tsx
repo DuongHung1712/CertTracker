@@ -195,3 +195,27 @@ describe("ManagerDashboardView: automated reminders", () => {
     expect(reminders).not.toContain("<a ");
   });
 });
+
+describe("ManagerDashboardView: failures are not shown as empty", () => {
+  it("shows an error, not 'No teams assigned yet', when the teams could not be loaded", () => {
+    const html = renderToStaticMarkup(
+      <ManagerDashboardView
+        greeting="Good morning, Manager"
+        subtitle="No teams assigned yet."
+        managedTeamNames={[]}
+        teamsError="boom"
+        records={[]}
+        members={[]}
+        departmentKpis={DEPARTMENT}
+      />,
+    );
+    expect(html).toContain("Could not load");
+    expect(html).not.toContain("No teams assigned yet</");
+  });
+
+  it("marks the selected team pill with aria-pressed", () => {
+    const html = render();
+    expect(count(html, 'aria-pressed="true"')).toBe(1);
+    expect(count(html, 'aria-pressed="false"')).toBe(1);
+  });
+});
