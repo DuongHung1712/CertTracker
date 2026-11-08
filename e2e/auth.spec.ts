@@ -10,7 +10,7 @@ test("unauthenticated visitor is sent to login", async ({ page }) => {
 
 test("admin signs in, sees dashboard, and signs out", async ({ page }) => {
   await signIn(page, ADMIN_EMAIL);
-  await expect(page.getByText("Admin", { exact: true })).toBeVisible();
+  await expect(page.getByText("Admin", { exact: true }).first()).toBeVisible();
 
   await page.getByRole("button", { name: "Account" }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();

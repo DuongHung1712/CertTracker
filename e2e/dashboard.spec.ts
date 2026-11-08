@@ -383,3 +383,57 @@ test("explorer tabs, filter row, clear filters, and keyboard row selection updat
   await expect(rowWith(courseSection, AWS)).toHaveAttribute("aria-selected", "true");
   await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
 });
+
+test("admin Needs attention lists only real items computed from seed data", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+
+  const attention = section(page, "Needs attention");
+  await expect(attention).toBeVisible();
+
+  // In seed: An's AWS certificate expires in ~25 days (within 30 days)
+  await expect(attention.getByText("Nguyễn Văn An · AWS Solutions Architect Associate")).toBeVisible();
+  await expect(attention.getByText(/Expires in \d+ days/)).toBeVisible();
+
+  // In seed: 1 data quality issue (done record without evidence)
+  await expect(attention.getByText("Data quality issues")).toBeVisible();
+  await expect(attention.getByText(/1 issue requires attention/)).toBeVisible();
+
+  // No mock/fake strings from Figma
+  for (const fake of ["Send reminder", "HRIS sync", "Review submissions", "4 pending proofs", "Minh Pham", "PMP"]) {
+    await expect(attention.getByText(fake)).toHaveCount(0);
+  }
+});
+
+test("admin merged Coming soon card has no interactive controls", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+
+  const card = section(page, "Compliance assistant and insights (Coming soon)");
+  await expect(card).toBeVisible();
+  await expect(card.getByText("Compliance assistant")).toBeVisible();
+  await expect(card.getByText("Monthly summary")).toBeVisible();
+  await expect(card.getByText("Risk alerts")).toBeVisible();
+
+  // All 3 descriptions end with "Not available yet."
+  const paragraphs = card.getByText(/Not available yet\.$/);
+  expect(await paragraphs.count()).toBe(3);
+
+  // No buttons or textboxes
+  await expect(card.getByRole("button")).toHaveCount(0);
+  await expect(card.getByRole("textbox")).toHaveCount(0);
+});
+
+test("admin profile card renders correctly for admin without a member record", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+
+  const profile = section(page, "Workspace ledger");
+  await expect(profile).toBeVisible();
+  await expect(profile.getByText("admin@certtracker.test")).toBeVisible();
+  await expect(profile.getByText("Admin", { exact: true })).toBeVisible();
+  await expect(profile.getByText("System administrator")).toBeVisible();
+  await expect(profile.getByText("Role not set")).toHaveCount(0);
+
+  // No fake badges from Figma
+  for (const fake of ["DC34", "Lead Auditor", "AUDIT READY"]) {
+    await expect(profile.getByText(fake)).toHaveCount(0);
+  }
+});
