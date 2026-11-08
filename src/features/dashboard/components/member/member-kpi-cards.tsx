@@ -33,7 +33,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
           <div className="inline-flex items-center self-start rounded border border-primary-foreground/30 px-1.5 py-0.5 text-caption font-medium text-primary-foreground">
             {`${compliance} valid (${kpis.validCount} of ${kpis.total})`}
           </div>
-          <div className="flex items-center gap-1 text-caption font-mono text-primary-foreground/90">
+          <div className="flex flex-wrap items-center gap-1 text-caption font-mono text-primary-foreground/90">
             <span className="rounded border border-primary-foreground/30 px-1 py-0.5">{kpis.expiringCount} expiring</span>
             <span className="rounded border border-primary-foreground/30 px-1 py-0.5">{kpis.inProgressCount} in progress</span>
           </div>
