@@ -2,11 +2,13 @@ import type { ComponentProps } from "react";
 import type { getCurrentUser } from "@/features/auth/queries";
 import { getMemberCareer } from "@/features/career/queries";
 import type { MemberDashboardView } from "@/features/dashboard/components/member/member-dashboard-view";
+import { getGreeting } from "@/features/dashboard/member-metrics";
 import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard/queries";
 import { settle } from "@/features/dashboard/settle";
 import { resolveMemberProfile } from "@/features/dashboard/view-model";
 import { listMembers } from "@/features/members/queries";
 import { listCourseOptions, listRecords } from "@/features/records/queries";
+import { formatDateTimeVn } from "@/lib/format";
 
 type SignedInUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
@@ -37,6 +39,7 @@ export async function loadMemberDashboard(
     settle(getDashboardKpis()),
   ]);
 
+  const now = new Date();
   const profile = resolveMemberProfile({
     member: (membersResult.ok && membersResult.data.find((m) => m.id === memberId)) || null,
     firstRecord: recordsResult.ok ? recordsResult.data[0] : undefined,
@@ -52,5 +55,6 @@ export async function loadMemberDashboard(
     courseOptions: courseOptionsResult.ok ? courseOptionsResult.data : [],
     departmentKpis: kpisResult.ok ? kpisResult.data : null,
     departmentKpisError: kpisResult.ok ? undefined : kpisResult.error,
+    subtitle: `${getGreeting(profile.fullName, now)} · Figures as of ${formatDateTimeVn(now.toISOString())}.`,
   };
 }

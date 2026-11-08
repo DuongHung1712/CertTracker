@@ -134,7 +134,7 @@ export function MasterList({
                   "group relative flex items-center justify-between gap-3 rounded-lg border p-3 cursor-pointer transition-all outline-none",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-card",
                   isSelected
-                    ? "border-primary bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background"
+                    ? "border-primary bg-primary/10 text-foreground"
                     : "border-border/60 bg-card hover:border-border hover:bg-muted/40 text-foreground",
                 )}
               >
@@ -145,7 +145,7 @@ export function MasterList({
                     className={cn(
                       "flex size-9 shrink-0 items-center justify-center rounded-md text-caption font-semibold tracking-wider",
                       isSelected
-                        ? "bg-primary-foreground/20 text-primary-foreground"
+                        ? "bg-primary text-primary-foreground"
                         : "bg-muted text-muted-foreground",
                     )}
                   >
@@ -155,7 +155,7 @@ export function MasterList({
                     <span
                       className={cn(
                         "truncate text-body font-medium leading-snug",
-                        isSelected ? "text-primary-foreground font-semibold" : "text-foreground",
+                        isSelected && "font-semibold",
                       )}
                       title={row.label}
                     >
@@ -163,8 +163,7 @@ export function MasterList({
                     </span>
                     <span
                       className={cn(
-                        "truncate text-caption",
-                        isSelected ? "text-[var(--primary-foreground-muted)]" : "text-muted-foreground",
+                        "truncate text-caption text-muted-foreground",
                       )}
                     >
                       {row.headcount !== null
@@ -180,7 +179,7 @@ export function MasterList({
                     className={cn(
                       "text-xs font-semibold tabular-nums",
                       isSelected
-                        ? "rounded-full bg-primary-foreground/20 px-2.5 py-0.5 text-primary-foreground"
+                        ? "rounded-full bg-primary/15 px-2.5 py-0.5 text-foreground"
                         : "text-body font-semibold text-foreground",
                     )}
                   >
@@ -189,14 +188,14 @@ export function MasterList({
                   <div
                     className={cn(
                       "flex items-center gap-1.5 text-caption",
-                      isSelected ? "text-primary-foreground font-medium" : "text-muted-foreground",
+                      isSelected ? "text-foreground font-medium" : "text-muted-foreground",
                     )}
                   >
                     <span
                       className={cn(
                         "inline-block size-1.5 rounded-full",
                         isSelected
-                          ? "bg-primary-foreground"
+                          ? "bg-primary"
                           : (rate ?? 0) > 0
                             ? "bg-[var(--chart-1)]"
                             : "bg-muted-foreground",

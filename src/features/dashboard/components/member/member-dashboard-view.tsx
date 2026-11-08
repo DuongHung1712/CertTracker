@@ -19,13 +19,11 @@ import { Section, SectionError } from "@/features/dashboard/components/section";
 import {
   calculateMemberKpis,
   getAttentionRecord,
-  getGreeting,
 } from "@/features/dashboard/member-metrics";
 import type { DashboardKpis } from "@/features/dashboard/schema";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import type { RecordRow } from "@/features/records/queries";
-import { formatDateTimeVn } from "@/lib/format";
 
 export function MemberDashboardView({
   fullName,
@@ -38,6 +36,7 @@ export function MemberDashboardView({
   courseOptions,
   departmentKpis,
   departmentKpisError,
+  subtitle,
 }: {
   fullName: string;
   teamName: string | null;
@@ -49,11 +48,12 @@ export function MemberDashboardView({
   courseOptions: ComboboxOption[];
   departmentKpis: DashboardKpis | null;
   departmentKpisError?: string;
+  /** Greeting and "figures as of" time, worked out on the server so the first render matches on the client. */
+  subtitle: string;
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<RecordRow | null>(null);
 
-  const greeting = getGreeting(fullName);
   const memberKpis = calculateMemberKpis(records);
   const attention = getAttentionRecord(records);
 
@@ -71,7 +71,7 @@ export function MemberDashboardView({
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title="Dashboard"
-        description={`${greeting} · Figures as of ${formatDateTimeVn(new Date().toISOString())}.`}
+        description={subtitle}
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <ExportLinks />

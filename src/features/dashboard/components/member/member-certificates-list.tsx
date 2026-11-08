@@ -259,7 +259,7 @@ export function MemberCertificatesList({
 
                     {record.plannedExamDate && (
                       <div className="flex flex-col items-start sm:items-end text-caption text-muted-foreground shrink-0 sm:pl-4">
-                        <span className="text-[10px]">Planned exam date</span>
+                        <span className="text-caption">Planned exam date</span>
                         <span className="font-mono text-xs font-medium text-foreground">
                           {formatDate(record.plannedExamDate)}
                         </span>

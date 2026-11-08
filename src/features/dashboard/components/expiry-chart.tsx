@@ -55,7 +55,6 @@ export function ExpiryChart({
                 tickLine={false}
                 axisLine={false}
                 interval={0}
-                tick={{ fontSize: compact ? 11 : 12 }}
               />
               {/*
                 A custom `shape` makes Recharts keep zero-width bars; without it a bucket with 0 certificates is
@@ -73,7 +72,6 @@ export function ExpiryChart({
                 <LabelList
                   dataKey="count"
                   position="right"
-                  fontSize={compact ? 11 : 12}
                   formatter={(value: unknown) => formatNumber(Number(value))}
                 />
               </Bar>

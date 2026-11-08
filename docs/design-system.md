@@ -34,7 +34,7 @@ Token names follow the **role** a colour plays, as in shadcn/ui. Both light and 
 | `secondary-foreground` | `#15212B` | `#EBF0EE` | Text on the secondary button | 14.2:1 / 11.2:1 |
 | `primary` | `#0E5C58` | `#249C90` | Primary button, links, selected item, progress bar | 7.3:1 / 5.4:1 |
 | `primary-foreground` | `#FFFFFF` | `#0D151C` | Text on `primary` | 7.8:1 / 5.5:1 |
-| `primary-foreground-muted` | `#D8E4E2` | `#132226` | Secondary/muted text on `primary` selection | 6.0:1 / 4.9:1 |
+| `primary-foreground-muted` | `#D8E4E2` | `#132226` | Secondary/muted text on a solid `primary` surface (no component uses it now) | 6.0:1 / 4.9:1 |
 | `primary-hover` | `#0A4744` | `#2DB4A6` | Primary button hover | 10.5:1 / 7.2:1 |
 | `accent` | `#E2EFEC` | `#163332` | Selected table row, active sidebar item, row hover | — |
 | `accent-foreground` | `#0E5C58` | `#48D1C1` | Text on `accent` | 6.6:1 / 7.3:1 |
@@ -216,7 +216,7 @@ Hiding is only UX; every permission is still enforced by RLS.
 - **Overview:** 4 tall hero KPI cards (~240px, `KpiCard`) with numbers in the upper half and real mini charts in the lower half (`RecordsMiniChart`, `ValidMiniChart`, `ExpiringGaugeMiniChart`, and positive empty state `ExpiredMiniChart`), followed by a slim compact stat strip (Active members, Completed, In progress). All inside region "Overview", `dl > div` with bare number in the first `dd`.
 - **Certificate Expiry:** Compact horizontal strip (~120px) positioned directly above Explorer, with exact `role="img"` and `aria-label` contract.
 - **Filter Row:** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
-- **Explorer:** Master-Detail board with tab pills and count chips on top, solid `bg-primary` row for selected item (contrast ≥ 4.5:1, visible focus ring), and live detail dossier on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open in records).
+- **Explorer:** Master-Detail board with tab pills and count chips on top, selected row shown by background (`bg-primary/10` plus a `border-primary` border; no permanent ring), keyboard focus shown by the offset `ring` focus ring (≥ 3:1 on the card and on the selected row, checked in `tokens.test.ts`), and a live detail panel on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open the certificates).
 - **Ranking:** Individual leaderboard (admin/manager only).
 
 ### 4.7 Member Dashboard

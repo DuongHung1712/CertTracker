@@ -71,7 +71,7 @@ export function CompletionDonut({ counts }: { counts: CompletionCounts }) {
           <span className="text-kpi font-semibold tabular-nums text-foreground">
             {formatRate(rate)}
           </span>
-          <span className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
+          <span className="text-caption font-medium tracking-wider text-muted-foreground uppercase">
             completed
           </span>
         </div>
