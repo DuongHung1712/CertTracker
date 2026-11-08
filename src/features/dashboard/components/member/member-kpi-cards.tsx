@@ -1,10 +1,10 @@
 import { AlertCircle, Award, CheckCircle2, Clock, PlayCircle } from "lucide-react";
 import type { MemberKpis } from "@/features/dashboard/member-metrics";
+import { formatRate, ratePercent } from "@/features/dashboard/metrics";
 import { cn } from "@/lib/utils";
 
 export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
-  const compliancePct =
-    kpis.total > 0 ? Math.round((kpis.validCount / kpis.total) * 100) : 100;
+  const compliance = formatRate(ratePercent(kpis.validCount, kpis.total));
 
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
@@ -27,7 +27,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
 
         <div className="border-t border-primary-foreground/20 pt-2 flex flex-col gap-1.5">
           <div className="inline-flex items-center self-start rounded bg-black/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-            {compliancePct}% Compliant · {kpis.validCount}/{kpis.total} active
+            {compliance} Compliant · {kpis.validCount}/{kpis.total} active
           </div>
           <div className="flex items-center gap-1 text-[9px] font-mono text-primary-foreground/90">
             <span className="rounded bg-white/10 px-1 py-0.5">{kpis.validCount} valid</span>

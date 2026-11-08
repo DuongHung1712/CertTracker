@@ -9,7 +9,7 @@ export function makeRecord(
     id: "r1",
     memberId: "m1",
     memberCode: "M001",
-    memberName: "Lê Minh Châu",
+    memberName: "Le Minh Chau",
     memberEmail: "member@certtracker.test",
     teamId: "t1",
     teamName: "Team Cloud",

@@ -70,7 +70,7 @@ export function getAttentionRecord(records: RecordRow[]): AttentionRecord | null
   if (completed.length === 0) return null;
 
   // 1. Check for expired certificates (< 0 days)
-  const expired = completed.filter((r) => r.daysToExpiry! < 0 || r.expiryStatus === "expired");
+  const expired = completed.filter((r) => r.daysToExpiry! < 0);
   if (expired.length > 0) {
     // Pick the most recently expired (closest to 0 or first)
     const sorted = [...expired].sort((a, b) => b.daysToExpiry! - a.daysToExpiry!);

@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert } from "lucide-react";
+import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert, type LucideIcon } from "lucide-react";
 import { EmptyState } from "@/components/data/empty-state";
 import type { ComboboxOption } from "@/components/entity-combobox";
-import type { ExpiryStatus } from "@/components/status/expiry";
+import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { RecordStatusLabel } from "@/components/status/record-status";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -22,6 +22,25 @@ import { RecordSheet } from "@/features/records/components/record-sheet";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+type TileTone = ExpiryTone | "in-progress" | "neutral";
+
+// Literal class strings so Tailwind generates them; the status utilities are the ones ExpiryBadge uses.
+const TILE: Record<TileTone, { icon: LucideIcon; className: string }> = {
+  active: { icon: Award, className: "border-status-active-border bg-status-active-bg text-status-active-fg" },
+  "expiring-60": { icon: Clock, className: "border-status-expiring-60-border bg-status-expiring-60-bg text-status-expiring-60-fg" },
+  "expiring-soon": { icon: Clock, className: "border-status-expiring-soon-border bg-status-expiring-soon-bg text-status-expiring-soon-fg" },
+  expired: { icon: ShieldAlert, className: "border-status-expired-border bg-status-expired-bg text-status-expired-fg" },
+  "no-expiry": { icon: Award, className: "border-status-no-expiry-border bg-status-no-expiry-bg text-status-no-expiry-fg" },
+  na: { icon: BookOpen, className: "border-status-na-border bg-status-na-bg text-status-na-fg" },
+  "in-progress": { icon: BookOpen, className: "border-primary/20 bg-primary/10 text-primary" },
+  neutral: { icon: BookOpen, className: "border-border bg-muted text-muted-foreground" },
+};
+
+function tileTone(record: RecordRow): TileTone {
+  if (record.status === "done") return expiryMeta(toExpiryStatus(record.expiryStatus)).tone;
+  return record.status === "in_progress" ? "in-progress" : "neutral";
+}
 
 export function MemberCertificatesList({
   fullName,
@@ -130,10 +149,9 @@ export function MemberCertificatesList({
       ) : (
         <div className="flex flex-col gap-3">
           {visibleRecords.map((record) => {
-            const isExpiring = record.expiryStatus === "expiring-soon";
-            const isValid = record.expiryStatus === "valid";
-            const isExpired = record.expiryStatus === "expired";
             const isInProgress = record.status === "in_progress";
+            const tone = tileTone(record);
+            const { icon: TileIcon, className: tileClassName } = TILE[tone];
 
             return (
               <div
@@ -145,28 +163,10 @@ export function MemberCertificatesList({
                   <div className="flex items-start gap-3 min-w-0">
                     <div
                       aria-hidden="true"
-                      className={cn(
-                        "size-9 shrink-0 rounded-md border flex items-center justify-center",
-                        isExpiring
-                          ? "border-[var(--status-expiring-soon-border)] bg-[var(--status-expiring-soon-bg)] text-[var(--status-expiring-soon-fg)]"
-                          : isValid
-                            ? "border-[var(--status-valid-border)] bg-[var(--status-valid-bg)] text-[var(--status-valid-fg)]"
-                            : isExpired
-                              ? "border-[var(--status-expired-border)] bg-[var(--status-expired-bg)] text-[var(--status-expired-fg)]"
-                              : isInProgress
-                                ? "border-primary/20 bg-primary/10 text-primary"
-                                : "border-border bg-muted text-muted-foreground",
-                      )}
+                      data-tone={tone}
+                      className={cn("size-9 shrink-0 rounded-md border flex items-center justify-center", tileClassName)}
                     >
-                      {isExpiring ? (
-                        <Clock className="size-4" />
-                      ) : isValid ? (
-                        <Award className="size-4" />
-                      ) : isExpired ? (
-                        <ShieldAlert className="size-4" />
-                      ) : (
-                        <BookOpen className="size-4" />
-                      )}
+                      <TileIcon className="size-4" />
                     </div>
 
                     <div className="flex flex-col min-w-0">
@@ -183,7 +183,7 @@ export function MemberCertificatesList({
                   <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                     {record.status === "done" && record.expiryStatus ? (
                       <ExpiryBadge
-                        status={record.expiryStatus as ExpiryStatus}
+                        status={record.expiryStatus}
                         daysToExpiry={record.daysToExpiry}
                         expiryDate={record.expiryDate}
                       />
