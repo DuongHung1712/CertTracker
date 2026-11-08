@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { CalendarDays } from "lucide-react";
+import { RequiredMark } from "@/components/required-mark";
 import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { formatDateInput } from "@/lib/date-input";
@@ -16,6 +17,8 @@ export function DateField({
   onBlur,
   max,
   invalid,
+  required,
+  describedBy,
   name,
 }: {
   id: string;
@@ -26,6 +29,9 @@ export function DateField({
   /** `YYYY-MM-DD`; limits the calendar only, the schema still decides what is valid. */
   max?: string;
   invalid?: boolean;
+  required?: boolean;
+  /** Id of a `FieldDescription` under the field. */
+  describedBy?: string;
   name?: string;
 }) {
   const pickerRef = useRef<HTMLInputElement>(null);
@@ -33,7 +39,9 @@ export function DateField({
   function openCalendar() {
     const picker = pickerRef.current;
     if (!picker) return;
-    picker.value = toIsoDate(value) ?? "";
+    const iso = toIsoDate(value);
+    // A value above `max` would make the hidden input invalid for the whole form.
+    picker.value = iso && (!max || iso <= max) ? iso : "";
     try {
       picker.showPicker();
     } catch {
@@ -43,7 +51,10 @@ export function DateField({
 
   return (
     <>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id}>
+        {label}
+        {required && <RequiredMark />}
+      </FieldLabel>
       <div className="relative">
         <Input
           id={id}
@@ -54,7 +65,12 @@ export function DateField({
           maxLength={10}
           className="h-9 pr-10"
           aria-invalid={invalid}
-          onChange={(event) => onChange(formatDateInput(event.target.value))}
+          aria-required={required}
+          aria-describedby={describedBy}
+          onChange={(event) => {
+            if (pickerRef.current) pickerRef.current.value = "";
+            onChange(formatDateInput(event.target.value));
+          }}
           onBlur={onBlur}
         />
         <button
