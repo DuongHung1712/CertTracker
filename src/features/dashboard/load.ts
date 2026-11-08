@@ -16,7 +16,8 @@ import { formatDateTimeVn } from "@/lib/format";
 type SignedInUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
 
 /** Each query settles on its own, so one failure only blanks its own section. */
-export async function loadAdminDashboard(user?: SignedInUser) {
+export async function loadAdminDashboard(user: SignedInUser) {
+  const { memberId } = user;
   const [
     kpis,
     courses,
@@ -37,21 +38,19 @@ export async function loadAdminDashboard(user?: SignedInUser) {
     settle(getRanking()),
     settle(listRecords()),
     settle(listDataQualityIssues()),
-    user?.memberId ? settle(getMemberCareer(user.memberId)) : Promise.resolve({ ok: true as const, data: null }),
-    settle(listMembers()),
+    settle(memberId ? getMemberCareer(memberId) : Promise.resolve(null)),
+    settle(memberId ? listMembers() : Promise.resolve([])),
   ]);
 
   const now = new Date();
-  const currentMember =
-    membersResult.ok && user?.memberId
-      ? membersResult.data.find((m) => m.id === user.memberId) ?? null
-      : null;
+  const currentMember = (membersResult.ok && membersResult.data.find((m) => m.id === memberId)) || null;
+  const profileFailure = [careerResult, membersResult].find((r) => !r.ok);
 
   const profile = resolveMemberProfile({
     member: currentMember,
     firstRecord: undefined,
     career: careerResult.ok ? careerResult.data : null,
-    email: user?.email ?? "admin@example.com",
+    email: user.email,
   });
 
   const greeting = getGreeting(profile.fullName, now);
@@ -61,6 +60,7 @@ export async function loadAdminDashboard(user?: SignedInUser) {
     greeting,
     subtitle,
     profile,
+    profileError: profileFailure && !profileFailure.ok ? profileFailure.error : undefined,
     kpis,
     courses,
     teams,

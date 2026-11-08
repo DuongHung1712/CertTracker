@@ -1,150 +1,81 @@
-import {
-  EXPIRING_WINDOW_DAYS,
-  URGENT_WINDOW_DAYS,
-} from "@/features/dashboard/member-metrics";
+import { URGENT_WINDOW_DAYS } from "@/features/dashboard/member-metrics";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
 
-export { EXPIRING_WINDOW_DAYS, URGENT_WINDOW_DAYS };
+/** Most certificate rows Needs attention lists; the data quality row comes after them. */
+export const ADMIN_ATTENTION_LIMIT = 10;
 
-export const isDoneRecord = (r: RecordRow): boolean => r.status === "done";
+const isAdminExpired = (r: RecordRow): boolean =>
+  r.status === "done" && r.daysToExpiry !== null && r.daysToExpiry < 0;
 
-/** Completed and expiry date is strictly in the past (< 0 days). */
-export function isAdminExpired(r: RecordRow): boolean {
-  return isDoneRecord(r) && r.daysToExpiry !== null && r.daysToExpiry < 0;
-}
-
-/** Completed and expires within 0 to 30 days inclusive. */
-export function isAdminExpiringUrgent(r: RecordRow): boolean {
-  return (
-    isDoneRecord(r) &&
-    r.daysToExpiry !== null &&
-    r.daysToExpiry >= 0 &&
-    r.daysToExpiry <= URGENT_WINDOW_DAYS
-  );
-}
-
-/** Completed and expires within 0 to 60 days inclusive. */
-export function isAdminExpiring60(r: RecordRow): boolean {
-  return (
-    isDoneRecord(r) &&
-    r.daysToExpiry !== null &&
-    r.daysToExpiry >= 0 &&
-    r.daysToExpiry <= EXPIRING_WINDOW_DAYS
-  );
-}
-
-/** Completed and not expired (daysToExpiry === null or >= 0). */
-export function isAdminValid(r: RecordRow): boolean {
-  return isDoneRecord(r) && (r.daysToExpiry === null || r.daysToExpiry >= 0);
-}
+const isAdminExpiringUrgent = (r: RecordRow): boolean =>
+  r.status === "done" &&
+  r.daysToExpiry !== null &&
+  r.daysToExpiry >= 0 &&
+  r.daysToExpiry <= URGENT_WINDOW_DAYS;
 
 /**
  * Counts certificates completed with an issued date in the current calendar month
  * in Asia/Ho_Chi_Minh time.
  */
-export function countIssuedThisMonth(
-  records: RecordRow[],
-  now: Date = new Date(),
-): number {
+export function countIssuedThisMonth(records: RecordRow[], now: Date = new Date()): number {
   const currentMonthKey = todayVn(now).slice(0, 7);
-  let count = 0;
-  for (const r of records) {
-    if (r.status === "done" && r.issuedDate && r.issuedDate.slice(0, 7) === currentMonthKey) {
-      count++;
-    }
-  }
-  return count;
+  return records.filter((r) => r.status === "done" && r.issuedDate?.slice(0, 7) === currentMonthKey).length;
 }
 
+/** Expired plus expiring-within-30-days certificates: what Needs attention would list without the limit. */
+export function countAdminAttentionRecords(records: RecordRow[]): number {
+  return records.filter((r) => isAdminExpired(r) || isAdminExpiringUrgent(r)).length;
+}
+
+type AttentionBase = { id: string; label: string; detail: string; href: string };
+
 export type AdminAttentionItem =
-  | {
-      id: string;
-      type: "expired";
-      record: RecordRow;
-      label: string;
-      detail: string;
-      href: string;
-    }
-  | {
-      id: string;
-      type: "expiring_soon";
-      record: RecordRow;
-      label: string;
-      detail: string;
-      href: string;
-    }
-  | {
-      id: string;
-      type: "data_quality";
-      count: number;
-      label: string;
-      detail: string;
-      href: string;
-    };
+  | (AttentionBase & { type: "expired" | "expiring_soon" })
+  | (AttentionBase & { type: "data_quality"; count: number });
 
 /**
- * Builds the real "Needs attention" list for the Admin dashboard:
- * 1. Expired certificates (most overdue first, i.e. lowest negative daysToExpiry).
- * 2. Certificates expiring within 30 days (soonest first).
- * 3. Data quality issues (one summary item pointing to /data-quality if count > 0).
+ * Builds the "Needs attention" list for the Admin dashboard:
+ * expired certificates (most overdue first), then certificates expiring within 30 days (soonest first),
+ * cut to ADMIN_ATTENTION_LIMIT, then one data quality summary that the cut never drops.
  */
 export function getAdminNeedsAttentionItems(
   records: RecordRow[],
   dqIssuesCount: number,
-  limit = 10,
 ): AdminAttentionItem[] {
-  const items: AdminAttentionItem[] = [];
-
-  // 1. Expired certificates
-  const expiredRecords = records
-    .filter(isAdminExpired)
-    .sort((a, b) => (a.daysToExpiry ?? 0) - (b.daysToExpiry ?? 0));
-
-  for (const r of expiredRecords) {
-    const overdueDays = -(r.daysToExpiry ?? 0);
-    items.push({
-      id: `expired-${r.id}`,
-      type: "expired",
-      record: r,
-      label: `${r.memberName} · ${r.courseName}`,
-      detail: `Expired ${pluralize(overdueDays, "day")} ago`,
-      href: `/records?search=${encodeURIComponent(r.memberName)}`,
-    });
-  }
-
-  // 2. Urgent expiring certificates (0..30 days)
-  const urgentRecords = records
-    .filter(isAdminExpiringUrgent)
-    .sort((a, b) => (a.daysToExpiry ?? 0) - (b.daysToExpiry ?? 0));
-
-  for (const r of urgentRecords) {
+  const byDaysLeft = (a: RecordRow, b: RecordRow) => (a.daysToExpiry ?? 0) - (b.daysToExpiry ?? 0);
+  const certificateItem = (r: RecordRow): AdminAttentionItem => {
     const days = r.daysToExpiry ?? 0;
-    const detail = days === 0 ? "Expires today" : `Expires in ${pluralize(days, "day")}`;
-    items.push({
-      id: `expiring-${r.id}`,
-      type: "expiring_soon",
-      record: r,
+    const expired = days < 0;
+    let detail = `Expires in ${pluralize(days, "day")}`;
+    if (expired) detail = `Expired ${pluralize(-days, "day")} ago`;
+    else if (days === 0) detail = "Expires today";
+    return {
+      id: `${expired ? "expired" : "expiring"}-${r.id}`,
+      type: expired ? "expired" : "expiring_soon",
       label: `${r.memberName} · ${r.courseName}`,
       detail,
       href: `/records?search=${encodeURIComponent(r.memberName)}`,
-    });
-  }
+    };
+  };
 
-  // 3. Data quality findings
+  const items = [
+    ...records.filter(isAdminExpired).sort(byDaysLeft),
+    ...records.filter(isAdminExpiringUrgent).sort(byDaysLeft),
+  ]
+    .slice(0, ADMIN_ATTENTION_LIMIT)
+    .map(certificateItem);
+
   if (dqIssuesCount > 0) {
-    const issueWord = pluralize(dqIssuesCount, "issue");
-    const verb = dqIssuesCount === 1 ? "requires" : "require";
     items.push({
       id: "dq-issues",
       type: "data_quality",
       count: dqIssuesCount,
-      label: "Data quality issues",
-      detail: `${issueWord} ${verb} attention`,
+      label: "Data quality",
+      detail: `${pluralize(dqIssuesCount, "issue")} to check`,
       href: "/data-quality",
     });
   }
-
-  return items.slice(0, limit);
+  return items;
 }

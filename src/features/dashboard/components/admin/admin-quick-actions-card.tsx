@@ -1,65 +1,29 @@
 import Link from "next/link";
-import { Download, FileSpreadsheet, PlusCircle, UserPlus } from "lucide-react";
+import { FileSpreadsheet, PlusCircle, UserPlus } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+const ACTIONS = [
+  { href: "/records", label: "Add certificate", icon: PlusCircle },
+  { href: "/members", label: "Add member", icon: UserPlus },
+  { href: "/import", label: "Import from Excel", icon: FileSpreadsheet },
+];
+
 export function AdminQuickActionsCard() {
   return (
-    <section
-      aria-label="Quick actions"
-      className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
-    >
-      <div className="flex items-center justify-between">
-        <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-          Quick actions
-        </span>
-      </div>
-
+    <section aria-label="Quick actions" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+      <span className="font-mono text-label tracking-wider text-muted-foreground">Quick actions</span>
       <div className="flex flex-col gap-2">
-        <Link
-          href="/records"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "justify-start gap-2 text-caption font-medium",
-          )}
-        >
-          <PlusCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span>Add certificate</span>
-        </Link>
-
-        <Link
-          href="/members"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "justify-start gap-2 text-caption font-medium",
-          )}
-        >
-          <UserPlus className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span>Invite member</span>
-        </Link>
-
-        <Link
-          href="/import"
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "justify-start gap-2 text-caption font-medium",
-          )}
-        >
-          <FileSpreadsheet className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span>Import Excel</span>
-        </Link>
-
-        <a
-          href="/api/export/records?format=csv"
-          download
-          className={cn(
-            buttonVariants({ variant: "outline", size: "sm" }),
-            "justify-start gap-2 text-caption font-medium",
-          )}
-        >
-          <Download className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span>Export CSV</span>
-        </a>
+        {ACTIONS.map(({ href, label, icon: Icon }) => (
+          <Link
+            key={href}
+            href={href}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "justify-start gap-2 text-caption font-medium")}
+          >
+            <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <span>{label}</span>
+          </Link>
+        ))}
       </div>
     </section>
   );

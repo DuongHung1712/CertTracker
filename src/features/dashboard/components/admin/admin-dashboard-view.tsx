@@ -1,100 +1,106 @@
-"use client";
-
-import { Explorer } from "@/features/dashboard/components/explorer";
-import { RankingTable } from "@/features/dashboard/components/ranking-table";
-import { Section, SectionError } from "@/features/dashboard/components/section";
+import Link from "next/link";
+import { EmptyState } from "@/components/data/empty-state";
+import { buttonVariants } from "@/components/ui/button";
+import { countIssuedThisMonth } from "@/features/dashboard/admin-metrics";
 import { AdminComingSoonCard } from "@/features/dashboard/components/admin/admin-coming-soon-card";
 import { AdminHeader } from "@/features/dashboard/components/admin/admin-header";
 import { AdminKpiCards } from "@/features/dashboard/components/admin/admin-kpi-cards";
 import { AdminNeedsAttention } from "@/features/dashboard/components/admin/admin-needs-attention";
 import { AdminProfileCard } from "@/features/dashboard/components/admin/admin-profile-card";
 import { AdminQuickActionsCard } from "@/features/dashboard/components/admin/admin-quick-actions-card";
-import { AdminTabStrip } from "@/features/dashboard/components/admin/admin-tab-strip";
+import { DashboardTabStrip } from "@/features/dashboard/components/dashboard-tab-strip";
+import { Explorer } from "@/features/dashboard/components/explorer";
 import { MonthlyEarnedChart } from "@/features/dashboard/components/manager/monthly-earned-chart";
+import { RankingTable } from "@/features/dashboard/components/ranking-table";
+import { Section, SectionError } from "@/features/dashboard/components/section";
 import type { AdminDashboardData } from "@/features/dashboard/load";
-import { buildExplorerTabs, type MemberProfile } from "@/features/dashboard/view-model";
+import { buildExplorerTabs } from "@/features/dashboard/view-model";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 
+function NoRecords() {
+  return (
+    <EmptyState
+      title="No certificates yet"
+      description="Add certificates and the statistics will appear here."
+      action={
+        <Link href="/records" className={buttonVariants()}>
+          Go to certificates
+        </Link>
+      }
+    />
+  );
+}
+
+/**
+ * Overview and Individual ranking span the full width; between them three independent columns flow on their own.
+ * The centre column comes first in the markup so that on a phone the work leads; from lg up `lg:order-*` puts
+ * it between the left and the right column.
+ */
 export function AdminDashboardView({
   greeting,
   subtitle,
   profile,
-  data,
-}: {
-  greeting: string;
-  subtitle: string;
-  profile: MemberProfile;
-  data: AdminDashboardData;
-}) {
-  const { kpis, courses, teams, certTypes, providers, ranking, records, dqIssues } = data;
-
-  const recordsList = records.ok ? records.data : [];
-  const dqIssuesCount = dqIssues.ok ? dqIssues.data.length : 0;
+  profileError,
+  kpis,
+  courses,
+  teams,
+  certTypes,
+  providers,
+  ranking,
+  records,
+  dqIssues,
+}: AdminDashboardData) {
+  const noRecords = kpis.ok && kpis.data.totalRecords === 0;
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <AdminHeader greeting={greeting} subtitle={subtitle} />
       <RecordsRealtime />
 
-      {/*
-        Three independent columns matching the Figma layout:
-        Centre leads on phone (DOM order 1), followed by Right (DOM order 2), then Left (DOM order 3).
-        On desktop (lg), lg:order-* arranges them as Left (3 cols), Centre (6 cols), Right (3 cols).
-      */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 min-w-0">
-        {/* Centre column (6 cols on lg, leads on mobile) */}
-        <div data-testid="col-center" className="flex flex-col gap-6 lg:order-2 lg:col-span-6 min-w-0">
-          {kpis.ok ? (
-            <AdminKpiCards kpis={kpis.data} records={recordsList} teams={teams} />
+      {kpis.ok ? (
+        <AdminKpiCards
+          kpis={kpis.data}
+          issuedThisMonth={records.ok ? countIssuedThisMonth(records.data) : undefined}
+          teams={teams}
+        />
+      ) : (
+        <SectionError title="Overview" />
+      )}
+
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
+        <div data-testid="col-center" className="flex min-w-0 flex-col gap-6 lg:order-2 lg:col-span-6">
+          <DashboardTabStrip label="Admin dashboard views" soon={["Approvals", "Goals", "Skills"]} />
+          {noRecords ? (
+            <NoRecords />
           ) : (
-            <SectionError title="Overview" />
+            <Section title="Explorer" description="Breakdown by team, certificate type, provider or course">
+              <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, courses })} defaultTab="team" />
+            </Section>
           )}
-
-          <AdminTabStrip />
-
-          <Section
-            title="Explorer"
-            description="Breakdown by team, certificate type, provider or course"
-          >
-            <Explorer
-              tabs={buildExplorerTabs({ teams, certTypes, providers, courses })}
-              defaultTab="team"
-            />
-          </Section>
-
-          <Section
-            title="Individual ranking"
-            description="Ranked by valid certificates, then by total completed. Equal numbers share a rank."
-          >
-            {ranking.ok ? (
-              <RankingTable rows={ranking.data} />
-            ) : (
-              <SectionError title="Individual ranking" />
-            )}
-          </Section>
         </div>
 
-        {/* Right column (3 cols on lg, 2nd on mobile) */}
-        <div data-testid="col-right" className="flex flex-col gap-4 lg:order-3 lg:col-span-3 min-w-0">
-          {!records.ok ? (
-            <SectionError title="Needs attention" />
+        <div data-testid="col-right" className="flex min-w-0 flex-col gap-4 lg:order-3 lg:col-span-3">
+          {records.ok ? (
+            <AdminNeedsAttention records={records.data} dqIssuesCount={dqIssues.ok ? dqIssues.data.length : undefined} />
           ) : (
-            <AdminNeedsAttention records={recordsList} dqIssuesCount={dqIssuesCount} />
+            <SectionError title="Needs attention" />
           )}
           <AdminComingSoonCard />
         </div>
 
-        {/* Left column (3 cols on lg, 3rd on mobile) */}
-        <div data-testid="col-left" className="flex flex-col gap-4 lg:order-1 lg:col-span-3 min-w-0">
-          <AdminProfileCard profile={profile} />
+        <div data-testid="col-left" className="flex min-w-0 flex-col gap-4 lg:order-1 lg:col-span-3">
+          {profileError ? <SectionError title="Your profile" /> : <AdminProfileCard profile={profile} />}
           <AdminQuickActionsCard />
-          {!records.ok ? (
-            <SectionError title="Certificates earned" />
-          ) : (
-            <MonthlyEarnedChart records={recordsList} />
-          )}
+          {records.ok ? <MonthlyEarnedChart records={records.data} /> : <SectionError title="Certificates earned" />}
         </div>
       </div>
+
+      <Section
+        title="Individual ranking"
+        description="Ranked by valid certificates, then by total completed. Equal numbers share a rank."
+      >
+        {ranking.ok ? <RankingTable rows={ranking.data} /> : <SectionError title="Individual ranking" />}
+      </Section>
     </div>
   );
 }

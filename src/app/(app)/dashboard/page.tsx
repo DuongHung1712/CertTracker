@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { getCurrentUser } from "@/features/auth/queries";
-import { AdminDashboard } from "@/features/dashboard/components/admin-dashboard";
+import { AdminDashboardView } from "@/features/dashboard/components/admin/admin-dashboard-view";
 import { ManagerDashboardView } from "@/features/dashboard/components/manager/manager-dashboard-view";
 import { MemberDashboardView } from "@/features/dashboard/components/member/member-dashboard-view";
 import {
@@ -34,5 +34,5 @@ export default async function DashboardPage() {
     return <ManagerDashboardView {...(await loadManagerDashboard(user))} />;
   }
 
-  return <AdminDashboard role={user.role} data={await loadAdminDashboard(user)} />;
+  return <AdminDashboardView {...(await loadAdminDashboard(user))} />;
 }

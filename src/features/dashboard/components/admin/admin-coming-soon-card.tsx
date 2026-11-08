@@ -1,55 +1,53 @@
-import { AlertTriangle, Bot, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { AlertTriangle, Bot, Calendar, CheckSquare, Compass, Layers, Target } from "lucide-react";
+
+const NOT_AVAILABLE = "Not available yet.";
+
+const FEATURES = [
+  { title: "Approvals", icon: CheckSquare, text: "Review and approve the certificates that members submit." },
+  { title: "Goals", icon: Target, text: "Set certificate goals for a quarter and follow the progress." },
+  { title: "Skills", icon: Layers, text: "See which skills your members have, based on their certificates." },
+  { title: "Focus area", icon: Compass, text: "Choose the area you want to grow in, such as cloud or security." },
+  {
+    title: "Ask about certificates",
+    icon: Bot,
+    text: "Ask questions in plain English, such as who has a certificate expiring next month.",
+  },
+  {
+    title: "Monthly summary",
+    icon: Calendar,
+    text: "A short report each month: certificates completed, expired and expiring.",
+  },
+  {
+    title: "Risk alerts",
+    icon: AlertTriangle,
+    text: "A warning when only one member in a team holds a needed certificate, or it is about to expire.",
+  },
+];
 
 export function AdminComingSoonCard() {
   return (
     <section
-      aria-label="Compliance assistant and insights (Coming soon)"
-      className="flex flex-col gap-4 rounded-lg border border-dashed border-border/80 bg-muted/20 p-4"
+      aria-label="Planned features (Coming soon)"
+      className="flex flex-col gap-3 rounded-lg border border-dashed border-border bg-card p-4"
     >
       <div className="flex items-center justify-between">
-        <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
+        <span className="font-mono text-label tracking-wider text-muted-foreground">Planned features</span>
+        <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-caption font-medium text-muted-foreground">
           Coming soon
         </span>
-        <Badge variant="outline" className="border-dashed font-mono text-caption text-muted-foreground">
-          Soon
-        </Badge>
       </div>
 
-      <div className="flex flex-col gap-3">
-        {/* Module 1: Compliance assistant */}
-        <div className="flex flex-col gap-1 rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="flex items-center gap-2">
-            <Bot className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h3 className="text-xs font-semibold text-foreground">Compliance assistant</h3>
-          </div>
-          <p className="text-caption text-muted-foreground">
-            Ask questions about certificate status, expiring credentials, and audit readiness in natural language. Not available yet.
-          </p>
-        </div>
-
-        {/* Module 2: Monthly summary */}
-        <div className="flex flex-col gap-1 rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h3 className="text-xs font-semibold text-foreground">Monthly summary</h3>
-          </div>
-          <p className="text-caption text-muted-foreground">
-            Automated monthly digest of certifications, team milestones, and renewal progress across all departments. Not available yet.
-          </p>
-        </div>
-
-        {/* Module 3: Risk alerts */}
-        <div className="flex flex-col gap-1 rounded-md border border-border/60 bg-card/60 p-3">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="size-4 text-muted-foreground" aria-hidden="true" />
-            <h3 className="text-xs font-semibold text-foreground">Risk alerts</h3>
-          </div>
-          <p className="text-caption text-muted-foreground">
-            Proactive alerts for key-person risk, critical certificate expiry, and single-point-of-failure coverage. Not available yet.
-          </p>
-        </div>
-      </div>
+      <ul className="flex flex-col gap-2.5">
+        {FEATURES.map(({ title, icon: Icon, text }) => (
+          <li key={title} className="flex items-start gap-2">
+            <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <h3 className="text-xs font-semibold text-foreground">{title}</h3>
+              <p className="text-caption text-muted-foreground">{`${text} ${NOT_AVAILABLE}`}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
