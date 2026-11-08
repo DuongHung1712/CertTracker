@@ -11,7 +11,6 @@ export type TabConfig = {
   groupLabel: string;
   peopleLabel: string;
   result: TabResult;
-  emptyHint?: string;
 };
 
 export const STATUS_FILTER_LABELS: Record<string, string> = {

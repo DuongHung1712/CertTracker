@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils";
-
 export type StatusSegment = {
   key: string;
   label: string;
@@ -13,14 +11,10 @@ export type StatusSegment = {
  */
 export function StatusBar({
   segments,
-  className,
-  barClassName,
   ariaLabel,
   showLabels = false,
 }: {
   segments: StatusSegment[];
-  className?: string;
-  barClassName?: string;
   ariaLabel?: string;
   showLabels?: boolean;
 }) {
@@ -32,28 +26,28 @@ export function StatusBar({
 
   if (total === 0) {
     return (
-      <div className={cn("flex flex-col gap-1.5", className)}>
+      <div className="flex flex-col gap-1.5">
         <div
           role="img"
           aria-label={computedAriaLabel}
-          className={cn("h-2.5 w-full overflow-hidden rounded-sm bg-muted", barClassName)}
+          className="h-2.5 w-full overflow-hidden rounded-sm bg-muted"
         />
       </div>
     );
   }
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div className="flex flex-col gap-1.5">
       <div
         role="img"
         aria-label={computedAriaLabel}
-        className={cn("flex h-2.5 w-full overflow-hidden rounded-sm bg-muted", barClassName)}
+        className="flex h-2.5 w-full overflow-hidden rounded-sm bg-muted"
       >
-        {activeSegments.map((s, index) => {
+        {activeSegments.map((s) => {
           const pct = (s.count / total) * 100;
           return (
             <div
-              key={s.key ?? index}
+              key={s.key}
               style={{
                 width: `${pct}%`,
                 backgroundColor: s.color,

@@ -5,7 +5,7 @@ import { ListChecks, SlidersHorizontal } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function DashboardHeaderActions({ isMember }: { isMember: boolean }) {
+export function DashboardHeaderActions() {
   function handleScrollToFilters() {
     const el = document.getElementById("dashboard-filters");
     if (el) {
@@ -31,11 +31,11 @@ export function DashboardHeaderActions({ isMember }: { isMember: boolean }) {
         <span>Filters</span>
       </Button>
       <Link
-        href={isMember ? "/me" : "/records"}
+        href="/records"
         className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}
       >
         <ListChecks className="size-4" aria-hidden />
-        <span>{isMember ? "My certificates" : "View records"}</span>
+        <span>View records</span>
       </Link>
     </div>
   );

@@ -130,7 +130,7 @@ export function Explorer({
                     <div className="p-8 lg:col-span-12">
                       <EmptyState
                         title="No data yet"
-                        description={tab.emptyHint ?? "There are no records to count yet."}
+                        description="There are no records to count yet."
                       />
                     </div>
                   ) : (

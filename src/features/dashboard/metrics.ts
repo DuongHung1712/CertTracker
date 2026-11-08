@@ -71,14 +71,6 @@ export function validBuckets(k: DashboardKpis): VisualSegment[] {
   ];
 }
 
-/** The 2 expiring buckets for the "Expiring (≤ 60 days)" hero card (31-60d vs ≤ 30d). */
-export function expiringBuckets(k: DashboardKpis): VisualSegment[] {
-  return [
-    { key: "expiring-60", label: "31–60 days left", count: k.expiring60Certs, color: "var(--status-expiring-60-fg)" },
-    { key: "expiring-soon", label: "≤ 30 days left", count: k.expiringSoonCerts, color: "var(--status-expiring-soon-fg)" },
-  ];
-}
-
 /** Study status split (Completed, In progress, Not started) using chart tokens --chart-1..3. */
 export function studyStatusSplit(counts: { done: number; inProgress: number; notStarted: number }): VisualSegment[] {
   return [
@@ -86,15 +78,6 @@ export function studyStatusSplit(counts: { done: number; inProgress: number; not
     { key: "inProgress", label: "In progress", count: counts.inProgress, color: "var(--chart-2)" },
     { key: "notStarted", label: "Not started", count: counts.notStarted, color: "var(--chart-3)" },
   ];
-}
-
-/** Helper to convert DashboardKpis record counts to study status split. */
-export function kpiStudyStatusSplit(k: DashboardKpis): VisualSegment[] {
-  return studyStatusSplit({
-    done: k.doneRecords,
-    inProgress: k.inProgressRecords,
-    notStarted: k.notStartedRecords,
-  });
 }
 
 /** Valid vs Expired split for breakdown row detail panel. */
