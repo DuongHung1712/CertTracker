@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { DateField } from "@/components/date-field";
 import { EntityCombobox, type ComboboxOption } from "@/components/entity-combobox";
 import { FileDropzone } from "@/components/file-dropzone";
 import { RECORD_STATUS_LABEL } from "@/components/status/labels";
@@ -24,6 +25,8 @@ import {
   REFUND_STATUSES,
   type RecordInput,
 } from "@/features/records/schema";
+import { valuesOnStatusChange, visibleFields } from "@/features/records/status-fields";
+import { todayVn } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import { EVIDENCE_ACCEPT, EVIDENCE_WRONG_TYPE_MESSAGE, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
 
@@ -166,6 +169,8 @@ export function RecordSheet({
   }
 
   const errors = form.formState.errors;
+  const status = useWatch({ control: form.control, name: "status" });
+  const shown = visibleFields(status);
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -226,9 +231,12 @@ export function RecordSheet({
                 <Select
                   value={field.value}
                   onValueChange={(next) => {
+                    if (!next) return;
                     field.onChange(next);
-                    if (next === "done") form.setValue("progress", 100);
-                    if (next === "not_started") form.setValue("progress", 0);
+                    const change = valuesOnStatusChange(next, { progress: Number(form.getValues("progress")) });
+                    form.setValue("progress", change.progress);
+                    for (const name of change.clear) form.setValue(name, "");
+                    form.clearErrors(["progress", ...change.clear]);
                   }}
                 >
                   <SelectTrigger id="record-status" aria-invalid={!!errors.status}>
@@ -249,54 +257,75 @@ export function RecordSheet({
             />
             <FieldError errors={[errors.status]} />
           </Field>
-          <Field>
-            <FieldLabel htmlFor="record-progress">Progress (%)</FieldLabel>
-            <Input
-              id="record-progress"
-              type="number"
-              min={0}
-              max={100}
-              className="h-9"
-              {...form.register("progress")}
-              aria-invalid={!!errors.progress}
-            />
-            <FieldError errors={[errors.progress]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="record-planned">Planned exam date</FieldLabel>
-            <Input
-              id="record-planned"
-              placeholder="dd/mm/yyyy"
-              inputMode="numeric"
-              className="h-9"
-              {...form.register("plannedExamDate")}
-              aria-invalid={!!errors.plannedExamDate}
-            />
-            <FieldError errors={[errors.plannedExamDate]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="record-issued">Issue date</FieldLabel>
-            <Input
-              id="record-issued"
-              placeholder="dd/mm/yyyy"
-              inputMode="numeric"
-              className="h-9"
-              {...form.register("issuedDate")}
-              aria-invalid={!!errors.issuedDate}
-            />
-            <FieldError errors={[errors.issuedDate]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="record-url">Certificate link</FieldLabel>
-            <Input
-              id="record-url"
-              type="url"
-              className="h-9"
-              {...form.register("certificateUrl")}
-              aria-invalid={!!errors.certificateUrl}
-            />
-            <FieldError errors={[errors.certificateUrl]} />
-          </Field>
+          {shown.progress && (
+            <Field>
+              <FieldLabel htmlFor="record-progress">Progress (%)</FieldLabel>
+              <Input
+                id="record-progress"
+                type="number"
+                min={0}
+                max={100}
+                className="h-9"
+                {...form.register("progress")}
+                aria-invalid={!!errors.progress}
+              />
+              <FieldError errors={[errors.progress]} />
+            </Field>
+          )}
+          {shown.plannedExamDate && (
+            <Field>
+              <Controller
+                control={form.control}
+                name="plannedExamDate"
+                render={({ field }) => (
+                  <DateField
+                    id="record-planned"
+                    label="Planned exam date"
+                    name={field.name}
+                    value={String(field.value ?? "")}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    invalid={!!errors.plannedExamDate}
+                  />
+                )}
+              />
+              <FieldError errors={[errors.plannedExamDate]} />
+            </Field>
+          )}
+          {shown.issuedDate && (
+            <Field>
+              <Controller
+                control={form.control}
+                name="issuedDate"
+                render={({ field }) => (
+                  <DateField
+                    id="record-issued"
+                    label="Issue date"
+                    name={field.name}
+                    value={String(field.value ?? "")}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    max={todayVn()}
+                    invalid={!!errors.issuedDate}
+                  />
+                )}
+              />
+              <FieldError errors={[errors.issuedDate]} />
+            </Field>
+          )}
+          {shown.certificateUrl && (
+            <Field>
+              <FieldLabel htmlFor="record-url">Certificate link</FieldLabel>
+              <Input
+                id="record-url"
+                type="url"
+                className="h-9"
+                {...form.register("certificateUrl")}
+                aria-invalid={!!errors.certificateUrl}
+              />
+              <FieldError errors={[errors.certificateUrl]} />
+            </Field>
+          )}
           {showCompanyFields && (
             <>
               <Field orientation="horizontal">
