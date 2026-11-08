@@ -278,28 +278,24 @@ export function DashboardRedesignDemo() {
       id: "team",
       label: "By team",
       groupLabel: "Team",
-      peopleLabel: "Members",
       result: { ok: true as const, data: BREAKDOWN_ROWS },
     },
     {
       id: "cert_type",
       label: "By certificate type",
       groupLabel: "Type",
-      peopleLabel: "Members",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 4) },
     },
     {
       id: "provider",
       label: "By provider",
       groupLabel: "Provider",
-      peopleLabel: "Members",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(2, 6) },
     },
     {
       id: "course",
       label: "Popular courses",
       groupLabel: "Course",
-      peopleLabel: "Members",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 5) },
     },
   ];

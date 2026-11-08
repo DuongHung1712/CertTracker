@@ -10,7 +10,6 @@ export type TabConfig = {
   id: string;
   label: string;
   groupLabel: string;
-  peopleLabel: string;
   result: TabResult;
 };
 

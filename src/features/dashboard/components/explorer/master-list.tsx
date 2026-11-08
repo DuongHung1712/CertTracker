@@ -20,7 +20,6 @@ export function MasterList({
   activeKey: string | null;
   onSelectKey: (key: string) => void;
   groupLabel: string;
-  peopleLabel: string;
   tabLabel: string;
   onClearFilters: () => void;
 }) {
@@ -38,30 +37,20 @@ export function MasterList({
         <span>Certificates</span>
       </div>
 
-      {/* Master Item List */}
-      <div
-        role="listbox"
-        aria-label={tabLabel}
-        className="flex flex-col gap-2 overflow-y-auto max-h-[560px] pr-0.5"
-      >
-        {rows.length === 0 ? (
-          <div
-            role="option"
-            aria-selected={false}
-            className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-center"
-          >
-            <p className="text-caption text-muted-foreground">No groups match these filters.</p>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onClearFilters}
-              className="h-7 text-xs"
-            >
-              Clear filters
-            </Button>
-          </div>
-        ) : (
-          rows.map((row, index) => {
+      {rows.length === 0 ? (
+        <div role="status" className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-center">
+          <p className="text-caption text-muted-foreground">No groups match these filters.</p>
+          <Button variant="outline" size="sm" onClick={onClearFilters} className="h-7 text-xs">
+            Clear filters
+          </Button>
+        </div>
+      ) : (
+        <div
+          role="listbox"
+          aria-label={tabLabel}
+          className="flex flex-col gap-2 overflow-y-auto max-h-[560px] pr-0.5"
+        >
+          {rows.map((row, index) => {
             const isSelected = row.key === activeKey;
             const rate = rateOf(row);
             const initials = row.label
@@ -83,9 +72,9 @@ export function MasterList({
                 onKeyDown={(e) => onKeyDown(e, index)}
                 className={cn(
                   "group relative flex items-center justify-between gap-3 rounded-lg border p-3 cursor-pointer transition-all outline-none",
-                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-card",
+                  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
                   isSelected
-                    ? "border-primary bg-primary/10 text-foreground"
+                    ? "border-primary bg-primary text-primary-foreground"
                     : "border-border/60 bg-card hover:border-border hover:bg-muted/40 text-foreground",
                 )}
               >
@@ -96,7 +85,7 @@ export function MasterList({
                     className={cn(
                       "flex size-9 shrink-0 items-center justify-center rounded-md text-caption font-semibold tracking-wider",
                       isSelected
-                        ? "bg-primary text-primary-foreground"
+                        ? "border border-primary-foreground/40 text-primary-foreground"
                         : "bg-muted text-muted-foreground",
                     )}
                   >
@@ -114,7 +103,8 @@ export function MasterList({
                     </span>
                     <span
                       className={cn(
-                        "truncate text-caption text-muted-foreground",
+                        "truncate text-caption",
+                        isSelected ? "text-primary-foreground-muted" : "text-muted-foreground",
                       )}
                     >
                       {row.headcount !== null
@@ -130,7 +120,7 @@ export function MasterList({
                     className={cn(
                       "text-xs font-semibold tabular-nums",
                       isSelected
-                        ? "rounded-full bg-primary/15 px-2.5 py-0.5 text-foreground"
+                        ? "rounded-full border border-primary-foreground/40 px-2.5 py-0.5 text-primary-foreground"
                         : "text-body font-semibold text-foreground",
                     )}
                   >
@@ -139,14 +129,14 @@ export function MasterList({
                   <div
                     className={cn(
                       "flex items-center gap-1.5 text-caption",
-                      isSelected ? "text-foreground font-medium" : "text-muted-foreground",
+                      isSelected ? "text-primary-foreground font-medium" : "text-muted-foreground",
                     )}
                   >
                     <span
                       className={cn(
                         "inline-block size-1.5 rounded-full",
                         isSelected
-                          ? "bg-primary"
+                          ? "bg-primary-foreground"
                           : (rate ?? 0) > 0
                             ? "bg-[var(--chart-1)]"
                             : "bg-muted-foreground",
@@ -160,9 +150,9 @@ export function MasterList({
                 </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

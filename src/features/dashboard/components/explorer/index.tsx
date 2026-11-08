@@ -132,7 +132,6 @@ export function Explorer({
                         activeKey={activeKey}
                         onSelectKey={setSelectedKey}
                         groupLabel={tab.groupLabel}
-                        peopleLabel={tab.peopleLabel}
                         tabLabel={tab.label}
                         onClearFilters={clearFilters}
                       />
@@ -141,7 +140,7 @@ export function Explorer({
                       <DetailPanel
                         selectedRow={selectedRow}
                         groupLabel={tab.groupLabel}
-                        peopleLabel={tab.peopleLabel}
+                        peopleLabel="Members"
                       />
                     </>
                   )}
