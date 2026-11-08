@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { signIn } from "./helpers";
+import { ADMIN_EMAIL, signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import { acceptInvitation, pilotEmail, removePilotPeople } from "./support/pilot-member";
 import { signInAsSeedAdmin, signInAsSeedUser } from "./support/restore-seed";
@@ -70,7 +70,7 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   expect(Number(members)).toBeGreaterThanOrEqual(3);
 
   // Hero KPI cards contain accessible mini charts with role="img"
-  await expect(page.getByRole("img", { name: /^Certificates by group:/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Certificates by team:/ })).toBeVisible();
   await expect(page.getByRole("img", { name: /^Valid certificates:/ })).toBeVisible();
   await expect(page.getByRole("img", { name: /^Expiring within 60 days:/ })).toBeVisible();
 
@@ -395,8 +395,9 @@ test("admin Needs attention lists only real items computed from seed data", asyn
   await expect(attention.getByText(/Expires in \d+ days/)).toBeVisible();
 
   // In seed: 1 data quality issue (done record without evidence)
-  await expect(attention.getByText("Data quality issues")).toBeVisible();
-  await expect(attention.getByText(/1 issue requires attention/)).toBeVisible();
+  await expect(attention.getByText("Data quality", { exact: true })).toBeVisible();
+  await expect(attention.getByText("1 issue to check")).toBeVisible();
+  await expect(attention.getByText("All clear")).toHaveCount(0);
 
   // No mock/fake strings from Figma
   for (const fake of ["Send reminder", "HRIS sync", "Review submissions", "4 pending proofs", "Minh Pham", "PMP"]) {
@@ -405,17 +406,27 @@ test("admin Needs attention lists only real items computed from seed data", asyn
 });
 
 test("admin merged Coming soon card has no interactive controls", async ({ page }) => {
-  await signIn(page, "admin@certtracker.test");
+  await signIn(page, ADMIN_EMAIL);
 
-  const card = section(page, "Compliance assistant and insights (Coming soon)");
+  const planned = [
+    "Approvals",
+    "Goals",
+    "Skills",
+    "Focus area",
+    "Ask about certificates",
+    "Monthly summary",
+    "Risk alerts",
+  ];
+  const card = section(page, "Planned features (Coming soon)");
   await expect(card).toBeVisible();
-  await expect(card.getByText("Compliance assistant")).toBeVisible();
-  await expect(card.getByText("Monthly summary")).toBeVisible();
-  await expect(card.getByText("Risk alerts")).toBeVisible();
+  for (const title of planned) {
+    await expect(card.getByRole("heading", { name: title, exact: true })).toBeVisible();
+  }
 
-  // All 3 descriptions end with "Not available yet."
-  const paragraphs = card.getByText(/Not available yet\.$/);
-  expect(await paragraphs.count()).toBe(3);
+  // Every planned feature ends with "Not available yet."; nothing else on the page says it.
+  await expect(card.getByText(/Not available yet\.$/)).toHaveCount(planned.length);
+  await expect(page.getByRole("main").getByText(/Not available yet\./)).toHaveCount(planned.length);
+  await expect(page.getByText("Waiting for approval")).toHaveCount(0);
 
   // No buttons or textboxes
   await expect(card.getByRole("button")).toHaveCount(0);
@@ -425,15 +436,35 @@ test("admin merged Coming soon card has no interactive controls", async ({ page 
 test("admin profile card renders correctly for admin without a member record", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
 
-  const profile = section(page, "Workspace ledger");
+  const profile = section(page, "Your profile");
   await expect(profile).toBeVisible();
   await expect(profile.getByText("admin@certtracker.test")).toBeVisible();
   await expect(profile.getByText("Admin", { exact: true })).toBeVisible();
-  await expect(profile.getByText("System administrator")).toBeVisible();
+  await expect(profile.getByText("Not linked to a member")).toBeVisible();
+  await expect(profile.getByText("System administrator")).toHaveCount(0);
   await expect(profile.getByText("Role not set")).toHaveCount(0);
 
   // No fake badges from Figma
   for (const fake of ["DC34", "Lead Auditor", "AUDIT READY"]) {
     await expect(profile.getByText(fake)).toHaveCount(0);
   }
+});
+
+test("admin header and Quick actions offer each action once, with plain names", async ({ page }) => {
+  await signIn(page, ADMIN_EMAIL);
+  const main = page.getByRole("main");
+
+  const quick = section(page, "Quick actions");
+  await expect(quick.getByRole("link")).toHaveText(["Add certificate", "Add member", "Import from Excel"]);
+  await expect(quick.getByRole("link", { name: "Add member" })).toHaveAttribute("href", "/members");
+
+  await expect(main.getByRole("link", { name: "Add certificate" })).toHaveCount(1);
+  await expect(main.getByRole("link", { name: "Export CSV" })).toHaveCount(1);
+  await expect(main.getByText("Download data")).toHaveCount(0);
+  await expect(main.getByText(/Invite/)).toHaveCount(0);
+
+  // The header button moves focus to the Explorer group filters.
+  await expect(main.getByRole("button", { name: "Filters", exact: true })).toHaveCount(0);
+  await main.getByRole("button", { name: /^Filter groups/ }).click();
+  await expect(page.locator("#dashboard-filters input").first()).toBeFocused();
 });

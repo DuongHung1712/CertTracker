@@ -1,45 +1,31 @@
 import { expect, test } from "@playwright/test";
-import { signIn } from "./helpers";
+import { ADMIN_EMAIL, signIn } from "./helpers";
 
-test("measure column heights at 1440px", async ({ page }) => {
+// No manager-page height guard exists, so the brief's default applies (admin-fix-brief.md R1).
+const MAX_COLUMN_GAP_PX = 350;
+
+test("admin dashboard columns stay balanced at 1440px", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await signIn(page, "admin@certtracker.test");
+  await signIn(page, ADMIN_EMAIL);
 
-  const leftCol = page.locator('[data-testid="col-left"]');
-  const centerCol = page.locator('[data-testid="col-center"]');
-  const rightCol = page.locator('[data-testid="col-right"]');
+  const ids = ["col-left", "col-center", "col-right"] as const;
+  for (const id of ids) await expect(page.getByTestId(id)).toBeVisible();
+  // The Explorer and the monthly chart render last; wait for them instead of a fixed delay.
+  await expect(page.getByRole("region", { name: "Selected item details" })).toBeVisible();
+  await expect(page.getByRole("img", { name: /^Certificates earned by month:/ })).toBeVisible();
 
-  await expect(leftCol).toBeVisible();
-  await expect(centerCol).toBeVisible();
-  await expect(rightCol).toBeVisible();
+  const heights = await page.evaluate((testIds) => {
+    // Content height: from the column top to the bottom of its last child (grid stretch ignored).
+    return testIds.map((id) => {
+      const col = document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+      const last = col?.lastElementChild;
+      if (!col || !last) return 0;
+      return last.getBoundingClientRect().bottom - col.getBoundingClientRect().top;
+    });
+  }, [...ids]);
 
-  await page.waitForTimeout(1000);
-
-  const [leftHeight, centerHeight, rightHeight] = await page.evaluate(() => {
-    function getContentHeight(el: HTMLElement) {
-      const children = Array.from(el.children) as HTMLElement[];
-      if (children.length === 0) return el.offsetHeight;
-      const lastChild = children[children.length - 1];
-      const elRect = el.getBoundingClientRect();
-      const lastRect = lastChild.getBoundingClientRect();
-      return lastRect.bottom - elRect.top;
-    }
-
-    const left = document.querySelector('[data-testid="col-left"]') as HTMLElement;
-    const center = document.querySelector('[data-testid="col-center"]') as HTMLElement;
-    const right = document.querySelector('[data-testid="col-right"]') as HTMLElement;
-
-    return [getContentHeight(left), getContentHeight(center), getContentHeight(right)];
-  });
-
-  console.log(`MEASURED CONTENT COLUMN HEIGHTS AT 1440px:`);
-  console.log(`Left Column Content: ${leftHeight.toFixed(1)}px`);
-  console.log(`Center Column Content: ${centerHeight.toFixed(1)}px`);
-  console.log(`Right Column Content: ${rightHeight.toFixed(1)}px`);
-
-  const heights = [leftHeight, centerHeight, rightHeight];
-  const minHeight = Math.min(...heights);
-  const maxHeight = Math.max(...heights);
-  const diff = maxHeight - minHeight;
-  console.log(`Height Difference (Max - Min): ${diff.toFixed(1)}px`);
+  const gap = Math.max(...heights) - Math.min(...heights);
+  expect(gap, `column heights ${ids.map((id, i) => `${id}=${Math.round(heights[i])}`).join(", ")}`).toBeLessThanOrEqual(
+    MAX_COLUMN_GAP_PX,
+  );
 });

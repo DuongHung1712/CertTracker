@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADMIN_ATTENTION_LIMIT,
   countIssuedThisMonth,
-  EXPIRING_WINDOW_DAYS,
   getAdminNeedsAttentionItems,
-  isAdminExpired,
-  isAdminExpiring60,
-  isAdminExpiringUrgent,
-  isAdminValid,
-  URGENT_WINDOW_DAYS,
 } from "@/features/dashboard/admin-metrics";
 import type { RecordRow } from "@/features/records/queries";
 
@@ -44,91 +39,29 @@ function mockRecord(overrides: Partial<RecordRow> = {}): RecordRow {
   };
 }
 
-describe("admin-metrics boundary tests", () => {
-  it("shared constants match the system design thresholds", () => {
-    expect(URGENT_WINDOW_DAYS).toBe(30);
-    expect(EXPIRING_WINDOW_DAYS).toBe(60);
-  });
+describe("admin-metrics", () => {
+  // Boundaries through the public list only, so the expiry predicates can stay private or reuse manager-metrics.
+  describe("Needs attention window: -1, 0, 30, 31, 60, 61 days", () => {
+    const typeAt = (overrides: Partial<RecordRow>) =>
+      getAdminNeedsAttentionItems([mockRecord(overrides)], 0).map((item) => item.type);
 
-  describe("exact threshold boundaries: -1, 0, 30, 31, 60, 61 days", () => {
-    // -1 day: expired
-    it("at -1 days: is expired, not valid, not expiring 60, not urgent", () => {
-      const rec = mockRecord({ daysToExpiry: -1 });
-      expect(isAdminExpired(rec)).toBe(true);
-      expect(isAdminValid(rec)).toBe(false);
-      expect(isAdminExpiringUrgent(rec)).toBe(false);
-      expect(isAdminExpiring60(rec)).toBe(false);
+    it("lists -1 days as expired", () => {
+      expect(typeAt({ daysToExpiry: -1 })).toEqual(["expired"]);
     });
 
-    // 0 days: expires today (urgent boundary)
-    it("at 0 days: is valid, not expired, is urgent, is expiring 60", () => {
-      const rec = mockRecord({ daysToExpiry: 0 });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(true);
-      expect(isAdminExpiringUrgent(rec)).toBe(true);
-      expect(isAdminExpiring60(rec)).toBe(true);
+    it("lists 0 and 30 days as expiring soon", () => {
+      expect(typeAt({ daysToExpiry: 0 })).toEqual(["expiring_soon"]);
+      expect(typeAt({ daysToExpiry: 30 })).toEqual(["expiring_soon"]);
     });
 
-    // 30 days: urgent upper boundary (URGENT_WINDOW_DAYS)
-    it("at 30 days: is valid, not expired, is urgent, is expiring 60", () => {
-      const rec = mockRecord({ daysToExpiry: 30 });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(true);
-      expect(isAdminExpiringUrgent(rec)).toBe(true);
-      expect(isAdminExpiring60(rec)).toBe(true);
+    it("does not list 31, 60 or 61 days", () => {
+      for (const days of [31, 60, 61]) expect(typeAt({ daysToExpiry: days }), String(days)).toEqual([]);
     });
 
-    // 31 days: above urgent, within 60d
-    it("at 31 days: is valid, not expired, NOT urgent, IS expiring 60", () => {
-      const rec = mockRecord({ daysToExpiry: 31 });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(true);
-      expect(isAdminExpiringUrgent(rec)).toBe(false);
-      expect(isAdminExpiring60(rec)).toBe(true);
-    });
-
-    // 60 days: expiring 60 upper boundary (EXPIRING_WINDOW_DAYS)
-    it("at 60 days: is valid, not expired, NOT urgent, IS expiring 60", () => {
-      const rec = mockRecord({ daysToExpiry: 60 });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(true);
-      expect(isAdminExpiringUrgent(rec)).toBe(false);
-      expect(isAdminExpiring60(rec)).toBe(true);
-    });
-
-    // 61 days: beyond 60d window
-    it("at 61 days: is valid, not expired, NOT urgent, NOT expiring 60", () => {
-      const rec = mockRecord({ daysToExpiry: 61 });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(true);
-      expect(isAdminExpiringUrgent(rec)).toBe(false);
-      expect(isAdminExpiring60(rec)).toBe(false);
-    });
-  });
-
-  describe("non-done statuses and null days to expiry", () => {
-    it("in_progress records are never valid certificates, expired, or expiring", () => {
-      const rec = mockRecord({ status: "in_progress", daysToExpiry: -5 });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(false);
-      expect(isAdminExpiringUrgent(rec)).toBe(false);
-      expect(isAdminExpiring60(rec)).toBe(false);
-    });
-
-    it("not_started records are never valid certificates, expired, or expiring", () => {
-      const rec = mockRecord({ status: "not_started", daysToExpiry: null });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(false);
-      expect(isAdminExpiringUrgent(rec)).toBe(false);
-      expect(isAdminExpiring60(rec)).toBe(false);
-    });
-
-    it("completed certificates with no expiry date (null) are valid, but not expired or expiring", () => {
-      const rec = mockRecord({ daysToExpiry: null });
-      expect(isAdminExpired(rec)).toBe(false);
-      expect(isAdminValid(rec)).toBe(true);
-      expect(isAdminExpiringUrgent(rec)).toBe(false);
-      expect(isAdminExpiring60(rec)).toBe(false);
+    it("never lists unfinished courses or certificates with no expiry", () => {
+      expect(typeAt({ status: "in_progress", daysToExpiry: -5 })).toEqual([]);
+      expect(typeAt({ status: "not_started", daysToExpiry: null })).toEqual([]);
+      expect(typeAt({ daysToExpiry: null })).toEqual([]);
     });
   });
 
@@ -211,8 +144,8 @@ describe("admin-metrics boundary tests", () => {
       expect(items[4]).toMatchObject({
         type: "data_quality",
         count: 2,
-        label: "Data quality issues",
-        detail: "2 issues require attention",
+        label: "Data quality",
+        detail: "2 issues to check",
         href: "/data-quality",
       });
     });
@@ -227,6 +160,20 @@ describe("admin-metrics boundary tests", () => {
       const records = [mockRecord({ daysToExpiry: 0 })];
       const items = getAdminNeedsAttentionItems(records, 0);
       expect(items[0].detail).toBe("Expires today");
+    });
+
+    it("cuts the certificates at the named limit but always keeps the data quality item", () => {
+      expect(ADMIN_ATTENTION_LIMIT).toBe(10);
+      const records = Array.from({ length: 12 }, (_, i) =>
+        mockRecord({ id: `exp-${i}`, memberName: `Member ${i}`, daysToExpiry: -(i + 1) }),
+      );
+      const items = getAdminNeedsAttentionItems(records, 1);
+
+      expect(items).toHaveLength(ADMIN_ATTENTION_LIMIT + 1);
+      expect(items.filter((item) => item.type === "expired")).toHaveLength(ADMIN_ATTENTION_LIMIT);
+      // Most overdue first, so the 2 least overdue (1 and 2 days) are the ones cut.
+      expect(items[0]).toMatchObject({ type: "expired", detail: "Expired 12 days ago" });
+      expect(items[ADMIN_ATTENTION_LIMIT]).toMatchObject({ type: "data_quality", count: 1, detail: "1 issue to check" });
     });
   });
 });
