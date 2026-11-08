@@ -8,28 +8,32 @@
 
 ## 1. Design Block Mapping & Built Components
 
+After the clean-up (branch `refactor/manager-dashboard-cleanup`): each fact appears once, and nothing is invented. All components live in `src/features/dashboard/components/manager/`.
+
 | Figma Design Block (Node 4:1936) | Implementation Component | Contract & Evidence |
 |---|---|---|
-| **Subheader Scope & Period Filter** | `TeamScopeFilter` (`src/features/dashboard/components/manager/team-scope-filter.tsx`) | Interactive pills for `All teams (N)` and per-team filters (`Team Cloud (X)`), Period pills (`Month`, `Quarter`, `Year`), `Download report` action via `ExportLinks`. Unit tested in `manager-cards.test.tsx`. |
-| **Team Readiness Circular Donut** | `TeamReadinessDonutCard` (`src/features/dashboard/components/manager/team-readiness-donut-card.tsx`) | Circular SVG donut with `78% READY`, `{valid} of {total}`, legend breakdown (Valid, Expiring soon, Expired, No cert yet). Contains `dl > div` asserting `<dt>Team readiness</dt>` for `tileValue(page, "Team readiness")` (e2e test 18). |
-| **Top KPI Cards (Center Column)** | `TopKpiRow` (`src/features/dashboard/components/manager/top-kpi-row.tsx`) | 3 cards: `Expiring in 60 days` (clock icon, big number, <=30d subtext), `Expired deficit` (alert icon, red status bar, past due subtext), `Waiting approval` (dashed border, Soon chip). Tested by `tileValue(page, "Expiring within 60 days")`, `tileValue(page, "Expired")`, `tileValue(page, "Waiting for approval")` (e2e test 18). |
-| **Allocated Scope Card** | `AllocatedScopeCard` (`src/features/dashboard/components/manager/allocated-scope-card.tsx`) | Displays managed teams with member counts and `DAS` program badge. Tested in `manager-cards.test.tsx`. |
-| **Quick Actions Card** | `QuickActionsCard` (`src/features/dashboard/components/manager/quick-actions-card.tsx`) | Actionable buttons: `Add certificate`, `Send reminder to expiring (N)`, `Export team audit CSV`, `View team data quality`. Tested in `manager-cards.test.tsx` and `ui-copy.test.ts`. |
-| **Certificates Earned (6 Months)** | `MonthlyEarnedChart` (`src/features/dashboard/components/manager/monthly-earned-chart.tsx`) | Recharts bar chart showing 6 months (Jan - Jun), peak month in solid `var(--primary)`, count labels on top, footer with total earned and growth percentage. Tested in `manager-cards.test.tsx`. |
-| **Manager Tab Strip** | `ManagerTabStrip` (`src/features/dashboard/components/manager/manager-coming-soon-stack.tsx`) | `Overview` (active), `Approvals Soon` (disabled), `Skills Soon` (disabled), `Goals Soon` (disabled). Tested in `e2e/dashboard.spec.ts` test 21. |
-| **Next to Expire (Upcoming Deadlines)** | `NextToExpireTable` (`src/features/dashboard/components/manager/next-to-expire-table.tsx`) | 5-column table (`Person`, `Course / certification`, `Expiry date`, `Status`, `Action`), soonest-first sorting, `ExpiryBadge` with days left, `View` link with `href="/records?search=..."`. Tested in `e2e/dashboard.spec.ts` test 19. |
-| **Team Readiness Dossier · Compliance Ranking** | `TeamReadinessDossier` (`src/features/dashboard/components/manager/team-readiness-dossier.tsx`) | **Finnova Master-Detail split layout**: Left master list with rank `#1`, avatar initials, name, status breakdown, segmented progress bar; active row highlighted in solid brand teal (`bg-primary text-primary-foreground`). Right detail panel displays member identity, 4 figure cards (`Valid`, `Completed`, `In progress`, `Expired`), registered certificates with status badges, and `View member certificates` action. Tested by `rowWith(readinessSection, "Nguyễn Văn An", "1 valid")` and `rowWith(readinessSection, "Lê Minh Châu", "0 valid")` (e2e test 20). |
-| **People Without Certificates Yet** | `PeopleWithoutCertsCard` (`src/features/dashboard/components/manager/people-without-certs-card.tsx`) | List of onboarded members with 0 completed certificates, badge `Attention needed`, and action `+ Suggest certification`. Tested in `manager-cards.test.tsx`. |
-| **Needs Attention Feed** | `NeedsAttentionFeed` (`src/features/dashboard/components/manager/needs-attention-feed.tsx`) | Stylized alert cards for expired certificates (red border/tint, Review record button), urgent renewals within 30 days (amber border/tint, Notify member button), and pending manager approvals (dashed, Open queue button). Tested in `manager-cards.test.tsx`. |
-| **Automated Reminders Card** | `AutomatedRemindersCard` (`src/features/dashboard/components/manager/automated-reminders-card.tsx`) | Notice for automated Monday reminder cadence and monthly audit report preview link. Plain-English copy verified by `ui-copy.test.ts`. |
-| **Compliance AI (Soon)** | `AskAboutMyTeamComingSoon` (`src/features/dashboard/components/manager/manager-coming-soon-stack.tsx`) | Region `Ask about my team (Coming soon)` with disabled input and query chips (`Cloud certification coverage?`, `Who needs renewal in Q4?`). Tested in `e2e/dashboard.spec.ts` test 21. |
-| **Risk Alerts (Soon)** | `RiskAlertsComingSoon` (`src/features/dashboard/components/manager/manager-coming-soon-stack.tsx`) | Region `Risk alerts (Coming soon)` with amber key person risk warning and disabled remediation button. Tested in `e2e/dashboard.spec.ts` test 21. |
-| **Approvals Queue / Goals / Skills Coming Soon** | `ApprovalsQueueComingSoon`, `GoalsComingSoon`, `SkillsComingSoon` | Dedicated coming soon regions with disabled action buttons. Tested in `e2e/dashboard.spec.ts` test 21. |
-| **Org-Wide Aggregates & Ranking** | `DepartmentSummaryCard`, `RankingTable` | Sections `Across the department` and `Individual ranking` scoped by RLS. Tested in `e2e/dashboard.spec.ts` test 18. |
+| **Subheader Scope Filter** | `TeamScopeFilter` | Pills "All teams" and one per managed team, no member counts, no period selector, no second download link. |
+| **Team Readiness Circular Donut** | `TeamReadinessDonutCard` (`{kpis, noCertCount}`) | SVG donut with the valid share, `{valid} of {completed}` certificates, legend Valid / Expired / No cert yet. Contains `dl > div` with `<dt>Team readiness</dt>` for `tileValue(page, "Team readiness")`. |
+| **Top KPI Cards** | `TopKpiRow` | `Expiring within 60 days` (caption `{urgentCount} with 30 days or less`), `Expired` (`Past due:` names the most overdue certificate), `Waiting for approval` (dashed, Soon chip, value `—`). |
+| **Needs Attention** | `NeedsAttentionFeed` | Region "Needs attention": expired certificates only, most overdue first, `Resolve` link to `/records?search=`. No approvals placeholder. |
+| **Allocated Scope Card** | `AllocatedScopeCard` | Team names with member counts. |
+| **Quick Actions Card** | `QuickActionsCard` (no props) | `Add certificate` (`/records`) and `View team data quality` (`/data-quality`). Export lives once, in the page header. |
+| **Certificates Earned (6 Months)** | `MonthlyEarnedChart` | Recharts bars with the real total; no growth percentage. |
+| **Manager Tab Strip** | `ManagerTabStrip` | `Overview` (current), `Approvals Soon`, `Skills Soon`, `Goals Soon` (disabled). |
+| **Next to Expire** | `NextToExpireTable` | Completed certificates with 0-60 days left, soonest first, `View` link to `/records?search=`. |
+| **Team Readiness** | `TeamReadinessDossier` | Master-detail: ranked members (`#1`, valid / in progress, segmented bar) and details of the selected member with the link `View member certificates`. The only ranking on the page. |
+| **People Without Certificates Yet** | `PeopleWithoutCertsCard` | Names, team and count only. |
+| **Automated Reminders** | `AutomatedRemindersCard` (no props) | Two facts from `vercel.json`: Monday 08:00 (Vietnam time) expiry email, monthly report on the 1st. No links. |
+| **Ask about my team** | `AskAboutMyTeamComingSoon` | One merged `ComingSoonCard` (also covers risk alerts), static text ending "Not available yet.", no input, chips or buttons. |
+| **Org-Wide Aggregates** | `DepartmentSummaryCard` | Section `Across the department`. |
+
+Removed in the clean-up: `ManagerKpiCards` and `TeamReadinessLeague` (no importers), the Individual ranking section and `getRanking` in `loadManagerDashboard` (the admin loader keeps it), the Approvals queue, Goals, Skills and Risk alerts cards, the period selector, the second and third export links, the reminders Preview link, and the invented values (Program DAS, +28%, Last sent, fallback `Team Cloud`, `Team member`, `Suggest certification`, `Assign goal`, `Approvals (2)`). Guard tests: `manager-copy.test.ts`, `manager-dashboard-view.test.tsx`, `manager-cards.test.tsx`.
 
 ---
 
 ## 2. Real Verification Outputs
+
+> The outputs below were captured before the clean-up (earlier page with the duplicated sections). After the clean-up the checks were re-run; see `.superpowers/sdd/ui-polish-review/manager-cleanup-impl-report.md`.
 
 ### 2.1 TypeScript Typecheck (`pnpm typecheck`)
 
