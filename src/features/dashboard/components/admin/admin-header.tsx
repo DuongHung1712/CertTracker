@@ -10,7 +10,8 @@ function focusGroupFilters() {
   if (!filters) return;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   filters.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-  const search = filters.querySelector("input");
+  // Base UI renders an aria-hidden input per select: skip those and land on the search box.
+  const search = filters.querySelector<HTMLElement>('input:not([aria-hidden="true"])');
   (search ?? filters).focus();
 }
 

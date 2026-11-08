@@ -73,13 +73,13 @@ export function AdminDashboardView({
           {noRecords ? (
             <NoRecords />
           ) : (
-            <Section title="Explorer" description="Breakdown by team, certificate type, provider or course">
+            <Section title="Explorer">
               <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, courses })} defaultTab="team" />
             </Section>
           )}
         </div>
 
-        <div data-testid="col-right" className="flex min-w-0 flex-col gap-4 lg:order-3 lg:col-span-3">
+        <div data-testid="col-right" className="flex min-w-0 flex-col gap-6 lg:order-3 lg:col-span-3">
           {records.ok ? (
             <AdminNeedsAttention records={records.data} dqIssuesCount={dqIssues.ok ? dqIssues.data.length : undefined} />
           ) : (
@@ -88,7 +88,7 @@ export function AdminDashboardView({
           <AdminComingSoonCard />
         </div>
 
-        <div data-testid="col-left" className="flex min-w-0 flex-col gap-4 lg:order-1 lg:col-span-3">
+        <div data-testid="col-left" className="flex min-w-0 flex-col gap-6 lg:order-1 lg:col-span-3">
           {profileError ? <SectionError title="Your profile" /> : <AdminProfileCard profile={profile} />}
           <AdminQuickActionsCard />
           {records.ok ? <MonthlyEarnedChart records={records.data} /> : <SectionError title="Certificates earned" />}
