@@ -191,7 +191,7 @@ test("manager sees later modules once, as disabled tabs and one Coming soon card
   // No invented values or dead actions anywhere on the page.
   const main = page.getByRole("main");
   for (const fake of [
-    "DAS",
+    /DAS/, // case-sensitive: a plain "DAS" text match would also hit the "Dashboard" heading
     "+28%",
     "Last sent",
     "Joined",
