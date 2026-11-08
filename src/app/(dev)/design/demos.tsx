@@ -337,7 +337,7 @@ export function DashboardRedesignDemo() {
 
       <div>
         <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Stat Strip</h3>
-        <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card shadow-xs sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card sm:grid-cols-3 sm:divide-x sm:divide-y-0">
           <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
             <dt className="text-label uppercase tracking-wider text-muted-foreground">Active members</dt>
             <dd className="text-xl font-semibold tabular-nums text-foreground">20</dd>
