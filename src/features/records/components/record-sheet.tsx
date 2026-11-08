@@ -138,7 +138,7 @@ export function RecordSheet({
     }
 
     let uploadError: string | null = null;
-    if (file) {
+    if (file && input.status === "done") {
       const body = new FormData();
       body.set("recordId", recordId);
       body.set("file", file);
