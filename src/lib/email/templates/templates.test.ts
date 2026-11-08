@@ -205,8 +205,8 @@ describe("MonthlyReportEmail", () => {
     const { html } = await renderReport(reportOf());
     expect(html).toContain("Monthly report for September 2026");
     expect(html).toContain("Figures for the whole organisation.");
-    for (const label of ["Active members", "Certificate records", "Completed", "In progress", "Valid", "Expiring (≤ 60 days)", "Expired", "Issued this month", "Expired this month"]) {
-      expect(html).toContain(label);
+    for (const label of ["Active members", "Certificates", "Completed", "In progress", "Valid", "Expiring within 60 days", "Expired", "Issued this month", "Expired this month"]) {
+      expect(html).toContain(`>${label}<`);
     }
   });
 

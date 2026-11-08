@@ -65,7 +65,7 @@ export async function importWorkbook(page: Page, fileName: string, bytes: Uint8A
   await expect(page).toHaveURL(BATCH_URL, { timeout: 30_000 });
   await expect(page.getByText(/· Error 0$/)).toBeVisible();
   await page.getByRole("button", { name: /^Import \d+ rows?$/ }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Import data" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: /^Import \d+ rows?$/ }).click();
   await expect(page.getByText(/^Imported: created \d+, updated 0$/)).toBeVisible({ timeout: 30_000 });
   return BATCH_URL.exec(page.url())![1]!;
 }

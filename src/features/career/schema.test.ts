@@ -33,12 +33,12 @@ describe("makeCareerStartSchema", () => {
     expect(schema.safeParse({ year: 2026, month: 11 }).success).toBe(true);
     const next = schema.safeParse({ year: 2026, month: 12 });
     expect(next.success).toBe(false);
-    expect(!next.success && next.error.issues[0]?.message).toBe("Career start can't be in the future");
+    expect(!next.success && next.error.issues[0]?.message).toBe("Career start cannot be in the future");
   });
   it("rejects a future year", () => {
     const result = schema.safeParse({ year: 2027, month: null });
     expect(result.success).toBe(false);
-    expect(!result.success && result.error.issues[0]?.message).toBe("Career start can't be in the future");
+    expect(!result.success && result.error.issues[0]?.message).toBe("Career start cannot be in the future");
   });
   it("accepts the current year without a month (stored as January)", () => {
     expect(schema.safeParse({ year: 2026, month: null }).success).toBe(true);

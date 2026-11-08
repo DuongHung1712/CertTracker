@@ -27,7 +27,7 @@ describe("mapCommitError", () => {
 
   it("maps duplicate and FK failures with the row number", () => {
     expect(mapCommitError({ code: "23505", message: "import row 12: duplicate key" })).toMatch(/^Row 12: The data duplicates/);
-    expect(mapCommitError({ code: "23503", message: "import row 3: fk" })).toMatch(/^Row 3: Reference data changed/);
+    expect(mapCommitError({ code: "23503", message: "import row 3: fk" })).toMatch(/^Row 3: Courses, teams or members changed after the check\. Upload the file again\./);
   });
 
   it("never leaks the raw database message", () => {

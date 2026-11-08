@@ -11,7 +11,16 @@ import { KpiTile } from "@/components/data/kpi-tile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BreakdownDemo, ChartDemo, ComboboxDemo, ConfirmDemo, LoadingTableDemo, TableDemo, ToastDemo } from "./demos";
+import {
+  BreakdownDemo,
+  ChartDemo,
+  ComboboxDemo,
+  ConfirmDemo,
+  DashboardRedesignDemo,
+  LoadingTableDemo,
+  TableDemo,
+  ToastDemo,
+} from "./demos";
 
 const COLOR_TOKENS = [
   "background", "card", "foreground", "muted", "muted-foreground", "primary",
@@ -175,6 +184,10 @@ export default function DesignPage() {
 
       <Section title="Dashboard: breakdown tables and ranking">
         <BreakdownDemo />
+      </Section>
+
+      <Section title="Dashboard redesign (spec)">
+        <DashboardRedesignDemo />
       </Section>
 
       <Section title="Loading table">

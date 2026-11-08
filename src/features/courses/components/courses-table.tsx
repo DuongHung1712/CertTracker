@@ -66,7 +66,11 @@ export function CoursesTable({
     {
       accessorKey: "validityMonths",
       header: "Validity",
-      cell: ({ row }) => (row.original.validityMonths ? `${row.original.validityMonths} ${row.original.validityMonths === 1 ? "month" : "months"}` : "No expiry"),
+      cell: ({ row }) =>
+        row.original.validityMonths
+          ? `${row.original.validityMonths} ${row.original.validityMonths === 1 ? "month" : "months"}`
+          : "No expiry",
+      meta: { align: "right" },
     },
     {
       accessorKey: "refundable",
@@ -85,8 +89,14 @@ export function CoursesTable({
       header: "Cost",
       cell: ({ row }) =>
         row.original.cost != null && row.original.costCurrency ? formatMoney(row.original.cost, row.original.costCurrency) : "—",
+      meta: { align: "right" },
     },
-    { accessorKey: "estHours", header: "Study hours", cell: ({ row }) => row.original.estHours ?? "—" },
+    {
+      accessorKey: "estHours",
+      header: "Study hours",
+      cell: ({ row }) => row.original.estHours ?? "—",
+      meta: { align: "right" },
+    },
     ...(canManage
       ? ([
           {
@@ -162,7 +172,20 @@ export function CoursesTable({
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="No courses found" description="Try a different search or clear the filters." />}
+        empty={
+          courses.length === 0 ? (
+            <EmptyState
+              title="No courses yet"
+              description={
+                canManage
+                  ? "Add the first course to make it available for certificates."
+                  : "No courses are available yet."
+              }
+            />
+          ) : (
+            <EmptyState title="No courses found" description="Try a different search or clear the filters." />
+          )
+        }
       />
       {canManage && (
         <>
@@ -193,7 +216,7 @@ export function CoursesTable({
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
             title={`Delete course ${confirming?.name}?`}
-            description="A course can only be deleted when nobody has a record for it. This cannot be undone."
+            description="A course can only be deleted when nobody has a certificate for it. This cannot be undone."
             confirmLabel="Delete course"
             pendingLabel="Deleting…"
             pending={pending}

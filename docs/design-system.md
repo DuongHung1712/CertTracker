@@ -19,52 +19,53 @@ Reference for every CertTracker screen. People and AI read this file **before bu
 
 ## 2. Tokens
 
-Token names follow the **role** a colour plays, as in shadcn/ui. Only a light theme exists; dark mode is added later by redeclaring the same token names (no component changes).
+Token names follow the **role** a colour plays, as in shadcn/ui. Both light and dark themes are supported via semantic CSS variables in `src/app/globals.css`. Component styling never hard-codes colors; tokens adapt to the active theme. Choice is persisted in localStorage via `next-themes` with `disableTransitionOnChange` and indicated with radio indicators in the User Menu.
 
 ### 2.1 Interface colours
 
-| Token | Value | Used for | Contrast |
-|---|---|---|---|
-| `background` | `#F6F7F5` | Page background | — |
-| `foreground` | `#15212B` | Main text | 15.2:1 on `background` |
-| `card`, `popover` | `#FFFFFF` | Tables, cards, dialogs, menus | — |
-| `card-foreground`, `popover-foreground` | `#15212B` | Text on cards | 16.4:1 |
-| `muted`, `secondary` | `#EDF0EE` | Table header, secondary background, secondary button | — |
-| `muted-foreground` | `#56636C` | Secondary text, labels, placeholders | 5.4:1 on `muted`, 5.8:1 on `background` |
-| `secondary-foreground` | `#15212B` | Text on the secondary button | 14.2:1 |
-| `primary` | `#0E5C58` | Primary button, links, selected item, progress bar | 7.3:1 on `background` |
-| `primary-foreground` | `#FFFFFF` | Text on `primary` | 7.8:1 |
-| `primary-hover` | `#0A4744` | Primary button hover | 10.5:1 with white text |
-| `accent` | `#E2EFEC` | Selected table row, active sidebar item, row hover | — |
-| `accent-foreground` | `#0E5C58` | Text on `accent` | 6.6:1 |
-| `destructive` | `#B42318` | Delete button, form error text | 6.6:1 on white, in both directions |
-| `border` | `#D8DEDB` | Table rules, card borders, separators (decorative) | 1.27:1 on `background`, 1.36:1 on `card`; not used as a control boundary |
-| `input` | `#83908C` | Input, checkbox and select borders | 3.3:1 on `card`, 3.1:1 on `background` |
-| `ring` | `#1C7C75` | Focus ring (2px, offset 2px) | 4.7:1 on `background` |
+| Token | Light value | Dark value | Used for | Contrast (Light / Dark) |
+|---|---|---|---|---|
+| `background` | `#F6F7F5` | `#10171D` | Page background | — |
+| `foreground` | `#15212B` | `#EBF0EE` | Main text | 15.2:1 / 15.7:1 |
+| `card`, `popover` | `#FFFFFF` | `#162028` | Tables, cards, dialogs, menus | — |
+| `card-foreground`, `popover-foreground` | `#15212B` | `#EBF0EE` | Text on cards | 16.4:1 / 14.3:1 |
+| `muted`, `secondary` | `#EDF0EE` | `#1F2B35` | Table header, secondary background, secondary button | — |
+| `muted-foreground` | `#56636C` | `#9EB2B7` | Secondary text, labels, placeholders | 5.4:1 / 7.5:1 |
+| `secondary-foreground` | `#15212B` | `#EBF0EE` | Text on the secondary button | 14.2:1 / 11.2:1 |
+| `primary` | `#0E5C58` | `#249C90` | Primary button, links, selected item, progress bar | 7.3:1 / 5.4:1 |
+| `primary-foreground` | `#FFFFFF` | `#0D151C` | Text on `primary` | 7.8:1 / 5.5:1 |
+| `primary-foreground-muted` | `#D8E4E2` | `#132226` | Muted text on the selected Explorer row | 6.0:1 / 4.9:1 |
+| `primary-hover` | `#0A4744` | `#2DB4A6` | Primary button hover | 10.5:1 / 7.2:1 |
+| `accent` | `#E2EFEC` | `#163332` | Selected table row, active sidebar item, row hover | — |
+| `accent-foreground` | `#0E5C58` | `#48D1C1` | Text on `accent` | 6.6:1 / 7.3:1 |
+| `destructive` | `#B42318` | `#F87171` | Delete button, form error text | 6.6:1 / 6.0:1 |
+| `border` | `#D8DEDB` | `#253440` | Table rules, card borders, separators (decorative) | — |
+| `input` | `#83908C` | `#617B8E` | Input, checkbox and select borders | 3.3:1 / 3.7:1 |
+| `ring` | `#1C7C75` | `#38B2A3` | Focus ring (2px, offset 2px) | 4.7:1 / 6.9:1 |
 
 The sidebar uses shadcn's own set, mapped to the tokens above:
 
-| Token | Value |
-|---|---|
-| `sidebar` | `#FFFFFF` |
-| `sidebar-foreground` | `#15212B` |
-| `sidebar-border` | `#D8DEDB` |
-| `sidebar-accent` / `sidebar-accent-foreground` | `#E2EFEC` / `#0E5C58` |
-| `sidebar-primary` / `sidebar-primary-foreground` | `#0E5C58` / `#FFFFFF` |
-| `sidebar-ring` | `#1C7C75` |
+| Token | Light value | Dark value |
+|---|---|---|
+| `sidebar` | `#FFFFFF` | `#121B22` |
+| `sidebar-foreground` | `#15212B` | `#EBF0EE` |
+| `sidebar-border` | `#D8DEDB` | `#253440` |
+| `sidebar-accent` / `sidebar-accent-foreground` | `#E2EFEC` / `#0E5C58` | `#163332` / `#48D1C1` |
+| `sidebar-primary` / `sidebar-primary-foreground` | `#0E5C58` / `#FFFFFF` | `#249C90` / `#0D151C` |
+| `sidebar-ring` | `#1C7C75` | `#38B2A3` |
 
 ### 2.2 Expiry status colours
 
 Badges look like stamps: pale background, strong text, 1px border. Each status has 3 tokens, `--status-<id>-fg | -bg | -border`. The first column is the stored `expiry_status` key; the badge shows its English label (Valid, Expiring in 60 days, Expiring soon, Expired, No expiry, Not issued).
 
-| Status (`expiry_status` key) | id | fg | bg | border | Icon (lucide) | Contrast fg/bg |
-|---|---|---|---|---|---|---|
-| Active | `active` | `#1D6636` | `#E7F3EB` | `#A8D2B4` | `circle-check` | 6.1:1 |
-| Expiring in 60d | `expiring-60` | `#7A5200` | `#FFF5DC` | `#EDCB7E` | `clock` | 6.4:1 |
-| Expiring Soon | `expiring-soon` | `#9A3D0B` | `#FDEADD` | `#EFB189` | `triangle-alert` | 5.9:1 |
-| Expired | `expired` | `#B42318` | `#FDE8E6` | `#F0ADA7` | `circle-x` | 5.6:1 |
-| No Expiry | `no-expiry` | `#4A5560` | `#EEF1F0` | `#D3D9D6` | `infinity` | 6.7:1 |
-| N/A | `na` | `#4A5560` | `#EEF1F0` | `#D3D9D6` | `minus` | 6.7:1 |
+| Status (`expiry_status` key) | id | Light fg / bg / border | Dark fg / bg / border | Icon (lucide) | Contrast fg/bg (Light / Dark) |
+|---|---|---|---|---|---|
+| Active | `active` | `#1D6636` / `#E7F3EB` / `#A8D2B4` | `#4ADE80` / `#132E1F` / `#235E39` | `circle-check` | 6.1:1 / 8.4:1 |
+| Expiring in 60d | `expiring-60` | `#7A5200` / `#FFF5DC` / `#EDCB7E` | `#FACC15` / `#2D260D` / `#635118` | `clock` | 6.4:1 / 9.8:1 |
+| Expiring Soon | `expiring-soon` | `#9A3D0B` / `#FDEADD` / `#EFB189` | `#FB923C` / `#321D12` / `#6B3B20` | `triangle-alert` | 5.9:1 / 7.0:1 |
+| Expired | `expired` | `#B42318` / `#FDE8E6` / `#F0ADA7` | `#F87171` / `#321415` / `#6C282B` | `circle-x` | 5.6:1 / 6.1:1 |
+| No Expiry | `no-expiry` | `#4A5560` / `#EEF1F0` / `#D3D9D6` | `#94A3B8` / `#1A232F` / `#334155` | `infinity` | 6.7:1 / 6.2:1 |
+| N/A | `na` | `#4A5560` / `#EEF1F0` / `#D3D9D6` | `#94A3B8` / `#1A232F` / `#334155` | `minus` | 6.7:1 / 6.2:1 |
 
 Status colours are used **only** for certificate expiry. Never for buttons, study status or roles.
 
@@ -104,8 +105,8 @@ Shadows are only for floating layers (popovers, menus, dialogs, toasts). Cards a
 
 ### 2.5 Charts
 
-- **Chart palette.** Rates (completion) are drawn as a `primary` bar on a `muted` track, with no chart tokens. The expiry distribution chart uses exactly the 5 `--status-*-fg` colours (`active`, `expiring-60`, `expiring-soon`, `expired`, `no-expiry`; the only exception to the rule "status colours are only for expiry"); every bar always carries a text label and a number; a chart must have a text version for screen readers. No animation. `--chart-1…5` are kept for multi-series charts later.
-- **Contrast.** Bar colours are graphical objects, so they must be at least 3:1 against `card` (WCAG 1.4.11); `src/app/tokens.test.ts` checks the 5 colours above.
+- **Chart palette.** Rates (completion) are drawn as a `primary` bar on a `muted` track, with no chart tokens. The expiry distribution chart uses exactly the 5 `--status-*-fg` colours (`active`, `expiring-60`, `expiring-soon`, `expired`, `no-expiry`; the only exception to the rule "status colours are only for expiry"); every bar always carries a text label and a number; a chart must have a text version for screen readers. No animation. Study status (Completed / In progress / Not started) uses `--chart-1` (done, teal), `--chart-2` (in progress, slate), `--chart-3` (not started, grey) with visible numbers and labels beside every segment.
+- **Contrast.** Bar and chart graphic colours must be at least 3:1 against `card` (WCAG 1.4.11) in both light and dark modes; `src/app/tokens.test.ts` checks both the status and chart tokens.
 
 ---
 
@@ -125,6 +126,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `FilterBar` | `components/data/` | Search box + filters (children) + "Clear filters" (shown only when a filter is active) | ✓ |
 | | `EmptyState` | `components/data/` | One sentence of explanation + one action button; no illustration | ✓ |
 | Status | `ExpiryBadge` | `components/status/` | Takes `expiry_status` + `days_to_expiry` + `expiry_date`; tooltip "23 days left · expires 19/10/2026" / "Expired 5 days ago · 19/10/2026" | ✓ |
+| | `ComingSoonCard` | `components/status/` | Dashed 1px border `border-border`, small outlined chip with `Clock` icon and "Coming soon" in neutral tokens, title, description, full contrast text, disabled controls | ✓ |
 | | `RecordStatusLabel` | `components/status/` | Completed `circle-check` · In progress `loader-circle` · Not started `circle-dashed`; `foreground` text, no status colour | ✓ |
 | | `ProgressInline` | `components/status/` | 4px `primary` bar on `muted` + the % on the right | ✓ |
 | | `RoleBadge` | `components/status/` | Admin / Manager / Member; `secondary` badge | ✓ |
@@ -133,6 +135,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `EntityCombobox` | `components/entity-combobox.tsx` | Searchable select: member, course, team | ✓ |
 | | Date input | `Input` | Typed dd/mm/yyyy, checked with `toIsoDate` (decisions #16) | ✓ |
 | | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop an image or PDF as evidence | ✓ |
+| Navigation | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `components/ui/tabs.tsx` | shadcn `tabs` (Base UI); keyboard navigation (arrows, Home, End); horizontal scrollable strip on mobile | ✓ |
 | Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
 | | `ConfirmDialog` | `components/confirm-dialog.tsx` | The title names the object; the description states the consequence; the `destructive` confirm button names the exact action | ✓ |
 | Feedback | `Toast` | shadcn `sonner` | Bottom right; success 4s, errors stay until dismissed (`duration: Infinity`) | ✓ |
@@ -171,10 +174,10 @@ The save button sits at the end of the form, on the right; "Cancel" is the secon
 `ConfirmDialog`, for example:
 
 > **Delete member M004 · Nguyen Van An?**
-> This member's 5 certificate records will be deleted too. This cannot be undone.
+> This member's 5 certificates will be deleted too. This cannot be undone.
 > [Cancel] [Delete member]
 
-When the database **blocks** the delete (for example a course that certificate records still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course is used by 3 records. Move the records to another course before deleting it."*).
+When the database **blocks** the delete (for example a course that certificates still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course is used by 3 certificates. Move the certificates to another course before deleting it."*).
 
 ### 4.4 Feedback
 
@@ -208,6 +211,28 @@ When the database **blocks** the delete (for example a course that certificate r
 
 Hiding is only UX; every permission is still enforced by RLS.
 
+### 4.6 Dashboard
+- **Header:** Title, subtitle timestamp, and action buttons: "Filters" button (scrolls to/focuses filter controls) and primary action with 16px icon ("View certificates").
+- **Overview:** 4 tall hero KPI cards (~240px, `KpiCard`) with numbers in the upper half and real mini charts in the lower half (`RecordsMiniChart`, `ValidMiniChart`, `ExpiringGaugeMiniChart`, and positive empty state `ExpiredMiniChart`), followed by a slim compact stat strip (Active members, Completed, In progress). All inside region "Overview", `dl > div` with bare number in the first `dd`.
+- **Certificate Expiry:** Compact horizontal strip (~120px) positioned directly above Explorer, with exact `role="img"` and `aria-label` contract.
+- **Filter Row:** Client-side filter bar directly above Explorer with "Active filters" count chip, "Clear filters" action, status filter dropdown, volume filter dropdown, and live search.
+- **Explorer:** Master-Detail board with tab pills and count chips on top, solid `bg-primary` selected row (outlined avatar and count chip, `primary-foreground-muted` subtitle; no permanent ring), keyboard focus shown only by a `focus-visible` ring with a `ring-offset-card` offset (the ring has to reach 3:1 on the card gap, not on the teal; checked in `tokens.test.ts`), and a live detail panel on the right with sub-metric cards, study status split, validity split, and a totals footer with action buttons (copy summary, open the certificates).
+- **Ranking:** Individual leaderboard (admin/manager only).
+
+### 4.7 Member Dashboard
+- **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate" opening the record sheet).
+- **Attention Banner:** Expiry palette alert banner for the certificate expiring soonest within 30 days (expiring-soon tokens) or already expired (expired tokens, "Expired on <date>"), with "Upload proof" action button opening the record sheet. Hidden when nothing expires within 60 days.
+- **Overview:** 4 personal KPI cards for the member's own records inside region "Overview" (`dl > div` with bare numbers in the first `dd`):
+  1. "Recorded certificates": inverted solid-teal highlight card with "N valid of M".
+  2. "Expiring soon": the one with the least days left, with the course and "N days left".
+  3. "In progress": count plus up to two mini progress bars with course name and percent.
+  4. "Expired": count; 0 shows a check icon and "All up to date".
+- **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Specialization focus" coming-soon card.
+- **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring within 60 days`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
+- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()` with the caption *"Totals for the whole department."*
+- **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Ask about certificates" (with a disabled question box), "My skills", "Quarterly goals", "Next career role", "Certificate review" and, inside the profile card, "Focus area". Each has the chip "Coming soon" and a one-line description ending "Not available yet.".
+- **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
+
 ---
 
 ## 5. Wording and formats
@@ -218,6 +243,14 @@ Hiding is only UX; every permission is still enforced by RLS.
 - Dates: `dd/MM/yyyy` ("today" is taken in `Asia/Ho_Chi_Minh`, `src/lib/dates.ts`).
 - Numbers and money in the English format: `1,250,000`, `3,500,000 ₫`, `$150` (`src/lib/format.ts`, `src/lib/money.ts`); percentages `75%`. Mixed currencies are never summed.
 - No emoji in the interface.
+- **One word per thing**: certificate (not record, credential or badge), member (not learner, person or headcount), course, evidence, valid, expired. "Record" is a database word and stays out of the UI. `src/lib/ui-copy.test.ts` fails on the rejected words.
+- Plain, short English: sentences under about 15 words; no symbols or abbreviations in labels ("30 days or less", "years of experience", not "≤ 30d", "YoE", "exp").
+- Expiry words come from one place: `expiryMeta` (`src/components/status/expiry.ts`). The aggregate tile is "Expiring within 60 days"; the badge tiers are "Expires in 31–60 days" and "Expires within 30 days".
+- Count with `pluralize()` and show time left with `daysLeftLabel()` (`src/lib/plural.ts`); never write `n === 1 ? ... : ...` by hand. 0 days reads "Expires today".
+- Delete destroys a thing; Remove takes something off without destroying it (evidence, a file, manager access).
+- Errors say what happened, then how to fix it. No "please", no raw database text. Contact line: "Ask your admin".
+- No contractions ("cannot", "do not"); British spelling for existing words (organisation, centre, catalogue); "email" without a hyphen.
+- **Coming soon** uses `ComingSoonCard`: chip "Coming soon", a plain title, one line ending "Not available yet.", disabled controls only, no dates, no fake status, no numbers that look real.
 
 ---
 
@@ -263,8 +296,9 @@ The page never scrolls horizontally; only a table scrolls inside its own frame (
 2. Run the contrast tests (`pnpm test`); if a pair falls below the threshold, fix the colour, do not lower the threshold.
 3. Check by eye on the `/design` page (`src/app/(dev)/design/page.tsx`, which returns 404 in production).
 4. Sync the Design System page on claude.ai.
-5. Big decisions (changing the accent colour, adding dark mode) get an entry in `docs/decisions.md`.
+5. Big decisions (changing the accent colour, adding dark mode) get an entry in `docs/decisions.md` (see #14, #62).
 
-## 10. Not done yet
+## 10. Themes
 
-- **Dark mode**: tokens are already named by role; when it is built, only the values are redeclared.
+- **Light theme**: Warm paper-white (`#F6F7F5`) background, blue-black ink text (`#15212B`), deep teal accent (`#0E5C58`).
+- **Dark theme**: Dark slate paper (`#10171D`) background, pale ink text (`#EBF0EE`), luminous teal accent (`#249C90`), muted text (`#9EB2B7`), input borders (`#617B8E`). Both themes meet WCAG 2.1 AA text (>= 4.5:1) and UI boundaries/focus (>= 3:1). Controlled via `.dark` class on the root, persisted in localStorage (`next-themes` with `disableTransitionOnChange`), and switched via user menu radio items.

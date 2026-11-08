@@ -23,5 +23,5 @@ test("wrong password shows an error", async ({ page }) => {
   await page.getByLabel("Password").fill("wrong-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page.locator("form").getByRole("alert")).toHaveText("Wrong e-mail or password. Check them and try again.");
+  await expect(page.locator("form").getByRole("alert")).toHaveText("Wrong email or password. Check them and try again.");
 });

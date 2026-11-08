@@ -3,19 +3,27 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { contrastRatio } from "@/lib/design/contrast";
 
-function readRootTokens(): Record<string, string> {
+function readTokens(selector: string): Record<string, string> {
   const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
-  const root = /:root\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+  const regex = new RegExp(`${selector}\\s*\\{([^}]*)\\}`);
+  const block = regex.exec(css)?.[1] ?? "";
   return Object.fromEntries(
-    [...root.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)].map((m) => [m[1], m[2]]),
+    [...block.matchAll(/--([\w-]+):\s*(#[0-9a-fA-F]{6})\s*;/g)].map((m) => [m[1], m[2]]),
   );
 }
 
-const tokens = readRootTokens();
+const tokens = readTokens(":root");
+const darkTokens = readTokens("\\.dark");
 
 function hex(name: string): string {
   const value = tokens[name];
   if (!value) throw new Error(`Token --${name} is missing or not #rrggbb in :root`);
+  return value;
+}
+
+function darkHex(name: string): string {
+  const value = darkTokens[name];
+  if (!value) throw new Error(`Token --${name} is missing or not #rrggbb in .dark`);
   return value;
 }
 
@@ -32,6 +40,7 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ["muted-foreground", "card"],
   ["secondary-foreground", "secondary"],
   ["primary-foreground", "primary"],
+  ["primary-foreground-muted", "primary"],
   ["primary-foreground", "primary-hover"],
   ["primary", "background"],
   ["primary", "card"],
@@ -51,8 +60,14 @@ const UI_PAIRS: Array<[string, string]> = [
   ["ring", "card"],
 ];
 
+const DARK_UI_PAIRS: Array<[string, string]> = [
+  ...UI_PAIRS,
+  ["input", "muted"],
+];
+
 // Expiry-chart bars are graphic objects drawn straight on the card (WCAG 1.4.11).
 const CHART_STATUS_IDS = ["active", "expiring-60", "expiring-soon", "expired", "no-expiry"];
+const CHART_TOKEN_IDS = ["chart-1", "chart-2", "chart-3"];
 
 describe("design tokens", () => {
   it.each(TEXT_PAIRS)("text --%s on --%s reaches 4.5:1", (fg, bg) => {
@@ -63,7 +78,44 @@ describe("design tokens", () => {
     expect(contrastRatio(hex(fg), hex(bg))).toBeGreaterThanOrEqual(3);
   });
 
+  // Explorer selected row (master-list.tsx): solid `bg-primary` row, focus ring offset by a `card` gap.
+  it("Explorer selected row: text, subtitle, focus ring and row edge reach contrast", () => {
+    expect(contrastRatio(hex("primary-foreground"), hex("primary"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(hex("primary-foreground-muted"), hex("primary"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(hex("ring"), hex("card"))).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(hex("primary"), hex("card"))).toBeGreaterThanOrEqual(3);
+  });
+
   it.each(CHART_STATUS_IDS)("chart bar --status-%s-fg on --card reaches 3:1", (id) => {
     expect(contrastRatio(hex(`status-${id}-fg`), hex("card"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(CHART_TOKEN_IDS)("chart token --%s on --card reaches 3:1", (id) => {
+    expect(contrastRatio(hex(id), hex("card"))).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("dark design tokens", () => {
+  it.each(TEXT_PAIRS)("dark text --%s on --%s reaches 4.5:1", (fg, bg) => {
+    expect(contrastRatio(darkHex(fg), darkHex(bg))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(DARK_UI_PAIRS)("dark control --%s on --%s reaches 3:1", (fg, bg) => {
+    expect(contrastRatio(darkHex(fg), darkHex(bg))).toBeGreaterThanOrEqual(3);
+  });
+
+  it("dark Explorer selected row: text, subtitle, focus ring and row edge reach contrast", () => {
+    expect(contrastRatio(darkHex("primary-foreground"), darkHex("primary"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkHex("primary-foreground-muted"), darkHex("primary"))).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(darkHex("ring"), darkHex("card"))).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(darkHex("primary"), darkHex("card"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(CHART_STATUS_IDS)("dark chart bar --status-%s-fg on --card reaches 3:1", (id) => {
+    expect(contrastRatio(darkHex(`status-${id}-fg`), darkHex("card"))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(CHART_TOKEN_IDS)("dark chart token --%s on --card reaches 3:1", (id) => {
+    expect(contrastRatio(darkHex(id), darkHex("card"))).toBeGreaterThanOrEqual(3);
   });
 });

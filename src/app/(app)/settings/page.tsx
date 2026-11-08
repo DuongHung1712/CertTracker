@@ -14,7 +14,7 @@ export default async function SettingsPage() {
   const [runs, careerRoles] = await Promise.all([listNotificationRuns(), listCareerRoles()]);
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Settings" description="Career roles, plus the history and setup status of automatic e-mails." />
+      <PageHeader title="Settings" description="Career roles, plus the history and setup status of automatic emails." />
       <CareerRolesSection roles={careerRoles} />
       <NotificationRuns runs={runs} checks={emailSetupStatus(process.env)} />
     </div>

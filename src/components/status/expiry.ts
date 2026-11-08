@@ -8,11 +8,11 @@ export type ExpiryTone = "active" | "expiring-60" | "expiring-soon" | "expired" 
 
 const META: Record<ExpiryStatus, { tone: ExpiryTone; label: string }> = {
   Active: { tone: "active", label: "Valid" },
-  "Expiring in 60d": { tone: "expiring-60", label: "Expiring in 60 days" },
-  "Expiring Soon": { tone: "expiring-soon", label: "Expiring soon" },
+  "Expiring in 60d": { tone: "expiring-60", label: "Expires in 31–60 days" },
+  "Expiring Soon": { tone: "expiring-soon", label: "Expires within 30 days" },
   Expired: { tone: "expired", label: "Expired" },
   "No Expiry": { tone: "no-expiry", label: "No expiry" },
-  "N/A": { tone: "na", label: "Not issued" },
+  "N/A": { tone: "na", label: "Not issued yet" },
 };
 
 /** Narrows the `expiry_status` text column of `v_training_records`. */
@@ -34,7 +34,7 @@ export function expiryDetail({
   expiryDate: string | null;
 }): string {
   if (status === "No Expiry") return "This certificate does not expire";
-  if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "No issue date yet";
+  if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "Not issued yet";
   const date = formatDate(expiryDate);
   if (daysToExpiry < 0) return `Expired ${pluralize(-daysToExpiry, "day")} ago · ${date}`;
   if (daysToExpiry === 0) return `Expires today · ${date}`;

@@ -68,7 +68,7 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-section-title">Centres (DC)</h2>
+        <h2 className="text-section-title">Centres</h2>
         {canManage && (
           <Button
             size="sm"

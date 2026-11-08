@@ -91,7 +91,12 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
   // Memoised: rebuilding columns on every render would remount cells.
   const columns = useMemo<ColumnDef<ImportRowView, unknown>[]>(
     () => [
-      { id: "rowNo", header: "Row", accessorFn: (row) => row.rowNo },
+      {
+        id: "rowNo",
+        header: "Row",
+        accessorFn: (row) => row.rowNo,
+        meta: { align: "right" },
+      },
       { id: "email", header: "Email", accessorFn: (row) => row.raw.email ?? "", cell: ({ row }) => row.original.raw.email ?? "—" },
       {
         id: "course",
@@ -136,7 +141,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
 
   function handleDiscard() {
     return runAction(() => discardImport({ batchId: batch.id }), {
-      onOk: () => toast.success("Batch discarded"),
+      onOk: () => toast.success("Discarded batch"),
       rejectedMessage: "Could not discard the batch. Reload the page and try again.",
     });
   }
@@ -153,10 +158,18 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         actions={
           actionable && (
             <>
-              <Button variant="outline" onClick={() => setConfirming("discard")}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirming("discard")}
+              >
                 Discard batch
               </Button>
-              <Button disabled={importable === 0 || incomplete} onClick={() => setConfirming("commit")}>
+              <Button
+                size="sm"
+                disabled={importable === 0 || incomplete}
+                onClick={() => setConfirming("commit")}
+              >
                 {`Import ${pluralize(importable, "row")}`}
               </Button>
             </>
@@ -170,7 +183,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
           <AlertDescription className="text-foreground">
             {committedMessage(batch)}{" "}
             <Link href="/records" className="font-medium">
-              View records
+              View certificates
             </Link>
           </AlertDescription>
         </Alert>
@@ -243,7 +256,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
           rows.length === 0 ? (
             <EmptyState title="This batch has no rows" />
           ) : (
-            <EmptyState title="No rows found" description="Try another search or clear the filters." />
+            <EmptyState title="No rows found" description="Try a different search or clear the filters." />
           )
         }
       />
@@ -252,8 +265,8 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         open={confirming === "commit"}
         onOpenChange={(open) => !open && setConfirming(null)}
         title={`Import ${pluralize(importable, "row")} from ${batch.fileName}?`}
-        description={`Creates ${counts.create}, updates ${counts.update}. ${pluralize(counts.error, "row")} with errors will be skipped. Everything runs in one transaction: an error in any row cancels the whole import.`}
-        confirmLabel="Import data"
+        description={`Creates ${counts.create}, updates ${counts.update}. ${pluralize(counts.error, "row")} with errors will be skipped. If any row fails, nothing is imported.`}
+        confirmLabel={`Import ${pluralize(importable, "row")}`}
         pendingLabel="Importing…"
         pending={pending}
         onConfirm={handleCommit}

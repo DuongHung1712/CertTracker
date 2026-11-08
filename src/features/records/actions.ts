@@ -105,7 +105,7 @@ export async function uploadEvidence(formData: FormData): Promise<Result<null>> 
     .eq("id", parsed.data.id)
     .maybeSingle();
   if (readError) return err(mapPostgresError(readError));
-  if (!record) return err("Record not found, or you do not have permission.");
+  if (!record) return err("Certificate not found, or you do not have permission.");
 
   const storage = createSupabaseStorage(supabase);
   const path = evidencePath(record.member_id, record.id, mime, Date.now());
@@ -140,7 +140,7 @@ export async function removeEvidence(input: { id: string }): Promise<Result<null
     .eq("id", parsed.data.id)
     .maybeSingle();
   if (readError) return err(mapPostgresError(readError));
-  if (!record) return err("Record not found, or you do not have permission.");
+  if (!record) return err("Certificate not found, or you do not have permission.");
   if (!record.evidence_path) return ok(null);
 
   const { data: rows, error } = await supabase

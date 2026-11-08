@@ -5,15 +5,13 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { ProgressInline } from "@/components/status/progress-inline";
-import { ratePercent } from "@/features/dashboard/metrics";
+import { rateOf } from "@/features/dashboard/components/explorer/types";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /** Rows with nothing to divide (`records === 0`) have no rate; sort them below every real rate. */
 const NO_RATE = -1;
-
-const rateOf = (row: BreakdownRow): number | null => ratePercent(row.done, row.records);
 
 export function BreakdownTable({
   rows,
@@ -44,8 +42,14 @@ export function BreakdownTable({
         header: peopleLabel,
         accessorFn: (row) => row.headcount ?? row.people,
         cell: ({ getValue }) => formatNumber(getValue<number>()),
+        meta: { align: "right" },
       },
-      { accessorKey: "records", header: "Records", cell: ({ row }) => formatNumber(row.original.records) },
+      {
+        accessorKey: "records",
+        header: "Certificates",
+        cell: ({ row }) => formatNumber(row.original.records),
+        meta: { align: "right" },
+      },
       {
         id: "rate",
         header: "Completed",
@@ -63,8 +67,18 @@ export function BreakdownTable({
           );
         },
       },
-      { accessorKey: "inProgress", header: "In progress", cell: ({ row }) => formatNumber(row.original.inProgress) },
-      { accessorKey: "valid", header: "Valid", cell: ({ row }) => formatNumber(row.original.valid) },
+      {
+        accessorKey: "inProgress",
+        header: "In progress",
+        cell: ({ row }) => formatNumber(row.original.inProgress),
+        meta: { align: "right" },
+      },
+      {
+        accessorKey: "valid",
+        header: "Valid",
+        cell: ({ row }) => formatNumber(row.original.valid),
+        meta: { align: "right" },
+      },
       {
         accessorKey: "expired",
         header: "Expired",
@@ -74,6 +88,7 @@ export function BreakdownTable({
             {formatNumber(row.original.expired)}
           </span>
         ),
+        meta: { align: "right" },
       },
     ],
     [groupLabel, peopleLabel],
@@ -85,7 +100,7 @@ export function BreakdownTable({
       data={rows}
       pageSize={10}
       getRowId={(row) => row.key}
-      empty={<EmptyState title="No data yet" description={emptyHint ?? "There are no records to count yet."} />}
+      empty={<EmptyState title="No data yet" description={emptyHint ?? "Add certificates to see this breakdown."} />}
     />
   );
 }

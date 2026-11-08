@@ -13,11 +13,11 @@ const num: CSSProperties = { textAlign: "right", whiteSpace: "nowrap" };
 function kpiRows(k: Kpi): Array<[label: string, value: string]> {
   return [
     ["Active members", formatNumber(k.members)],
-    ["Certificate records", formatNumber(k.records)],
+    ["Certificates", formatNumber(k.records)],
     ["Completed", `${formatNumber(k.done)} (${formatRate(k.completionRate)})`],
     ["In progress", formatNumber(k.inProgress)],
     ["Valid", formatNumber(k.valid)],
-    ["Expiring (≤ 60 days)", formatNumber(k.expiring)],
+    ["Expiring within 60 days", formatNumber(k.expiring)],
     ["Expired", formatNumber(k.expired)],
     ["Issued this month", formatNumber(k.issuedInMonth)],
     ["Expired this month", formatNumber(k.expiredInMonth)],

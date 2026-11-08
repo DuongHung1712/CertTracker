@@ -57,7 +57,7 @@ test("admin imports the legacy workbook", async ({ page }) => {
   await expect(previewRow(page, 12)).toContainText('Unknown status "Failed"');
 
   await page.getByRole("button", { name: "Import 5 rows" }).click();
-  await page.getByRole("alertdialog").getByRole("button", { name: "Import data" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Import 5 rows" }).click();
   await expect(page.getByText("Imported: created 3, updated 2")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: /Imported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}/ })).toBeVisible();
 
@@ -78,7 +78,7 @@ test("re-importing the same file changes nothing", async ({ page }) => {
 
   await page.getByRole("button", { name: "Discard batch" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Discard batch" }).click();
-  await expect(page.getByText("Batch discarded")).toBeVisible();
+  await expect(page.getByText("Discarded batch")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: "This batch was discarded." })).toBeVisible();
 
   // History: this run's two batches, found by file name (other batches may exist from earlier runs).

@@ -38,7 +38,7 @@ test("member cannot save a career start in the future", async ({ page }) => {
 
   await page.getByLabel("Year").fill(String(new Date().getFullYear() + 1));
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.getByText("Career start can't be in the future")).toBeVisible();
+  await expect(page.getByText("Career start cannot be in the future")).toBeVisible();
   await expect(page.getByTestId("career-yoe")).toHaveText("Not set");
 });
 
@@ -60,7 +60,7 @@ test("admin sets a member's role and career start in /members and sees the Role 
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
   await expect(page.getByRole("columnheader", { name: "Role" })).toBeVisible();
-  await expect(page.getByRole("columnheader", { name: "YoE" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Experience" })).toBeVisible();
   await expect(row.getByRole("cell", { name: "Senior Engineer" })).toBeVisible();
   // Only a year was given: it counts from January.
   await expect(row.getByRole("cell", { name: yoeText(expectedYoe(2021, 1)) })).toBeVisible();

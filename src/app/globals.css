@@ -28,6 +28,7 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-foreground-muted: var(--primary-foreground-muted);
   --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -116,6 +117,7 @@
   --popover-foreground: #15212B;
   --primary: #0E5C58;
   --primary-foreground: #FFFFFF;
+  --primary-foreground-muted: #D8E4E2;
   --primary-hover: #0A4744;
   --secondary: #EDF0EE;
   --secondary-foreground: #15212B;
@@ -162,6 +164,63 @@
   --status-na-fg: #4A5560;
   --status-na-bg: #EEF1F0;
   --status-na-border: #D3D9D6;
+}
+
+.dark {
+  --background: #10171D;
+  --foreground: #EBF0EE;
+  --card: #162028;
+  --card-foreground: #EBF0EE;
+  --popover: #162028;
+  --popover-foreground: #EBF0EE;
+  --primary: #249C90;
+  --primary-foreground: #0D151C;
+  --primary-foreground-muted: #132226;
+  --primary-hover: #2DB4A6;
+  --secondary: #1F2B35;
+  --secondary-foreground: #EBF0EE;
+  --muted: #1F2B35;
+  --muted-foreground: #9EB2B7;
+  --accent: #163332;
+  --accent-foreground: #48D1C1;
+  --destructive: #F87171;
+  --border: #253440;
+  --input: #617B8E;
+  --ring: #38B2A3;
+
+  --chart-1: #38B2A3;
+  --chart-2: #9EB2B7;
+  --chart-3: #617B8E;
+  --chart-4: #253440;
+  --chart-5: #EBF0EE;
+
+  --sidebar: #121B22;
+  --sidebar-foreground: #EBF0EE;
+  --sidebar-primary: #249C90;
+  --sidebar-primary-foreground: #0D151C;
+  --sidebar-accent: #163332;
+  --sidebar-accent-foreground: #48D1C1;
+  --sidebar-border: #253440;
+  --sidebar-ring: #38B2A3;
+
+  --status-active-fg: #4ADE80;
+  --status-active-bg: #132E1F;
+  --status-active-border: #235E39;
+  --status-expiring-60-fg: #FACC15;
+  --status-expiring-60-bg: #2D260D;
+  --status-expiring-60-border: #635118;
+  --status-expiring-soon-fg: #FB923C;
+  --status-expiring-soon-bg: #321D12;
+  --status-expiring-soon-border: #6B3B20;
+  --status-expired-fg: #F87171;
+  --status-expired-bg: #321415;
+  --status-expired-border: #6C282B;
+  --status-no-expiry-fg: #94A3B8;
+  --status-no-expiry-bg: #1A232F;
+  --status-no-expiry-border: #334155;
+  --status-na-fg: #94A3B8;
+  --status-na-bg: #1A232F;
+  --status-na-border: #334155;
 }
 
 @layer base {

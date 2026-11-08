@@ -1,6 +1,7 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Monitor, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,7 +10,12 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RoleBadge } from "@/components/status/role-badge";
@@ -18,6 +24,7 @@ import { signOut } from "@/features/auth/actions";
 
 export function UserMenu({ email, role }: { email: string; role: Role }) {
   const [pending, startTransition] = useTransition();
+  const { theme, setTheme } = useTheme();
 
   return (
     <DropdownMenu>
@@ -34,6 +41,30 @@ export function UserMenu({ email, role }: { email: string; role: Role }) {
         <DropdownMenuGroup>
           <DropdownMenuLabel className="text-caption text-muted-foreground">{email}</DropdownMenuLabel>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Sun aria-hidden className="size-4 dark:hidden" />
+            <Moon aria-hidden className="hidden size-4 dark:inline" />
+            <span>Theme</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+              <DropdownMenuRadioItem value="light">
+                <Sun aria-hidden className="size-4" />
+                <span>Light</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">
+                <Moon aria-hidden className="size-4" />
+                <span>Dark</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="system">
+                <Monitor aria-hidden className="size-4" />
+                <span>System</span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem disabled={pending} onClick={() => startTransition(async () => signOut())}>
           {pending ? "Signing out…" : "Sign out"}

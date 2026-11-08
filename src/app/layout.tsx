@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Be_Vietnam_Pro, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const geistSans = Be_Vietnam_Pro({
@@ -28,15 +29,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col">
-        <TooltipProvider delay={200}>{children}</TooltipProvider>
-        <Toaster
-          theme="light"
-          position="bottom-right"
-          closeButton
-          toastOptions={{ closeButtonAriaLabel: "Close notification" }}
-        />
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <TooltipProvider delay={200}>{children}</TooltipProvider>
+          <Toaster
+            position="bottom-right"
+            closeButton
+            toastOptions={{ closeButtonAriaLabel: "Close notification" }}
+          />
+        </ThemeProvider>
       </body>
     </html>
   );

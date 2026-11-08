@@ -33,7 +33,7 @@ test.describe("app shell", () => {
   test("closes the mobile drawer after navigating to another page", async ({ page }) => {
     await signIn(page, "admin@certtracker.test");
 
-    await page.getByRole("button", { name: "Toggle sidebar" }).click();
+    await page.getByRole("button", { name: "Show or hide the menu" }).click();
     const drawer = page.locator('[data-mobile="true"]');
     await expect(drawer).toBeVisible();
 

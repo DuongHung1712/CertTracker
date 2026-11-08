@@ -22,7 +22,7 @@ function recordsTile(page: Page): Locator {
   return page
     .getByRole("region", { name: "Overview", exact: true })
     .locator("dl > div")
-    .filter({ has: page.getByText("Certificate records", { exact: true }) })
+    .filter({ has: page.getByText("Certificates", { exact: true }) })
     .locator("dd")
     .first();
 }

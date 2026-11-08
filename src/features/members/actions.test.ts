@@ -34,7 +34,7 @@ describe("setMemberAccess", () => {
   it("refuses to change your own access, so the acting admin stays an admin", async () => {
     currentUserId = USER_ID;
     const result = await setMemberAccess({ userId: USER_ID, role: "member" });
-    expect(result).toEqual({ ok: false, error: "You can't change your own access. Ask another admin." });
+    expect(result).toEqual({ ok: false, error: "You cannot change your own access. Ask another admin." });
     expect(update).not.toHaveBeenCalled();
   });
 
