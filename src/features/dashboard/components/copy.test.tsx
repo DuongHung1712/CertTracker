@@ -12,12 +12,11 @@ import {
 import { DashboardHeaderActions } from "@/features/dashboard/components/header-actions";
 import { ExpiringGaugeMiniChart, RecordsMiniChart } from "@/features/dashboard/components/hero-charts";
 import { StatusBar } from "@/features/dashboard/components/status-bar";
-import { DepartmentSummaryCard } from "@/features/dashboard/components/member/department-summary-card";
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
 import { MemberCertificatesList } from "@/features/dashboard/components/member/member-certificates-list";
 import { MemberKpiCards } from "@/features/dashboard/components/member/member-kpi-cards";
 import { calculateMemberKpis } from "@/features/dashboard/member-metrics";
-import type { BreakdownRow, DashboardKpis } from "@/features/dashboard/schema";
+import type { BreakdownRow } from "@/features/dashboard/schema";
 import { doneRecord, makeRecord } from "@/features/records/__fixtures__/record-row";
 import type { RecordRow } from "@/features/records/queries";
 
@@ -275,22 +274,5 @@ describe("[copy] dashboard header", () => {
     const matching = buttons.filter((name) => /filters/i.test(name));
     expect(matching).toHaveLength(1);
     expect(matching[0]).toMatch(/^Filters/);
-  });
-});
-
-describe("[copy] department summary (member dashboard)", () => {
-  const kpis: DashboardKpis = {
-    totalMembers: 5, totalRecords: 8, doneRecords: 5, inProgressRecords: 2, notStartedRecords: 1,
-    activeCerts: 2, expiring60Certs: 3, expiringSoonCerts: 1, expiredCerts: 1, noExpiryCerts: 1,
-  };
-
-  it("states the totals plainly and makes no claim about hidden groups (it shows no groups)", () => {
-    const html = text(renderToStaticMarkup(<DepartmentSummaryCard kpis={kpis} />));
-    expect(html).toContain("Totals for the whole department.");
-    expect(html).not.toContain("To protect privacy, groups with fewer than 3 members are hidden.");
-    expect(html).not.toMatch(/fewer than 3/i);
-    expect(html).toContain("Totals only, no names");
-    expect(html).toContain("Expiring within 60 days");
-    expect(html).not.toMatch(/learners|Anonymous totals/i);
   });
 });

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { DepartmentSummaryCard } from "@/features/dashboard/components/member/department-summary-card";
 import { Section, SectionError } from "@/features/dashboard/components/section";
 import { AllocatedScopeCard } from "@/features/dashboard/components/manager/allocated-scope-card";
 import { AutomatedRemindersCard } from "@/features/dashboard/components/manager/automated-reminders-card";
@@ -29,7 +28,6 @@ import {
   getTeamReadinessLeague,
   getNeedsAttentionItems,
 } from "@/features/dashboard/manager-metrics";
-import type { DashboardKpis } from "@/features/dashboard/schema";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import type { RecordRow } from "@/features/records/queries";
@@ -43,8 +41,6 @@ export function ManagerDashboardView({
   recordsError,
   members,
   membersError,
-  departmentKpis,
-  departmentKpisError,
 }: {
   greeting: string;
   subtitle: string;
@@ -54,8 +50,6 @@ export function ManagerDashboardView({
   recordsError?: string;
   members: { id: string; fullName: string; teamName: string | null }[];
   membersError?: string;
-  departmentKpis: DashboardKpis | null;
-  departmentKpisError?: string;
 }) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const hasTeams = managedTeamNames.length > 0;
@@ -203,16 +197,6 @@ export function ManagerDashboardView({
               <QuickActionsCard />
               <MonthlyEarnedChart records={filteredRecords} />
             </div>
-          </div>
-
-          {/* Bottom section: Across the department */}
-          <div className="flex flex-col gap-6 border-t border-border pt-6">
-            {/* Across the department (Anonymous org totals) */}
-            {departmentKpisError ? (
-              <SectionError title="Across the department" />
-            ) : departmentKpis ? (
-              <DepartmentSummaryCard kpis={departmentKpis} />
-            ) : null}
           </div>
         </>
       )}

@@ -25,9 +25,8 @@ After the clean-up (branch `refactor/manager-dashboard-cleanup`): each fact appe
 | **People Without Certificates Yet** | `PeopleWithoutCertsCard` | Names, team and count only. |
 | **Automated Reminders** | `AutomatedRemindersCard` (no props) | Two facts from `vercel.json`: Monday 08:00 (Vietnam time) expiry email, monthly report on the 1st. No links. |
 | **Ask about my team** | `AskAboutMyTeamComingSoon` | One merged `ComingSoonCard` (also covers risk alerts), static text ending "Not available yet.", no input, chips or buttons. |
-| **Org-Wide Aggregates** | `DepartmentSummaryCard` | Section `Across the department`. |
 
-Removed in the clean-up: `ManagerKpiCards` and `TeamReadinessLeague` (no importers), the Individual ranking section and `getRanking` in `loadManagerDashboard` (the admin loader keeps it), the Approvals queue, Goals, Skills and Risk alerts cards, the period selector, the second and third export links, the reminders Preview link, and the invented values (Program DAS, +28%, Last sent, fallback `Team Cloud`, `Team member`, `Suggest certification`, `Assign goal`, `Approvals (2)`). Guard tests: `manager-copy.test.ts`, `manager-dashboard-view.test.tsx`, `manager-cards.test.tsx`.
+Removed in the clean-up: the "Across the department" card (`DepartmentSummaryCard` and the `getDashboardKpis()` call in `loadManagerDashboard`), `ManagerKpiCards` and `TeamReadinessLeague` (no importers), the Individual ranking section and `getRanking` in `loadManagerDashboard` (the admin loader keeps it), the Approvals queue, Goals, Skills and Risk alerts cards, the period selector, the second and third export links, the reminders Preview link, and the invented values (Program DAS, +28%, Last sent, fallback `Team Cloud`, `Team member`, `Suggest certification`, `Assign goal`, `Approvals (2)`). Guard tests: `manager-copy.test.ts`, `manager-dashboard-view.test.tsx`, `manager-cards.test.tsx`.
 
 ---
 

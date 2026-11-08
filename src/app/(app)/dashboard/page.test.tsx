@@ -174,7 +174,7 @@ describe("DashboardPage (manager)", () => {
     expect(getRanking).not.toHaveBeenCalled();
     expect(html).not.toContain("Individual ranking");
     expect(html).not.toContain("Ranked Person");
-    // The anonymous org totals stay.
-    expect(html).toContain('aria-label="Across the department"');
+    // The anonymous org totals were removed from the manager dashboard.
+    expect(html).not.toContain("Across the department");
   });
 });

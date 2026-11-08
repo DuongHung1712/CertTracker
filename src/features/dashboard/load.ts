@@ -33,12 +33,11 @@ export async function loadMemberDashboard(
   user: SignedInUser,
   memberId: string,
 ): Promise<ComponentProps<typeof MemberDashboardView>> {
-  const [recordsResult, courseOptionsResult, careerResult, membersResult, kpisResult] = await Promise.all([
+  const [recordsResult, courseOptionsResult, careerResult, membersResult] = await Promise.all([
     settle(listRecords({ memberId })),
     settle(listCourseOptions()),
     settle(getMemberCareer(memberId)),
     settle(listMembers()),
-    settle(getDashboardKpis()),
   ]);
 
   const now = new Date();
@@ -55,8 +54,6 @@ export async function loadMemberDashboard(
     records: recordsResult.ok ? recordsResult.data : [],
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     courseOptions: courseOptionsResult.ok ? courseOptionsResult.data : [],
-    departmentKpis: kpisResult.ok ? kpisResult.data : null,
-    departmentKpisError: kpisResult.ok ? undefined : kpisResult.error,
     subtitle: `${getGreeting(profile.fullName, now)} · Figures as of ${formatDateTimeVn(now.toISOString())}.`,
   };
 }
@@ -64,10 +61,9 @@ export async function loadMemberDashboard(
 export async function loadManagerDashboard(
   user: SignedInUser,
 ): Promise<ComponentProps<typeof ManagerDashboardView>> {
-  const [recordsResult, membersResult, kpisResult, managedTeamsResult] = await Promise.all([
+  const [recordsResult, membersResult, managedTeamsResult] = await Promise.all([
     settle(listRecords()),
     settle(listMembers()),
-    settle(getDashboardKpis()),
     settle(listTeamOptionsForCurrentUser()),
   ]);
 
@@ -102,7 +98,5 @@ export async function loadManagerDashboard(
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     members,
     membersError: membersResult.ok ? undefined : membersResult.error,
-    departmentKpis: kpisResult.ok ? kpisResult.data : null,
-    departmentKpisError: kpisResult.ok ? undefined : kpisResult.error,
   };
 }

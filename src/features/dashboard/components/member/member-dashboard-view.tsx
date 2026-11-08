@@ -7,7 +7,6 @@ import type { ComboboxOption } from "@/components/entity-combobox";
 import { Button } from "@/components/ui/button";
 import { AuditVerificationCard } from "@/features/dashboard/components/member/audit-verification-card";
 import { ComplianceCopilotCard } from "@/features/dashboard/components/member/compliance-copilot-card";
-import { DepartmentSummaryCard } from "@/features/dashboard/components/member/department-summary-card";
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
 import { MemberCertificatesList } from "@/features/dashboard/components/member/member-certificates-list";
 import { MemberKpiCards } from "@/features/dashboard/components/member/member-kpi-cards";
@@ -20,7 +19,6 @@ import {
   calculateMemberKpis,
   getAttentionRecord,
 } from "@/features/dashboard/member-metrics";
-import type { DashboardKpis } from "@/features/dashboard/schema";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import type { RecordRow } from "@/features/records/queries";
@@ -34,8 +32,6 @@ export function MemberDashboardView({
   records,
   recordsError,
   courseOptions,
-  departmentKpis,
-  departmentKpisError,
   subtitle,
 }: {
   fullName: string;
@@ -46,8 +42,6 @@ export function MemberDashboardView({
   records: RecordRow[];
   recordsError?: string;
   courseOptions: ComboboxOption[];
-  departmentKpis: DashboardKpis | null;
-  departmentKpisError?: string;
   /** Greeting and "figures as of" time, worked out on the server so the first render matches on the client. */
   subtitle: string;
 }) {
@@ -129,15 +123,9 @@ export function MemberDashboardView({
           )}
         </div>
 
-        {/* Right Column: Audit Verification, Across the department, Copilot, Target Role */}
+        {/* Right Column: Audit Verification, Copilot, Target Role */}
         <div className="flex flex-col gap-6 lg:col-span-12 xl:col-span-3">
           <AuditVerificationCard />
-
-          {departmentKpisError || !departmentKpis ? (
-            <SectionError title="Across the department" />
-          ) : (
-            <DepartmentSummaryCard kpis={departmentKpis} />
-          )}
 
           <ComplianceCopilotCard />
 

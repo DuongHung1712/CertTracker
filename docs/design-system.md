@@ -229,7 +229,6 @@ Hiding is only UX; every permission is still enforced by RLS.
   4. "Expired": count; 0 shows a check icon and "All up to date".
 - **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Specialization focus" coming-soon card.
 - **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring within 60 days`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
-- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()` with the caption *"Totals for the whole department."*
 - **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Ask about certificates" (with a disabled question box), "My skills", "Quarterly goals", "Next career role", "Certificate review" and, inside the profile card, "Focus area". Each has the chip "Coming soon" and a one-line description ending "Not available yet.".
 - **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
 
@@ -250,7 +249,6 @@ Hiding is only UX; every permission is still enforced by RLS.
 - **Certificates Earned by Month:** 6-month bar chart (`MonthlyEarnedChart`) with the real total and a screen reader summary, no growth percentage.
 - **Planned Exams:** List of upcoming exams scheduled within 60 days with member name, course, formatted date, and days left label.
 - **Automated reminders:** region with two facts from `vercel.json`: "Members get an expiry email every Monday at 08:00 (Vietnam time)." and "The monthly report goes out on the 1st of each month." No links (`/settings` is admin only).
-- **Across the Department:** Anonymous card displaying department totals (valid, expiring, expired) from `getDashboardKpis()`.
 - **Coming Soon Card:** one `ComingSoonCard` "Ask about my team" (also covers risk alerts), a static line ending "Not available yet.", no input, chips or buttons.
 - **No mock data:** no invented values or strings (no program badge, growth percentage, "last sent" data, fallback team name or job title) and no button without a real link or handler. The test `manager-copy.test.ts` scans the manager folder for this.
 - **Responsive:** Multi-column layout collapsing gracefully to a single column on mobile (390px) with zero horizontal scroll.

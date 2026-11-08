@@ -108,7 +108,7 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
   await expect(detailPanel.getByRole("heading", { name: "Team Cloud" })).toBeVisible();
 });
 
-test("manager sees team-scoped numbers, org-wide totals once, and no separate ranking", async ({ page }) => {
+test("manager sees team-scoped numbers and no separate ranking", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
   // Scoped team KPI numbers: Team Cloud has 1 completed valid cert (expires in ~25 days) and 1 not_started cert.
@@ -118,12 +118,9 @@ test("manager sees team-scoped numbers, org-wide totals once, and no separate ra
   await expect(tileValue(page, "Expired")).toHaveText("0");
   await expect(tileValue(page, "Waiting for approval")).toHaveText("—");
 
-  // Org-wide totals appear in "Across the department"
-  const dept = section(page, "Across the department");
-  await expect(dept).toBeVisible();
-  await expect(dept.getByText("Valid")).toBeVisible();
-  await expect(dept.getByText("Expiring within 60 days")).toBeVisible();
-  await expect(dept.getByText("Expired")).toBeVisible();
+  // No department-wide totals for a manager: the "Across the department" card was removed.
+  await expect(page.getByText("Across the department")).toHaveCount(0);
+  await expect(page.getByText("Totals for the whole department.")).toHaveCount(0);
 
   // The Team readiness list is the only ranking: managed members (An, Châu) only, unmanaged Bình excluded.
   await expect(section(page, "Individual ranking")).toHaveCount(0);
@@ -236,14 +233,9 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(tileValue(page, "In progress")).toHaveText("0");
   await expect(tileValue(page, "Expired")).toHaveText("0");
 
-  // Anonymous department totals in "Across the department". The card shows no groups, so it makes no claim
-  // about hiding small groups (that rule lives in `dashboard_breakdown`, which a member never sees in the UI).
-  const dept = section(page, "Across the department");
-  await expect(dept).toBeVisible();
-  await expect(dept.getByText("Valid")).toBeVisible();
-  await expect(dept.getByText("Expiring")).toBeVisible();
-  await expect(dept.getByText("Expired")).toBeVisible();
-  await expect(dept.getByText("Totals for the whole department.")).toBeVisible();
+  // No department-wide totals for a member: the "Across the department" card was removed.
+  await expect(page.getByText("Across the department")).toHaveCount(0);
+  await expect(page.getByText("Totals for the whole department.")).toHaveCount(0);
   await expect(page.getByText(/groups with fewer than 3/i)).toHaveCount(0);
 
   // No ranking and no "By team"

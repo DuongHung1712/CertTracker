@@ -1,25 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import type { DashboardKpis } from "@/features/dashboard/schema";
 import { doneRecord, makeRecord } from "@/features/records/__fixtures__/record-row";
 import type { RecordRow } from "@/features/records/queries";
 
 vi.mock("@/features/records/components/records-realtime", () => ({ RecordsRealtime: () => null }));
 
 const { ManagerDashboardView } = await import("./manager-dashboard-view");
-
-const DEPARTMENT: DashboardKpis = {
-  totalMembers: 7,
-  totalRecords: 12,
-  doneRecords: 6,
-  inProgressRecords: 4,
-  notStartedRecords: 2,
-  activeCerts: 5,
-  expiring60Certs: 2,
-  expiringSoonCerts: 1,
-  expiredCerts: 1,
-  noExpiryCerts: 0,
-};
 
 const MEMBERS = [
   { id: "m1", fullName: "Nguyễn Văn An", teamName: "Team Cloud" },
@@ -43,7 +29,6 @@ function render({ records = RECORDS }: { records?: RecordRow[] } = {}): string {
       managedTeamNames={["Team Cloud"]}
       records={records}
       members={MEMBERS}
-      departmentKpis={DEPARTMENT}
     />,
   );
 }
@@ -70,7 +55,6 @@ describe("ManagerDashboardView: each region once", () => {
       "Planned exams",
       "Automated reminders",
       "Ask about my team (Coming soon)",
-      "Across the department",
       "Manager dashboard views",
       "Filter by team scope",
     ]) {
@@ -80,6 +64,8 @@ describe("ManagerDashboardView: each region once", () => {
 
   it("drops the duplicate ranking and the duplicate Coming soon cards", () => {
     const html = render();
+    expect(html).not.toContain("Across the department");
+    expect(html).not.toContain("Totals for the whole department.");
     expect(html).not.toContain("Individual ranking");
     for (const name of ["Approvals queue", "Goals", "Skills", "Risk alerts"]) {
       expect(html).not.toContain(`aria-label="${name} (Coming soon)"`);
@@ -206,8 +192,7 @@ describe("ManagerDashboardView: failures are not shown as empty", () => {
         teamsError="boom"
         records={[]}
         members={[]}
-        departmentKpis={DEPARTMENT}
-      />,
+        />,
     );
     expect(html).toContain("Could not load");
     expect(html).not.toContain("No teams assigned yet</");
