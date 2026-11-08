@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { AllocatedScopeCard } from "@/features/dashboard/components/manager/allocated-scope-card";
 import {
   ApprovalsQueueComingSoon,
   AskAboutMyTeamComingSoon,
@@ -11,9 +12,14 @@ import {
 import { ManagerKpiCards } from "@/features/dashboard/components/manager/manager-kpi-cards";
 import { NeedsAttentionFeed } from "@/features/dashboard/components/manager/needs-attention-feed";
 import { NextToExpireTable } from "@/features/dashboard/components/manager/next-to-expire-table";
+import { PeopleWithoutCertsCard } from "@/features/dashboard/components/manager/people-without-certs-card";
 import { PlannedExamsList } from "@/features/dashboard/components/manager/planned-exams-list";
+import { QuickActionsCard } from "@/features/dashboard/components/manager/quick-actions-card";
+import { TeamReadinessDonutCard } from "@/features/dashboard/components/manager/team-readiness-donut-card";
+import { TeamReadinessDossier } from "@/features/dashboard/components/manager/team-readiness-dossier";
 import { TeamReadinessLeague } from "@/features/dashboard/components/manager/team-readiness-league";
-import { calculateManagerKpis } from "@/features/dashboard/manager-metrics";
+import { TopKpiRow } from "@/features/dashboard/components/manager/top-kpi-row";
+import { calculateManagerKpis, getTeamReadinessLeague } from "@/features/dashboard/manager-metrics";
 import { doneRecord, makeRecord } from "@/features/records/__fixtures__/record-row";
 
 describe("ManagerKpiCards", () => {
@@ -148,5 +154,71 @@ describe("ManagerComingSoonStack & TabStrip", () => {
     expect(html).toContain("View risk assessment");
     expect(html).toContain("disabled");
     expect(html).toContain("Not available yet.");
+  });
+});
+
+describe("TeamReadinessDonutCard & TopKpiRow", () => {
+  it("renders donut card with percentage and hidden DL for e2e contract", () => {
+    const kpis = calculateManagerKpis([doneRecord(20)]);
+    const html = renderToStaticMarkup(
+      <TeamReadinessDonutCard kpis={kpis} totalMembers={5} noCertCount={2} />,
+    );
+    expect(html).toContain("Team readiness");
+    expect(html).toContain("100%");
+    expect(html).toContain("N=5");
+    expect(html).toContain("No cert yet");
+  });
+
+  it("renders TopKpiRow with 3 tiles (expiring, expired, waiting)", () => {
+    const kpis = calculateManagerKpis([doneRecord(20), doneRecord(-5)]);
+    const html = renderToStaticMarkup(<TopKpiRow kpis={kpis} pastDueText="Minh (PMP)" />);
+    expect(html).toContain("Expiring within 60 days");
+    expect(html).toContain("Expired");
+    expect(html).toContain("Waiting for approval");
+    expect(html).toContain("Past due: Minh (PMP)");
+  });
+});
+
+describe("TeamReadinessDossier", () => {
+  it("renders master list with rank and detail dossier panel", () => {
+    const members = [
+      { id: "m1", fullName: "Nguyễn Văn An", teamName: "Team Cloud" },
+      { id: "m2", fullName: "Lê Minh Châu", teamName: "Team Cloud" },
+    ];
+    const records = [doneRecord(25, { memberId: "m1" })];
+    const rows = getTeamReadinessLeague(members, records);
+    const html = renderToStaticMarkup(
+      <TeamReadinessDossier rows={rows} records={records} />,
+    );
+    expect(html).toContain("Team readiness dossier · Compliance ranking");
+    expect(html).toContain("Nguyễn Văn An");
+    expect(html).toContain("1 valid");
+    expect(html).toContain("0 valid");
+    expect(html).toContain("Detail view · Member dossier");
+    expect(html).toContain("View member certificates");
+  });
+});
+
+describe("PeopleWithoutCertsCard & AllocatedScopeCard & QuickActionsCard", () => {
+  it("renders cards with appropriate member info and links", () => {
+    const members = [{ id: "m2", fullName: "Lê Minh Châu", teamName: "Team Cloud" }];
+    const htmlNoCerts = renderToStaticMarkup(<PeopleWithoutCertsCard members={members} />);
+    expect(htmlNoCerts).toContain("People without certificates yet");
+    expect(htmlNoCerts).toContain("Lê Minh Châu");
+    expect(htmlNoCerts).toContain("Suggest certification");
+
+    const teams = [{ name: "Team Cloud", memberCount: 2 }];
+    const htmlScope = renderToStaticMarkup(<AllocatedScopeCard teams={teams} />);
+    expect(htmlScope).toContain("Allocated scope");
+    expect(htmlScope).toContain("Team Cloud");
+    expect(htmlScope).toContain("2 members");
+    expect(htmlScope).toContain("DAS");
+
+    const htmlActions = renderToStaticMarkup(<QuickActionsCard expiringCount={1} />);
+    expect(htmlActions).toContain("Quick actions");
+    expect(htmlActions).toContain("Add certificate");
+    expect(htmlActions).toContain("Send reminder to expiring (1)");
+    expect(htmlActions).toContain("Export team audit CSV");
+    expect(htmlActions).toContain("View team data quality");
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
@@ -7,6 +8,8 @@ import { buttonVariants } from "@/components/ui/button";
 import { DepartmentSummaryCard } from "@/features/dashboard/components/member/department-summary-card";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
 import { Section, SectionError } from "@/features/dashboard/components/section";
+import { AllocatedScopeCard } from "@/features/dashboard/components/manager/allocated-scope-card";
+import { AutomatedRemindersCard } from "@/features/dashboard/components/manager/automated-reminders-card";
 import {
   ApprovalsQueueComingSoon,
   AskAboutMyTeamComingSoon,
@@ -15,13 +18,23 @@ import {
   RiskAlertsComingSoon,
   SkillsComingSoon,
 } from "@/features/dashboard/components/manager/manager-coming-soon-stack";
-import { ManagerKpiCards } from "@/features/dashboard/components/manager/manager-kpi-cards";
 import { MonthlyEarnedChart } from "@/features/dashboard/components/manager/monthly-earned-chart";
 import { NeedsAttentionFeed } from "@/features/dashboard/components/manager/needs-attention-feed";
 import { NextToExpireTable } from "@/features/dashboard/components/manager/next-to-expire-table";
+import { PeopleWithoutCertsCard } from "@/features/dashboard/components/manager/people-without-certs-card";
 import { PlannedExamsList } from "@/features/dashboard/components/manager/planned-exams-list";
-import { TeamReadinessLeague } from "@/features/dashboard/components/manager/team-readiness-league";
-import { calculateManagerKpis } from "@/features/dashboard/manager-metrics";
+import { QuickActionsCard } from "@/features/dashboard/components/manager/quick-actions-card";
+import { TeamReadinessDonutCard } from "@/features/dashboard/components/manager/team-readiness-donut-card";
+import { TeamReadinessDossier } from "@/features/dashboard/components/manager/team-readiness-dossier";
+import { TeamScopeFilter } from "@/features/dashboard/components/manager/team-scope-filter";
+import { TopKpiRow } from "@/features/dashboard/components/manager/top-kpi-row";
+import {
+  calculateManagerKpis,
+  getMembersWithoutCerts,
+  getTeamReadinessLeague,
+  isExpired,
+  isExpiring30,
+} from "@/features/dashboard/manager-metrics";
 import type { DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
@@ -52,8 +65,45 @@ export function ManagerDashboardView({
   ranking: RankingRow[];
   rankingError?: string;
 }) {
+  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const hasTeams = managedTeamNames.length > 0;
-  const kpis = calculateManagerKpis(records);
+
+  // Filter records & members by selected team if user clicked a team pill
+  const filteredRecords = useMemo(() => {
+    if (!selectedTeam) return records;
+    return records.filter((r) => r.teamName === selectedTeam);
+  }, [records, selectedTeam]);
+
+  const filteredMembers = useMemo(() => {
+    if (!selectedTeam) return members;
+    return members.filter((m) => m.teamName === selectedTeam);
+  }, [members, selectedTeam]);
+
+  const kpis = useMemo(() => calculateManagerKpis(filteredRecords), [filteredRecords]);
+
+  const teamsWithCounts = useMemo(() => {
+    return managedTeamNames.map((name) => ({
+      name,
+      memberCount: members.filter((m) => m.teamName === name).length,
+    }));
+  }, [managedTeamNames, members]);
+
+  const readinessRows = useMemo(
+    () => getTeamReadinessLeague(filteredMembers, filteredRecords),
+    [filteredMembers, filteredRecords],
+  );
+
+  const membersWithoutCerts = useMemo(
+    () => getMembersWithoutCerts(filteredMembers, filteredRecords),
+    [filteredMembers, filteredRecords],
+  );
+
+  const earliestExpired = useMemo(() => filteredRecords.find(isExpired), [filteredRecords]);
+  const pastDueText = earliestExpired
+    ? `${earliestExpired.memberName} (${earliestExpired.courseName})`
+    : undefined;
+
+  const mostUrgent = useMemo(() => filteredRecords.find(isExpiring30), [filteredRecords]);
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -84,22 +134,63 @@ export function ManagerDashboardView({
         />
       ) : (
         <>
-          {/* 1. Overview: 4 KPI Cards */}
-          <Section title="Overview">
-            {recordsError ? (
-              <SectionError title="Overview" />
-            ) : (
-              <ManagerKpiCards kpis={kpis} />
-            )}
-          </Section>
+          {/* Subheader Filter Bar: Team Scope Pills + Period Selector + Download Report */}
+          <TeamScopeFilter
+            teams={teamsWithCounts}
+            selectedTeam={selectedTeam}
+            onSelectTeam={setSelectedTeam}
+          />
 
-          {/* 2. Tab strip */}
-          <ManagerTabStrip />
-
-          {/* 3. Main 2-column layout */}
+          {/* Row 1: Top Overview (Cols 1 & 2) and Needs Attention (Col 3) */}
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-            {/* Left Column: 8 cols */}
-            <div className="flex flex-col gap-6 lg:col-span-8">
+            {/* Overview Section wrapping the 4 KPI Tiles */}
+            <div className="flex flex-col gap-3 lg:col-span-9">
+              <section aria-label="Overview" className="flex flex-col gap-3">
+                <h2 className="sr-only">Overview</h2>
+                {recordsError ? (
+                  <SectionError title="Overview" />
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-9">
+                    {/* Left: Donut Readiness Card (3 cols) */}
+                    <div className="lg:col-span-3">
+                      <TeamReadinessDonutCard
+                        kpis={kpis}
+                        totalMembers={filteredMembers.length}
+                        noCertCount={membersWithoutCerts.length}
+                      />
+                    </div>
+                    {/* Center: Top 3 KPI Cards (6 cols) */}
+                    <div className="lg:col-span-6">
+                      <TopKpiRow kpis={kpis} pastDueText={pastDueText} />
+                    </div>
+                  </div>
+                )}
+              </section>
+            </div>
+
+            {/* Right: Needs Attention Card (3 cols) */}
+            <div className="lg:col-span-3">
+              {recordsError ? (
+                <SectionError title="Needs attention" />
+              ) : (
+                <NeedsAttentionFeed records={filteredRecords} />
+              )}
+            </div>
+          </div>
+
+          {/* Row 2: 3 Continuous Columns matching Figma */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+            {/* Column 1 (Left sidebar - 3 cols) */}
+            <div className="flex flex-col gap-4 lg:col-span-3">
+              <AllocatedScopeCard teams={teamsWithCounts} />
+              <QuickActionsCard expiringCount={kpis.expiringCount} />
+              <MonthlyEarnedChart records={filteredRecords} />
+            </div>
+
+            {/* Column 2 (Center main column - 6 cols) */}
+            <div className="flex flex-col gap-6 lg:col-span-6">
+              <ManagerTabStrip />
+
               {/* Next to expire */}
               <Section
                 title="Next to expire"
@@ -108,11 +199,11 @@ export function ManagerDashboardView({
                 {recordsError ? (
                   <SectionError title="Next to expire" />
                 ) : (
-                  <NextToExpireTable records={records} />
+                  <NextToExpireTable records={filteredRecords} />
                 )}
               </Section>
 
-              {/* Team readiness league */}
+              {/* Team readiness dossier (Split Finnova Master-Detail) */}
               <Section
                 title="Team readiness"
                 description="Status breakdown for members across your managed teams."
@@ -120,18 +211,12 @@ export function ManagerDashboardView({
                 {membersError || recordsError ? (
                   <SectionError title="Team readiness" />
                 ) : (
-                  <TeamReadinessLeague members={members} records={records} />
+                  <TeamReadinessDossier rows={readinessRows} records={filteredRecords} />
                 )}
               </Section>
 
-              {/* Certificates earned by month */}
-              <Section title="Certificates earned by month">
-                {recordsError ? (
-                  <SectionError title="Certificates earned by month" />
-                ) : (
-                  <MonthlyEarnedChart records={records} />
-                )}
-              </Section>
+              {/* People without certificates yet */}
+              <PeopleWithoutCertsCard members={membersWithoutCerts} />
 
               {/* Planned exams */}
               <Section
@@ -141,51 +226,49 @@ export function ManagerDashboardView({
                 {recordsError ? (
                   <SectionError title="Planned exams" />
                 ) : (
-                  <PlannedExamsList records={records} />
-                )}
-              </Section>
-
-              {/* Individual ranking */}
-              <Section
-                title="Individual ranking"
-                description="Ranked by valid certificates, then by total completed. Equal numbers share a rank. Only members of the teams you manage are included."
-              >
-                {rankingError ? (
-                  <SectionError title="Individual ranking" />
-                ) : (
-                  <RankingTable rows={ranking} />
+                  <PlannedExamsList records={filteredRecords} />
                 )}
               </Section>
             </div>
 
-            {/* Right Column: 4 cols */}
-            <div className="flex flex-col gap-6 lg:col-span-4">
-              {/* Needs attention feed */}
-              <Section
-                title="Needs attention"
-                description="Expired certificates and certificates expiring within 30 days."
-              >
-                {recordsError ? (
-                  <SectionError title="Needs attention" />
-                ) : (
-                  <NeedsAttentionFeed records={records} />
-                )}
-              </Section>
+            {/* Column 3 (Right sidebar - 3 cols) */}
+            <div className="flex flex-col gap-4 lg:col-span-3">
+              <AutomatedRemindersCard expiringCount={kpis.expiringCount} />
+              <AskAboutMyTeamComingSoon />
+              <RiskAlertsComingSoon
+                urgentMemberName={mostUrgent?.memberName}
+                urgentCourseName={mostUrgent?.courseName}
+                urgentDays={mostUrgent?.daysToExpiry ?? undefined}
+              />
+            </div>
+          </div>
 
-              {/* Across the department (Anonymous org totals) */}
-              {departmentKpisError ? (
-                <SectionError title="Across the department" />
-              ) : departmentKpis ? (
-                <DepartmentSummaryCard kpis={departmentKpis} />
-              ) : null}
-
-              {/* Coming soon cards */}
+          {/* Bottom Section: Remaining Coming Soon Tools, Individual Ranking & Across the Department */}
+          <div className="flex flex-col gap-6 border-t border-border pt-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <ApprovalsQueueComingSoon />
               <GoalsComingSoon />
               <SkillsComingSoon />
-              <AskAboutMyTeamComingSoon />
-              <RiskAlertsComingSoon />
             </div>
+
+            {/* Individual ranking */}
+            <Section
+              title="Individual ranking"
+              description="Ranked by valid certificates, then by total completed. Equal numbers share a rank. Only members of the teams you manage are included."
+            >
+              {rankingError ? (
+                <SectionError title="Individual ranking" />
+              ) : (
+                <RankingTable rows={ranking} />
+              )}
+            </Section>
+
+            {/* Across the department (Anonymous org totals) */}
+            {departmentKpisError ? (
+              <SectionError title="Across the department" />
+            ) : departmentKpis ? (
+              <DepartmentSummaryCard kpis={departmentKpis} />
+            ) : null}
           </div>
         </>
       )}

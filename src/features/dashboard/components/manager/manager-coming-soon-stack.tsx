@@ -7,45 +7,54 @@ export function ManagerTabStrip() {
     <div
       role="tablist"
       aria-label="Manager dashboard views"
-      className="flex flex-wrap items-center gap-1.5 border-b border-border pb-3"
+      className="flex flex-wrap items-center gap-2 border-b border-border pb-3"
     >
       <button
         type="button"
         role="tab"
         aria-selected="true"
-        className="rounded-md bg-primary px-3 py-1.5 text-caption font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="rounded-full bg-primary px-3.5 py-1 text-caption font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         Overview
       </button>
       <button
         type="button"
         role="tab"
+        aria-label="Approvals Soon"
         aria-selected="false"
         disabled
-        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border bg-muted/30 px-3 py-1.5 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
+        className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 px-3.5 py-1 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
       >
-        <span>Approvals</span>
-        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground">Soon</span>
+        <span>Approvals (2)</span>
+        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-mono">
+          Soon
+        </span>
       </button>
       <button
         type="button"
         role="tab"
+        aria-label="Skills Soon"
         aria-selected="false"
         disabled
-        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border bg-muted/30 px-3 py-1.5 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
+        className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 px-3.5 py-1 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
+      >
+        <span>Skill Matrix</span>
+        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-mono">
+          Soon
+        </span>
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-label="Goals Soon"
+        aria-selected="false"
+        disabled
+        className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-border bg-muted/30 px-3.5 py-1 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
       >
         <span>Goals</span>
-        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground">Soon</span>
-      </button>
-      <button
-        type="button"
-        role="tab"
-        aria-selected="false"
-        disabled
-        className="inline-flex items-center gap-1.5 rounded-md border border-dashed border-border bg-muted/30 px-3 py-1.5 text-caption font-medium text-muted-foreground opacity-60 cursor-not-allowed"
-      >
-        <span>Skills</span>
-        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground">Soon</span>
+        <span className="rounded-full bg-muted px-1.5 py-0.2 text-[10px] text-muted-foreground font-mono">
+          Soon
+        </span>
       </button>
     </div>
   );
@@ -103,7 +112,7 @@ export function AskAboutMyTeamComingSoon() {
   return (
     <ComingSoonCard
       title="Ask about my team"
-      description="Ask natural-language questions about team qualifications, exam budgets, or skill gaps. Not available yet."
+      description="AI assistant trained on team qualifications and project roles. Not available yet."
       icon={<HelpCircle className="size-4" />}
     >
       <div className="flex flex-col gap-2.5">
@@ -118,7 +127,10 @@ export function AskAboutMyTeamComingSoon() {
             Cloud certification coverage?
           </Button>
           <Button disabled size="sm" variant="outline" className="h-7 text-caption">
-            Renewals this quarter?
+            Who needs renewal in Q4?
+          </Button>
+          <Button disabled size="sm" variant="outline" className="h-7 text-caption">
+            Subsidized exams available
           </Button>
         </div>
       </div>
@@ -126,17 +138,41 @@ export function AskAboutMyTeamComingSoon() {
   );
 }
 
-export function RiskAlertsComingSoon() {
+export function RiskAlertsComingSoon({
+  urgentMemberName,
+  urgentCourseName,
+  urgentDays,
+}: {
+  urgentMemberName?: string;
+  urgentCourseName?: string;
+  urgentDays?: number;
+}) {
   return (
     <ComingSoonCard
       title="Risk alerts"
       description="Identifies single points of failure when critical capabilities depend on expiring certificates. Not available yet."
       icon={<ShieldAlert className="size-4" />}
     >
-      <div className="flex flex-col gap-2">
-        <Button disabled size="sm" variant="outline" className="w-fit">
-          View risk assessment
-        </Button>
+      <div className="flex flex-col gap-2.5">
+        <div className="rounded border border-amber-500/30 bg-amber-500/10 p-3 text-caption">
+          <div className="font-semibold text-amber-700 dark:text-amber-400">
+            Key person risk detected
+          </div>
+          <div className="text-foreground/90 mt-1">
+            {urgentMemberName && urgentCourseName
+              ? `${urgentMemberName}'s ${urgentCourseName} certificate expires in ${urgentDays ?? 12} days. Production authority at stake.`
+              : "Key production role authorization depends on expiring certifications."}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Button disabled size="sm" variant="outline" className="w-fit">
+            View risk assessment
+          </Button>
+          <Button disabled size="sm" variant="outline" className="w-fit border-amber-500/40 text-amber-700 dark:text-amber-400">
+            Remediate
+          </Button>
+        </div>
       </div>
     </ComingSoonCard>
   );

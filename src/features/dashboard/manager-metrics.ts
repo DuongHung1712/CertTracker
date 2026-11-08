@@ -91,7 +91,7 @@ export function calculateManagerKpis(records: RecordRow[]): ManagerKpis {
     }
   }
 
-  const teamReadinessRate = doneCount > 0 ? ratePercent(validCount, doneCount) : 0;
+  const teamReadinessRate = doneCount > 0 ? (ratePercent(validCount, doneCount) ?? 0) : 0;
 
   return {
     totalCertificates: records.length,
@@ -163,7 +163,7 @@ export function getTeamReadinessLeague(
       }
     }
 
-    const readinessRate = doneCount > 0 ? ratePercent(validCount, doneCount) : 0;
+    const readinessRate = doneCount > 0 ? (ratePercent(validCount, doneCount) ?? 0) : 0;
 
     return {
       memberId: m.id,
@@ -328,3 +328,15 @@ export function getNeedsAttentionItems(records: RecordRow[]): NeedsAttentionItem
     return (a.record.daysToExpiry ?? 0) - (b.record.daysToExpiry ?? 0);
   });
 }
+
+/** Returns members who have no completed certificates yet. */
+export function getMembersWithoutCerts(
+  members: { id: string; fullName: string; teamName: string | null }[],
+  records: RecordRow[],
+): { id: string; fullName: string; teamName: string | null }[] {
+  const membersWithCompleted = new Set(
+    records.filter((r) => r.status === "done").map((r) => r.memberId),
+  );
+  return members.filter((m) => !membersWithCompleted.has(m.id));
+}
+

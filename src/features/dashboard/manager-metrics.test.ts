@@ -6,6 +6,7 @@ import {
   formatManagerSubtitle,
   formatTeamNames,
   getCertificatesEarnedByMonth,
+  getMembersWithoutCerts,
   getNeedsAttentionItems,
   getNextToExpire,
   getPlannedExams,
@@ -263,6 +264,24 @@ describe("manager-metrics", () => {
       expect(items[2].urgency).toBe("urgent");
       expect(items[2].record.memberName).toBe("Linh");
       expect(items[2].description).toContain("expires in 12 days");
+    });
+  });
+
+  describe("getMembersWithoutCerts", () => {
+    it("filters members who do not have any completed certificate", () => {
+      const members = [
+        { id: "m1", fullName: "Nguyễn Văn An", teamName: "Cloud" },
+        { id: "m2", fullName: "Lê Minh Châu", teamName: "Cloud" },
+        { id: "m3", fullName: "Trần Thị Bình", teamName: "AI" },
+      ];
+      const records = [
+        doneRecord(30, { memberId: "m1" }),
+        makeRecord({ memberId: "m2", status: "not_started" }),
+      ];
+
+      const noCerts = getMembersWithoutCerts(members, records);
+      expect(noCerts).toHaveLength(2);
+      expect(noCerts.map((m) => m.fullName)).toEqual(["Lê Minh Châu", "Trần Thị Bình"]);
     });
   });
 });
