@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { signIn } from "./helpers";
+import { inviteLink } from "./support/accounts";
+import { acceptInvitation, pilotEmail, removePilotPeople } from "./support/pilot-member";
 import { signInAsSeedUser } from "./support/restore-seed";
 import { assertSeedFresh } from "./support/seed-fresh";
 
@@ -122,15 +124,58 @@ test("manager sees the same org-wide numbers but a ranking limited to their team
 test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
-  await expect(tileValue(page, "Certificate records")).toHaveText("3");
+  // Personal KPI cards match the seed member's records (Lê Minh Châu has 1 not_started record)
+  await expect(tileValue(page, "Recorded certificates")).toHaveText("1");
+  await expect(tileValue(page, "Expiring soon")).toHaveText("0");
+  await expect(tileValue(page, "In progress")).toHaveText("0");
+  await expect(tileValue(page, "Expired")).toHaveText("0");
+
+  // Anonymous department totals and privacy note in "Across the department"
+  const dept = section(page, "Across the department");
+  await expect(dept).toBeVisible();
+  await expect(dept.getByText("Valid")).toBeVisible();
+  await expect(dept.getByText("Expiring")).toBeVisible();
+  await expect(dept.getByText("Expired")).toBeVisible();
+  await expect(page.getByText("Only groups with at least 3 learners are shown.")).toBeVisible();
+
+  // No ranking and no "By team"
   await expect(page.getByRole("tab", { name: /^By team$/ })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /^By team$/ })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: /^Individual ranking$/ })).toHaveCount(0);
 
-  await expect(page.getByText("Only groups with at least 3 learners are shown.")).toBeVisible();
-  // AWS has 2 learners and NVIDIA 1: every provider group is below the threshold, so none is shown.
-  await page.getByRole("tab", { name: "By provider" }).click();
-  await expect(section(page, "By provider").getByText("Not enough data to show")).toBeVisible();
+  // Filter tabs with counts for member certificates
+  const certSection = page.getByRole("region", { name: "My certificates" });
+  await expect(certSection).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^All \(1\)$/ })).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^Valid \(0\)$/ })).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^Expiring \(0\)$/ })).toBeVisible();
+  await expect(certSection.getByRole("tab", { name: /^In progress \(0\)$/ })).toBeVisible();
+  await expect(certSection.getByText(AWS)).toBeVisible();
+
+  // Attention banner is hidden when nothing expires within 60 days
+  await expect(page.getByRole("complementary", { name: "Certificate attention required" })).toHaveCount(0);
+
+  // Coming soon cards are visible and non-interactive (controls are disabled)
+  const copilot = page.getByRole("region", { name: "Compliance copilot (Coming soon)" });
+  await expect(copilot).toBeVisible();
+  await expect(copilot.getByPlaceholder("Ask about certification policy or exam budget…")).toBeDisabled();
+  await expect(copilot.getByRole("button", { name: "What is needed for AWS renewal?" })).toBeDisabled();
+  await expect(page.getByRole("region", { name: "My skills matrix (Coming soon)" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Quarterly objective (Coming soon)" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Target role (Coming soon)" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Audit verification (Coming soon)" })).toBeVisible();
+});
+
+test("unlinked member account shows guidance empty state on dashboard", async ({ page }) => {
+  const email = pilotEmail("dash-unlinked");
+  const { hash } = await inviteLink(email);
+  try {
+    await acceptInvitation(page, email, hash);
+    await expect(page.getByText("Your account is not linked to a member")).toBeVisible();
+    await expect(page.getByText("Ask an admin to link your account to a member")).toBeVisible();
+  } finally {
+    await removePilotPeople();
+  }
 });
 
 test("a member cannot read the ranking or per-team numbers straight from the API", async () => {

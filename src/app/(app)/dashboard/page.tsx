@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { AlertCircle, Award, CheckCircle2, Clock } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { getCurrentUser } from "@/features/auth/queries";
+import { getMemberCareer } from "@/features/career/queries";
 import { ExpiryChart } from "@/features/dashboard/components/expiry-chart";
 import { Explorer } from "@/features/dashboard/components/explorer";
 import { DashboardHeaderActions } from "@/features/dashboard/components/header-actions";
@@ -14,6 +16,7 @@ import {
   ValidMiniChart,
 } from "@/features/dashboard/components/hero-charts";
 import { KpiCard } from "@/features/dashboard/components/kpi-card";
+import { MemberDashboardView } from "@/features/dashboard/components/member/member-dashboard-view";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
 import { Section, SectionError } from "@/features/dashboard/components/section";
 import {
@@ -26,20 +29,69 @@ import {
 } from "@/features/dashboard/metrics";
 import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard/queries";
 import { settle } from "@/features/dashboard/settle";
+import { listMembers } from "@/features/members/queries";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
+import { listCourseOptions, listRecords } from "@/features/records/queries";
 import { formatDateTimeVn, formatNumber } from "@/lib/format";
 
 const RANKING_DESCRIPTION =
   "Ranked by valid certificates, then by total completed. Equal numbers share a rank.";
-const MEMBER_EMPTY_HINT = "Not enough data to show (at least 3 learners are needed).";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
-  const role = user?.role;
-  // UX only — the SQL functions refuse/limit by role; this just avoids requesting and drawing what a Member cannot see.
+  if (!user) redirect("/login");
+  const role = user.role;
+
+  // Member Dashboard: Dedicated member home layout
+  if (role === "member") {
+    if (!user.memberId) {
+      return (
+        <div className="flex min-w-0 flex-col gap-6">
+          <PageHeader title="Dashboard" description="Personal certificates and progress." />
+          <EmptyState
+            title="Your account is not linked to a member"
+            description="Ask an admin to link your account to a member so your certificates show here."
+          />
+        </div>
+      );
+    }
+
+    const [recordsResult, courseOptionsResult, careerResult, membersResult, kpisResult] = await Promise.all([
+      settle(listRecords({ memberId: user.memberId })),
+      settle(listCourseOptions()),
+      settle(getMemberCareer(user.memberId)),
+      settle(listMembers()),
+      settle(getDashboardKpis()),
+    ]);
+
+    const memberObj = membersResult.ok ? membersResult.data.find((m) => m.id === user.memberId) : null;
+    const firstRecord = recordsResult.ok ? recordsResult.data[0] : undefined;
+    const fullName = memberObj?.fullName ?? firstRecord?.memberName ?? user.email;
+    const teamName = memberObj?.teamName ?? firstRecord?.teamName ?? null;
+    const careerRoleName =
+      (careerResult.ok ? careerResult.data.careerRoleName : null) ?? memberObj?.careerRoleName ?? null;
+    const yoeYears = (careerResult.ok ? careerResult.data.yoeYears : null) ?? memberObj?.yoeYears ?? null;
+
+    return (
+      <MemberDashboardView
+        fullName={fullName}
+        teamName={teamName}
+        careerRoleName={careerRoleName}
+        yoeYears={yoeYears}
+        memberId={user.memberId}
+        records={recordsResult.ok ? recordsResult.data : []}
+        recordsError={!recordsResult.ok ? recordsResult.error : undefined}
+        courseOptions={courseOptionsResult.ok ? courseOptionsResult.data : []}
+        departmentKpis={kpisResult.ok ? kpisResult.data : null}
+        departmentKpisError={!kpisResult.ok ? kpisResult.error : undefined}
+      />
+    );
+  }
+
+  // Admin and Manager Dashboard: byte-for-byte unaffected in behaviour
   const canSeeTeams = role === "admin" || role === "manager";
-  const isMember = role === "member";
-  const emptyHint = isMember ? MEMBER_EMPTY_HINT : undefined;
+  const isMember = false;
+  const emptyHint = undefined;
 
   const [kpis, courses, teams, certTypes, providers, ranking] = await Promise.all([
     settle(getDashboardKpis()),
