@@ -15,8 +15,8 @@ import { err, ok, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
 const GENERIC_ERROR = "Something went wrong. Please try again.";
-const FORBIDDEN_ERROR = "You don't have permission to do this.";
-const NOT_FOUND_ERROR = "You don't have permission to do this, or the role no longer exists.";
+const FORBIDDEN_ERROR = "You do not have permission to do this.";
+const NOT_FOUND_ERROR = "You do not have permission to do this, or the role no longer exists.";
 const UNIQUE_VIOLATION = "23505";
 const FOREIGN_KEY_VIOLATION = "23503";
 const INSUFFICIENT_PRIVILEGE = "42501";
@@ -44,7 +44,7 @@ export async function setMyCareerStart(input: CareerStartInput): Promise<Result<
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_my_career_start", { p_start: careerStartToDate(parsed.data) });
   if (error) {
-    if (error.message.includes("in the future")) return err("Career start can't be in the future");
+    if (error.message.includes("in the future")) return err("Career start cannot be in the future");
     if (error.message.includes("no member profile")) return err("Your account is not linked to a member yet.");
     return err(roleError(error));
   }

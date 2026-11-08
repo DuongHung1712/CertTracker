@@ -144,7 +144,7 @@ export function RecordsTable({
       },
       {
         accessorKey: "plannedExamDate",
-        header: "Exam date",
+        header: "Planned exam date",
         cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
       },
       {

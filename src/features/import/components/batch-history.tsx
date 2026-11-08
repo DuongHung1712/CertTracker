@@ -45,13 +45,15 @@ export function BatchHistory({ batches }: { batches: ImportBatch[] }) {
         header: () => <span className="sr-only">Actions</span>,
         enableSorting: false,
         cell: ({ row }) => (
-          <Link
-            href={`/import/${row.original.id}`}
-            aria-label={`View batch ${row.original.fileName}`}
-            className={buttonVariants({ variant: "ghost", size: "xs" })}
-          >
-            View
-          </Link>
+          <div className="flex justify-end">
+            <Link
+              href={`/import/${row.original.id}`}
+              aria-label={`View batch ${row.original.fileName}`}
+              className={buttonVariants({ variant: "ghost", size: "sm" })}
+            >
+              View
+            </Link>
+          </div>
         ),
       },
     ],
@@ -63,7 +65,12 @@ export function BatchHistory({ batches }: { batches: ImportBatch[] }) {
       columns={columns}
       data={batches}
       getRowId={(row) => row.id}
-      empty={<EmptyState title="No imports yet" />}
+      empty={
+        <EmptyState
+          title="No imports yet"
+          description="Upload an Excel file above to preview and import rows."
+        />
+      }
     />
   );
 }

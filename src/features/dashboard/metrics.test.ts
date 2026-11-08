@@ -1,6 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { expiringCerts, expiryBuckets, formatRate, ratePercent, rankingForDisplay, validCerts } from "@/features/dashboard/metrics";
-import type { DashboardKpis, RankingRow } from "@/features/dashboard/schema";
+import { expiryMeta } from "@/components/status/expiry";
+import { clampPercent } from "@/components/status/labels";
+import * as metrics from "@/features/dashboard/metrics";
+import {
+  expiringCerts,
+  expiryBuckets,
+  formatRate,
+  rankingForDisplay,
+  ratePercent,
+  roundedShare,
+  studyStatusSplit,
+  topExpiredGroups,
+  topGroupsWithOthers,
+  splitTickLabel,
+  truncateLabel,
+  validBuckets,
+  validCerts,
+  validVsExpiredSplit,
+} from "@/features/dashboard/metrics";
+import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 
 const kpis: DashboardKpis = {
   totalMembers: 5, totalRecords: 8, doneRecords: 5, inProgressRecords: 2, notStartedRecords: 1,
@@ -62,14 +80,20 @@ describe("validCerts / expiringCerts", () => {
 });
 
 describe("expiryBuckets", () => {
-  it("lists the five buckets in display order, zeros included, labelled with the chart's own day-range labels (not the badge labels)", () => {
+  it("lists the five buckets in display order, zeros included, labelled with day ranges; the two expiring tiers use the badge labels", () => {
     expect(expiryBuckets({ ...kpis, expiring60Certs: 0 })).toEqual([
-      { status: "Active", label: "> 60 days left", count: 2 },
-      { status: "Expiring in 60d", label: "31–60 days left", count: 0 },
-      { status: "Expiring Soon", label: "≤ 30 days left", count: 1 },
+      { status: "Active", label: "More than 60 days", count: 2 },
+      { status: "Expiring in 60d", label: "Expires in 31–60 days", count: 0 },
+      { status: "Expiring Soon", label: "Expires within 30 days", count: 1 },
       { status: "Expired", label: "Expired", count: 1 },
       { status: "No Expiry", label: "No expiry", count: 1 },
     ]);
+  });
+
+  it("[copy] the 31–60 and 0–30 tiers read exactly like the badge (one source of words)", () => {
+    const labelOf = (status: string) => expiryBuckets(kpis).find((b) => b.status === status)?.label;
+    expect(labelOf("Expiring in 60d")).toBe(expiryMeta("Expiring in 60d").label);
+    expect(labelOf("Expiring Soon")).toBe(expiryMeta("Expiring Soon").label);
   });
 });
 
@@ -82,5 +106,114 @@ describe("rankingForDisplay", () => {
     const copy = [...input];
     expect(rankingForDisplay(input).map((r) => r.fullName)).toEqual(["Bình", "An", "Dũng", "Đào"]);
     expect(input).toEqual(copy);
+  });
+});
+
+describe("new visual helpers (spec §2 & §4)", () => {
+  it("validBuckets returns the 4 valid segments summing to validCerts", () => {
+    const buckets = validBuckets(kpis);
+    expect(buckets).toHaveLength(4);
+    expect(buckets.map((b) => b.label)).toEqual([
+      "More than 60 days",
+      "Expires in 31–60 days",
+      "Expires within 30 days",
+      "No expiry",
+    ]);
+    const sum = buckets.reduce((acc, b) => acc + b.count, 0);
+    expect(sum).toBe(validCerts(kpis));
+    expect(buckets[0].color).toBe("var(--status-active-fg)");
+    expect(buckets[3].color).toBe("var(--status-no-expiry-fg)");
+  });
+
+  it("studyStatusSplit maps Completed / In progress / Not started using --chart-1..3", () => {
+    const split = studyStatusSplit({ done: 5, inProgress: 2, notStarted: 1 });
+    expect(split).toEqual([
+      { key: "done", label: "Completed", count: 5, color: "var(--chart-1)" },
+      { key: "inProgress", label: "In progress", count: 2, color: "var(--chart-2)" },
+      { key: "notStarted", label: "Not started", count: 1, color: "var(--chart-3)" },
+    ]);
+  });
+
+  it("validVsExpiredSplit maps Valid and Expired counts correctly", () => {
+    const split = validVsExpiredSplit({ valid: 6, expired: 2 });
+    expect(split).toEqual([
+      { key: "valid", label: "Valid", count: 6, color: "var(--status-active-fg)" },
+      { key: "expired", label: "Expired", count: 2, color: "var(--status-expired-fg)" },
+    ]);
+  });
+});
+
+function group(label: string, records: number, expired = 0): BreakdownRow {
+  return { key: label, label, headcount: null, people: 1, records, done: 0, inProgress: 0, notStarted: 0, valid: 0, expired };
+}
+
+describe("topGroupsWithOthers", () => {
+  it("keeps every group, biggest first, when there are no more than max", () => {
+    expect(topGroupsWithOthers([group("a", 1), group("b", 5)], 6)).toEqual([
+      { label: "b", records: 5 },
+      { label: "a", records: 1 },
+    ]);
+  });
+
+  it("folds the groups beyond max into one Others bar that sums them", () => {
+    const rows = [group("a", 5), group("b", 4), group("c", 3), group("d", 2), group("e", 1)];
+    expect(topGroupsWithOthers(rows, 3)).toEqual([
+      { label: "a", records: 5 },
+      { label: "b", records: 4 },
+      { label: "c", records: 3 },
+      { label: "Others", records: 3 },
+    ]);
+  });
+
+  it("adds no Others bar when the groups beyond max have no records", () => {
+    expect(topGroupsWithOthers([group("a", 2), group("b", 1), group("c", 0)], 2)).toHaveLength(2);
+  });
+
+  it("returns nothing for no rows and does not reorder the input", () => {
+    expect(topGroupsWithOthers([], 6)).toEqual([]);
+    const rows = [group("a", 1), group("b", 2)];
+    topGroupsWithOthers(rows, 6);
+    expect(rows.map((r) => r.label)).toEqual(["a", "b"]);
+  });
+});
+
+describe("topExpiredGroups", () => {
+  it("drops groups without expired certificates, sorts by expired and caps at max", () => {
+    const rows = [group("a", 9, 0), group("b", 9, 2), group("c", 9, 5), group("d", 9, 1)];
+    expect(topExpiredGroups(rows, 2).map((r) => r.label)).toEqual(["c", "b"]);
+  });
+});
+
+describe("truncateLabel", () => {
+  it("leaves a label of max characters alone and cuts a longer one to max with an ellipsis", () => {
+    expect(truncateLabel("1234567", 7)).toBe("1234567");
+    expect(truncateLabel("12345678", 7)).toBe("123456…");
+  });
+});
+
+describe("roundedShare and clampPercent", () => {
+  it("rounds to nearest and is 0 for an empty total", () => {
+    expect(roundedShare(0, 0)).toBe(0);
+    expect(roundedShare(1, 3)).toBe(33);
+    expect(roundedShare(2, 3)).toBe(67);
+    expect(roundedShare(199, 200)).toBe(100);
+  });
+
+  it("clamps into 0..100 with the shared, rounding clampPercent", () => {
+    expect([clampPercent(-5), clampPercent(40), clampPercent(130), clampPercent(47.6)]).toEqual([0, 40, 100, 48]);
+  });
+
+  it("has no clampPercent of its own (I2: one helper, in @/components/status/labels)", () => {
+    expect("clampPercent" in metrics).toBe(false);
+  });
+});
+
+describe("splitTickLabel", () => {
+  it("splits on the first space only and leaves a one-word label whole", () => {
+    expect(splitTickLabel("31–60 days")).toEqual(["31–60", "days"]);
+    expect(splitTickLabel("No expiry")).toEqual(["No", "expiry"]);
+    expect(splitTickLabel("Team C…")).toEqual(["Team", "C…"]);
+    expect(splitTickLabel("a b c")).toEqual(["a", "b c"]);
+    expect(splitTickLabel("Others")).toEqual(["Others"]);
   });
 });

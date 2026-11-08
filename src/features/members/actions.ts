@@ -32,7 +32,7 @@ export async function createMember(input: MemberInput): Promise<Result<null>> {
     is_active: parsed.data.isActive,
     ...careerColumns(parsed.data),
   });
-  if (error) return err(mapPostgresError(error, { duplicate: `The e-mail "${parsed.data.email}" is already in use.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `The email "${parsed.data.email}" is already in use.` }));
   revalidatePath("/members");
   return ok(null);
 }
@@ -54,7 +54,7 @@ export async function updateMember(input: MemberInput & { id: string }): Promise
     })
     .eq("id", id)
     .select("id");
-  if (error) return err(mapPostgresError(error, { duplicate: `The e-mail "${email}" is already in use.` }));
+  if (error) return err(mapPostgresError(error, { duplicate: `The email "${email}" is already in use.` }));
   const guard = assertAffected(rows);
   if (guard) return guard;
   revalidatePath("/members");
@@ -108,7 +108,7 @@ export async function setMemberAccess(input: MemberAccessInput): Promise<Result<
   if (!parsed.success) return err("Invalid data");
   const { userId, role } = parsed.data;
   const user = await getCurrentUser();
-  if (user?.id === userId) return err("You can't change your own access. Ask another admin.");
+  if (user?.id === userId) return err("You cannot change your own access. Ask another admin.");
 
   const supabase = await createClient();
   const { data, error } = await supabase.from("profiles").update({ role }).eq("user_id", userId).select("user_id");

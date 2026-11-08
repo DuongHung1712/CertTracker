@@ -14,8 +14,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EmptyState } from "@/components/data/empty-state";
 import { pageRangeLabel } from "@/components/data/pagination";
+import { cn } from "@/lib/utils";
 
 export type DataTableProps<TData, TValue> = {
   columns: ColumnDef<TData, TValue>[];
@@ -26,6 +28,13 @@ export type DataTableProps<TData, TValue> = {
   pageSize?: number;
   getRowId?: (row: TData, index: number) => string;
 };
+
+declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  interface ColumnMeta<TData, TValue> {
+    align?: "left" | "right" | "center";
+  }
+}
 
 // Sorts Vietnamese names correctly by default (d-stroke between d and e,
 // diacritics ignored) and compares numbers numerically. A column with its own meaning
@@ -87,17 +96,30 @@ export function DataTable<TData, TValue>({
                 {group.headers.map((header) => {
                   const sorted = header.column.getIsSorted();
                   const SortIcon = sorted === "asc" ? ArrowUp : sorted === "desc" ? ArrowDown : ArrowUpDown;
+                  const meta = header.column.columnDef.meta;
+                  const alignClass =
+                    meta?.align === "right"
+                      ? "text-right"
+                      : meta?.align === "center"
+                        ? "text-center"
+                        : "text-left";
                   return (
                     <TableHead
                       key={header.id}
                       aria-sort={sorted === "asc" ? "ascending" : sorted === "desc" ? "descending" : undefined}
-                      className="h-8 bg-muted px-2.5 text-label uppercase text-muted-foreground first:sticky first:left-0 first:z-[1]"
+                      className={cn(
+                        "h-8 bg-muted px-2.5 text-label uppercase text-muted-foreground first:sticky first:left-0 first:z-[1]",
+                        alignClass,
+                      )}
                     >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
                         <button
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
-                          className="inline-flex items-center gap-1 uppercase"
+                          className={cn(
+                            "inline-flex items-center gap-1 uppercase transition-colors hover:text-foreground",
+                            meta?.align === "right" && "justify-end w-full",
+                          )}
                         >
                           {flexRender(header.column.columnDef.header, header.getContext())}
                           <SortIcon aria-hidden className="size-3.5" />
@@ -144,14 +166,26 @@ export function DataTable<TData, TValue>({
             ) : (
               rows.map((row) => (
                 <TableRow key={row.id} className="group h-8 hover:bg-accent">
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell
-                      key={cell.id}
-                      className="px-2.5 py-1 transition-colors first:sticky first:left-0 first:z-[1] first:bg-card group-hover:first:bg-accent"
-                    >
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
+                  {row.getVisibleCells().map((cell) => {
+                    const meta = cell.column.columnDef.meta;
+                    const alignClass =
+                      meta?.align === "right"
+                        ? "text-right"
+                        : meta?.align === "center"
+                          ? "text-center"
+                          : "text-left";
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn(
+                          "px-2.5 py-1 transition-colors first:sticky first:left-0 first:z-[1] first:bg-card group-hover:first:bg-accent",
+                          alignClass,
+                        )}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
               ))
             )}
@@ -161,24 +195,38 @@ export function DataTable<TData, TValue>({
       {showFooter && (
         <div className="flex items-center justify-end gap-2 text-caption text-muted-foreground">
           <span className="tabular-nums">{pageRangeLabel(pageIndex, currentPageSize, totalRows)}</span>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label="Previous page"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-          >
-            <ChevronLeft aria-hidden />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-label="Next page"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-          >
-            <ChevronRight aria-hidden />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Previous page"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  <ChevronLeft aria-hidden />
+                </Button>
+              }
+            />
+            <TooltipContent side="top">Previous page</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label="Next page"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  <ChevronRight aria-hidden />
+                </Button>
+              }
+            />
+            <TooltipContent side="top">Next page</TooltipContent>
+          </Tooltip>
         </div>
       )}
     </div>

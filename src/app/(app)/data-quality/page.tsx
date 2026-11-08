@@ -14,7 +14,7 @@ export default async function DataQualityPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Data quality"
-        description="Records that need a review or a fix. Database constraints already block invalid data; this is what remains."
+        description="Certificates, members and courses that need a check or a fix."
       />
       <DataQualityTable issues={issues} />
     </div>

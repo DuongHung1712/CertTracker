@@ -1,7 +1,7 @@
 "use client";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal } from "lucide-react";
+import { AlertCircle, Award, CheckCircle2, Clock, MoreHorizontal } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -16,10 +16,24 @@ import { RecordStatusLabel } from "@/components/status/record-status";
 import type { RecordStatus } from "@/components/status/labels";
 import { Button } from "@/components/ui/button";
 import { BreakdownTable } from "@/features/dashboard/components/breakdown-table";
+import { CompletionDonut } from "@/features/dashboard/components/completion-donut";
 import { ExpiryChart } from "@/features/dashboard/components/expiry-chart";
+import { Explorer } from "@/features/dashboard/components/explorer";
+import {
+  ExpiredMiniChart,
+  ExpiringGaugeMiniChart,
+  RecordsMiniChart,
+  ValidMiniChart,
+} from "@/features/dashboard/components/hero-charts";
+import { KpiCard } from "@/features/dashboard/components/kpi-card";
 import { RankingTable } from "@/features/dashboard/components/ranking-table";
-import type { ExpiryBucket } from "@/features/dashboard/metrics";
-import type { BreakdownRow, RankingRow } from "@/features/dashboard/schema";
+import {
+  EXPIRY_BUCKET_LABELS,
+  expiryBuckets,
+  validBuckets,
+  type ExpiryBucket,
+} from "@/features/dashboard/metrics";
+import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboard/schema";
 
 type SampleRow = {
   id: string;
@@ -127,7 +141,7 @@ export function ConfirmDemo() {
         open={open}
         onOpenChange={setOpen}
         title="Delete member M004 · Pham Quoc Dung?"
-        description="This member's 5 certificate records will be deleted too. This cannot be undone."
+        description="This member's 5 certificates will be deleted too. This cannot be undone."
         confirmLabel="Delete member"
         onConfirm={() => {
           setOpen(false);
@@ -193,10 +207,9 @@ export function ComboboxDemo() {
 
 // Dashboard blocks: the visual test for the Week 5 building blocks.
 const BUCKET_STATUSES = ["Active", "Expiring in 60d", "Expiring Soon", "Expired", "No Expiry"] as const;
-const BUCKET_LABELS = ["> 60 days left", "31–60 days left", "≤ 30 days left", "Expired", "No expiry"];
 
 function buckets(counts: number[]): ExpiryBucket[] {
-  return BUCKET_STATUSES.map((status, i) => ({ status, label: BUCKET_LABELS[i], count: counts[i] }));
+  return BUCKET_STATUSES.map((status, i) => ({ status, label: EXPIRY_BUCKET_LABELS[status], count: counts[i] }));
 }
 
 export function ChartDemo() {
@@ -238,8 +251,134 @@ export function BreakdownDemo() {
   return (
     <div className="flex flex-col gap-6">
       <BreakdownTable rows={BREAKDOWN_ROWS} groupLabel="Team" peopleLabel="Members" />
-      <BreakdownTable rows={[]} groupLabel="Course" peopleLabel="Learners" />
+      <BreakdownTable rows={[]} groupLabel="Course" peopleLabel="Members" />
       <RankingTable rows={RANKING_ROWS} />
+    </div>
+  );
+}
+
+export function DashboardRedesignDemo() {
+  const sampleKpis: DashboardKpis = {
+    totalMembers: 20,
+    totalRecords: 61,
+    doneRecords: 38,
+    inProgressRecords: 14,
+    notStartedRecords: 9,
+    activeCerts: 42,
+    expiring60Certs: 6,
+    expiringSoonCerts: 3,
+    expiredCerts: 2,
+    noExpiryCerts: 8,
+  };
+  const sampleBuckets: ExpiryBucket[] = expiryBuckets(sampleKpis);
+  const validSegments = validBuckets(sampleKpis);
+
+  const demoTabs = [
+    {
+      id: "team",
+      label: "By team",
+      groupLabel: "Team",
+      result: { ok: true as const, data: BREAKDOWN_ROWS },
+    },
+    {
+      id: "cert_type",
+      label: "By certificate type",
+      groupLabel: "Type",
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 4) },
+    },
+    {
+      id: "provider",
+      label: "By provider",
+      groupLabel: "Provider",
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(2, 6) },
+    },
+    {
+      id: "course",
+      label: "Popular courses",
+      groupLabel: "Course",
+      result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 5) },
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Tall Hero KPI cards</h3>
+        <dl className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          <KpiCard
+            label="Certificates"
+            value={61}
+            icon={<Award className="size-4 text-foreground" />}
+            visual={<RecordsMiniChart rows={BREAKDOWN_ROWS} />}
+          />
+          <KpiCard
+            label="Valid"
+            value={50}
+            icon={<CheckCircle2 className="size-4 text-[var(--status-active-fg)]" />}
+            hint="Includes 8 with no expiry"
+            visual={<ValidMiniChart buckets={validSegments} />}
+          />
+          <KpiCard
+            label="Expiring within 60 days"
+            value={9}
+            icon={<Clock className="size-4 text-[var(--status-expiring-soon-fg)]" />}
+            visual={<ExpiringGaugeMiniChart expiringCount={9} totalCompleted={48} />}
+          />
+          <KpiCard
+            label="Expired"
+            value={2}
+            icon={<AlertCircle className="size-4 text-destructive" />}
+            valueClassName="text-destructive font-semibold"
+            hint="Completed certificates past their expiry date"
+            visual={<ExpiredMiniChart totalExpired={2} rows={BREAKDOWN_ROWS} />}
+          />
+        </dl>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Stat Strip</h3>
+        <dl className="grid grid-cols-1 divide-y divide-border rounded-lg border border-border bg-card sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">Active members</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">20</dd>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">Completed</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">48</dd>
+            <dd className="text-caption text-muted-foreground">78.7% of all certificates</dd>
+          </div>
+          <div className="flex items-center justify-between px-4 py-3 sm:flex-col sm:items-start sm:gap-0.5">
+            <dt className="text-label uppercase tracking-wider text-muted-foreground">In progress</dt>
+            <dd className="text-xl font-semibold tabular-nums text-foreground">10</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Compact Expiry Strip</h3>
+        <div className="rounded-lg border border-border bg-card p-3.5">
+          <ExpiryChart buckets={sampleBuckets} compact />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Explorer (Filter row + Master-Detail board)</h3>
+        <Explorer tabs={demoTabs} defaultTab="team" />
+      </div>
+
+      <div>
+        <h3 className="mb-3 text-caption font-semibold uppercase text-muted-foreground">Health row</h3>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="rounded-lg border border-border bg-card p-4 lg:col-span-2">
+            <h4 className="mb-4 text-section-title">Expiry horizon</h4>
+            <ExpiryChart buckets={sampleBuckets} />
+          </div>
+          <div className="rounded-lg border border-border bg-card p-4">
+            <h4 className="mb-4 text-section-title">Study status</h4>
+            <CompletionDonut counts={{ done: 38, inProgress: 14, notStarted: 9 }} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

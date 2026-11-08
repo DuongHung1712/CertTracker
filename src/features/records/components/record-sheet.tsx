@@ -256,6 +256,7 @@ export function RecordSheet({
               type="number"
               min={0}
               max={100}
+              className="h-9"
               {...form.register("progress")}
               aria-invalid={!!errors.progress}
             />
@@ -267,6 +268,7 @@ export function RecordSheet({
               id="record-planned"
               placeholder="dd/mm/yyyy"
               inputMode="numeric"
+              className="h-9"
               {...form.register("plannedExamDate")}
               aria-invalid={!!errors.plannedExamDate}
             />
@@ -278,6 +280,7 @@ export function RecordSheet({
               id="record-issued"
               placeholder="dd/mm/yyyy"
               inputMode="numeric"
+              className="h-9"
               {...form.register("issuedDate")}
               aria-invalid={!!errors.issuedDate}
             />
@@ -285,7 +288,13 @@ export function RecordSheet({
           </Field>
           <Field>
             <FieldLabel htmlFor="record-url">Certificate link</FieldLabel>
-            <Input id="record-url" type="url" {...form.register("certificateUrl")} aria-invalid={!!errors.certificateUrl} />
+            <Input
+              id="record-url"
+              type="url"
+              className="h-9"
+              {...form.register("certificateUrl")}
+              aria-invalid={!!errors.certificateUrl}
+            />
             <FieldError errors={[errors.certificateUrl]} />
           </Field>
           {showCompanyFields && (
@@ -370,11 +379,18 @@ export function RecordSheet({
               {errors.root.message}
             </p>
           )}
-          <SheetFooter className="flex-row justify-end gap-2 px-0">
-            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+          <SheetFooter className="flex-row justify-end gap-2 px-0 pt-2 border-t border-border">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </SheetFooter>

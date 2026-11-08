@@ -12,7 +12,7 @@ describe("loginSchema", () => {
   it("rejects an invalid email with a message", () => {
     const result = loginSchema.safeParse({ email: "not-an-email", password: "secret" });
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toBe("Enter a valid e-mail address");
+    expect(result.error?.issues[0]?.message).toBe("Enter a valid email address");
   });
 
   it("rejects an empty password", () => {

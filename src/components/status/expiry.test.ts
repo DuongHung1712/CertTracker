@@ -15,11 +15,11 @@ describe("toExpiryStatus", () => {
 describe("expiryMeta", () => {
   it("maps every status to a tone and an English label", () => {
     expect(expiryMeta("Active")).toEqual({ tone: "active", label: "Valid" });
-    expect(expiryMeta("Expiring in 60d")).toEqual({ tone: "expiring-60", label: "Expiring in 60 days" });
-    expect(expiryMeta("Expiring Soon")).toEqual({ tone: "expiring-soon", label: "Expiring soon" });
+    expect(expiryMeta("Expiring in 60d")).toEqual({ tone: "expiring-60", label: "Expires in 31–60 days" });
+    expect(expiryMeta("Expiring Soon")).toEqual({ tone: "expiring-soon", label: "Expires within 30 days" });
     expect(expiryMeta("Expired")).toEqual({ tone: "expired", label: "Expired" });
     expect(expiryMeta("No Expiry")).toEqual({ tone: "no-expiry", label: "No expiry" });
-    expect(expiryMeta("N/A")).toEqual({ tone: "na", label: "Not issued" });
+    expect(expiryMeta("N/A")).toEqual({ tone: "na", label: "Not issued yet" });
   });
 });
 
@@ -55,6 +55,6 @@ describe("expiryDetail", () => {
     expect(expiryDetail({ status: "No Expiry", daysToExpiry: null, expiryDate: null })).toBe(
       "This certificate does not expire",
     );
-    expect(expiryDetail({ status: "N/A", daysToExpiry: null, expiryDate: null })).toBe("No issue date yet");
+    expect(expiryDetail({ status: "N/A", daysToExpiry: null, expiryDate: null })).toBe("Not issued yet");
   });
 });

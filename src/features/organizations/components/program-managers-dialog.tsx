@@ -41,7 +41,7 @@ export function ProgramManagersDialog({
       setError(result.error);
       return;
     }
-    toast.success(`Managers saved for ${program.name}`);
+    toast.success(`Saved managers for ${program.name}`);
     onClose();
   }
 
@@ -61,10 +61,18 @@ export function ProgramManagersDialog({
           </p>
         )}
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+          >
             Cancel
           </Button>
-          <Button type="button" disabled={pending} onClick={handleSave}>
+          <Button
+            type="button"
+            disabled={pending}
+            onClick={handleSave}
+          >
             {pending ? "Saving…" : "Save managers"}
           </Button>
         </DialogFooter>

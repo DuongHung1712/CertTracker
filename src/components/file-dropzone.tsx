@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { CloudUpload, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatNumber } from "@/lib/format";
 import { EVIDENCE_EMPTY_MESSAGE, EVIDENCE_TOO_LARGE_MESSAGE, EVIDENCE_WRONG_TYPE_MESSAGE } from "@/lib/storage/evidence";
@@ -80,20 +81,27 @@ export function FileDropzone({
         }}
       />
       {file ? (
-        <>
-          <span className="flex min-w-0 flex-1 items-baseline gap-2">
-            <span className="truncate">{file.name}</span>
-            <span className="shrink-0 text-caption text-muted-foreground">
-              {formatNumber(Math.ceil(file.size / 1024))} KB
+        <div className="flex w-full items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <FileText aria-hidden className="size-4 shrink-0 text-primary" />
+            <span className="truncate text-body font-medium text-foreground">{file.name}</span>
+            <span className="shrink-0 text-caption tabular-nums text-muted-foreground">
+              ({formatNumber(Math.ceil(file.size / 1024))} KB)
             </span>
-          </span>
+          </div>
           <Button type="button" variant="ghost" size="sm" disabled={disabled} onClick={clear}>
             Remove file
           </Button>
-        </>
+        </div>
       ) : (
-        <label htmlFor={id} className="flex-1 cursor-pointer text-muted-foreground">
-          Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB
+        <label
+          htmlFor={id}
+          className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <CloudUpload aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+          <span className="text-body">
+            Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB
+          </span>
         </label>
       )}
     </div>

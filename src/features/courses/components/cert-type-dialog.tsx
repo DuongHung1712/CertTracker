@@ -41,14 +41,26 @@ export function CertTypeDialog({
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
             <FieldLabel htmlFor="cert-type-name">Certificate type name</FieldLabel>
-            <Input id="cert-type-name" {...form.register("name")} aria-invalid={!!form.formState.errors.name} />
+            <Input
+              id="cert-type-name"
+              className="h-9"
+              {...form.register("name")}
+              aria-invalid={!!form.formState.errors.name}
+            />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

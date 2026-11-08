@@ -27,7 +27,13 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
   }
 
   const columns: ColumnDef<CareerRole, unknown>[] = [
-    { id: "position", header: "#", enableSorting: false, cell: ({ row }) => row.index + 1 },
+    {
+      id: "position",
+      header: "#",
+      enableSorting: false,
+      meta: { align: "right" },
+      cell: ({ row }) => row.index + 1,
+    },
     { accessorKey: "name", header: "Career role", enableSorting: false },
     {
       id: "actions",

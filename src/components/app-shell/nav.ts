@@ -26,7 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ALL },
   { href: "/me", label: "My certificates", icon: Award, roles: ALL, requiresMember: true },
   { href: "/members", label: "Members", icon: Users, roles: ["admin", "manager"] },
-  { href: "/records", label: "Records", icon: ListChecks, roles: ["admin", "manager"] },
+  { href: "/records", label: "Certificates", icon: ListChecks, roles: ["admin", "manager"] },
   { href: "/data-quality", label: "Data quality", icon: ShieldCheck, roles: ["admin", "manager"] },
   { href: "/courses", label: "Courses", icon: BookOpen, roles: ALL },
   { href: "/org", label: "Organisation", icon: Building2, roles: ["admin"] },

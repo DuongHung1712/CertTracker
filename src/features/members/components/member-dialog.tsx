@@ -137,12 +137,23 @@ export function MemberDialog({
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
             <FieldLabel htmlFor="member-name">Full name</FieldLabel>
-            <Input id="member-name" {...form.register("fullName")} aria-invalid={!!form.formState.errors.fullName} />
+            <Input
+              id="member-name"
+              className="h-9"
+              {...form.register("fullName")}
+              aria-invalid={!!form.formState.errors.fullName}
+            />
             <FieldError errors={[form.formState.errors.fullName]} />
           </Field>
           <Field>
             <FieldLabel htmlFor="member-email">Email</FieldLabel>
-            <Input id="member-email" type="email" {...form.register("email")} aria-invalid={!!form.formState.errors.email} />
+            <Input
+              id="member-email"
+              type="email"
+              className="h-9"
+              {...form.register("email")}
+              aria-invalid={!!form.formState.errors.email}
+            />
             <FieldError errors={[form.formState.errors.email]} />
           </Field>
           <Field>
@@ -249,10 +260,17 @@ export function MemberDialog({
             </p>
           )}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              disabled={form.formState.isSubmitting}
+            >
               {form.formState.isSubmitting ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { todayVn } from "@/lib/dates";
 
-const FUTURE_MESSAGE = "Career start can't be in the future";
+const FUTURE_MESSAGE = "Career start cannot be in the future";
 
 /** The fields without the "not in the future" check, which needs a clock. */
 export const careerStartShape = z.object({

@@ -9,7 +9,8 @@ test("admin sees admin-only sections", async ({ page }) => {
 
 test("member sees only personal sections", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
-  await expect(page.getByRole("link", { name: "My certificates" })).toBeVisible();
+  const nav = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(nav.getByRole("link", { name: "My certificates" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Organisation" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Members" })).toHaveCount(0);
 });
@@ -38,7 +39,7 @@ const ROUTES = [
   { link: "Dashboard", href: "/dashboard", heading: "Dashboard", user: "admin", from: "Courses" },
   { link: "My certificates", href: "/me", heading: "My certificates", user: "member", from: "Courses" },
   { link: "Members", href: "/members", heading: "Members", user: "admin", from: "Courses" },
-  { link: "Records", href: "/records", heading: "Records", user: "admin", from: "Courses" },
+  { link: "Certificates", href: "/records", heading: "Certificates", user: "admin", from: "Courses" },
   { link: "Data quality", href: "/data-quality", heading: "Data quality", user: "admin", from: "Courses" },
   { link: "Courses", href: "/courses", heading: "Courses", user: "admin", from: "Members" },
   { link: "Organisation", href: "/org", heading: "Organisation", user: "admin", from: "Courses" },

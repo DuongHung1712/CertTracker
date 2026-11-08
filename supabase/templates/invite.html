@@ -1,4 +1,30 @@
-<h2>Welcome to CertTracker</h2>
-<p>Your admin created a CertTracker account for you. Choose a password to start using it.</p>
-<p><a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite">Set your password</a></p>
-<p>If you did not expect this e-mail, you can ignore it.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Set your CertTracker password</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F6F7F5;">
+<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#F6F7F5;">Choose a password to start using CertTracker.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#F6F7F5;">
+<tr><td align="center" style="padding:32px 16px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:520px;background-color:#FFFFFF;border:1px solid #D8DEDB;border-radius:6px;">
+<tr><td style="height:4px;line-height:4px;font-size:0;background-color:#0E5C58;border-radius:6px 6px 0 0;">&nbsp;</td></tr>
+<tr><td style="padding:28px 32px 0 32px;font-family:'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;font-weight:600;color:#0E5C58;">CertTracker</td></tr>
+<tr><td style="padding:20px 32px 0 32px;font-family:'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:22px;line-height:30px;font-weight:600;color:#15212B;">Welcome to CertTracker</td></tr>
+<tr><td style="padding:12px 32px 0 32px;font-family:'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:24px;color:#15212B;">Your admin created a CertTracker account for you. Choose a password to start tracking your certificates.</td></tr>
+<tr><td style="padding:24px 32px 0 32px;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td align="center" bgcolor="#0E5C58" style="background-color:#0E5C58;border-radius:6px;"><a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite" style="display:inline-block;padding:12px 24px;font-family:'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;font-weight:600;line-height:20px;color:#FFFFFF;text-decoration:none;border-radius:6px;">Set your password</a></td>
+</tr></table>
+</td></tr>
+<tr><td style="padding:20px 32px 0 32px;font-family:'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#56636C;">This link works once. If it has expired, ask your admin for a new one.</td></tr>
+<tr><td style="padding:20px 32px 0 32px;font-family:'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:13px;line-height:20px;color:#56636C;">Button not working? Copy this link into your browser:<br><a href="{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite" style="color:#0E5C58;word-break:break-all;">{{ .SiteURL }}/set-password?token_hash={{ .TokenHash }}&amp;type=invite</a></td></tr>
+<tr><td style="padding:24px 32px 28px 32px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="border-top:1px solid #D8DEDB;padding-top:16px;font-family:'Be Vietnam Pro','Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#56636C;">If you did not expect this e-mail, you can ignore it. Nothing changes until you choose a password.</td></tr></table></td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

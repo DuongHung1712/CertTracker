@@ -55,3 +55,6 @@ next-env.d.ts
 
 # BRD exports (Word files stay outside git)
 /exports/
+
+# UI polish screenshots (binary artifacts stay outside git)
+docs/ui-polish/*.png

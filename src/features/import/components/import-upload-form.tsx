@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CircleAlert } from "lucide-react";
+import { CircleAlert, FileSpreadsheet } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
@@ -86,6 +86,13 @@ export function ImportUploadForm() {
           Up to 4 MB and 2000 rows. The header row needs an Email column and a Course column.
         </FieldDescription>
       </Field>
+      {file && (
+        <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-caption">
+          <FileSpreadsheet aria-hidden className="size-4 text-primary shrink-0" />
+          <span className="font-medium truncate">{file.name}</span>
+          <span className="text-muted-foreground shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
+        </div>
+      )}
       {error && (
         <Alert variant="destructive">
           <CircleAlert aria-hidden />
@@ -93,7 +100,10 @@ export function ImportUploadForm() {
         </Alert>
       )}
       <div>
-        <Button type="submit" disabled={pending || !file}>
+        <Button
+          type="submit"
+          disabled={pending || !file}
+        >
           {pending ? "Reading the file…" : "Upload and check"}
         </Button>
       </div>

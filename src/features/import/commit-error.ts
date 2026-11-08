@@ -14,8 +14,8 @@ export function mapCommitError(error: { code?: string | null; message: string })
   const rowNo = /^import row (\d+):/.exec(error.message)?.[1];
   const reason = mapPostgresError(error, {
     invalid: "Status, progress and issue date do not match.",
-    restricted: "Reference data changed since the check. Upload the file again to re-check it.",
-    duplicate: "The data duplicates an existing record. Upload the file again to re-check it.",
+    restricted: "Courses, teams or members changed after the check. Upload the file again.",
+    duplicate: "The data duplicates an existing certificate. Upload the file again to re-check it.",
   });
   return `${rowNo ? `Row ${rowNo}: ` : ""}${reason} Nothing was imported.`;
 }

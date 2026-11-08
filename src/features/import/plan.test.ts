@@ -188,10 +188,10 @@ describe("buildImportPlan edge cases", () => {
   it("warns when a non-blank cert type or validity differs from an existing course, and keeps the catalog", () => {
     const [planned] = buildImportPlan(table([row({ Loại: "AI", "Thời hạn": 12 })]), LOOKUPS, TODAY).rows;
     expect(planned!.normalized!.course).toEqual({ id: "c-saa" });
-    expect(planned!.warnings.join()).toMatch(/Certificate type in the file differs from the catalog/);
-    expect(planned!.warnings.join()).toMatch(/Validity in the file differs from the catalog/);
+    expect(planned!.warnings.join()).toMatch(/Certificate type in the file differs from the catalogue/);
+    expect(planned!.warnings.join()).toMatch(/Validity in the file differs from the catalogue/);
     const [same] = buildImportPlan(table([row({ Loại: "cloud", "Thời hạn": 36 })]), LOOKUPS, TODAY).rows;
-    expect(same!.warnings.join()).not.toMatch(/differs from the catalog/);
+    expect(same!.warnings.join()).not.toMatch(/differs from the catalogue/);
   });
 
   it("carries cost, currency and study hours onto a new course", () => {
@@ -264,12 +264,12 @@ describe("buildImportPlan edge cases", () => {
     };
     const [differs] = buildImportPlan(table([row({ Cost: 200, Currency: "USD", "Study hours": 50 })]), lookups, TODAY).rows;
     expect(differs!.normalized!.course).toEqual({ id: "c-saa" });
-    expect(differs!.warnings.join()).toMatch(/Cost in the file differs from the catalog/);
-    expect(differs!.warnings.join()).toMatch(/Study hours in the file differ from the catalog/);
+    expect(differs!.warnings.join()).toMatch(/Cost in the file differs from the catalogue/);
+    expect(differs!.warnings.join()).toMatch(/Study hours in the file differ from the catalogue/);
     const [sameValues] = buildImportPlan(table([row({ Cost: 150, Currency: "USD", "Study hours": 40 })]), lookups, TODAY).rows;
     expect(sameValues!.warnings.join()).not.toMatch(/differ/);
     const [otherCurrency] = buildImportPlan(table([row({ Cost: 150, Currency: "VND" })]), lookups, TODAY).rows;
-    expect(otherCurrency!.warnings.join()).toMatch(/Cost in the file differs from the catalog/);
+    expect(otherCurrency!.warnings.join()).toMatch(/Cost in the file differs from the catalogue/);
   });
 
   it("warns when a later row defines the same new course with a different cost", () => {
@@ -409,7 +409,7 @@ describe("reconcileRecord (decision #22)", () => {
   });
   it("errors when nothing can be derived, when done lacks an issue date, or when it is in the future", () => {
     expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Status and progress are missing"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed record needs an issue date"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed course needs an issue date"]);
     expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The issue date cannot be in the future"]);
   });
   it("accepts a done record whose issue date already exists in the database", () => {

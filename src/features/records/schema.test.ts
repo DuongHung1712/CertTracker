@@ -61,9 +61,9 @@ describe("recordRuleIssues", () => {
 
   it("explains each broken rule in English", () => {
     const messages = (input: Parameters<typeof recordRuleIssues>[0]) => recordRuleIssues(input, today).map((issue) => issue.message);
-    expect(messages({ status: "done", progress: 90, issuedDate: "2026-01-01" })).toEqual(["A completed record must have progress 100%"]);
-    expect(messages({ status: "done", progress: 100, issuedDate: null })).toEqual(["A completed record needs an issue date"]);
-    expect(messages({ status: "not_started", progress: 5, issuedDate: null })).toEqual(["A record that has not started must have progress 0%"]);
+    expect(messages({ status: "done", progress: 90, issuedDate: "2026-01-01" })).toEqual(["A completed course must have progress 100%"]);
+    expect(messages({ status: "done", progress: 100, issuedDate: null })).toEqual(["A completed course needs an issue date"]);
+    expect(messages({ status: "not_started", progress: 5, issuedDate: null })).toEqual(["A course that has not started must have progress 0%"]);
     expect(messages({ status: "in_progress", progress: 100, issuedDate: null })).toEqual(["Set the status to Completed when progress is 100%"]);
     expect(messages({ status: "done", progress: 100, issuedDate: "2026-10-01" })).toEqual(["The issue date cannot be in the future"]);
   });
