@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { signIn } from "./helpers";
+import { signInAsSeedAdmin } from "./support/restore-seed";
 import {
   addSeedManagerProgramScope,
   giveSeedManagerAMember,
@@ -136,4 +137,77 @@ test("a member without an account shows No account and no access control", async
   await row.getByRole("button", { name: /Actions for/ }).click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   await expect(page.getByRole("dialog").getByText("No account yet. New accounts start as Member.")).toBeVisible();
+});
+
+// --- Member import (Task C3) ---
+const IMPORT_PREFIX = "e2e-import-";
+
+async function deleteImportedMembers() {
+  const admin = await signInAsSeedAdmin();
+  await admin.from("members").delete().like("email", `${IMPORT_PREFIX}%`);
+}
+
+function csvFile(lines: string[]) {
+  return { name: "members.csv", mimeType: "text/csv", buffer: Buffer.from(["Full name,Email,Team,Career role", ...lines].join("\n")) };
+}
+
+test.describe("member import", () => {
+  test.afterEach(deleteImportedMembers);
+
+  test("admin imports members from a CSV", async ({ page }) => {
+    const a = `${IMPORT_PREFIX}a-${Date.now()}@certtracker.test`;
+    const b = `${IMPORT_PREFIX}b-${Date.now()}@certtracker.test`;
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/members");
+    await page.getByRole("button", { name: "Import members" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("link", { name: "Download template" })).toHaveAttribute("href", "/templates/members-import.csv");
+    await dialog.locator('input[type="file"]').setInputFiles(
+      csvFile([`Import One,${a},Team Cloud,`, `Import Two,${b},Team AI,`, "Existing,an@certtracker.test,Team Cloud,", `Bad Team,${IMPORT_PREFIX}c@certtracker.test,Nowhere,`]),
+    );
+    await expect(dialog.getByText("2 to create, 1 skipped, 1 with errors")).toBeVisible();
+    await expect(dialog.getByText('Team "Nowhere" does not exist')).toBeVisible();
+    await expect(dialog.getByText("Already a member")).toBeVisible();
+    await dialog.getByRole("button", { name: "Import 2 members" }).click();
+    await expect(dialog.getByText("Imported 2 members.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
+    await expect(page.getByRole("cell", { name: a })).toBeVisible();
+    await expect(page.getByRole("cell", { name: b })).toBeVisible();
+  });
+
+  test("import button is disabled when nothing can be created", async ({ page }) => {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/members");
+    await page.getByRole("button", { name: "Import members" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.locator('input[type="file"]').setInputFiles(csvFile(["Existing,an@certtracker.test,Team Cloud,"]));
+    await expect(dialog.getByText("0 to create, 1 skipped, 0 with errors")).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Import 0 members" })).toBeDisabled();
+  });
+
+  test("a manager and a member do not see Import members", async ({ page }) => {
+    for (const email of ["manager@certtracker.test", "member@certtracker.test"]) {
+      await signIn(page, email);
+      await page.goto("/members");
+      await expect(page.getByRole("button", { name: "Import members" })).toHaveCount(0);
+      await page.context().clearCookies();
+    }
+  });
+
+  test("importing twice skips the members already created", async ({ page }) => {
+    const a = `${IMPORT_PREFIX}t-${Date.now()}@certtracker.test`;
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/members");
+    await page.getByRole("button", { name: "Import members" }).click();
+    let dialog = page.getByRole("dialog");
+    await dialog.locator('input[type="file"]').setInputFiles(csvFile([`Twice,${a},Team Cloud,`]));
+    await dialog.getByRole("button", { name: "Import 1 member" }).click();
+    await expect(dialog.getByText("Imported 1 member.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
+    await expect(dialog).toHaveCount(0);
+    await page.getByRole("button", { name: "Import members" }).click();
+    dialog = page.getByRole("dialog");
+    await dialog.locator('input[type="file"]').setInputFiles(csvFile([`Twice,${a},Team Cloud,`]));
+    await expect(dialog.getByText("0 to create, 1 skipped, 0 with errors")).toBeVisible();
+  });
 });

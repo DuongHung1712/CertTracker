@@ -2,7 +2,7 @@ import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
 import { buildLegacyWorkbook } from "@/features/import/__fixtures__/legacy-workbook";
-import { isExcelFile, readImportTable } from "@/features/import/workbook";
+import { isExcelFile, readFirstSheet, readImportTable } from "@/features/import/workbook";
 
 function toBytes(aoa: unknown[][], options: { merges?: XLSX.Range[]; date1904?: boolean } = {}): Uint8Array {
   const sheet = XLSX.utils.aoa_to_sheet(aoa);
@@ -420,4 +420,55 @@ describe("formatted-but-empty ranges (legacy files)", () => {
     expect(bytes.length).toBeLessThan(4 * 1024 * 1024); // gets past the size check, so the cell budget is what rejects it
     expect(readImportTable(bytes)).toEqual({ ok: false, error: "The file has too many cells with data. Split it and import it in parts." });
   }, 60_000);
+});
+
+describe("readFirstSheet", () => {
+  const text = (value: string) => new TextEncoder().encode(value);
+
+  it("reads a CSV", () => {
+    const result = readFirstSheet(text("Full name,Email,Team\nAn,an@x.test,Team Cloud"));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows).toHaveLength(2);
+    expect(result.value.rows[1]).toEqual(["An", "an@x.test", "Team Cloud"]);
+  });
+
+  it("strips a UTF-8 BOM and keeps Vietnamese accents", () => {
+    const result = readFirstSheet(text("\uFEFFHọ tên,Email\nNguyễn Thị Ánh,anh@x.test"));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[0]?.[0]).toBe("Họ tên");
+    expect(result.value.rows[1]?.[0]).toBe("Nguyễn Thị Ánh");
+  });
+
+  it("rejects a CSV that is not UTF-8", () => {
+    const result = readFirstSheet(new Uint8Array([0x4e, 0x67, 0x75, 0x79, 0xea, 0x6e]));
+    expect(result).toEqual({ ok: false, error: "This CSV is not saved as UTF-8. In Excel, choose Save As → CSV UTF-8 (Comma delimited), then try again." });
+  });
+
+  it("keeps CSV cells as typed", () => {
+    const result = readFirstSheet(text("Date,Code\n01/02/2025,0012"));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[1]).toEqual(["01/02/2025", "0012"]);
+  });
+
+  it("reads an xlsx", () => {
+    const result = readFirstSheet(toBytes([["a", "b"], [1, 2]]));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows).toEqual([["a", "b"], [1, 2]]);
+  });
+
+  it("rejects a file over 4 MB", () => {
+    const result = readFirstSheet(new Uint8Array(4 * 1024 * 1024 + 1));
+    expect(result).toEqual({ ok: false, error: "The file is larger than 4 MB. Split it and import it in parts." });
+  });
+
+  it("numbers rows from sheet row 1 when the used range starts lower", () => {
+    const sheet = XLSX.utils.sheet_add_aoa({} as XLSX.WorkSheet, [["Full name", "Email"], ["An", "an@x.test"]], { origin: "A3" });
+    sheet["!ref"] = "A3:B4"; // Excel stores the used range, not A1
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, "Data");
+    const result = readFirstSheet(new Uint8Array(XLSX.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[2]).toEqual(["Full name", "Email"]);
+    expect(result.value.rows[3]).toEqual(["An", "an@x.test"]);
+  });
 });

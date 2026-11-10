@@ -135,7 +135,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `EntityCombobox` | `components/entity-combobox.tsx` | Searchable select: member, course, team | ✓ |
 | | `DateField` | `components/date-field.tsx` | Label + one text input (`dd/mm/yyyy`, numeric keypad) that inserts the slashes while typing (`formatDateInput`) + a calendar button (`CalendarDays`, `aria-label` "Choose <label> from calendar") that opens the browser's date picker through a hidden `type="date"` input; optional `max` (`YYYY-MM-DD`) limits the picker only; checked with `toIsoDate` (decisions #16); slashes the user typed are kept, and a day or month of 1-9 is padded once the next part starts; `required` adds the red star and `aria-required` | ✓ |
 | | `RequiredMark` | `components/required-mark.tsx` | A red `*` (`text-destructive`, `aria-hidden`) after a required field's label; the control also gets `aria-required` | ✓ |
-| | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop an image or PDF as evidence | ✓ |
+| | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop one file; `accept` takes MIME types or extensions (`.xlsx,.csv`), `hint` and `wrongTypeMessage` override the evidence wording. Evidence by default; also the member import dialog | ✓ |
 | Navigation | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `components/ui/tabs.tsx` | shadcn `tabs` (Base UI); keyboard navigation (arrows, Home, End); horizontal scrollable strip on mobile | ✓ |
 | Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
 | | `ConfirmDialog` | `components/confirm-dialog.tsx` | The title names the object; the description states the consequence; the `destructive` confirm button names the exact action | ✓ |
