@@ -216,6 +216,8 @@
 
 ## Part D: certificate and course catalogues (branch `feat/certificate-catalogue`)
 
+> Superseded by `docs/superpowers/plans/2026-11-10-certificate-catalogue.md`. The tasks below are kept for history.
+
 **Gate:** Q1 answered 2026-11-10 (spec section 0); the model is spec section 5 (two kinds of certificate: exam and course completion). Base: `origin/dev` with Parts A–C merged (migrations up to `20261110000003`).
 
 ### Task D1: migration, RLS and pgTAP

@@ -72,6 +72,8 @@ Validation runs on the server for both preview and import (the import action re-
 
 ## 5. Comments 3 and 4 (second part): separate certificates and courses (Part D)
 
+> Superseded by `docs/superpowers/specs/2026-11-10-certificate-catalogue-design.md` (draft for discussion). The text below is kept for history.
+
 ### 5.1 The idea
 
 A member tracks **certificates**: the document they hold, which may expire. A certificate is earned in one of two ways, so there are two kinds:
