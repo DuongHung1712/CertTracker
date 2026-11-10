@@ -1,7 +1,7 @@
 "use client";
 
 import { Pencil } from "lucide-react";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
@@ -13,7 +13,26 @@ import { updateMyName } from "@/features/profile/actions";
 export function NameField({ fullName }: { fullName: string }) {
   const [editing, setEditing] = useState(false);
   const [state, formAction, pending] = useActionState(updateMyName, null);
-  const failed = state !== null && !state.ok;
+  const [value, setValue] = useState(fullName);
+  // The result a Cancel dismissed: an error belongs to one editing session only.
+  const [dismissed, setDismissed] = useState(state);
+  const failed = state !== null && !state.ok && state !== dismissed;
+  const editButton = useRef<HTMLButtonElement>(null);
+  const wasEditing = useRef(false);
+
+  const open = () => {
+    setValue(fullName);
+    setEditing(true);
+  };
+  const cancel = () => {
+    setDismissed(state);
+    setEditing(false);
+  };
+
+  useEffect(() => {
+    if (wasEditing.current && !editing) editButton.current?.focus();
+    wasEditing.current = editing;
+  }, [editing]);
 
   // Close the editor when a save succeeds (adjusting state during render, not in an effect).
   const [seen, setSeen] = useState(state);
@@ -30,7 +49,7 @@ export function NameField({ fullName }: { fullName: string }) {
     return (
       <div className="flex items-center gap-1">
         <span>{fullName}</span>
-        <Button type="button" variant="ghost" size="sm" aria-label="Edit name" onClick={() => setEditing(true)}>
+        <Button type="button" variant="ghost" size="sm" aria-label="Edit name" ref={editButton} onClick={open}>
           <Pencil className="size-4" aria-hidden />
         </Button>
       </div>
@@ -41,7 +60,7 @@ export function NameField({ fullName }: { fullName: string }) {
     <form
       action={formAction}
       className="flex flex-col gap-1.5"
-      onKeyDown={(e) => e.key === "Escape" && setEditing(false)}
+      onKeyDown={(e) => e.key === "Escape" && cancel()}
     >
       <Label htmlFor="profile-full-name" className="sr-only">
         Name
@@ -50,7 +69,8 @@ export function NameField({ fullName }: { fullName: string }) {
         <Input
           id="profile-full-name"
           name="fullName"
-          defaultValue={fullName}
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
           autoComplete="name"
           autoFocus
           className="h-9 w-64"
@@ -60,7 +80,7 @@ export function NameField({ fullName }: { fullName: string }) {
         <Button type="submit" size="sm" disabled={pending}>
           {pending ? "Saving…" : "Save"}
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)}>
+        <Button type="button" variant="ghost" size="sm" onClick={cancel}>
           Cancel
         </Button>
       </div>

@@ -65,13 +65,11 @@ test.describe("edit name", () => {
       await account.getByRole("button", { name: "Save" }).click();
       await expect(page.getByText("Name updated")).toBeVisible();
       await expect(account).toContainText(`${ORIGINAL} Test`);
+      await expect(account.getByRole("button", { name: "Edit name" })).toBeFocused();
     } finally {
-      if (await account.getByText(`${ORIGINAL} Test`).count()) {
-        await account.getByRole("button", { name: "Edit name" }).click();
-        await account.getByLabel("Name", { exact: true }).fill(ORIGINAL);
-        await account.getByRole("button", { name: "Save" }).click();
-        await expect(account.getByText(ORIGINAL, { exact: true })).toBeVisible();
-      }
+      const admin = await signInAsSeedAdmin();
+      const restore = await admin.from("members").update({ full_name: ORIGINAL }).eq("email", "member@certtracker.test");
+      if (restore.error) throw new Error(restore.error.message);
     }
   });
 
@@ -83,6 +81,17 @@ test.describe("edit name", () => {
     await account.getByLabel("Name", { exact: true }).fill("");
     await account.getByRole("button", { name: "Save" }).click();
     await expect(account.getByText("Enter your name")).toBeVisible();
+    await expect(account.getByLabel("Name", { exact: true })).toHaveValue("");
+    const long = "x".repeat(201);
+    await account.getByLabel("Name", { exact: true }).fill(long);
+    await account.getByRole("button", { name: "Save" }).click();
+    await expect(account.getByText("Name can have at most 200 characters")).toBeVisible();
+    await expect(account.getByLabel("Name", { exact: true })).toHaveValue(long);
+    await account.getByRole("button", { name: "Cancel" }).click();
+    await expect(account.getByRole("button", { name: "Edit name" })).toBeFocused();
+    await account.getByRole("button", { name: "Edit name" }).click();
+    await expect(account.getByRole("alert")).toHaveCount(0);
+    await expect(account.getByLabel("Name", { exact: true })).toHaveValue(ORIGINAL);
     await page.reload();
     await expect(account).toContainText(ORIGINAL);
   });
