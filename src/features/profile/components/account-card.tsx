@@ -1,9 +1,10 @@
 import { RoleBadge } from "@/components/status/role-badge";
 import { MemberCode } from "@/components/status/member-code";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { NameField } from "@/features/profile/components/name-field";
 import type { MyProfile } from "@/features/profile/queries";
 
-/** Name and e-mail are read-only: changes go through the admin (decision #63). */
+/** The user edits their own name; the e-mail is read-only, an admin changes it (decision #63). */
 export function AccountCard({ profile }: { profile: MyProfile }) {
   return (
     <Card>
@@ -14,7 +15,13 @@ export function AccountCard({ profile }: { profile: MyProfile }) {
         <dl className="flex flex-wrap gap-x-10 gap-y-3">
           <div>
             <dt className="text-caption text-muted-foreground">Name</dt>
-            <dd>{profile.linked ? profile.fullName : "Not linked to a member"}</dd>
+            <dd>
+              {profile.linked && profile.fullName !== null ? (
+                <NameField fullName={profile.fullName} />
+              ) : (
+                "Not linked to a member"
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-caption text-muted-foreground">Email</dt>
@@ -41,7 +48,7 @@ export function AccountCard({ profile }: { profile: MyProfile }) {
             </div>
           )}
         </dl>
-        <p className="text-caption text-muted-foreground">Ask your admin to change your name or email.</p>
+        <p className="text-caption text-muted-foreground">Ask your admin to change your email.</p>
       </CardContent>
     </Card>
   );

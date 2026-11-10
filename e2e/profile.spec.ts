@@ -36,7 +36,7 @@ test("the user menu opens the profile page", async ({ page }) => {
   await openProfileFromMenu(page);
 });
 
-test("a member sees their account read-only", async ({ page }) => {
+test("a member sees their account", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   await page.goto("/profile");
   const account = page.getByRole("region", { name: "Account" });
@@ -45,9 +45,62 @@ test("a member sees their account read-only", async ({ page }) => {
   await expect(account.getByText("Member", { exact: true })).toBeVisible();
   await expect(account).toContainText("Team Cloud");
   await expect(account.getByText(/^[A-Z]+-?\d+$/)).toBeVisible();
-  await expect(account.getByText("Ask your admin to change your name or email.")).toBeVisible();
   await expect(account.getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Your scope" })).toHaveCount(0);
+});
+
+test.describe("edit name", () => {
+  test.describe.configure({ mode: "serial" });
+  const ORIGINAL = "Lê Minh Châu";
+
+  test("a member renames themself", async ({ page }) => {
+    await signIn(page, "member@certtracker.test");
+    await page.goto("/profile");
+    const account = page.getByRole("region", { name: "Account" });
+    try {
+      await account.getByRole("button", { name: "Edit name" }).click();
+      const field = account.getByLabel("Name", { exact: true });
+      await expect(field).toHaveValue(ORIGINAL);
+      await field.fill(`${ORIGINAL} Test`);
+      await account.getByRole("button", { name: "Save" }).click();
+      await expect(page.getByText("Name updated")).toBeVisible();
+      await expect(account).toContainText(`${ORIGINAL} Test`);
+    } finally {
+      if (await account.getByText(`${ORIGINAL} Test`).count()) {
+        await account.getByRole("button", { name: "Edit name" }).click();
+        await account.getByLabel("Name", { exact: true }).fill(ORIGINAL);
+        await account.getByRole("button", { name: "Save" }).click();
+        await expect(account.getByText(ORIGINAL, { exact: true })).toBeVisible();
+      }
+    }
+  });
+
+  test("an empty name is rejected", async ({ page }) => {
+    await signIn(page, "member@certtracker.test");
+    await page.goto("/profile");
+    const account = page.getByRole("region", { name: "Account" });
+    await account.getByRole("button", { name: "Edit name" }).click();
+    await account.getByLabel("Name", { exact: true }).fill("");
+    await account.getByRole("button", { name: "Save" }).click();
+    await expect(account.getByText("Enter your name")).toBeVisible();
+    await page.reload();
+    await expect(account).toContainText(ORIGINAL);
+  });
+
+  test("email is read-only", async ({ page }) => {
+    await signIn(page, "member@certtracker.test");
+    await page.goto("/profile");
+    const account = page.getByRole("region", { name: "Account" });
+    await expect(account.getByText("Ask your admin to change your email.")).toBeVisible();
+    await expect(account.getByRole("button", { name: /email/i })).toHaveCount(0);
+  });
+
+  test("an unlinked admin has no Edit name button", async ({ page }) => {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/profile");
+    await expect(page.getByRole("region", { name: "Account" })).toContainText("Not linked to a member");
+    await expect(page.getByRole("button", { name: "Edit name" })).toHaveCount(0);
+  });
 });
 
 test.describe("manager scope", () => {

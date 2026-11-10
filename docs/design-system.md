@@ -218,7 +218,7 @@ When the database **blocks** the delete (for example a course that certificates 
 
 Hiding is only UX; every permission is still enforced by RLS.
 
-`/profile` opens from the user menu ("Profile"), not the sidebar: `PageHeader`, Account card (name and email read-only), Your scope (managers only), My career (linked accounts only), Change password. Each region has its own `SectionError`.
+`/profile` opens from the user menu ("Profile"), not the sidebar: `PageHeader`, Account card (the name edits inline with a pencil button, `NameField`; the email is read-only), Your scope (managers only), My career (linked accounts only), Change password. Each region has its own `SectionError`.
 
 ### 4.6 Admin Dashboard
 - **Layout:** header, then the **Overview** (3 KPI cards and a stat strip) at full width, then three independent columns (`lg:grid-cols-12`: Left `lg:col-span-3`, Centre `lg:col-span-6`, Right `lg:col-span-3`, all `gap-6`), then **Individual ranking** at full width. In the markup the Centre column comes first, then Right, then Left; from `lg` up `lg:order-2/3/1` shows them as Left, Centre, Right. On a phone the order is Overview, Explorer, Needs attention, Planned features, profile, Quick actions, chart, ranking. `e2e/column-heights.spec.ts` guards the balance at 1440px: the tallest and the shortest column may differ by at most 350px (measured with the seed: Left 555, Centre 897, Right 808, a gap of 342px).
