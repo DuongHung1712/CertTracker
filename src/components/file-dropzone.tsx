@@ -19,15 +19,19 @@ export function FileDropzone({
   maxBytes,
   onReject,
   disabled = false,
+  hint = "Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB",
+  wrongTypeMessage = EVIDENCE_WRONG_TYPE_MESSAGE,
 }: {
   id: string;
   file: File | null;
   onChange: (file: File | null) => void;
-  /** Comma-separated MIME types, e.g. `EVIDENCE_ACCEPT`. */
+  /** Comma-separated MIME types (e.g. `EVIDENCE_ACCEPT`) and/or file extensions (e.g. `.xlsx`). */
   accept: string;
   maxBytes: number;
   onReject: (message: string) => void;
   disabled?: boolean;
+  hint?: string;
+  wrongTypeMessage?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -37,7 +41,8 @@ export function FileDropzone({
     const allowed = accept.split(",").map((type) => type.trim());
     if (candidate.size === 0) return onReject(EVIDENCE_EMPTY_MESSAGE);
     if (candidate.size > maxBytes) return onReject(EVIDENCE_TOO_LARGE_MESSAGE);
-    if (!allowed.includes(candidate.type)) return onReject(EVIDENCE_WRONG_TYPE_MESSAGE);
+    const lowerName = candidate.name.toLowerCase();
+    if (!allowed.some((type) => (type.startsWith(".") ? lowerName.endsWith(type) : type === candidate.type))) return onReject(wrongTypeMessage);
     onChange(candidate);
   }
 
@@ -99,9 +104,7 @@ export function FileDropzone({
           className="flex w-full cursor-pointer items-center gap-2 text-muted-foreground transition-colors hover:text-foreground"
         >
           <CloudUpload aria-hidden className="size-4 shrink-0 text-muted-foreground" />
-          <span className="text-body">
-            Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB
-          </span>
+          <span className="text-body">{hint}</span>
         </label>
       )}
     </div>

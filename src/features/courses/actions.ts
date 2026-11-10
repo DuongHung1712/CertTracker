@@ -98,6 +98,7 @@ function toCourseRow(data: CourseInput) {
     cost_currency: data.costCurrency,
     est_hours: data.estHours,
     url: data.url,
+    refund_conditions: data.refundConditions,
   };
 }
 

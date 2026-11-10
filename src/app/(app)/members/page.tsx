@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/app-shell/page-header";
 import { getCurrentUser } from "@/features/auth/queries";
 import { listCareerRoles } from "@/features/career/queries";
+import { ImportMembersDialog } from "@/features/members/components/import-members-dialog";
 import { MembersTable } from "@/features/members/components/members-table";
 import { listMemberScopes, listMembers, listTeamOptionsForCurrentUser, type MemberScope } from "@/features/members/queries";
 
@@ -19,6 +20,7 @@ export default async function MembersPage() {
       <PageHeader
         title="Members"
         description={isAdmin ? "Everyone, with their teams." : "Members of the teams in your scope."}
+        actions={isAdmin ? <ImportMembersDialog /> : undefined}
       />
       <MembersTable members={members} teams={teams} roles={roles} canEditCareer={isAdmin} scopes={Object.fromEntries(scopes)} showScopes={isAdmin} canCreate={isAdmin} canDelete={isAdmin} />
     </div>

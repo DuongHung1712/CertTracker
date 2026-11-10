@@ -5,6 +5,7 @@ import { AlertCircle, Award, CheckCircle2, Clock, MoreHorizontal } from "lucide-
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DateField } from "@/components/date-field";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { EntityCombobox, type ComboboxOption } from "@/components/entity-combobox";
@@ -201,6 +202,16 @@ export function ComboboxDemo() {
         emptyText="No member found"
         disabled
       />
+    </div>
+  );
+}
+
+export function DateFieldDemo() {
+  const [value, setValue] = useState("");
+  return (
+    <div className="flex max-w-sm flex-col gap-2">
+      <DateField id="demo-date" label="Issue date" value={value} onChange={setValue} max="2026-11-08" />
+      <p className="text-caption text-muted-foreground">Type 01082026 or use the calendar button.</p>
     </div>
   );
 }

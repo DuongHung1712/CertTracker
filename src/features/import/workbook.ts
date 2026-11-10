@@ -14,7 +14,7 @@ export function isExcelFile(bytes: Uint8Array): boolean {
 
 /** Total cells fillMergedCells may copy. A real sheet is ~2000 rows x ~15 columns, so this is generous for honest files. */
 const MAX_MERGED_CELLS = 300_000;
-/** Wider than any real import sheet (measured on the ACTUAL used range, not the declared dimension). Such a sheet is skipped. */
+/** Wider than any real import sheet (measured on the ACTUAL used range, not the declared dimension). The record import skips such a sheet; readFirstSheet returns an error. */
 const MAX_IMPORT_COLUMNS = 200;
 /**
  * Raw rows read from a sheet (sheetRows), blank or not. Excel writes styled-but-empty cells and a `<dimension>` far below
@@ -94,6 +94,7 @@ export function fillMergedCells(sheet: XLSX.WorkSheet, budget: { remaining: numb
 /** Decompressed-size ceiling for a zip (real xlsx files are well under 10 MB inflated). */
 const MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024;
 const TOO_LARGE = "The Excel file is too large once unpacked (50 MB at most). Split it and import it in parts.";
+const NOT_UTF8 = "This CSV is not saved as UTF-8. In Excel, choose Save As → CSV UTF-8 (Comma delimited), then try again.";
 const BAD_ZIP = "The Excel file is not valid (its zip structure is damaged).";
 
 /**
@@ -164,27 +165,72 @@ function inspectZip(bytes: Uint8Array): string | null {
 
 const SCAN_ROWS = 10;
 
-export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
+/** Size, zip-bomb and parse guards shared by every reader. A non-Excel file is read as UTF-8 CSV text. */
+function readBook(bytes: Uint8Array): Cleaned<{ book: XLSX.WorkBook; date1904: boolean }> {
   if (bytes.length > MAX_IMPORT_BYTES) return { ok: false, error: "The file is larger than 4 MB. Split it and import it in parts." };
   if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
     // Any "PK" prefix: SheetJS's own sniffer accepts more than PK 03 04 as a zip, so the guard must not be narrower.
     const zipError = checkZip(bytes);
     if (zipError) return { ok: false, error: zipError };
   }
-  let book: XLSX.WorkBook;
+  const options = {
+    sheetRows: MAX_RAW_ROWS,
+    cellDates: false,    // raw serials: excelSerialToDate owns the conversion
+    cellFormula: false,  // cached values only
+    cellHTML: false,
+    cellStyles: false,
+  };
   try {
-    book = XLSX.read(bytes, {
-      type: "array",
-      sheetRows: MAX_RAW_ROWS,
-      cellDates: false,    // raw serials: excelSerialToDate owns the conversion
-      cellFormula: false,  // cached values only
-      cellHTML: false,
-      cellStyles: false,
-    });
+    let book: XLSX.WorkBook;
+    if (isExcelFile(bytes) || (bytes[0] === 0x50 && bytes[1] === 0x4b)) {
+      book = XLSX.read(bytes, { type: "array", ...options });
+    } else {
+      let text: string;
+      try {
+        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^\uFEFF/, "");
+      } catch {
+        return { ok: false, error: NOT_UTF8 };
+      }
+      book = XLSX.read(text, { type: "string", raw: true, ...options }); // raw: cells stay the text the user typed
+    }
+    return { ok: true, value: { book, date1904: Boolean(book.Workbook?.WBProps?.date1904) } };
   } catch {
     return { ok: false, error: "Could not read the file. It may be damaged or password protected." };
   }
-  const date1904 = Boolean(book.Workbook?.WBProps?.date1904);
+}
+
+/** Rows (raw cell values, blank rows kept so indexes match the sheet) of the first sheet that holds data, from .xlsx/.xls or CSV. */
+export function readFirstSheet(bytes: Uint8Array): Cleaned<{ rows: Cell[][]; date1904: boolean }> {
+  const read = readBook(bytes);
+  if (!read.ok) return read;
+  const { book, date1904 } = read.value;
+  const cellBudget = { remaining: MAX_VALUE_CELLS };
+  for (const sheetName of book.SheetNames.slice(0, MAX_SCANNED_SHEETS)) {
+    const sheet = book.Sheets[sheetName];
+    if (!sheet?.["!ref"]) continue;
+    try {
+      const used = usedRange(sheet, cellBudget);
+      if (!used) continue;
+      const declared = XLSX.utils.decode_range(sheet["!ref"]);
+      // Start at sheet row 1 so a row's index + 1 is its Excel row number (the stored range may start lower).
+      const bounds: XLSX.Range = { s: { r: 0, c: Math.min(declared.s.c, used.s.c) }, e: used.e };
+      if (bounds.e.r >= MAX_RAW_ROWS - 1) return { ok: false, error: TOO_FAR_DOWN };
+      if (bounds.e.c - bounds.s.c + 1 > MAX_IMPORT_COLUMNS) return { ok: false, error: `The sheet has too many columns (more than ${MAX_IMPORT_COLUMNS}).` };
+      sheet["!ref"] = XLSX.utils.encode_range(bounds);
+      fillMergedCells(sheet);
+    } catch (error) {
+      if (error instanceof TooManyCellsError || error instanceof MergeTooLargeError) return { ok: false, error: error.message };
+      throw error;
+    }
+    return { ok: true, value: { rows: XLSX.utils.sheet_to_json<Cell[]>(sheet, { header: 1, raw: true, defval: null, blankrows: true }), date1904 } };
+  }
+  return { ok: true, value: { rows: [], date1904 } };
+}
+
+export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
+  const read = readBook(bytes);
+  if (!read.ok) return read;
+  const { book, date1904 } = read.value;
 
   const mergeBudget = { remaining: MAX_MERGED_CELLS }; // shared: bounds the whole workbook, not each sheet
   const cellBudget = { remaining: MAX_VALUE_CELLS };

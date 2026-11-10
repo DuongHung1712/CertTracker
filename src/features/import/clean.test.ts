@@ -209,6 +209,11 @@ describe("cost, currency and study hours", () => {
 });
 
 describe("headers", () => {
+  it("maps the duration headers to estHours", () => {
+    expect(mapHeaders(["Duration (hours)"]).map).toEqual({ estHours: 0 });
+    expect(mapHeaders(["duration"]).map).toEqual({ estHours: 0 });
+  });
+
   it("maps the cost, currency and study hours headers in English and Vietnamese", () => {
     expect(mapHeaders(["Cost", "Currency", "Study hours"]).map).toEqual({ cost: 0, costCurrency: 1, estHours: 2 });
     expect(mapHeaders(["Chi phí", "Loại tiền", "Số giờ"]).map).toEqual({ cost: 0, costCurrency: 1, estHours: 2 });

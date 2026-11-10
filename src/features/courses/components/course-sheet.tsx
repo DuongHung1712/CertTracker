@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 import { createCourse, updateCourse } from "@/features/courses/actions";
@@ -11,6 +11,7 @@ import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CURRENCIES, toCurrency } from "@/lib/money";
 
@@ -41,6 +42,7 @@ export function CourseSheet({
     costCurrency: null,
     estHours: null,
     url: null,
+    refundConditions: null,
   };
   // `courseSchema` has `.default()` fields (`level`, `refundable`) and several `z.preprocess`-based
   // nullable fields, so its input type (pre-parse) and output type (CourseInput, post-parse) diverge.
@@ -50,6 +52,8 @@ export function CourseSheet({
     resolver: zodResolver(courseSchema),
     values: editing ?? empty,
   });
+
+  const refundable = useWatch({ control: form.control, name: "refundable" });
 
   async function onSubmit(values: CourseInput) {
     const result = editing ? await updateCourse({ id: editing.id, ...values }) : await createCourse(values);
@@ -151,9 +155,33 @@ export function CourseSheet({
             <Controller
               control={form.control}
               name="refundable"
-              render={({ field }) => <Switch id="course-refundable" checked={field.value} onCheckedChange={field.onChange} />}
+              render={({ field }) => (
+                <Switch
+                  id="course-refundable"
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    // Hidden stale text must never block Save with the length error.
+                    if (!checked) {
+                      form.setValue("refundConditions", "");
+                      form.clearErrors("refundConditions");
+                    }
+                  }}
+                />
+              )}
             />
           </Field>
+          {refundable && (
+            <Field>
+              <FieldLabel htmlFor="course-refund-conditions">Refund conditions</FieldLabel>
+              <Textarea
+                id="course-refund-conditions"
+                {...form.register("refundConditions")}
+                aria-invalid={!!form.formState.errors.refundConditions}
+              />
+              <FieldError errors={[form.formState.errors.refundConditions]} />
+            </Field>
+          )}
           <div className="grid grid-cols-[1fr_8rem] gap-3">
             <Field>
               <FieldLabel htmlFor="course-cost">Cost</FieldLabel>
@@ -202,7 +230,7 @@ export function CourseSheet({
             </Field>
           </div>
           <Field>
-            <FieldLabel htmlFor="course-hours">Study hours (estimate)</FieldLabel>
+            <FieldLabel htmlFor="course-hours">Duration (hours)</FieldLabel>
             <Input
               id="course-hours"
               type="number"

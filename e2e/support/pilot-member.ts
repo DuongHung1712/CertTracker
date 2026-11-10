@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { expect, type Locator, type Page } from "@playwright/test";
+import { fieldLabel } from "../helpers";
 import { adminApi, deleteAccount } from "./accounts";
 import { signInAsSeedAdmin } from "./restore-seed";
 
@@ -78,15 +79,24 @@ export async function openOwnCertificateForm(page: Page, query = "aws", courseNa
   await expect(page).toHaveURL(/\/me$/);
   await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Course", { exact: true }).fill(query);
+  await dialog.getByLabel(fieldLabel("Course")).fill(query);
   // The popup is portalled outside the dialog.
   await page.getByRole("option", { name: courseName }).click();
   return dialog;
 }
 
-/** A member adds the AWS certificate on their own page with a PDF proof. */
+/** Evidence is only offered for a Completed certificate (R11), which needs an issue date. */
+export async function chooseCompleted(page: Page, dialog: Locator, issueDate = "01/06/2026") {
+  await dialog.getByLabel(fieldLabel("Status")).click();
+  // The listbox is portalled outside the dialog.
+  await page.getByRole("option", { name: "Completed", exact: true }).click();
+  await dialog.getByLabel(fieldLabel("Issue date")).fill(issueDate);
+}
+
+/** A member adds the AWS certificate, Completed, on their own page with a PDF proof. */
 export async function addOwnCertificateWithProof(page: Page) {
   const dialog = await openOwnCertificateForm(page);
+  await chooseCompleted(page, dialog);
   await dialog.getByLabel("Evidence").setInputFiles("e2e/fixtures/evidence.pdf");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Added certificate")).toBeVisible();
