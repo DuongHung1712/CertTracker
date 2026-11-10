@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { ADMIN_EMAIL, signIn } from "./helpers";
+import { ADMIN_EMAIL, fieldLabel, signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import { acceptInvitation, pilotEmail, removePilotPeople } from "./support/pilot-member";
 import { signInAsSeedAdmin, signInAsSeedUser } from "./support/restore-seed";
@@ -45,7 +45,7 @@ async function expectOrgWideTiles(page: Page) {
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
 async function pickSelect(page: Page, dialog: Locator, label: string, optionName: string) {
-  await dialog.getByLabel(label, { exact: true }).click();
+  await dialog.getByLabel(fieldLabel(label)).click();
   await page.getByRole("option", { name: optionName, exact: true }).click();
 }
 
@@ -55,7 +55,8 @@ async function editStatus(page: Page, row: Locator, status: string, progress: st
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const dialog = page.getByRole("dialog");
   await pickSelect(page, dialog, "Status", status);
-  await dialog.getByLabel("Progress (%)").fill(progress);
+  // Progress is only shown for In progress; Not started resets it to 0 on its own.
+  if (status === "In progress") await dialog.getByLabel("Progress (%)").fill(progress);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Saved certificate").first()).toBeVisible();
   await expect(dialog).toHaveCount(0);
