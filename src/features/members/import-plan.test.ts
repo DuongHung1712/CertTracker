@@ -26,17 +26,43 @@ describe("planMemberImport", () => {
     expect(row?.action).toBe("skip");
   });
 
-  it("allows an empty career role and team", () => {
-    const [row] = plan([["Binh", "binh@certtracker.test", null, null]]).rows;
-    expect(row).toMatchObject({ action: "create", careerRoleId: null, teamId: null });
+  it("allows an empty career role", () => {
+    const [row] = plan([["Binh", "binh@certtracker.test", "Team Cloud", null]]).rows;
+    expect(row).toMatchObject({ action: "create", careerRoleId: null, teamId: "t1" });
+  });
+
+  it("requires a team, but an existing email still skips", () => {
+    const { rows } = plan([
+      ["Binh", "binh@certtracker.test", null, null],
+      ["An", "an@certtracker.test", null, null],
+    ]);
+    expect(rows[0]).toMatchObject({ action: "error", messages: ["Team is missing"] });
+    expect(rows[1]?.action).toBe("skip");
+  });
+
+  it("flags every new row when the file has no Team column", () => {
+    const result = planMemberImport([["Full name", "Email"], ["Binh", "binh@certtracker.test"]], lookups);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[0]).toMatchObject({ action: "error", messages: ["Team is missing"] });
+  });
+
+  it("accepts Họ và tên as the Full name header", () => {
+    const result = planMemberImport([["Họ và tên", "Email", "Team"], ["Binh", "binh@certtracker.test", "Team Cloud"]], lookups);
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[0]?.action).toBe("create");
+  });
+
+  it("refuses two columns with the same meaning", () => {
+    const result = planMemberImport([["Name", "Full name", "Email", "Team"]], lookups);
+    expect(result).toEqual({ ok: false, error: 'Column "Full name" means the same as another column. Delete or rename one of them.' });
   });
 
   it("reports row errors", () => {
     const { rows } = plan([
-      [null, "a@certtracker.test", null, null],
-      ["B", "not-an-email", null, null],
+      [null, "a@certtracker.test", "Team Cloud", null],
+      ["B", "not-an-email", "Team Cloud", null],
       ["C", "c@certtracker.test", "X", null],
-      ["D", "d@certtracker.test", null, "Y"],
+      ["D", "d@certtracker.test", "Team Cloud", "Y"],
     ]);
     expect(rows.map((r) => r.action)).toEqual(["error", "error", "error", "error"]);
     expect(rows[0]?.messages).toContain("Full name is missing");
@@ -78,7 +104,7 @@ describe("planMemberImport", () => {
 
   it("counts every data row and ignores blank lines", () => {
     const { rows, counts } = plan([
-      ["Binh", "binh@certtracker.test"],
+      ["Binh", "binh@certtracker.test", "Team Cloud"],
       [null, null, null, null],
       ["An", "an@certtracker.test"],
       [null, "bad"],
@@ -137,12 +163,12 @@ describe("planMemberImport", () => {
     });
 
     it("prefers the exact career role", () => {
-      const row = run([], [{ id: "a", name: "Developer" }, { id: "b", name: "developer" }], null, "developer");
+      const row = run([{ id: "t", name: "T" }], [{ id: "a", name: "Developer" }, { id: "b", name: "developer" }], "T", "developer");
       expect(row).toMatchObject({ action: "create", careerRoleId: "b" });
     });
 
     it("errors on an ambiguous career role", () => {
-      const row = run([], [{ id: "a", name: "Developer" }, { id: "b", name: "developer" }], null, "DEVELOPER");
+      const row = run([{ id: "t", name: "T" }], [{ id: "a", name: "Developer" }, { id: "b", name: "developer" }], "T", "DEVELOPER");
       expect(row.messages).toEqual(['Career role "DEVELOPER" matches more than one career role']);
     });
   });

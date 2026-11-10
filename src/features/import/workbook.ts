@@ -212,7 +212,8 @@ export function readFirstSheet(bytes: Uint8Array): Cleaned<{ rows: Cell[][]; dat
       const used = usedRange(sheet, cellBudget);
       if (!used) continue;
       const declared = XLSX.utils.decode_range(sheet["!ref"]);
-      const bounds: XLSX.Range = { s: { r: Math.min(declared.s.r, used.s.r), c: Math.min(declared.s.c, used.s.c) }, e: used.e };
+      // Start at sheet row 1 so a row's index + 1 is its Excel row number (the stored range may start lower).
+      const bounds: XLSX.Range = { s: { r: 0, c: Math.min(declared.s.c, used.s.c) }, e: used.e };
       if (bounds.e.r >= MAX_RAW_ROWS - 1) return { ok: false, error: TOO_FAR_DOWN };
       if (bounds.e.c - bounds.s.c + 1 > MAX_IMPORT_COLUMNS) return { ok: false, error: `The sheet has too many columns (more than ${MAX_IMPORT_COLUMNS}).` };
       sheet["!ref"] = XLSX.utils.encode_range(bounds);

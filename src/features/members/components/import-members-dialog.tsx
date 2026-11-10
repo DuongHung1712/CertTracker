@@ -73,7 +73,7 @@ export function ImportMembersDialog() {
 
   const create = preview?.counts.create ?? 0;
   return (
-    <Dialog open={open} onOpenChange={(next) => { setOpen(next); if (!next) reset(); }}>
+    <Dialog open={open} onOpenChange={(next) => { if (!next && pending) return; setOpen(next); if (!next) reset(); }}>
       <DialogTrigger render={<Button variant="outline" />}>Import members</DialogTrigger>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>

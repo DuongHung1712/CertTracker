@@ -460,4 +460,15 @@ describe("readFirstSheet", () => {
     const result = readFirstSheet(new Uint8Array(4 * 1024 * 1024 + 1));
     expect(result).toEqual({ ok: false, error: "The file is larger than 4 MB. Split it and import it in parts." });
   });
+
+  it("numbers rows from sheet row 1 when the used range starts lower", () => {
+    const sheet = XLSX.utils.sheet_add_aoa({} as XLSX.WorkSheet, [["Full name", "Email"], ["An", "an@x.test"]], { origin: "A3" });
+    sheet["!ref"] = "A3:B4"; // Excel stores the used range, not A1
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, "Data");
+    const result = readFirstSheet(new Uint8Array(XLSX.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[2]).toEqual(["Full name", "Email"]);
+    expect(result.value.rows[3]).toEqual(["An", "an@x.test"]);
+  });
 });

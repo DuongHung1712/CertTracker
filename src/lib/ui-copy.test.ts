@@ -103,7 +103,8 @@ describe("[copy] plain-English interface", () => {
 
   it("writes email without a hyphen", () => {
     // The import still accepts an "e-mail" column header from old workbooks; that alias is input, not UI text.
-    const allowed = (p: Piece) => p.file === "src/features/import/clean.ts" && p.text === "e-mail";
+    const allowed = (p: Piece) =>
+      (p.file === "src/features/import/clean.ts" || p.file === "src/features/members/import-plan.ts") && p.text === "e-mail";
     expect(offenders((p) => /e-mail/i.test(p.text) && !allowed(p))).toEqual([]);
   });
 });

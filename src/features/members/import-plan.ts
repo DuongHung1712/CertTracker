@@ -2,7 +2,7 @@ import { cellText, normalizeEmail, type Cell, type Cleaned } from "@/features/im
 import { foldText } from "@/lib/text";
 
 export const MEMBER_IMPORT_HEADERS = {
-  fullName: ["full name", "name", "ho ten"],
+  fullName: ["full name", "name", "ho ten", "ho va ten"],
   email: ["email", "e-mail"],
   team: ["team", "nhom"],
   careerRole: ["career role", "role"],
@@ -32,19 +32,22 @@ export type MemberImportLookups = { memberEmails: string[]; teams: Named[]; care
 
 const fail = <T>(error: string): Cleaned<T> => ({ ok: false, error });
 
-/** First of the first rows that names both Full name and Email; the first alias hit per field wins. */
-function findHeader(rows: Cell[][]): { index: number; columns: Columns } | null {
+/** First of the first rows that names both Full name and Email; a second column for the same field is reported. */
+function findHeader(rows: Cell[][]): { index: number; columns: Columns; duplicate: string | null } | null {
   for (let index = 0; index < Math.min(rows.length, HEADER_SCAN_ROWS); index++) {
     const columns: Columns = {};
+    let duplicate: string | null = null;
     (rows[index] ?? []).forEach((cell, column) => {
       const text = cellText(cell);
       if (text === null) return;
       const key = foldText(text);
       for (const field of Object.keys(MEMBER_IMPORT_HEADERS) as Field[]) {
-        if (columns[field] === undefined && (MEMBER_IMPORT_HEADERS[field] as readonly string[]).includes(key)) columns[field] = column;
+        if (!(MEMBER_IMPORT_HEADERS[field] as readonly string[]).includes(key)) continue;
+        if (columns[field] === undefined) columns[field] = column;
+        else duplicate ??= text;
       }
     });
-    if (columns.fullName !== undefined && columns.email !== undefined) return { index, columns };
+    if (columns.fullName !== undefined && columns.email !== undefined) return { index, columns, duplicate };
   }
   return null;
 }
@@ -79,6 +82,7 @@ function planRow(cells: Cell[], line: number, columns: Columns, context: RowCont
   const messages: string[] = [];
   if (fullName === null) messages.push("Full name is missing");
   if (!email.ok) messages.push(email.error);
+  if (teamName === null) messages.push("Team is missing");
   const team = teamName === null ? null : resolveName(context.teams, teamName);
   const role = careerRoleName === null ? null : resolveName(context.careerRoles, careerRoleName);
   const teamProblem = team && problem(team, "Team", teamName!, "team");
@@ -107,6 +111,7 @@ export function planMemberImport(
 ): Cleaned<{ rows: MemberImportRow[]; counts: { create: number; skip: number; error: number } }> {
   const header = findHeader(rows);
   if (!header) return fail("The file needs the columns Full name and Email.");
+  if (header.duplicate) return fail(`Column "${header.duplicate}" means the same as another column. Delete or rename one of them.`);
 
   const data = rows
     .map((cells, index) => ({ cells, line: index + 1 }))
