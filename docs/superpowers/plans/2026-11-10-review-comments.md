@@ -216,81 +216,106 @@
 
 ## Part D: certificate and course catalogues (branch `feat/certificate-catalogue`)
 
-**Gate:** start only after the owner confirms Q1 (spec section 0). If the answer differs from the default, update spec section 5 first.
+**Gate:** Q1 answered 2026-11-10 (spec section 0); the model is spec section 5 (two kinds of certificate: exam and course completion). Base: `origin/dev` with Parts A–C merged (migrations up to `20261110000003`).
 
 ### Task D1: migration, RLS and pgTAP
 
 **Files:**
-- Create: `supabase/migrations/20261110000002_certificate_catalogue.sql`
-- Create: `supabase/tests/database/18_certificate_catalogue.test.sql`
-- Modify: `supabase/seed.sql` (seed certificates and course links; records use `certificate_id`)
-- Modify: `src/types/database.ts` (via `pnpm db:types`)
+- Create: `supabase/migrations/20261111000001_certificate_catalogue.sql`
+- Create: `supabase/tests/database/19_certificate_catalogue.test.sql`
+- Modify: `supabase/seed.sql` (certificates; courses with `prepares_for_id`; records with `certificate_id`; one completion example: a course "Machine Learning Specialization" granting a completion certificate, no validity, no records)
+- Modify: `src/types/database.ts` (`pnpm db:types`)
 
 **Interfaces:**
-- Produces: table `certificates (id, name, cert_type_id, provider_id, level, validity_months, url, created_at, updated_at, unique (provider_id, name))`; `courses.certificate_id`, `courses` without `cert_type_id`, `level`, `validity_months`; `training_records.certificate_id not null`, `course_id` nullable, unique `(member_id, certificate_id)`; `v_training_records` with `certificate_id`, `certificate_name`, nullable `course_name`, expiry from the certificate; `dashboard_breakdown` dimensions `team | cert_type | provider | certificate`; import commit `on conflict (member_id, certificate_id)`.
+- Produces:
+  - Type `public.certificate_kind` enum `('exam', 'completion')`.
+  - Table `certificates (id, name, kind, cert_type_id, provider_id, level, validity_months, url, course_id, created_at, updated_at)`; unique `(provider_id, name)`; unique `course_id`; check `(kind = 'completion') = (course_id is not null)`; `validity_months is null or > 0`; `set_updated_at` trigger.
+  - `courses.prepares_for_id uuid null references certificates on delete set null`; trigger `courses_prepares_for_exam` rejects a non-exam target (`errcode 23514`, message `prepares_for must be an exam certificate`); `courses` without `cert_type_id`, `level`, `validity_months`.
+  - `training_records.certificate_id uuid not null references certificates on delete restrict`; `course_id` nullable; unique `(member_id, certificate_id)` (constraint `training_records_member_certificate_key`); trigger `training_records_course_matches_certificate`: for a completion certificate it sets `course_id` to the granting course; for an exam certificate a non-null `course_id` must have `prepares_for_id = certificate_id` (else `23514`, `course does not prepare for this certificate`).
+  - `v_training_records` (security_invoker) with `certificate_id`, `certificate_name`, `certificate_kind`, nullable `course_name`, and expiry from the certificate's validity; existing column names kept where the meaning is unchanged.
+  - `dashboard_breakdown(p_dimension)` accepts `team | cert_type | provider | certificate`; `'course'` raises `22023`.
+  - Import commit function uses `on conflict (member_id, certificate_id)`.
 
-- [ ] **Step 1: Write the failing pgTAP**: tables and columns exist; for each pre-existing course a certificate with the same id, name, type, provider, level and validity exists; every record's `certificate_id` equals its old `course_id`; expiry for a seeded done record is unchanged before and after (compare `expiry_date` captured in the test from known seed values); a course with null provider and null cert type migrates without error (Review Focus 4); admin can insert a certificate, manager and member get 0 rows / `42501`; a duplicate `(member_id, certificate_id)` fails with `23505`; `dashboard_breakdown('certificate')` returns rows and `('course')` raises `22023`.
-- [ ] **Step 2: Run** `supabase db reset && pnpm test:db` → FAIL.
-- [ ] **Step 3: Implement** the migration in the order of spec 5.2 (copy with same ids, backfill, swap unique, recreate view and functions with `security_invoker`, RLS, then drop moved columns); update seed; `pnpm db:types`.
-- [ ] **Step 4: Run** → PASS, and all older pgTAP files still pass.
-- [ ] **Step 5: Commit** `feat(db): split certificates from courses`.
+- [ ] **Step 1: Write the failing pgTAP** (`19_certificate_catalogue.test.sql`):
+  - every pre-existing course has a certificate with the same id, `kind = 'exam'`, same name, type, provider, level, validity; `courses.prepares_for_id = id` for each;
+  - every record's `certificate_id` equals its old `course_id`; the seeded done record's `expiry_date` and `expiry_status` equal the values computed before the migration (captured from known seed values: issue date `vn_today() - 1070`, validity 36);
+  - a course with null provider and null cert type migrates without error (Review Focus 4);
+  - kind rules: an exam certificate with a `course_id` fails `23514`; a completion certificate without one fails `23514`; two completion certificates for one course fail `23505`;
+  - `courses.prepares_for_id` pointing to a completion certificate fails `23514`;
+  - a record for a completion certificate gets `course_id` set to the granting course even when inserted with null; a record for an exam certificate with a course that does not prepare for it fails `23514`;
+  - duplicate `(member_id, certificate_id)` fails `23505`;
+  - RLS: admin inserts a certificate; manager and member insert or update 0 rows / `42501`; all three roles read certificates;
+  - `dashboard_breakdown('certificate')` returns rows and `('course')` raises `22023`.
+- [ ] **Step 2: Run** the new file against a database at `20261110000003` (apply with `pnpm exec supabase migration up --local`, never `supabase db reset`) → FAIL.
+- [ ] **Step 3: Implement** the migration in the order of spec 5.3 (copy with the same ids, backfill, swap the unique constraint, triggers, recreate the view and functions with `security_invoker`, RLS, drop the moved columns last); update the seed; `pnpm db:types`.
+- [ ] **Step 4: Run** `pnpm test:db` → all files PASS (older files updated only where they insert into the dropped `courses` columns; list each change).
+- [ ] **Step 5: Commit** `feat(db): separate certificates from courses`.
 
 ### Task D2: certificates feature and slimmed courses feature
 
 **Files:**
-- Create: `src/features/certificates/{schema.ts,actions.ts,queries.ts}` + `schema.test.ts`
-- Modify: `src/features/courses/{schema.ts,actions.ts,queries.ts}` (drop type, level, validity; add `certificateId`)
-- Test: `src/features/certificates/schema.test.ts`, `src/features/courses/schema.test.ts`
+- Create: `src/features/certificates/{schema.ts,actions.ts,queries.ts}`, `src/features/certificates/schema.test.ts`
+- Modify: `src/features/courses/{schema.ts,actions.ts,queries.ts}`, `src/features/courses/schema.test.ts`
 
 **Interfaces:**
-- Produces: `certificateSchema = { name, certTypeId, providerId, level, validityMonths, url }` (rules moved from `courseFields`); `createCertificate`, `updateCertificate`, `deleteCertificate` returning `Result<null>`; `listCertificates(): Promise<CertificateRow[]>`; `courseFields` gains `certificateId: z.guid().nullable()` and loses `certTypeId`, `level`, `validityMonths`.
+- Consumes: D1 tables and types.
+- Produces:
+  - `certificateSchema` = `{ name, kind: z.enum(["exam","completion"]), certTypeId, providerId, level, validityMonths, url, courseId }` with the rules moved from `courseFields` (messages kept: "Choose a certificate type", "Choose a provider", "Validity must be greater than 0") and a refinement: completion requires `courseId` ("Choose the course that grants this certificate"), exam forces `courseId` to null.
+  - `createCertificate`, `updateCertificate`, `deleteCertificate` → `Result<null>` (delete of a certificate with records maps `23503` to "This certificate has records. Delete them first.").
+  - `listCertificates(): Promise<CertificateRow[]>` with `CertificateRow = { id, name, kind, certTypeId, certTypeName, providerId, providerName, level, validityMonths, url, courseId, courseName }`.
+  - `courseFields` loses `certTypeId`, `level`, `validityMonths`; gains `preparesForId: z.guid().nullable()`; list rows gain `preparesForId`, `preparesForName`, `grantsCertificateName`.
 
-- [ ] **Step 1:** Vitest: the moved rules keep their messages (`"Choose a certificate type"`, `"Validity must be greater than 0"`); a course accepts `certificateId: null`.
+- [ ] **Step 1:** Vitest for the schema rules above (moved messages unchanged; completion without course; exam with course → null; course accepts `preparesForId: null`).
 - [ ] **Step 2:** Run `pnpm vitest run src/features/certificates src/features/courses` → FAIL.
-- [ ] **Step 3:** Implement; `pnpm typecheck` lists every caller to fix in D3–D5 (leave them to those tasks, or fix compile-only breaks here).
-- [ ] **Step 4:** Run → PASS.
+- [ ] **Step 3:** Implement; fix compile-only breaks elsewhere minimally (typecheck must stay green at this commit).
+- [ ] **Step 4:** Run → PASS; `pnpm typecheck`.
 - [ ] **Step 5: Commit** `feat(catalogue): certificate actions and a slimmer course`.
 
 ### Task D3: Catalogue page with two tabs
 
 **Files:**
-- Modify: `src/app/(app)/courses/page.tsx` (title `"Catalogue"`, `Tabs` Certificates | Courses), nav label in `src/components/app-shell/nav.ts` (`NAV_ITEMS`)
+- Modify: `src/app/(app)/courses/page.tsx` (title "Catalogue", `Tabs` Certificates | Courses), `src/components/app-shell/nav.ts` (`NAV_ITEMS` label "Catalogue")
 - Create: `src/features/certificates/components/{certificates-table.tsx,certificate-sheet.tsx}`
-- Modify: `src/features/courses/components/{courses-table.tsx,course-sheet.tsx}` ("Prepares for" picker over certificates)
+- Modify: `src/features/courses/components/{courses-table.tsx,course-sheet.tsx}`
 - Test: `e2e/courses.spec.ts`
 
-- [ ] **Step 1:** e2e: admin adds a certificate (name, type, provider, validity 36) and a course that prepares for it; both tables show them; a member sees both tabs read-only; the sidebar says `"Catalogue"`.
+- [ ] **Step 1:** e2e:
+  - admin adds an exam certificate (name, type, provider, validity 36) and a course that prepares for it; both tables show them and the course row shows "Prepares for <certificate>";
+  - admin adds a course, then a "Course completion" certificate granted by it; choosing "Course completion" shows a required "Course" picker; the course row shows the certificate it grants;
+  - a member sees both tabs read-only; the sidebar says "Catalogue".
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS.
 - [ ] **Step 5: Commit** `feat(catalogue): certificates and courses tabs`.
 
-### Task D4: certificate form picks a certificate, course optional
+### Task D4: certificate form picks a certificate; course studied optional or implied
 
 **Files:**
 - Modify: `src/features/records/{schema.ts,actions.ts,queries.ts}` (`certificateId` required, `courseId` nullable)
 - Modify: `src/features/records/components/record-sheet.tsx`, `records-table.tsx`
 - Test: `src/features/records/schema.test.ts`, `e2e/record-form.spec.ts`, `e2e/records.spec.ts`, `e2e/support/pilot-member.ts`
 
-- [ ] **Step 1:** Tests: schema requires `certificateId` (`"Choose a certificate"`), accepts `courseId: null`; e2e: the form's first field is `"Certificate"`, `"Course studied"` lists only courses for that certificate and is optional; hint `"Can't find your certificate? Ask your admin to add it."`; duplicate certificate for the same member shows the existing duplicate message.
+- [ ] **Step 1:** Tests:
+  - schema requires `certificateId` ("Choose a certificate") and accepts `courseId: null`;
+  - e2e: the first field is "Certificate"; each option shows its kind; for an exam certificate "Course studied" lists only courses that prepare for it and is optional; for a completion certificate the granting course is shown read-only and saved; hint "Can't find your certificate? Ask your admin to add it."; a second record for the same certificate shows the existing duplicate message (wording updated to "certificate").
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS (all record specs).
-- [ ] **Step 5: Commit** `feat(records): track the certificate, with the course as optional`.
+- [ ] **Step 5: Commit** `feat(records): track the certificate, with the course studied`.
 
 ### Task D5: import, export, dashboards and data quality
 
 **Files:**
-- Modify: `src/features/import/{clean.ts,plan.ts,queries.ts,sample-workbook.ts}` (Course column → certificate; new optional `"Course studied"`)
-- Modify: `src/features/export/records-export.ts` (`"Certificate"`, `"Course studied"`, validity from certificate)
-- Modify: `src/features/dashboard/**` (`"Popular certificates"`, dimension `certificate`), `src/features/data-quality/**`
-- Test: the matching `*.test.ts` files, `e2e/import.spec.ts`, `e2e/export.spec.ts`, `e2e/dashboard.spec.ts`
+- Modify: `src/features/import/{clean.ts,plan.ts,queries.ts,sample-workbook.ts}` ("Course" column → certificate by name; new optional "Course studied")
+- Modify: `src/features/export/records-export.ts` ("Certificate", "Kind", "Course studied"; validity from the certificate)
+- Modify: `src/features/dashboard/**` ("Popular certificates", dimension `certificate`), `src/features/data-quality/**`
+- Test: the matching `*.test.ts`, `e2e/import.spec.ts`, `e2e/export.spec.ts`, `e2e/dashboard.spec.ts`
 
-- [ ] **Step 1:** Tests: an old-format workbook (no "Course studied") imports with certificates matched by name; export headers in the new order round-trip through the import (existing round-trip test); dashboard Explorer tab `"Popular certificates"`.
+- [ ] **Step 1:** Tests: an old-format workbook (no "Course studied") imports with certificates matched by name; the export headers round-trip through the import (existing round-trip test); the Explorer tab reads "Popular certificates"; breakdowns by type and provider come from the certificate.
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS.
 - [ ] **Step 5: Commit** `feat(catalogue): import, export and dashboards use certificates`.
 
 ### Task D6: docs, decision, full gate
 
 **Files:**
-- Modify: `docs/decisions.md` (decision #65: certificates and courses are separate catalogues, spec section 5), `docs/design-system.md`, `docs/superpowers/specs/2026-09-26-certtracker-design.md` (data model section)
-- Modify: `docs/deploy/` runbook (cloud rollout: backup, `supabase db push`, check counts before and after)
+- Modify: `docs/decisions.md` (decision #65: certificates and courses are separate catalogues; two kinds of certificate; the member tracks the certificate, the course studied is optional or implied), `docs/design-system.md`, `docs/superpowers/specs/2026-09-26-certtracker-design.md` (data model section)
+- Modify: `docs/deploy/` runbook (cloud rollout: backup, `supabase db push`, counts of certificates, courses and records before and after)
 
 - [ ] **Step 1:** Write the docs and the rollout steps.
 - [ ] **Step 2:** Full gate from Global Constraints, e2e twice.
