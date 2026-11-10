@@ -169,7 +169,8 @@ test.describe("member import", () => {
     await expect(dialog.getByText('Team "Nowhere" does not exist')).toBeVisible();
     await expect(dialog.getByText("Already a member")).toBeVisible();
     await dialog.getByRole("button", { name: "Import 2 members" }).click();
-    await expect(page.getByText("Imported 2 members.")).toBeVisible();
+    await expect(dialog.getByText("Imported 2 members.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
     await expect(page.getByRole("cell", { name: a })).toBeVisible();
     await expect(page.getByRole("cell", { name: b })).toBeVisible();
   });
@@ -200,8 +201,9 @@ test.describe("member import", () => {
     await page.getByRole("button", { name: "Import members" }).click();
     let dialog = page.getByRole("dialog");
     await dialog.locator('input[type="file"]').setInputFiles(csvFile([`Twice,${a},Team Cloud,`]));
-    await dialog.getByRole("button", { name: "Import 1 members" }).click();
-    await expect(page.getByText("Imported 1 members.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Import 1 member" }).click();
+    await expect(dialog.getByText("Imported 1 member.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Close", exact: true }).first().click();
     await expect(dialog).toHaveCount(0);
     await page.getByRole("button", { name: "Import members" }).click();
     dialog = page.getByRole("dialog");

@@ -2,10 +2,10 @@
 
 import { Download } from "lucide-react";
 import { useState, useTransition } from "react";
-import { toast } from "sonner";
 import { FileDropzone } from "@/components/file-dropzone";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { pluralize } from "@/lib/plural";
 import { MAX_IMPORT_BYTES } from "@/features/import/clean";
 import { importMembers, previewMemberImport } from "@/features/members/import-actions";
 import { ImportPreviewTable } from "@/features/members/components/import-preview-table";
@@ -17,22 +17,35 @@ export function ImportMembersDialog() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<number | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function reset() {
     setFile(null);
     setPreview(null);
     setError(null);
+    setDone(null);
+    setStale(false);
   }
 
   function choose(next: File | null) {
     reset();
     if (!next) return;
     setFile(next);
+    runPreview(next);
+  }
+
+  function runPreview(next: File) {
+    setError(null);
+    setStale(false);
+    setStatus("Reading the file…");
     const formData = new FormData();
     formData.set("file", next);
     startTransition(async () => {
       const result = await previewMemberImport(formData);
+      setStatus(null);
       if (result.ok) setPreview(result.data);
       else setError(result.error);
     });
@@ -42,12 +55,19 @@ export function ImportMembersDialog() {
     if (!file) return;
     const formData = new FormData();
     formData.set("file", file);
+    setError(null);
+    setStatus("Importing…");
     startTransition(async () => {
       const result = await importMembers(formData);
-      if (!result.ok) return setError(result.error);
-      toast.success(`Imported ${result.data.created} members.`);
-      setOpen(false);
-      reset();
+      setStatus(null);
+      if (!result.ok) {
+        setError(result.error);
+        setStale(result.error.endsWith("Preview again."));
+        return;
+      }
+      setPreview(null);
+      setFile(null);
+      setDone(result.data.created);
     });
   }
 
@@ -66,12 +86,17 @@ export function ImportMembersDialog() {
             </a>
           </DialogDescription>
         </DialogHeader>
-        {preview ? (
-          <>
-            <p className="text-body">{`${preview.counts.create} to create, ${preview.counts.skip} skipped, ${preview.counts.error} with errors`}</p>
-            <ImportPreviewTable rows={preview.rows} />
-          </>
-        ) : (
+        <div aria-live="polite" className="flex flex-col gap-4">
+          {done !== null && <p className="text-body">{`Imported ${pluralize(done, "member")}.`}</p>}
+          {preview && (
+            <>
+              <p className="text-body">{`${preview.counts.create} to create, ${preview.counts.skip} skipped, ${preview.counts.error} with errors`}</p>
+              <ImportPreviewTable rows={preview.rows} />
+            </>
+          )}
+          {status && <p className="text-body text-muted-foreground">{status}</p>}
+        </div>
+        {done === null && !preview && (
           <FileDropzone
             id="members-import-file"
             file={file}
@@ -86,8 +111,10 @@ export function ImportMembersDialog() {
         )}
         {error && <p role="alert" className="text-body text-destructive">{error}</p>}
         <DialogFooter>
-          {(preview || error) && <Button variant="outline" disabled={pending} onClick={reset}>Choose another file</Button>}
-          {preview && <Button disabled={pending || create === 0} onClick={confirm}>{`Import ${create} members`}</Button>}
+          {done !== null && <Button onClick={() => { setOpen(false); reset(); }}>Close</Button>}
+          {done === null && (preview || error) && <Button variant="outline" disabled={pending} onClick={reset}>Choose another file</Button>}
+          {stale && file && <Button disabled={pending} onClick={() => runPreview(file)}>Preview again</Button>}
+          {preview && !stale && <Button disabled={pending || create === 0} onClick={confirm}>{`Import ${pluralize(create, "member")}`}</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
