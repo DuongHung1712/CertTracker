@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { loginSchema, setPasswordSchema } from "@/features/auth/schema";
+import { changePasswordSchema, loginSchema, setPasswordSchema } from "@/features/auth/schema";
 
 describe("loginSchema", () => {
   it("accepts a valid email and password and trims the email", () => {
@@ -44,6 +44,25 @@ describe("setPasswordSchema", () => {
 
   it("rejects two different passwords on the confirm field", () => {
     const result = setPasswordSchema.safeParse({ ...valid, confirmPassword: "something-else" });
+    expect(result.error?.issues[0]?.message).toBe("The two passwords do not match");
+    expect(result.error?.issues[0]?.path).toEqual(["confirmPassword"]);
+  });
+});
+
+describe("changePasswordSchema", () => {
+  const valid = { currentPassword: "old-secret", password: "long-enough", confirmPassword: "long-enough" };
+
+  it("accepts a valid triple", () => {
+    expect(changePasswordSchema.safeParse(valid).success).toBe(true);
+  });
+
+  it("rejects an empty current password", () => {
+    const result = changePasswordSchema.safeParse({ ...valid, currentPassword: "" });
+    expect(result.error?.issues[0]?.message).toBe("Enter your current password");
+  });
+
+  it("rejects two different passwords on the confirm field", () => {
+    const result = changePasswordSchema.safeParse({ ...valid, confirmPassword: "something-else" });
     expect(result.error?.issues[0]?.message).toBe("The two passwords do not match");
     expect(result.error?.issues[0]?.path).toEqual(["confirmPassword"]);
   });

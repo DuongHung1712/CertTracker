@@ -1,8 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { loginSchema, setPasswordSchema } from "@/features/auth/schema";
-import { err, type Result } from "@/lib/result";
+import { getCurrentUser } from "@/features/auth/queries";
+import { changePasswordSchema, loginSchema, setPasswordSchema } from "@/features/auth/schema";
+import { err, ok, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
 // Returns `Result | null` so it matches useActionState's `null` initial state.
@@ -56,4 +57,29 @@ export async function setPassword(_prev: Result<null> | null, formData: FormData
   if (error) return err("We could not save that password. Ask your admin for a new link, then choose a different one.");
 
   redirect("/login?passwordSet=1");
+}
+
+/** Changes the password of the signed-in user after re-checking the current one. Never redirects. */
+export async function changePassword(_prev: Result<null> | null, formData: FormData): Promise<Result<null> | null> {
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Check the form and try again.");
+
+  const user = await getCurrentUser();
+  if (!user) return err("Sign in again to change your password.");
+
+  const supabase = await createClient();
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: parsed.data.currentPassword,
+  });
+  if (verifyError) return err("The current password is not correct.");
+
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+  if (error) return err("We could not save that password. Choose a different one.");
+
+  return ok(null);
 }
