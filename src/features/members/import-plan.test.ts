@@ -86,4 +86,64 @@ describe("planMemberImport", () => {
     expect(rows).toHaveLength(3);
     expect(counts).toEqual({ create: 1, skip: 1, error: 1 });
   });
+
+  it("skips an existing member whatever the other cells hold", () => {
+    const [row] = plan([[null, "an@certtracker.test", "Nowhere", "Nobody"]]).rows;
+    expect(row).toMatchObject({ action: "skip", messages: [] });
+  });
+
+  it("marks all three rows that share an email", () => {
+    const { rows } = plan([
+      ["A", "x@certtracker.test"],
+      ["B", "x@certtracker.test"],
+      ["C", "X@certtracker.test"],
+    ]);
+    expect(rows.map((r) => r.action)).toEqual(["error", "error", "error"]);
+  });
+
+  it("lets a duplicate win over skip for an existing email", () => {
+    const { rows } = plan([
+      ["A", "an@certtracker.test"],
+      ["B", "an@certtracker.test"],
+    ]);
+    expect(rows.map((r) => r.action)).toEqual(["error", "error"]);
+  });
+
+  it("reads a number as team text and a boolean as a name", () => {
+    const [row] = plan([[true, "n@certtracker.test", 5, null]]).rows;
+    expect(row).toMatchObject({ fullName: "true", action: "error", messages: ['Team "5" does not exist'] });
+  });
+
+  describe("ambiguous names", () => {
+    const run = (teams: { id: string; name: string }[], careerRoles: { id: string; name: string }[], team: string | null, role: string | null) => {
+      const result = planMemberImport([HEADER, ["Z", "z@certtracker.test", team, role]], { memberEmails: [], teams, careerRoles });
+      if (!result.ok) throw new Error(result.error);
+      return result.value.rows[0]!;
+    };
+
+    it("errors when two teams share a name", () => {
+      const row = run([{ id: "a", name: "Team Cloud" }, { id: "b", name: "Team Cloud" }], [], "Team Cloud", null);
+      expect(row).toMatchObject({ action: "error", teamId: null, messages: ['Team "Team Cloud" matches more than one team'] });
+    });
+
+    it("prefers the exact name over a case variant", () => {
+      const row = run([{ id: "a", name: "Team Cloud" }, { id: "b", name: "team cloud" }], [], "Team Cloud", null);
+      expect(row).toMatchObject({ action: "create", teamId: "a" });
+    });
+
+    it("errors when two folded names match and none is exact", () => {
+      const row = run([{ id: "a", name: "Team Hà" }, { id: "b", name: "Team Ha" }], [], "team ha", null);
+      expect(row.messages).toEqual(['Team "team ha" matches more than one team']);
+    });
+
+    it("prefers the exact career role", () => {
+      const row = run([], [{ id: "a", name: "Developer" }, { id: "b", name: "developer" }], null, "developer");
+      expect(row).toMatchObject({ action: "create", careerRoleId: "b" });
+    });
+
+    it("errors on an ambiguous career role", () => {
+      const row = run([], [{ id: "a", name: "Developer" }, { id: "b", name: "developer" }], null, "DEVELOPER");
+      expect(row.messages).toEqual(['Career role "DEVELOPER" matches more than one career role']);
+    });
+  });
 });

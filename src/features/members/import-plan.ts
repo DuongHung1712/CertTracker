@@ -49,26 +49,44 @@ function findHeader(rows: Cell[][]): { index: number; columns: Columns } | null 
   return null;
 }
 
-const byFoldedName = (items: Named[]) => new Map(items.map((item) => [foldText(item.name), item.id]));
+type Match = { id: string | null; ambiguous: boolean };
 
-function planRow(cells: Cell[], line: number, columns: Columns, known: Set<string>, teams: Map<string, string>, roles: Map<string, string>): MemberImportRow {
+/** Exact trimmed name first, then the accent- and case-folded name; never picks an id when several candidates remain. */
+function resolveName(items: Named[], name: string): Match {
+  const exact = items.filter((item) => item.name.trim() === name);
+  const candidates = exact.length > 0 ? exact : items.filter((item) => foldText(item.name) === foldText(name));
+  return { id: candidates.length === 1 ? candidates[0]!.id : null, ambiguous: candidates.length > 1 };
+}
+
+type RowContext = { known: Set<string>; teams: Named[]; careerRoles: Named[] };
+
+function problem(match: Match, label: string, name: string, plural: string): string | null {
+  if (match.ambiguous) return `${label} "${name}" matches more than one ${plural}`;
+  return match.id === null ? `${label} "${name}" does not exist` : null;
+}
+
+function planRow(cells: Cell[], line: number, columns: Columns, context: RowContext): MemberImportRow {
   const at = (field: Field) => (columns[field] === undefined ? null : cellText(cells[columns[field]]));
-  const messages: string[] = [];
   const fullName = at("fullName");
   const teamName = at("team");
   const careerRoleName = at("careerRole");
-  if (fullName === null) messages.push("Full name is missing");
-
   const email = normalizeEmail(columns.email === undefined ? null : cells[columns.email]);
+  const base = { line, fullName, email: email.ok ? email.value : at("email"), teamName, careerRoleName, teamId: null, careerRoleId: null };
+
+  // Skip uses none of the other cells (decision #21).
+  if (email.ok && context.known.has(email.value)) return { ...base, action: "skip", messages: [] };
+
+  const messages: string[] = [];
+  if (fullName === null) messages.push("Full name is missing");
   if (!email.ok) messages.push(email.error);
+  const team = teamName === null ? null : resolveName(context.teams, teamName);
+  const role = careerRoleName === null ? null : resolveName(context.careerRoles, careerRoleName);
+  const teamProblem = team && problem(team, "Team", teamName!, "team");
+  const roleProblem = role && problem(role, "Career role", careerRoleName!, "career role");
+  if (teamProblem) messages.push(teamProblem);
+  if (roleProblem) messages.push(roleProblem);
 
-  const teamId = teamName === null ? null : (teams.get(foldText(teamName)) ?? null);
-  if (teamName !== null && teamId === null) messages.push(`Team "${teamName}" does not exist`);
-  const careerRoleId = careerRoleName === null ? null : (roles.get(foldText(careerRoleName)) ?? null);
-  if (careerRoleName !== null && careerRoleId === null) messages.push(`Career role "${careerRoleName}" does not exist`);
-
-  const action = messages.length > 0 ? "error" : known.has(email.ok ? email.value : "") ? "skip" : "create";
-  return { line, fullName, email: email.ok ? email.value : at("email"), teamName, careerRoleName, action, messages, teamId, careerRoleId };
+  return { ...base, action: messages.length > 0 ? "error" : "create", messages, teamId: team?.id ?? null, careerRoleId: role?.id ?? null };
 }
 
 /** An email shared by several rows makes every one of them an error. */
@@ -76,7 +94,7 @@ function markDuplicateEmails(rows: MemberImportRow[]) {
   const seen = new Map<string, number>();
   for (const row of rows) if (row.email) seen.set(row.email, (seen.get(row.email) ?? 0) + 1);
   for (const row of rows) {
-    if (row.email && (seen.get(row.email) ?? 0) > 1 && !row.messages.includes(DUPLICATE_MESSAGE)) {
+    if (row.email && (seen.get(row.email) ?? 0) > 1) {
       row.action = "error";
       row.messages.push(DUPLICATE_MESSAGE);
     }
@@ -97,9 +115,8 @@ export function planMemberImport(
   if (data.length > MAX_MEMBER_IMPORT_ROWS) return fail("The file has more than 500 rows. Split it and import it in parts.");
 
   const known = new Set(lookups.memberEmails.map((email) => email.trim().toLowerCase()));
-  const teams = byFoldedName(lookups.teams);
-  const roles = byFoldedName(lookups.careerRoles);
-  const planned = data.map(({ cells, line }) => planRow(cells, line, header.columns, known, teams, roles));
+  const context = { known, teams: lookups.teams, careerRoles: lookups.careerRoles };
+  const planned = data.map(({ cells, line }) => planRow(cells, line, header.columns, context));
   markDuplicateEmails(planned);
 
   const counts = { create: 0, skip: 0, error: 0 };
