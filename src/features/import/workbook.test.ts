@@ -433,10 +433,21 @@ describe("readFirstSheet", () => {
   });
 
   it("strips a UTF-8 BOM and keeps Vietnamese accents", () => {
-    const result = readFirstSheet(text("﻿Họ tên,Email\nNguyễn Thị Ánh,anh@x.test"));
+    const result = readFirstSheet(text("\uFEFFHọ tên,Email\nNguyễn Thị Ánh,anh@x.test"));
     if (!result.ok) throw new Error(result.error);
     expect(result.value.rows[0]?.[0]).toBe("Họ tên");
     expect(result.value.rows[1]?.[0]).toBe("Nguyễn Thị Ánh");
+  });
+
+  it("rejects a CSV that is not UTF-8", () => {
+    const result = readFirstSheet(new Uint8Array([0x4e, 0x67, 0x75, 0x79, 0xea, 0x6e]));
+    expect(result).toEqual({ ok: false, error: "This CSV is not saved as UTF-8. In Excel, choose Save As → CSV UTF-8 (Comma delimited), then try again." });
+  });
+
+  it("keeps CSV cells as typed", () => {
+    const result = readFirstSheet(text("Date,Code\n01/02/2025,0012"));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[1]).toEqual(["01/02/2025", "0012"]);
   });
 
   it("reads an xlsx", () => {

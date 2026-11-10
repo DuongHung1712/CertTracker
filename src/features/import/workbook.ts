@@ -14,7 +14,7 @@ export function isExcelFile(bytes: Uint8Array): boolean {
 
 /** Total cells fillMergedCells may copy. A real sheet is ~2000 rows x ~15 columns, so this is generous for honest files. */
 const MAX_MERGED_CELLS = 300_000;
-/** Wider than any real import sheet (measured on the ACTUAL used range, not the declared dimension). Such a sheet is skipped. */
+/** Wider than any real import sheet (measured on the ACTUAL used range, not the declared dimension). The record import skips such a sheet; readFirstSheet returns an error. */
 const MAX_IMPORT_COLUMNS = 200;
 /**
  * Raw rows read from a sheet (sheetRows), blank or not. Excel writes styled-but-empty cells and a `<dimension>` far below
@@ -94,6 +94,7 @@ export function fillMergedCells(sheet: XLSX.WorkSheet, budget: { remaining: numb
 /** Decompressed-size ceiling for a zip (real xlsx files are well under 10 MB inflated). */
 const MAX_UNCOMPRESSED_BYTES = 50 * 1024 * 1024;
 const TOO_LARGE = "The Excel file is too large once unpacked (50 MB at most). Split it and import it in parts.";
+const NOT_UTF8 = "This CSV is not saved as UTF-8. In Excel, choose Save As → CSV UTF-8 (Comma delimited), then try again.";
 const BAD_ZIP = "The Excel file is not valid (its zip structure is damaged).";
 
 /**
@@ -180,9 +181,18 @@ function readBook(bytes: Uint8Array): Cleaned<{ book: XLSX.WorkBook; date1904: b
     cellStyles: false,
   };
   try {
-    const book = isExcelFile(bytes) || (bytes[0] === 0x50 && bytes[1] === 0x4b)
-      ? XLSX.read(bytes, { type: "array", ...options })
-      : XLSX.read(new TextDecoder("utf-8").decode(bytes).replace(/^﻿/, ""), { type: "string", ...options });
+    let book: XLSX.WorkBook;
+    if (isExcelFile(bytes) || (bytes[0] === 0x50 && bytes[1] === 0x4b)) {
+      book = XLSX.read(bytes, { type: "array", ...options });
+    } else {
+      let text: string;
+      try {
+        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/^\uFEFF/, "");
+      } catch {
+        return { ok: false, error: NOT_UTF8 };
+      }
+      book = XLSX.read(text, { type: "string", raw: true, ...options }); // raw: cells stay the text the user typed
+    }
     return { ok: true, value: { book, date1904: Boolean(book.Workbook?.WBProps?.date1904) } };
   } catch {
     return { ok: false, error: "Could not read the file. It may be damaged or password protected." };
