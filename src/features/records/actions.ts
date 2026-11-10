@@ -50,12 +50,16 @@ export async function createRecord(input: RecordInput): Promise<Result<{ id: str
 }
 
 /** `member_id` is never updated: a record belongs to one member for life (delete and re-create to move it). */
-export async function updateRecord(input: RecordInput & { id: string }): Promise<Result<null>> {
+export async function updateRecord(
+  input: Omit<RecordInput, "notes"> & { id: string; notes?: RecordInput["notes"] },
+): Promise<Result<null>> {
+  // The member form has no Notes; the schema would turn the missing value into null and wipe the stored notes.
+  const keepNotes = input.notes === undefined;
   const parsed = recordSchema.safeExtend({ id: idSchema.shape.id }).safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, ...data } = parsed.data;
   const supabase = await createClient();
-  const { data: rows, error } = await supabase.from("training_records").update(toRow(data)).eq("id", id).select("id");
+  const { data: rows, error } = await supabase.from("training_records").update(keepNotes ? { ...toRow(data), notes: undefined } : toRow(data)).eq("id", id).select("id");
   if (error) return err(mapPostgresError(error, MESSAGES));
   const guard = assertAffected(rows);
   if (guard) return guard;

@@ -73,4 +73,22 @@ describe("courseSchema", () => {
   it("rejects an invalid url", () => {
     expect(courseSchema.safeParse({ ...base, url: "not a url" }).success).toBe(false);
   });
+
+  it("refund conditions are trimmed and blank becomes null", () => {
+    expect(courseSchema.parse({ ...base, refundConditions: "  " }).refundConditions).toBeNull();
+    expect(courseSchema.parse({ ...base, refundConditions: "  Pass within 6 months " }).refundConditions).toBe(
+      "Pass within 6 months",
+    );
+  });
+
+  it("refund conditions are dropped when the course is not refundable", () => {
+    const result = courseSchema.parse({ ...base, refundable: false, refundConditions: "Pass within 6 months" });
+    expect(result.refundConditions).toBeNull();
+  });
+
+  it("refund conditions longer than 1000 characters are rejected", () => {
+    const result = courseSchema.safeParse({ ...base, refundConditions: "x".repeat(1001) });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toBe("Refund conditions can have at most 1000 characters");
+  });
 });

@@ -16,6 +16,7 @@ import {
   ChartDemo,
   ComboboxDemo,
   ConfirmDemo,
+  DateFieldDemo,
   DashboardRedesignDemo,
   LoadingTableDemo,
   TableDemo,
@@ -159,6 +160,10 @@ export default function DesignPage() {
           <Input id="design-email" type="email" placeholder="name@company.com" />
           <p className="text-caption text-muted-foreground">Use your company email.</p>
         </div>
+      </Section>
+
+      <Section title="Date field">
+        <DateFieldDemo />
       </Section>
 
       <Section title="Searchable select">

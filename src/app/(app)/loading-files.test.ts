@@ -22,7 +22,7 @@ describe("loading skeletons", () => {
 
   it("finds the app routes (guards against the walk silently matching nothing)", () => {
     expect(routes).toEqual(
-      expect.arrayContaining(["dashboard", "courses", "import", "import/[batchId]", "me", "members", "org", "records", "settings"]),
+      expect.arrayContaining(["dashboard", "courses", "import", "import/[batchId]", "me", "members", "org", "profile", "records", "settings"]),
     );
   });
 

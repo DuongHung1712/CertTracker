@@ -119,7 +119,7 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | Group | Component | Location | Main behaviour | Status |
 |---|---|---|---|---|
 | App shell | `AppSidebar` | `components/app-shell/` | shadcn `sidebar`; collapses to an icon column; a drawer below 1024px; items filtered by role (§4.5) | ✓ |
-| | `Topbar`, `UserMenu` | `components/app-shell/` | Breadcrumb on the left; user menu on the right (email, `RoleBadge`, Sign out) | ✓ |
+| | `Topbar`, `UserMenu` | `components/app-shell/` | Breadcrumb on the left; user menu on the right (email, `RoleBadge`, Profile, Theme, Sign out) | ✓ |
 | | `PageHeader` | `components/app-shell/` | `page-title`, a one-line description, an action-button area on the right | ✓ |
 | | `Logo`, `LogoMark` | `components/app-shell/logo.tsx` | Monogram or seal mark, optionally with the "CertTracker" wordmark (`showText`); used in the sidebar, favicon `src/app/icon.svg`; shown on `/design` | ✓ |
 | Data | `DataTable` | `components/data/` | TanStack Table v8; compact; sorting (by default with the Vietnamese collation via `Intl.Collator`, because names are Vietnamese; a column declares its own `sortingFn` when "sorted" means something else, e.g. expiry by days left, not by the status string); 25-row pagination; empty / loading (5-row skeleton, respects `prefers-reduced-motion`) / error states | ✓ (multi-row selection: with the first bulk action) |
@@ -133,8 +133,9 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `MemberCode` | `components/status/` | `M001` in the mono font, `muted-foreground` | ✓ |
 | Form | `Field`, `FieldLabel`, `FieldError`…, `Input`, `Textarea`, `Checkbox`, `Switch` | shadcn `field` | Label above the input; error below it in `destructive`; shares the Zod schema with the server | ✓ (combined with React Hook Form in week 2) |
 | | `EntityCombobox` | `components/entity-combobox.tsx` | Searchable select: member, course, team | ✓ |
-| | Date input | `Input` | Typed dd/mm/yyyy, checked with `toIsoDate` (decisions #16) | ✓ |
-| | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop an image or PDF as evidence | ✓ |
+| | `DateField` | `components/date-field.tsx` | Label + one text input (`dd/mm/yyyy`, numeric keypad) that inserts the slashes while typing (`formatDateInput`) + a calendar button (`CalendarDays`, `aria-label` "Choose <label> from calendar") that opens the browser's date picker through a hidden `type="date"` input; optional `max` (`YYYY-MM-DD`) limits the picker only; checked with `toIsoDate` (decisions #16); slashes the user typed are kept, and a day or month of 1-9 is padded once the next part starts; `required` adds the red star and `aria-required` | ✓ |
+| | `RequiredMark` | `components/required-mark.tsx` | A red `*` (`text-destructive`, `aria-hidden`) after a required field's label; the control also gets `aria-required` | ✓ |
+| | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop one file; `accept` takes MIME types or extensions (`.xlsx,.csv`), `hint` and `wrongTypeMessage` override the evidence wording. Evidence by default; also the member import dialog | ✓ |
 | Navigation | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `components/ui/tabs.tsx` | shadcn `tabs` (Base UI); keyboard navigation (arrows, Home, End); horizontal scrollable strip on mobile | ✓ |
 | Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
 | | `ConfirmDialog` | `components/confirm-dialog.tsx` | The title names the object; the description states the consequence; the `destructive` confirm button names the exact action | ✓ |
@@ -167,7 +168,15 @@ The first column identifies the row (code or name), the last column is the "⋯"
 | An object with child data (a member and their certificates) | Detail page `/members/[id]` |
 | Quick view / quick edit of one record while keeping the table in view | `Sheet` on the right |
 
+Course form (`Sheet`): the estimated study time is labelled "Duration (hours)". The "Refund conditions" `Textarea` appears only while "Refundable" is on; turning it off clears the text. The courses table shows the conditions truncated under the "Yes" badge, with the full text in a `Tooltip`.
+
 The save button sits at the end of the form, on the right; "Cancel" is the secondary button to its left. While saving, the button reads "Saving…" and is disabled.
+
+### 4.2a Fields that depend on a status
+
+When one field (a status) decides which other inputs make sense, render only the inputs that apply; do not hide the rest with CSS. A hidden input would still be validated and could block Save. Keep the rules as a pure module next to the schema (`features/records/status-fields.ts`: `visibleFields(status)` for what to show, `valuesOnStatusChange(next, current)` for the value to set and the fields to empty). On change, apply the value, empty the listed fields and clear their errors (`form.clearErrors`). The schema and the submitted payload do not change.
+
+In the certificate form, mark the required fields with `RequiredMark` after the label text and `aria-required` on the control, and put one `* Required` line (caption, `muted-foreground`) at the top of the form. Optional fields get no mark and no "(optional)" text. Progress is required when In progress and Issue date when Completed. Notes is shown to Admin and Manager only (a member's save leaves stored notes untouched), and the Evidence upload only when the status is Completed. A field whose rule is not obvious gets a `FieldDescription` (Issue date: the expiry date is worked out from the course). The form has `noValidate`, so the schema shows every error.
 
 ### 4.3 Destructive actions
 
@@ -210,6 +219,8 @@ When the database **blocks** the delete (for example a course that certificates 
 ¹ Shown only when the account is linked to a member (`profiles.member_id` is not null).
 
 Hiding is only UX; every permission is still enforced by RLS.
+
+`/profile` opens from the user menu ("Profile"), not the sidebar: `PageHeader`, Account card (the name edits inline with a pencil button, `NameField`; the email is read-only), Your scope (managers only), My career (linked accounts only), Change password. Each region has its own `SectionError`.
 
 ### 4.6 Admin Dashboard
 - **Layout:** header, then the **Overview** (3 KPI cards and a stat strip) at full width, then three independent columns (`lg:grid-cols-12`: Left `lg:col-span-3`, Centre `lg:col-span-6`, Right `lg:col-span-3`, all `gap-6`), then **Individual ranking** at full width. In the markup the Centre column comes first, then Right, then Left; from `lg` up `lg:order-2/3/1` shows them as Left, Centre, Right. On a phone the order is Overview, Explorer, Needs attention, Planned features, profile, Quick actions, chart, ranking. `e2e/column-heights.spec.ts` guards the balance at 1440px: the tallest and the shortest column may differ by at most 350px (measured with the seed: Left 555, Centre 897, Right 808, a gap of 342px).

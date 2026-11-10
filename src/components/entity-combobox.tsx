@@ -32,6 +32,7 @@ export function EntityCombobox({
   disabled,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
+  "aria-required": ariaRequired,
 }: {
   id: string;
   value: string;
@@ -42,6 +43,7 @@ export function EntityCombobox({
   disabled?: boolean;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
+  "aria-required"?: boolean;
 }) {
   // Base UI resolves the displayed text from the selected *item*, so pass the option object
   // rather than the id — otherwise the closed control would show the raw id.
@@ -64,6 +66,7 @@ export function EntityCombobox({
         disabled={disabled}
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedBy}
+        aria-required={ariaRequired}
         className="w-full"
       />
       <ComboboxContent>

@@ -36,6 +36,10 @@ export const courseFields = z.object({
   costCurrency: emptyToNull(z.enum(CURRENCIES)),
   estHours: emptyToNull(z.coerce.number().int().positive("Study hours must be greater than 0")),
   url: emptyToNull(z.string().trim().url("Enter a valid link")),
+  refundConditions: z.preprocess(
+    (value) => (value === undefined || (typeof value === "string" && value.trim() === "") ? null : value),
+    z.string().trim().max(1000, "Refund conditions can have at most 1000 characters").nullable(),
+  ),
 });
 
 /** A cost needs a currency and a currency needs a cost (the database enforces the same with a check constraint). */
@@ -50,6 +54,14 @@ export function requireCostWithCurrency(
   }
 }
 
-export const courseSchema = courseFields.superRefine(requireCostWithCurrency);
-export const courseWithIdSchema = courseFields.extend({ id: idSchema.shape.id }).superRefine(requireCostWithCurrency);
+/** Conditions only make sense for a refundable course, so they are dropped otherwise. */
+function dropConditionsUnlessRefundable<T extends { refundable: boolean; refundConditions: string | null }>(value: T): T {
+  return value.refundable ? value : { ...value, refundConditions: null };
+}
+
+export const courseSchema = courseFields.superRefine(requireCostWithCurrency).transform(dropConditionsUnlessRefundable);
+export const courseWithIdSchema = courseFields
+  .extend({ id: idSchema.shape.id })
+  .superRefine(requireCostWithCurrency)
+  .transform(dropConditionsUnlessRefundable);
 export type CourseInput = z.infer<typeof courseSchema>;

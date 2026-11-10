@@ -11,6 +11,7 @@ import { FilterBar } from "@/components/data/filter-bar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { deleteCourse } from "@/features/courses/actions";
 import { CourseSheet } from "@/features/courses/components/course-sheet";
 import { formatMoney, type Currency } from "@/lib/money";
@@ -32,6 +33,7 @@ type Course = {
   costCurrency: Currency | null;
   estHours: number | null;
   url: string | null;
+  refundConditions: string | null;
 };
 type Option = { id: string; name: string };
 
@@ -77,9 +79,19 @@ export function CoursesTable({
       header: "Refundable",
       cell: ({ row }) =>
         row.original.refundable ? (
-          <Badge variant="secondary" className="rounded-sm">
-            Yes
-          </Badge>
+          <div className="flex max-w-56 flex-col items-start gap-0.5">
+            <Badge variant="secondary" className="rounded-sm">
+              Yes
+            </Badge>
+            {row.original.refundConditions && (
+              <Tooltip>
+                <TooltipTrigger render={<span className="max-w-full truncate text-caption text-muted-foreground" />}>
+                  {row.original.refundConditions}
+                </TooltipTrigger>
+                <TooltipContent>{row.original.refundConditions}</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         ) : (
           <span className="text-caption text-muted-foreground">No</span>
         ),
@@ -93,7 +105,7 @@ export function CoursesTable({
     },
     {
       accessorKey: "estHours",
-      header: "Study hours",
+      header: "Duration (hours)",
       cell: ({ row }) => row.original.estHours ?? "—",
       meta: { align: "right" },
     },
@@ -206,6 +218,7 @@ export function CoursesTable({
                     costCurrency: editing.costCurrency,
                     estHours: editing.estHours,
                     url: editing.url,
+                    refundConditions: editing.refundConditions,
                   }
                 : null
             }

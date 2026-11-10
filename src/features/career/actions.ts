@@ -34,7 +34,7 @@ function roleError(error: DbError, messages: { duplicate?: string; inUse?: strin
 function revalidateCareerPages() {
   revalidatePath("/settings");
   revalidatePath("/members");
-  revalidatePath("/me");
+  revalidatePath("/profile");
 }
 
 /** A member sets only their own career start, through `set_my_career_start` (the database enforces "own row only"). */

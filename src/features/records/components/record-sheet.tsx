@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { DateField } from "@/components/date-field";
 import { EntityCombobox, type ComboboxOption } from "@/components/entity-combobox";
 import { FileDropzone } from "@/components/file-dropzone";
+import { RequiredMark } from "@/components/required-mark";
 import { RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -24,6 +26,8 @@ import {
   REFUND_STATUSES,
   type RecordInput,
 } from "@/features/records/schema";
+import { valuesOnStatusChange, visibleFields } from "@/features/records/status-fields";
+import { todayVn } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import { EVIDENCE_ACCEPT, EVIDENCE_WRONG_TYPE_MESSAGE, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
 
@@ -118,7 +122,7 @@ export function RecordSheet({
 
     let recordId: string;
     if (editing) {
-      const result = await updateRecord({ id: editing.id, ...input });
+      const result = await updateRecord({ id: editing.id, ...input, ...(showCompanyFields ? {} : { notes: undefined }) });
       if (!result.ok) {
         form.setError("root", { message: result.error });
         return;
@@ -134,7 +138,7 @@ export function RecordSheet({
     }
 
     let uploadError: string | null = null;
-    if (file) {
+    if (file && input.status === "done") {
       const body = new FormData();
       body.set("recordId", recordId);
       body.set("file", file);
@@ -166,6 +170,8 @@ export function RecordSheet({
   }
 
   const errors = form.formState.errors;
+  const status = useWatch({ control: form.control, name: "status" });
+  const shown = visibleFields(status);
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -173,10 +179,18 @@ export function RecordSheet({
         <SheetHeader>
           <SheetTitle className="text-section-title">{editing ? "Edit certificate" : "Add certificate"}</SheetTitle>
         </SheetHeader>
-        <form className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <form
+          noValidate
+          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
+          onSubmit={form.handleSubmit(onSubmit)}
+        >
+          <p className="text-caption text-muted-foreground">* Required</p>
           {!fixedMemberId && (
             <Field>
-              <FieldLabel htmlFor="record-member">Member</FieldLabel>
+              <FieldLabel htmlFor="record-member">
+                Member
+                <RequiredMark />
+              </FieldLabel>
               <Controller
                 control={form.control}
                 name="memberId"
@@ -190,6 +204,7 @@ export function RecordSheet({
                     emptyText="No members found"
                     disabled={!!editing}
                     aria-invalid={!!errors.memberId}
+                    aria-required
                   />
                 )}
               />
@@ -197,7 +212,10 @@ export function RecordSheet({
             </Field>
           )}
           <Field>
-            <FieldLabel htmlFor="record-course">Course</FieldLabel>
+            <FieldLabel htmlFor="record-course">
+              Course
+              <RequiredMark />
+            </FieldLabel>
             <Controller
               control={form.control}
               name="courseId"
@@ -210,6 +228,7 @@ export function RecordSheet({
                   placeholder="Choose a course"
                   emptyText="No courses found"
                   aria-invalid={!!errors.courseId}
+                  aria-required
                   aria-describedby="record-course-hint"
                 />
               )}
@@ -218,7 +237,10 @@ export function RecordSheet({
             <FieldError errors={[errors.courseId]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-status">Status</FieldLabel>
+            <FieldLabel htmlFor="record-status">
+              Status
+              <RequiredMark />
+            </FieldLabel>
             <Controller
               control={form.control}
               name="status"
@@ -226,12 +248,20 @@ export function RecordSheet({
                 <Select
                   value={field.value}
                   onValueChange={(next) => {
+                    if (!next) return;
                     field.onChange(next);
-                    if (next === "done") form.setValue("progress", 100);
-                    if (next === "not_started") form.setValue("progress", 0);
+                    const change = valuesOnStatusChange(next, { progress: Number(form.getValues("progress")) });
+                    form.setValue("progress", change.progress);
+                    // Dirty, so a live update of the record cannot restore a value the user cleared.
+                    for (const name of change.clear) form.setValue(name, "", { shouldDirty: true });
+                    if (next !== "done") {
+                      setFile(null);
+                      setFileError(null);
+                    }
+                    form.clearErrors(["progress", ...change.clear]);
                   }}
                 >
-                  <SelectTrigger id="record-status" aria-invalid={!!errors.status}>
+                  <SelectTrigger id="record-status" aria-invalid={!!errors.status} aria-required>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the label. */}
                     <SelectValue placeholder="Choose a status">
                       {(value: (typeof RECORD_STATUSES)[number]) => RECORD_STATUS_LABEL[value] ?? "Choose a status"}
@@ -249,54 +279,84 @@ export function RecordSheet({
             />
             <FieldError errors={[errors.status]} />
           </Field>
-          <Field>
-            <FieldLabel htmlFor="record-progress">Progress (%)</FieldLabel>
-            <Input
-              id="record-progress"
-              type="number"
-              min={0}
-              max={100}
-              className="h-9"
-              {...form.register("progress")}
-              aria-invalid={!!errors.progress}
-            />
-            <FieldError errors={[errors.progress]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="record-planned">Planned exam date</FieldLabel>
-            <Input
-              id="record-planned"
-              placeholder="dd/mm/yyyy"
-              inputMode="numeric"
-              className="h-9"
-              {...form.register("plannedExamDate")}
-              aria-invalid={!!errors.plannedExamDate}
-            />
-            <FieldError errors={[errors.plannedExamDate]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="record-issued">Issue date</FieldLabel>
-            <Input
-              id="record-issued"
-              placeholder="dd/mm/yyyy"
-              inputMode="numeric"
-              className="h-9"
-              {...form.register("issuedDate")}
-              aria-invalid={!!errors.issuedDate}
-            />
-            <FieldError errors={[errors.issuedDate]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="record-url">Certificate link</FieldLabel>
-            <Input
-              id="record-url"
-              type="url"
-              className="h-9"
-              {...form.register("certificateUrl")}
-              aria-invalid={!!errors.certificateUrl}
-            />
-            <FieldError errors={[errors.certificateUrl]} />
-          </Field>
+          {shown.progress && (
+            <Field>
+              <FieldLabel htmlFor="record-progress">
+                Progress (%)
+                <RequiredMark />
+              </FieldLabel>
+              <Input
+                id="record-progress"
+                type="number"
+                min={0}
+                max={100}
+                className="h-9"
+                {...form.register("progress")}
+                aria-invalid={!!errors.progress}
+                aria-required
+              />
+              <FieldError errors={[errors.progress]} />
+            </Field>
+          )}
+          {shown.plannedExamDate && (
+            <Field>
+              <Controller
+                control={form.control}
+                name="plannedExamDate"
+                render={({ field }) => (
+                  <DateField
+                    id="record-planned"
+                    label="Planned exam date"
+                    name={field.name}
+                    value={String(field.value ?? "")}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    invalid={!!errors.plannedExamDate}
+                  />
+                )}
+              />
+              <FieldError errors={[errors.plannedExamDate]} />
+            </Field>
+          )}
+          {shown.issuedDate && (
+            <Field>
+              <Controller
+                control={form.control}
+                name="issuedDate"
+                render={({ field }) => (
+                  <DateField
+                    id="record-issued"
+                    label="Issue date"
+                    name={field.name}
+                    value={String(field.value ?? "")}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    max={todayVn()}
+                    invalid={!!errors.issuedDate}
+                    required
+                    describedBy="record-issued-hint"
+                  />
+                )}
+              />
+              <FieldDescription id="record-issued-hint">
+                The day the certificate was issued. The expiry date is worked out from the course.
+              </FieldDescription>
+              <FieldError errors={[errors.issuedDate]} />
+            </Field>
+          )}
+          {shown.certificateUrl && (
+            <Field>
+              <FieldLabel htmlFor="record-url">Certificate link</FieldLabel>
+              <Input
+                id="record-url"
+                type="url"
+                className="h-9"
+                {...form.register("certificateUrl")}
+                aria-invalid={!!errors.certificateUrl}
+              />
+              <FieldError errors={[errors.certificateUrl]} />
+            </Field>
+          )}
           {showCompanyFields && (
             <>
               <Field orientation="horizontal">
@@ -335,45 +395,49 @@ export function RecordSheet({
               </Field>
             </>
           )}
-          <Field>
-            <FieldLabel htmlFor="record-notes">Notes</FieldLabel>
-            <Textarea id="record-notes" {...form.register("notes")} aria-invalid={!!errors.notes} />
-            <FieldError errors={[errors.notes]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="record-evidence">Evidence</FieldLabel>
-            <FileDropzone
-              id="record-evidence"
-              file={file}
-              onChange={(next) => {
-                setFile(next);
-                setFileError(null);
-              }}
-              accept={EVIDENCE_ACCEPT}
-              maxBytes={MAX_EVIDENCE_BYTES}
-              onReject={setFileError}
-            />
-            {fileError && (
-              <p role="alert" className="text-caption text-destructive">
-                {fileError}
-              </p>
-            )}
-            {editing?.hasEvidence && (
-              <div className="flex items-center justify-between gap-2">
-                <a
-                  href={`/api/records/${editing.id}/evidence`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-body text-primary underline underline-offset-2"
-                >
-                  View current evidence
-                </a>
-                <Button type="button" variant="ghost" size="sm" disabled={removingEvidence} onClick={handleRemoveEvidence}>
-                  Remove evidence
-                </Button>
-              </div>
-            )}
-          </Field>
+          {showCompanyFields && (
+            <Field>
+              <FieldLabel htmlFor="record-notes">Notes</FieldLabel>
+              <Textarea id="record-notes" {...form.register("notes")} aria-invalid={!!errors.notes} />
+              <FieldError errors={[errors.notes]} />
+            </Field>
+          )}
+          {shown.evidence && (
+            <Field>
+              <FieldLabel htmlFor="record-evidence">Evidence</FieldLabel>
+              <FileDropzone
+                id="record-evidence"
+                file={file}
+                onChange={(next) => {
+                  setFile(next);
+                  setFileError(null);
+                }}
+                accept={EVIDENCE_ACCEPT}
+                maxBytes={MAX_EVIDENCE_BYTES}
+                onReject={setFileError}
+              />
+              {fileError && (
+                <p role="alert" className="text-caption text-destructive">
+                  {fileError}
+                </p>
+              )}
+              {editing?.hasEvidence && (
+                <div className="flex items-center justify-between gap-2">
+                  <a
+                    href={`/api/records/${editing.id}/evidence`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-body text-primary underline underline-offset-2"
+                  >
+                    View current evidence
+                  </a>
+                  <Button type="button" variant="ghost" size="sm" disabled={removingEvidence} onClick={handleRemoveEvidence}>
+                    Remove evidence
+                  </Button>
+                </div>
+              )}
+            </Field>
+          )}
           {errors.root && (
             <p role="alert" className="text-caption text-destructive">
               {errors.root.message}

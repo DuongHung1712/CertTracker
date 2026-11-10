@@ -17,7 +17,7 @@ test.afterAll(async () => {
 
 test("member sets when they started working and sees the YoE; the role is read-only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
-  await page.goto("/me");
+  await page.goto("/profile");
 
   await expect(page.getByTestId("career-role")).toHaveText("Not set");
   await expect(page.getByTestId("career-yoe")).toHaveText("Not set");
@@ -34,7 +34,7 @@ test("member sets when they started working and sees the YoE; the role is read-o
 
 test("member cannot save a career start in the future", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
-  await page.goto("/me");
+  await page.goto("/profile");
 
   await page.getByLabel("Year").fill(String(new Date().getFullYear() + 1));
   await page.getByRole("button", { name: "Save", exact: true }).click();

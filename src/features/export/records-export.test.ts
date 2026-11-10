@@ -117,10 +117,11 @@ describe("records export", () => {
     expect(lines[3]).toContain("Team Cloud,,,Azure AZ-900");
   });
 
-  it("puts Cost, Currency and Study hours right after Validity (months) and writes their values", () => {
+  it("puts Cost, Currency and Duration (hours) right after Validity (months) and writes their values", () => {
     const headers = EXPORT_COLUMNS.map((c) => c.header);
     const at = headers.indexOf("Validity (months)");
-    expect(headers.slice(at, at + 4)).toEqual(["Validity (months)", "Cost", "Currency", "Study hours"]);
+    expect(headers.slice(at, at + 4)).toEqual(["Validity (months)", "Cost", "Currency", "Duration (hours)"]);
+    expect(headers).not.toContain("Study hours");
     const lines = recordsToCsv(ROWS).split(CRLF);
     expect(lines[1]).toContain(",36,150,USD,40,");
     expect(lines[2]).toContain(",,3500000,VND,,");
