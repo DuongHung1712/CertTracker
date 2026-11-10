@@ -4,6 +4,38 @@ import { signInAsSeedAdmin } from "./support/restore-seed";
 
 // Seed rows (supabase/seed.sql): An–AWS done, Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
 const AWS = "AWS Solutions Architect Associate";
+const AN = "5eed0000-0000-0000-0000-00000000b001";
+const NVIDIA_ID = "5eed0000-0000-0000-0000-00000000e002";
+
+/** An has no NVIDIA record in the seed; tests that create one must not leave it for the next test. */
+async function removeAnNvidiaRecord() {
+  const admin = await signInAsSeedAdmin();
+  const { error } = await admin.from("training_records").delete().eq("member_id", AN).eq("course_id", NVIDIA_ID);
+  if (error) throw new Error(`remove An–NVIDIA record: ${error.message}`);
+}
+
+const CHAU = "5eed0000-0000-0000-0000-00000000b003";
+const AWS_ID = "5eed0000-0000-0000-0000-00000000e001";
+
+/** Châu–AWS back to the seed state (Not started, 0%, no issue date, no proof file), without going through the UI. */
+async function restoreChauAwsSeed() {
+  const admin = await signInAsSeedAdmin();
+  const record = await admin.from("training_records").select("evidence_path").eq("member_id", CHAU).eq("course_id", AWS_ID).single();
+  if (record.error) throw new Error(`read Châu–AWS: ${record.error.message}`);
+  if (record.data.evidence_path) {
+    const removed = await admin.storage.from("certificates").remove([record.data.evidence_path]);
+    if (removed.error) throw new Error(`remove proof: ${removed.error.message}`);
+  }
+  const reset = await admin
+    .from("training_records")
+    .update({ status: "not_started", progress: 0, issued_date: null, evidence_path: null })
+    .eq("member_id", CHAU)
+    .eq("course_id", AWS_ID);
+  if (reset.error) throw new Error(`reset Châu–AWS: ${reset.error.message}`);
+}
+
+// A failed run must not leak its An–NVIDIA record into the tests after it (they assert one row per member).
+test.beforeEach(removeAnNvidiaRecord);
 
 /** Row that contains every given text (the row's accessible name is unreliable across columns). */
 function recordRow(page: Page, ...texts: string[]): Locator {
@@ -200,21 +232,11 @@ test("R13: a future date left in the calendar never blocks Save silently", async
     await expect(page.getByText("Added certificate")).toBeVisible();
     await expect(row).toBeVisible();
   } finally {
-    const openSheet = page.getByRole("dialog");
-    if ((await openSheet.count()) > 0) await openSheet.getByRole("button", { name: "Cancel" }).click();
-    await expect(openSheet).toHaveCount(0);
-    if ((await row.count()) > 0) {
-      await clickMenuItem(page, row, "Delete");
-      await page.getByRole("button", { name: "Delete certificate" }).click();
-      await expect(page.getByText("Deleted certificate")).toBeVisible();
-    }
-    await expect(row).toHaveCount(0);
+    await removeAnNvidiaRecord();
   }
 });
 
 test("R10: a member's save keeps the notes an admin wrote", async ({ page }) => {
-  const CHAU = "5eed0000-0000-0000-0000-00000000b003";
-  const AWS_ID = "5eed0000-0000-0000-0000-00000000e001";
   const admin = await signInAsSeedAdmin();
   const seed = await admin.from("training_records").select("notes").eq("member_id", CHAU).eq("course_id", AWS_ID).single();
   if (seed.error) throw new Error(`read seed note: ${seed.error.message}`);
@@ -397,20 +419,7 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     }).toPass({ timeout: 15_000 });
     await page.keyboard.press("Escape");
   } finally {
-    // Leave the seed record without evidence so the suite can run again on the same database.
-    const openSheet = page.getByRole("dialog");
-    if ((await openSheet.count()) > 0) await openSheet.getByRole("button", { name: "Cancel" }).click();
-    await expect(openSheet).toHaveCount(0);
-    await openRowMenu(row);
-    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
-    if ((await evidenceLink.count()) > 0) {
-      await clickMenuItem(page, row, "Edit");
-      await page.getByRole("dialog").getByRole("button", { name: "Remove evidence" }).click();
-      await expect(page.getByText("Removed evidence").first()).toBeVisible();
-    }
-    await page.keyboard.press("Escape");
-    // Back to the seed state (Not started / 0, no issue date); going to Not started clears the issue date.
-    await editStatus(page, row, "Not started", "0");
+    await restoreChauAwsSeed();
   }
 });
 
