@@ -164,27 +164,62 @@ function inspectZip(bytes: Uint8Array): string | null {
 
 const SCAN_ROWS = 10;
 
-export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
+/** Size, zip-bomb and parse guards shared by every reader. A non-Excel file is read as UTF-8 CSV text. */
+function readBook(bytes: Uint8Array): Cleaned<{ book: XLSX.WorkBook; date1904: boolean }> {
   if (bytes.length > MAX_IMPORT_BYTES) return { ok: false, error: "The file is larger than 4 MB. Split it and import it in parts." };
   if (bytes[0] === 0x50 && bytes[1] === 0x4b) {
     // Any "PK" prefix: SheetJS's own sniffer accepts more than PK 03 04 as a zip, so the guard must not be narrower.
     const zipError = checkZip(bytes);
     if (zipError) return { ok: false, error: zipError };
   }
-  let book: XLSX.WorkBook;
+  const options = {
+    sheetRows: MAX_RAW_ROWS,
+    cellDates: false,    // raw serials: excelSerialToDate owns the conversion
+    cellFormula: false,  // cached values only
+    cellHTML: false,
+    cellStyles: false,
+  };
   try {
-    book = XLSX.read(bytes, {
-      type: "array",
-      sheetRows: MAX_RAW_ROWS,
-      cellDates: false,    // raw serials: excelSerialToDate owns the conversion
-      cellFormula: false,  // cached values only
-      cellHTML: false,
-      cellStyles: false,
-    });
+    const book = isExcelFile(bytes) || (bytes[0] === 0x50 && bytes[1] === 0x4b)
+      ? XLSX.read(bytes, { type: "array", ...options })
+      : XLSX.read(new TextDecoder("utf-8").decode(bytes).replace(/^﻿/, ""), { type: "string", ...options });
+    return { ok: true, value: { book, date1904: Boolean(book.Workbook?.WBProps?.date1904) } };
   } catch {
     return { ok: false, error: "Could not read the file. It may be damaged or password protected." };
   }
-  const date1904 = Boolean(book.Workbook?.WBProps?.date1904);
+}
+
+/** Rows (raw cell values, blank rows kept so indexes match the sheet) of the first sheet that holds data, from .xlsx/.xls or CSV. */
+export function readFirstSheet(bytes: Uint8Array): Cleaned<{ rows: Cell[][]; date1904: boolean }> {
+  const read = readBook(bytes);
+  if (!read.ok) return read;
+  const { book, date1904 } = read.value;
+  const cellBudget = { remaining: MAX_VALUE_CELLS };
+  for (const sheetName of book.SheetNames.slice(0, MAX_SCANNED_SHEETS)) {
+    const sheet = book.Sheets[sheetName];
+    if (!sheet?.["!ref"]) continue;
+    try {
+      const used = usedRange(sheet, cellBudget);
+      if (!used) continue;
+      const declared = XLSX.utils.decode_range(sheet["!ref"]);
+      const bounds: XLSX.Range = { s: { r: Math.min(declared.s.r, used.s.r), c: Math.min(declared.s.c, used.s.c) }, e: used.e };
+      if (bounds.e.r >= MAX_RAW_ROWS - 1) return { ok: false, error: TOO_FAR_DOWN };
+      if (bounds.e.c - bounds.s.c + 1 > MAX_IMPORT_COLUMNS) return { ok: false, error: `The sheet has too many columns (more than ${MAX_IMPORT_COLUMNS}).` };
+      sheet["!ref"] = XLSX.utils.encode_range(bounds);
+      fillMergedCells(sheet);
+    } catch (error) {
+      if (error instanceof TooManyCellsError || error instanceof MergeTooLargeError) return { ok: false, error: error.message };
+      throw error;
+    }
+    return { ok: true, value: { rows: XLSX.utils.sheet_to_json<Cell[]>(sheet, { header: 1, raw: true, defval: null, blankrows: true }), date1904 } };
+  }
+  return { ok: true, value: { rows: [], date1904 } };
+}
+
+export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
+  const read = readBook(bytes);
+  if (!read.ok) return read;
+  const { book, date1904 } = read.value;
 
   const mergeBudget = { remaining: MAX_MERGED_CELLS }; // shared: bounds the whole workbook, not each sheet
   const cellBudget = { remaining: MAX_VALUE_CELLS };

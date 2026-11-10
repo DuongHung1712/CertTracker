@@ -2,7 +2,7 @@ import { deflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import * as XLSX from "xlsx";
 import { buildLegacyWorkbook } from "@/features/import/__fixtures__/legacy-workbook";
-import { isExcelFile, readImportTable } from "@/features/import/workbook";
+import { isExcelFile, readFirstSheet, readImportTable } from "@/features/import/workbook";
 
 function toBytes(aoa: unknown[][], options: { merges?: XLSX.Range[]; date1904?: boolean } = {}): Uint8Array {
   const sheet = XLSX.utils.aoa_to_sheet(aoa);
@@ -420,4 +420,33 @@ describe("formatted-but-empty ranges (legacy files)", () => {
     expect(bytes.length).toBeLessThan(4 * 1024 * 1024); // gets past the size check, so the cell budget is what rejects it
     expect(readImportTable(bytes)).toEqual({ ok: false, error: "The file has too many cells with data. Split it and import it in parts." });
   }, 60_000);
+});
+
+describe("readFirstSheet", () => {
+  const text = (value: string) => new TextEncoder().encode(value);
+
+  it("reads a CSV", () => {
+    const result = readFirstSheet(text("Full name,Email,Team\nAn,an@x.test,Team Cloud"));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows).toHaveLength(2);
+    expect(result.value.rows[1]).toEqual(["An", "an@x.test", "Team Cloud"]);
+  });
+
+  it("strips a UTF-8 BOM and keeps Vietnamese accents", () => {
+    const result = readFirstSheet(text("﻿Họ tên,Email\nNguyễn Thị Ánh,anh@x.test"));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows[0]?.[0]).toBe("Họ tên");
+    expect(result.value.rows[1]?.[0]).toBe("Nguyễn Thị Ánh");
+  });
+
+  it("reads an xlsx", () => {
+    const result = readFirstSheet(toBytes([["a", "b"], [1, 2]]));
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.rows).toEqual([["a", "b"], [1, 2]]);
+  });
+
+  it("rejects a file over 4 MB", () => {
+    const result = readFirstSheet(new Uint8Array(4 * 1024 * 1024 + 1));
+    expect(result).toEqual({ ok: false, error: "The file is larger than 4 MB. Split it and import it in parts." });
+  });
 });
