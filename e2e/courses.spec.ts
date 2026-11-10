@@ -51,7 +51,7 @@ test("admin saves a course with a USD cost and study hours, and the list shows t
   await dialog.getByLabel("Cost", { exact: true }).fill("150");
   await dialog.getByLabel("Currency", { exact: true }).click();
   await page.getByRole("option", { name: "USD", exact: true }).click();
-  await dialog.getByLabel("Study hours (estimate)").fill("40");
+  await dialog.getByLabel("Duration (hours)").fill("40");
   await dialog.getByRole("button", { name: "Save" }).click();
   // Wait for the sheet to close: while it is open Radix marks the table aria-hidden and row queries find nothing.
   await expect(dialog).toBeHidden();
@@ -69,4 +69,38 @@ test("a cost without a currency is refused with a clear message", async ({ page 
   await dialog.getByLabel("Cost", { exact: true }).fill("150");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Choose a currency for the cost")).toBeVisible();
+});
+
+test("admin records refund conditions on a refundable course", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+  await page.goto("/courses");
+
+  const courseName = `Refund Course ${Date.now()}`;
+  const text = "Pass the exam within 6 months";
+  const dialog = await fillCourseBasics(page, courseName);
+  await expect(dialog.getByLabel("Duration (hours)")).toBeVisible();
+  await expect(dialog.getByLabel("Study hours (estimate)")).toHaveCount(0);
+  await expect(dialog.getByLabel("Refund conditions")).toHaveCount(0);
+  await dialog.getByRole("switch", { name: "Refundable" }).click();
+  await dialog.getByLabel("Refund conditions").fill(text);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+
+  const row = page.getByRole("row").filter({ has: page.getByRole("cell", { name: courseName, exact: true }) });
+  await expect(row.getByText(text)).toBeVisible();
+
+  await row.getByRole("button", { name: `Actions for ${courseName}` }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  const edit = page.getByRole("dialog");
+  await edit.getByRole("switch", { name: "Refundable" }).click();
+  await expect(edit.getByLabel("Refund conditions")).toHaveCount(0);
+  await edit.getByRole("button", { name: "Save" }).click();
+  await expect(edit).toBeHidden();
+
+  await row.getByRole("button", { name: `Actions for ${courseName}` }).click();
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  const again = page.getByRole("dialog");
+  await expect(again.getByLabel("Refund conditions")).toHaveCount(0);
+  await again.getByRole("switch", { name: "Refundable" }).click();
+  await expect(again.getByLabel("Refund conditions")).toHaveValue("");
 });

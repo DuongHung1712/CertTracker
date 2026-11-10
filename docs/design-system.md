@@ -167,6 +167,8 @@ The first column identifies the row (code or name), the last column is the "⋯"
 | An object with child data (a member and their certificates) | Detail page `/members/[id]` |
 | Quick view / quick edit of one record while keeping the table in view | `Sheet` on the right |
 
+Course form (`Sheet`): the estimated study time is labelled "Duration (hours)". The "Refund conditions" `Textarea` appears only while "Refundable" is on; turning it off clears the text. The courses table shows the conditions truncated under the "Yes" badge, with the full text in a `Tooltip`.
+
 The save button sits at the end of the form, on the right; "Cancel" is the secondary button to its left. While saving, the button reads "Saving…" and is disabled.
 
 ### 4.3 Destructive actions
