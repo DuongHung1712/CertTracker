@@ -31,7 +31,7 @@ export const HEADER_ALIASES: Record<ImportField, string[]> = {
   validityMonths: ["thoi han", "thoi han (thang)", "validity", "validity months", "validity (months)"],
   cost: ["cost", "chi phi"],
   costCurrency: ["currency", "loai tien", "tien te"],
-  estHours: ["study hours", "so gio", "gio hoc"],
+  estHours: ["study hours", "duration", "duration (hours)", "so gio", "gio hoc"],
   status: ["trang thai", "status", "tinh trang"],
   progress: ["tien do", "tien do (%)", "progress", "progress (%)", "%"],
   plannedExamDate: ["ngay thi du kien", "ngay thi", "planned exam date", "exam date", "du kien thi"],
