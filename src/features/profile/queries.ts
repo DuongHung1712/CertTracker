@@ -4,6 +4,7 @@ import { err, ok, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
 export type MyProfile = {
+  linked: boolean;
   fullName: string | null;
   email: string;
   role: Role;
@@ -23,11 +24,14 @@ export async function getMyProfile(user: CurrentUser): Promise<Result<MyProfile>
       ? supabase.from("manager_scopes").select("team_id, teams(name), programs(name)").eq("user_id", user.id)
       : Promise.resolve({ data: [], error: null }),
   ]);
-  if (member.error || scopes.error) {
-    console.error("profile failed", member.error?.message ?? scopes.error?.message);
+  // A linked account whose member row is missing must not look unlinked.
+  const missingMember = user.memberId !== null && !member.data;
+  if (member.error || scopes.error || missingMember) {
+    console.error("profile failed", member.error?.message ?? scopes.error?.message ?? "member row missing");
     return err("Could not load the data.");
   }
   return ok({
+    linked: user.memberId !== null,
     fullName: member.data?.full_name ?? null,
     email: user.email,
     role: user.role,

@@ -42,7 +42,7 @@ test("a member sees their account read-only", async ({ page }) => {
   const account = page.getByRole("region", { name: "Account" });
   await expect(account).toContainText("Lê Minh Châu");
   await expect(account).toContainText("member@certtracker.test");
-  await expect(account).toContainText("Member");
+  await expect(account.getByText("Member", { exact: true })).toBeVisible();
   await expect(account).toContainText("Team Cloud");
   await expect(account.getByText(/^[A-Z]+-?\d+$/)).toBeVisible();
   await expect(account.getByText("Ask your admin to change your name or email.")).toBeVisible();
@@ -127,6 +127,9 @@ test.describe("change password", () => {
     await page.getByLabel("Confirm new password").fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Change password" }).click();
     await expect(page.getByText("Password changed")).toBeVisible();
+    for (const name of ["Current password", "New password", "Confirm new password"]) {
+      await expect(page.getByLabel(name, { exact: true })).toHaveValue("");
+    }
 
     await page.getByRole("button", { name: /Account/ }).click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();

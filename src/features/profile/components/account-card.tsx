@@ -14,7 +14,7 @@ export function AccountCard({ profile }: { profile: MyProfile }) {
         <dl className="flex flex-wrap gap-x-10 gap-y-3">
           <div>
             <dt className="text-caption text-muted-foreground">Name</dt>
-            <dd>{profile.fullName ?? "Not linked to a member"}</dd>
+            <dd>{profile.linked ? profile.fullName : "Not linked to a member"}</dd>
           </div>
           <div>
             <dt className="text-caption text-muted-foreground">Email</dt>
