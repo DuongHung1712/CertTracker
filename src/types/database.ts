@@ -90,6 +90,7 @@ export type Database = {
           level: string | null
           name: string
           provider_id: string | null
+          refund_conditions: string | null
           refundable: boolean
           updated_at: string
           url: string | null
@@ -105,6 +106,7 @@ export type Database = {
           level?: string | null
           name: string
           provider_id?: string | null
+          refund_conditions?: string | null
           refundable?: boolean
           updated_at?: string
           url?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           level?: string | null
           name?: string
           provider_id?: string | null
+          refund_conditions?: string | null
           refundable?: boolean
           updated_at?: string
           url?: string | null
