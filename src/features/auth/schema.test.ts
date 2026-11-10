@@ -61,6 +61,11 @@ describe("changePasswordSchema", () => {
     expect(result.error?.issues[0]?.message).toBe("Enter your current password");
   });
 
+  it("rejects a 7-character new password", () => {
+    const result = changePasswordSchema.safeParse({ ...valid, password: "1234567", confirmPassword: "1234567" });
+    expect(result.error?.issues[0]?.message).toBe("Use at least 8 characters");
+  });
+
   it("rejects two different passwords on the confirm field", () => {
     const result = changePasswordSchema.safeParse({ ...valid, confirmPassword: "something-else" });
     expect(result.error?.issues[0]?.message).toBe("The two passwords do not match");

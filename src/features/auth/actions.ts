@@ -1,7 +1,6 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/features/auth/queries";
 import { changePasswordSchema, loginSchema, setPasswordSchema } from "@/features/auth/schema";
 import { err, ok, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
@@ -68,10 +67,9 @@ export async function changePassword(_prev: Result<null> | null, formData: FormD
   });
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Check the form and try again.");
 
-  const user = await getCurrentUser();
-  if (!user) return err("Sign in again to change your password.");
-
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user?.email) return err("Sign in again to change your password.");
   const { error: verifyError } = await supabase.auth.signInWithPassword({
     email: user.email,
     password: parsed.data.currentPassword,
