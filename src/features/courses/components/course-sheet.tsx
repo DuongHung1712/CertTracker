@@ -41,6 +41,7 @@ export function CourseSheet({
     costCurrency: null,
     estHours: null,
     url: null,
+    refundConditions: null,
   };
   // `courseSchema` has `.default()` fields (`level`, `refundable`) and several `z.preprocess`-based
   // nullable fields, so its input type (pre-parse) and output type (CourseInput, post-parse) diverge.

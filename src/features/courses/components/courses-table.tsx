@@ -32,6 +32,7 @@ type Course = {
   costCurrency: Currency | null;
   estHours: number | null;
   url: string | null;
+  refundConditions: string | null;
 };
 type Option = { id: string; name: string };
 
@@ -206,6 +207,7 @@ export function CoursesTable({
                     costCurrency: editing.costCurrency,
                     estHours: editing.estHours,
                     url: editing.url,
+                    refundConditions: editing.refundConditions,
                   }
                 : null
             }
