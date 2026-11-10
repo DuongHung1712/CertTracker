@@ -813,6 +813,7 @@ export type Database = {
         }[]
       }
       set_my_career_start: { Args: { p_start: string }; Returns: undefined }
+      set_my_full_name: { Args: { p_name: string }; Returns: undefined }
       vn_today: { Args: never; Returns: string }
       yoe_years: { Args: { p_start: string; p_today: string }; Returns: number }
     }
