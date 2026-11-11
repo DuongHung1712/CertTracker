@@ -245,7 +245,7 @@ export function MemberCertificatesList({
                             </Button>
                           }
                         />
-                        <TooltipContent side="top">Edit certificate</TooltipContent>
+                        <TooltipContent side="top">Edit</TooltipContent>
                       </Tooltip>
                     </div>
                   </div>

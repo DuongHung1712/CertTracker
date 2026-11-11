@@ -221,7 +221,7 @@ export function DetailPanel({
               </span>
             </div>
 
-            {/* Right: 2 Icon action buttons with Tooltip + Primary View certificates button */}
+            {/* Right: 2 Icon action buttons with Tooltip + Primary View learning button */}
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger
@@ -267,7 +267,7 @@ export function DetailPanel({
                   "h-8 gap-1.5 text-xs font-medium",
                 )}
               >
-                <span>View certificates</span>
+                <span>View learning</span>
                 <ArrowRight className="size-3.5" aria-hidden />
               </Link>
             </div>

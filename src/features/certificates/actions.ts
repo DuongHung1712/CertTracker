@@ -6,6 +6,7 @@ import {
   certificateSchema,
   certificateWithIdSchema,
   type CertificateInput,
+  type CertificateKind,
 } from "@/features/certificates/schema";
 import { idSchema } from "@/features/courses/schema";
 import { assertAffected } from "@/lib/assert-affected";
@@ -13,7 +14,9 @@ import { mapPostgresError } from "@/lib/postgres-error";
 import { err, ok, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
-const KIND_CHANGE_BLOCKED = "This certificate has records with another course. Change them first.";
+/** A kind change is only refused when the target is a completion, so the target kind names the thing. */
+const kindChangeBlocked = (kind: CertificateKind): string =>
+  `This ${CERTIFICATE_KIND_NOUN[kind]} has records with another course. Change them first.`;
 
 function toRow(data: CertificateInput) {
   return {
@@ -65,7 +68,7 @@ export async function updateCertificate(input: CertificateInput & { id: string }
   const supabase = await createClient();
   const safe = await grantingCourseFitsRecords(supabase, id, data);
   if (safe === null) return err("Something went wrong. Try again.");
-  if (!safe) return err(KIND_CHANGE_BLOCKED);
+  if (!safe) return err(kindChangeBlocked(data.kind));
   const { data: rows, error } = await supabase.from("certificates").update(toRow(data)).eq("id", id).select("id");
   if (error) return err(mapPostgresError(error, { duplicate: duplicate(data) }));
   const guard = assertAffected(rows);

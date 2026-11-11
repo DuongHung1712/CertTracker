@@ -193,7 +193,7 @@ describe("[copy] explorer detail panel", () => {
     const html = render(row({ records: 1 }));
     expect(html).toContain("Total: 1 certificate");
     expect(html).not.toMatch(PLURAL_BUGS);
-    expect(html).toContain("View certificates");
+    expect(html).toContain("View learning");
     expect(html).not.toMatch(/\brecords?\b/i);
     expect(render(row({ records: 3, done: 2 }))).toContain("Total: 3 certificates");
   });

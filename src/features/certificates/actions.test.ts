@@ -78,7 +78,7 @@ describe("updateCertificate kind change (spec Q6)", () => {
     replies.training_records = [{ data: [{ course_id: COURSE }], error: null }];
     expect(await updateCertificate({ ...completion, courseId: OTHER_COURSE })).toEqual({
       ok: false,
-      error: "This certificate has records with another course. Change them first.",
+      error: "This course completion has records with another course. Change them first.",
     });
     expect(updateValues).not.toHaveBeenCalled();
   });
@@ -87,7 +87,7 @@ describe("updateCertificate kind change (spec Q6)", () => {
     replies.training_records = [{ data: [{ course_id: OTHER_COURSE }], error: null }];
     expect(await updateCertificate(completion)).toEqual({
       ok: false,
-      error: "This certificate has records with another course. Change them first.",
+      error: "This course completion has records with another course. Change them first.",
     });
     expect(updateValues).not.toHaveBeenCalled();
   });

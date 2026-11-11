@@ -237,7 +237,7 @@ export function RecordsTable({
       setConfirming(null);
       return;
     }
-    toast.success("Deleted certificate");
+    toast.success(`Deleted ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]}`);
     setConfirming(null);
   }
 
@@ -383,7 +383,7 @@ export function RecordsTable({
           onOpenChange={(open) => !open && setConfirming(null)}
           title={confirming ? `Delete the ${confirming.certificateName} ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]} of ${confirming.memberName}?` : ""}
           description={`The ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"} and its evidence file will be deleted. This cannot be undone.`}
-          confirmLabel="Delete certificate"
+          confirmLabel={`Delete ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"}`}
           pendingLabel="Deleting…"
           pending={pending}
           onConfirm={handleDelete}

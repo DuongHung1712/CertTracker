@@ -183,7 +183,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
           <AlertDescription className="text-foreground">
             {committedMessage(batch)}{" "}
             <Link href="/records" className="font-medium">
-              View certificates
+              View learning
             </Link>
           </AlertDescription>
         </Alert>

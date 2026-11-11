@@ -20,7 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { createRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
 import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
 import { CourseStudiedField } from "@/features/records/components/course-studied-field";
-import { plannedDateLabel } from "@/features/records/kind";
+import { CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
+import { plannedDateLabel, recordSavedMessage, recordSheetTitle } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import {
   RECORD_STATUSES,
@@ -153,14 +154,14 @@ export function RecordSheet({
       if (!uploaded.ok) uploadError = uploaded.error;
     }
 
-    // The certificate is saved either way: staying open on "create" would hit the duplicate error on retry.
+    // The record is saved either way: staying open on "create" would hit the duplicate error on retry.
     handleOpenChange(false);
     if (uploadError) {
-      toast.error(`The certificate is saved, but the evidence could not be uploaded: ${uploadError} Open "Edit" to try again.`, {
+      toast.error(`The ${CERTIFICATE_KIND_NOUN[certificate?.kind ?? "exam"]} is saved, but the evidence could not be uploaded: ${uploadError} Open "Edit" to try again.`, {
         duration: Infinity,
       });
     } else {
-      toast.success(editing ? "Saved certificate" : "Added certificate");
+      toast.success(recordSavedMessage(!!editing, certificate?.kind));
     }
   }
 
@@ -194,7 +195,7 @@ export function RecordSheet({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="text-section-title">{editing ? "Edit certificate" : "Add certificate"}</SheetTitle>
+          <SheetTitle className="text-section-title">{recordSheetTitle(!!editing, certificate?.kind)}</SheetTitle>
         </SheetHeader>
         <form
           noValidate

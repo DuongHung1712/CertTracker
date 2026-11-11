@@ -98,7 +98,7 @@ describe("[copy] plain-English interface", () => {
     // The two certificate-catalogue refusals use the wording fixed by spec 2026-11-10 (section 4.2 and 6.1).
     const allowed = (p: Piece) =>
       (p.file === "src/features/certificates/actions.ts" &&
-        (p.text === "This certificate has records with another course. Change them first." ||
+        (p.text === " has records with another course. Change them first." ||
           p.text === "This certificate has records. Delete them first.")) ||
       (p.file === "src/app/api/export/records/route.ts" && p.text === "export: could not load records") ||
       (p.file === "src/features/notifications/deliver.ts" && p.text === ": could not record the failure (");

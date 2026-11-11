@@ -1,4 +1,4 @@
-import type { CertificateKind } from "@/features/certificates/schema";
+import { CERTIFICATE_KIND_NOUN, certificateSheetTitle, type CertificateKind } from "@/features/certificates/schema";
 
 type WithKind = { certificateKind: CertificateKind };
 
@@ -29,3 +29,12 @@ export const plannedDateLabel = (kind: CertificateKind): string =>
 /** A list column can only name one kind when the list is filtered to it. */
 export const plannedDateHeader = (filter: KindFilter): string =>
   filter === "all" ? "Planned date" : plannedDateLabel(filter);
+
+const NEUTRAL_ADD_TITLE = "Add certificate or course completion";
+
+/** Neutral until a certificate is chosen; after that a completion is never called a "certificate". */
+export const recordSheetTitle = (editing: boolean, kind: CertificateKind | undefined): string =>
+  kind ? certificateSheetTitle(editing, kind) : NEUTRAL_ADD_TITLE;
+
+export const recordSavedMessage = (editing: boolean, kind: CertificateKind | undefined): string =>
+  `${editing ? "Saved" : "Added"} ${CERTIFICATE_KIND_NOUN[kind ?? "exam"]}`;
