@@ -37,26 +37,22 @@ export async function createCertificate(input: CertificateInput): Promise<Result
 }
 
 /**
- * Spec Q6: changing the kind must not leave a record with a course the trigger would refuse. To a completion, every
- * record's course studied must be empty or the chosen course; to an exam, a course studied must prepare for it.
- * Returns null when a read fails.
+ * Spec Q6: turning an exam into a completion must not leave a record with another course than the one that grants
+ * it. The other direction is always allowed: old records keep their course (the trigger only fires when a record's
+ * certificate or course changes). Returns null when a read fails.
  */
-async function kindChangeIsSafe(
+async function examToCompletionIsSafe(
   supabase: Awaited<ReturnType<typeof createClient>>,
   id: string,
   data: CertificateInput,
 ): Promise<boolean | null> {
+  if (data.kind !== "completion") return true;
   const current = await supabase.from("certificates").select("kind").eq("id", id).maybeSingle();
   if (current.error) return null;
-  if (!current.data || current.data.kind === data.kind) return true;
+  if (current.data?.kind !== "exam") return true;
   const records = await supabase.from("training_records").select("course_id").eq("certificate_id", id).not("course_id", "is", null);
   if (records.error) return null;
-  const studied = [...new Set(records.data.flatMap((r) => (r.course_id ? [r.course_id] : [])))];
-  if (studied.length === 0) return true;
-  if (data.kind === "completion") return studied.every((courseId) => courseId === data.courseId);
-  const preparing = await supabase.from("courses").select("id").in("id", studied).eq("prepares_for_id", id);
-  if (preparing.error) return null;
-  return preparing.data.length === studied.length;
+  return records.data.every((record) => record.course_id === data.courseId);
 }
 
 export async function updateCertificate(input: CertificateInput & { id: string }): Promise<Result<null>> {
@@ -64,7 +60,7 @@ export async function updateCertificate(input: CertificateInput & { id: string }
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, ...data } = parsed.data;
   const supabase = await createClient();
-  const safe = await kindChangeIsSafe(supabase, id, data);
+  const safe = await examToCompletionIsSafe(supabase, id, data);
   if (safe === null) return err("Something went wrong. Try again.");
   if (!safe) return err(KIND_CHANGE_BLOCKED);
   const { data: rows, error } = await supabase.from("certificates").update(toRow(data)).eq("id", id).select("id");

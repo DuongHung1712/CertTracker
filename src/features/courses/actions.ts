@@ -123,20 +123,24 @@ export async function updateCourse(input: CourseInput & { id: string }): Promise
   return ok(null);
 }
 
+/** A foreign-key refusal on a course means a completion it grants: name it so the admin knows what to change. */
+async function deleteCourseMessage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  courseId: string,
+  error: { code?: string | null; message: string },
+): Promise<string> {
+  if (error.code !== "23503") return mapPostgresError(error);
+  const granted = await supabase.from("certificates").select("name").eq("course_id", courseId).maybeSingle();
+  if (!granted.data) return mapPostgresError(error);
+  return `This course grants the completion ${granted.data.name}. Delete or change that completion first.`;
+}
+
 export async function deleteCourse(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("courses").delete().eq("id", parsed.data.id).select("id");
-  if (error) {
-    // The only restrict on courses: a completion that this course grants. Name it so the admin knows what to change.
-    const granted = await supabase.from("certificates").select("name").eq("course_id", parsed.data.id).maybeSingle();
-    return err(
-      granted.data
-        ? `This course grants the completion ${granted.data.name}. Delete or change that completion first.`
-        : mapPostgresError(error),
-    );
-  }
+  if (error) return err(await deleteCourseMessage(supabase, parsed.data.id, error));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");

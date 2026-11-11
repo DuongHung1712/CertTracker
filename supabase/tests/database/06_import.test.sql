@@ -143,7 +143,7 @@ select is(
   (select count(*) from public.training_records
     where member_id = 'bbbbbbbb-0000-0000-0000-000000000002' and certificate_id = 'cccccccc-0000-0000-0000-000000000001'),
   0::bigint, 'rows before the failing row are rolled back');
-select is((select count(*) from public.courses where name = 'Course Three'), 0::bigint, 'entities created before the failure are rolled back');
+select is((select count(*) from public.certificates where name = 'Course Three'), 0::bigint, 'entities created before the failure are rolled back');
 select is((select status::text from public.import_batches where id = 'b3000000-0000-0000-0000-000000000003'), 'parsed', 'failed batch stays parsed');
 
 -- Incomplete uploads: refused with their own SQLSTATE (not 55000), and nothing is written

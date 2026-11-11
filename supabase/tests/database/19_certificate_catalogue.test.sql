@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(40);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -153,11 +153,18 @@ select results_eq(
   $$with u as (update public.certificates set level = 'Hacked' where id = 'c9000000-0000-0000-0000-0000000000e1' returning 1) select count(*)::int from u$$,
   $$values (0)$$, 'manager: updating a certificate affects 0 rows');
 
+select results_eq(
+  $$with d as (delete from public.certificates where id = 'c9000000-0000-0000-0000-0000000000e2' returning 1) select count(*)::int from d$$,
+  $$values (0)$$, 'manager: deleting a certificate affects 0 rows');
+
 -- RLS, member
 select pg_temp.login_as('c9000000-0000-0000-0000-00000000000c');
 select ok((select count(*) from public.certificates) > 0, 'member reads certificates');
 select throws_ok(
   $$insert into public.certificates (name, kind) values ('CC By Member', 'exam')$$, '42501', null, 'member cannot insert a certificate');
+select results_eq(
+  $$with u as (update public.certificates set level = 'Hacked' where id = 'c9000000-0000-0000-0000-0000000000e1' returning 1) select count(*)::int from u$$,
+  $$values (0)$$, 'member: updating a certificate affects 0 rows');
 select results_eq(
   $$with d as (delete from public.certificates where id = 'c9000000-0000-0000-0000-0000000000e2' returning 1) select count(*)::int from d$$,
   $$values (0)$$, 'member: deleting a certificate affects 0 rows');

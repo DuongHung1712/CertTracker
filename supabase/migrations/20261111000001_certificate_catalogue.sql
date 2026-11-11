@@ -53,13 +53,33 @@ create policy "certificates: admin write" on public.certificates
   using ((select public.app_role()) = 'admin')
   with check ((select public.app_role()) = 'admin');
 
--- 1. Copy: same ids, all exams.
-insert into public.certificates (id, name, kind, cert_type_id, provider_id, level, validity_months, url)
-select id, name, 'exam', cert_type_id, provider_id, level, validity_months, url from public.courses;
+-- The data part of the migration, as a function so pgTAP can run it on synthetic old-shape data
+-- (supabase/tests/database/20_certificate_migration.test.sql). One-shot: nobody but the migration calls it.
+-- Needs courses.cert_type_id, level and validity_months and training_records.certificate_id to exist.
+create function public.copy_courses_to_certificates()
+returns void
+language plpgsql
+set search_path = ''
+as $$
+begin
+  -- Copy: same ids, all exams.
+  insert into public.certificates (id, name, kind, cert_type_id, provider_id, level, validity_months, url)
+  select id, name, 'exam', cert_type_id, provider_id, level, validity_months, url from public.courses;
 
--- 2. Records point at the certificate; course_id becomes the optional "course studied".
+  -- Records point at the certificate that had their old course id; course_id stays as the course studied.
+  update public.training_records set certificate_id = course_id;
+
+  -- Keep as courses only the rows that carry course data or a record; each prepares for itself.
+  delete from public.courses c
+  where c.cost is null and c.est_hours is null and c.refund_conditions is null and not c.refundable
+    and not exists (select 1 from public.training_records r where r.course_id = c.id);
+  update public.courses set prepares_for_id = id;
+end;
+$$;
+revoke execute on function public.copy_courses_to_certificates() from public, anon, authenticated;
+
 alter table public.training_records add column certificate_id uuid references public.certificates (id) on delete restrict;
-update public.training_records set certificate_id = course_id;
+select public.copy_courses_to_certificates();
 alter table public.training_records
   alter column certificate_id set not null,
   alter column course_id drop not null,
@@ -68,12 +88,6 @@ alter table public.training_records
   drop constraint training_records_course_id_fkey,
   add constraint training_records_course_id_fkey foreign key (course_id) references public.courses (id) on delete set null;
 create index training_records_certificate_id_idx on public.training_records (certificate_id);
-
--- 3. Keep as courses only the rows that carry course data or a record; each prepares for itself.
-delete from public.courses c
-where c.cost is null and c.est_hours is null and c.refund_conditions is null and not c.refundable
-  and not exists (select 1 from public.training_records r where r.course_id = c.id);
-update public.courses set prepares_for_id = id;
 
 -- A completion record gets the granting course; an exam record has no course or one that prepares for it.
 -- Validates on insert and only when certificate_id or course_id changes, so a record stays editable

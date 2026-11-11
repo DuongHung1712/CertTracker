@@ -107,11 +107,7 @@ describe("[copy] plain-English interface", () => {
 
   it("writes email without a hyphen", () => {
     // The import still accepts an "e-mail" column header from old workbooks; that alias is input, not UI text.
-    // The two certificate-catalogue refusals use the wording fixed by spec 2026-11-10 (section 4.2 and 6.1).
     const allowed = (p: Piece) =>
-      (p.file === "src/features/certificates/actions.ts" &&
-        (p.text === "This certificate has records with another course. Change them first." ||
-          p.text === "This certificate has records. Delete them first.")) ||
       (p.file === "src/features/import/clean.ts" || p.file === "src/features/members/import-plan.ts") && p.text === "e-mail";
     expect(offenders((p) => /e-mail/i.test(p.text) && !allowed(p))).toEqual([]);
   });
