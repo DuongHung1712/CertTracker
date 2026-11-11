@@ -23,7 +23,8 @@ Status: **draft for discussion**; do not start until the owner approves the spec
 - Never `supabase db reset` locally (it breaks the storage index); apply with `pnpm exec supabase migration up --local`.
 - Ports: never 3000 or 3100; e2e on 3201 started by the task and stopped after.
 - Commits: Conventional Commits ending with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`; never `git add .`; no push without the owner.
-- Every commit builds: `pnpm typecheck` green at each commit.
+- Every commit builds: `pnpm typecheck` green at each commit. D1 and D2 therefore share one commit (D1 alone drops `courses` columns the app still reads).
+- Wording: a credential from finishing a course is "course completion", never "certificate", in UI text, messages and docs.
 
 ## Review Focus
 
@@ -31,7 +32,10 @@ Status: **draft for discussion**; do not start until the owner approves the spec
 2. Every existing record keeps the exact expiry date and status after the migration. Test in D1.
 3. A record for a completion certificate saved with no course (import, old client) still ends up with the granting course. Test in D1.
 4. An old workbook without a "Course studied" column imports exactly as before. Test in D5.
-5. Deleting a course used as course studied keeps the record and clears the course; deleting a course that grants a completion certificate is refused with the spec's message. Tests in D1 (database) and D3 (UI message).
+5. Deleting a course used as course studied keeps the record and clears the course; deleting a course that grants a completion is refused with the spec's message. Tests in D1 (database) and D3 (UI message).
+6. A record whose course no longer prepares for its certificate (admin changed "Prepares for") can still change status and progress; only a changed `certificate_id` or `course_id` is validated. Test in D1.
+7. The migration keeps only courses with cost, hours, refund data or a record; counts after = old minus empty ones. Test in D1.
+8. Import: a new certificate name with cost or duration creates the exam certificate plus a self-preparing course; export then import returns the same cost. Test in D5.
 
 ---
 
@@ -46,11 +50,11 @@ Status: **draft for discussion**; do not start until the owner approves the spec
 
 **Interfaces (produces):** enum `certificate_kind ('exam','completion')`; table `certificates` per spec 4.1; `courses.prepares_for_id`; `training_records.certificate_id not null`, `course_id` nullable with FK `on delete set null`; unique `training_records_member_certificate_key (member_id, certificate_id)`; triggers `courses_prepares_for_exam` (23514 "prepares_for must be an exam certificate") and `training_records_course_matches_certificate` (sets the granting course for completions; 23514 "course does not prepare for this certificate" for exams); `v_training_records` per spec 4.3; `dashboard_breakdown` dimensions `team | cert_type | provider | certificate`; `v_data_quality_issues` with `certificate_no_validity` for exams only; import commit upserting on `(member_id, certificate_id)` and creating exam certificates for unknown names; notification functions returning `certificate_name`.
 
-- [ ] **Step 1: Write the failing pgTAP** covering: same-id copy and kind `exam` for every old course; `prepares_for_id = id`; `certificate_id = old course_id` for every record; seeded An–AWS `expiry_date` and `expiry_status` unchanged (Review Focus 2); null provider/type course migrates (Review Focus 1); kind check (23514 both directions); one completion per course (23505); prepares_for to a completion fails (23514); completion record inserted with `course_id` null gets the granting course (Review Focus 3); exam record with a non-preparing course fails (23514); duplicate member+certificate fails (23505); deleting a granting course fails (23503); deleting a course used as course studied sets `course_id` null and keeps the record (Review Focus 5); RLS per spec 4.5 for all three roles; `dashboard_breakdown('certificate')` returns rows, `('course')` raises 22023; `v_data_quality_issues` flags an exam without validity and not a completion without validity.
+- [ ] **Step 1: Write the failing pgTAP** covering: same-id copy and kind `exam` for every old course; courses kept only when they carry data or records, each with `prepares_for_id = id` (Review Focus 7); `certificate_id = old course_id` for every record; an update of status on a record whose course no longer prepares for its certificate succeeds, while changing `course_id` to a non-preparing course fails 23514 (Review Focus 6); seeded An–AWS `expiry_date` and `expiry_status` unchanged (Review Focus 2); null provider/type course migrates (Review Focus 1); kind check (23514 both directions); one completion per course (23505); prepares_for to a completion fails (23514); completion record inserted with `course_id` null gets the granting course (Review Focus 3); exam record with a non-preparing course fails (23514); duplicate member+certificate fails (23505); deleting a granting course fails (23503); deleting a course used as course studied sets `course_id` null and keeps the record (Review Focus 5); RLS per spec 4.5 for all three roles; `dashboard_breakdown('certificate')` returns rows, `('course')` raises 22023; `v_data_quality_issues` flags an exam without validity and not a completion without validity.
 - [ ] **Step 2: Run** `pnpm test:db` → the new file FAILS.
 - [ ] **Step 3: Implement** the migration in the order of spec section 5; update the seed; `pnpm db:types`.
 - [ ] **Step 4: Run** `pnpm test:db` → all files PASS.
-- [ ] **Step 5: Commit** `feat(db): separate certificates from courses`.
+- [ ] **Step 5: Do not commit yet.** `pnpm typecheck` is red until D2 fixes the call sites; commit with D2 step 5.
 
 ### Task D2: certificates feature, slimmer courses feature
 
@@ -59,16 +63,16 @@ Status: **draft for discussion**; do not start until the owner approves the spec
 - Modify: `src/features/courses/{schema.ts,actions.ts,queries.ts,schema.test.ts}`; compile-only call sites elsewhere
 
 **Interfaces:**
-- `certificateSchema = { kind: enum exam|completion ("Choose a kind"), name ("Enter the certificate name"), certTypeId ("Choose a certificate type"), providerId ("Choose a provider"), level, validityMonths ("Validity must be greater than 0"), url, courseId }`; refinement: completion requires `courseId` ("Choose the course that grants this certificate"); exam forces `courseId` to null.
+- `certificateSchema = { kind: enum exam|completion ("Choose a kind"), name ("Enter the certificate name"), certTypeId ("Choose a certificate type"), providerId ("Choose a provider"), level, validityMonths ("Validity must be greater than 0"), url, courseId }`; refinement: completion requires `courseId` ("Choose the course that grants this completion"); exam forces `courseId` to null.
 - `createCertificate`, `updateCertificate`, `deleteCertificate(input) → Result<null>`; `23503` on delete → "This certificate has records. Delete them first."; update that changes kind follows spec Q6 and returns "This certificate has records with another course. Change them first." when it would break a record.
 - `listCertificates(): Promise<CertificateRow[]>`, `CertificateRow = { id, name, kind, certTypeId, certTypeName, providerId, providerName, level, validityMonths, url, courseId, courseName }`.
-- `courseFields` without `certTypeId`, `level`, `validityMonths`; with `preparesForId: z.guid().nullable()`; course rows gain `preparesForId`, `preparesForName`, `grantsCertificateName`; `deleteCourse` maps the granting-course 23503 to "This course grants the certificate <name>. Delete or change that certificate first."
+- `courseFields` without `certTypeId`, `level`, `validityMonths`; with `preparesForId: z.guid().nullable()`; course rows gain `preparesForId`, `preparesForName`, `grantsCertificateName`; `deleteCourse` maps the granting-course 23503 to "This course grants the completion <name>. Delete or change that completion first."
 
 - [ ] **Step 1:** Vitest for every rule and message above.
 - [ ] **Step 2:** `pnpm vitest run src/features/certificates src/features/courses` → FAIL.
 - [ ] **Step 3:** Implement; keep `pnpm typecheck` green.
 - [ ] **Step 4:** Run → PASS.
-- [ ] **Step 5: Commit** `feat(catalogue): certificate actions and a slimmer course`.
+- [ ] **Step 5: Run** `pnpm typecheck` and `pnpm test:db` green, then one commit for D1 and D2: `feat(db): separate certificates from courses`.
 
 ### Task D3: Catalogue page with two tabs
 
@@ -98,7 +102,7 @@ Status: **draft for discussion**; do not start until the owner approves the spec
 - Modify: `src/features/import/{clean.ts,plan.ts,queries.ts,sample-workbook.ts}`, `src/features/export/records-export.ts`, `src/features/dashboard/**`, `src/features/data-quality/**`, `src/features/notifications/{expiry-plan.ts,snapshot.ts,types.ts}`
 - Test: the matching `*.test.ts`, `e2e/import.spec.ts`, `e2e/export.spec.ts`, `e2e/dashboard.spec.ts`, `e2e/notifications.spec.ts`
 
-- [ ] **Step 1:** Tests: export headers per spec 6.4 and round-trip through the import; old workbook imports unchanged (Review Focus 4); "Course studied" that does not prepare for the certificate is a row error with the spec message; Explorer "Popular certificates"; data quality shows `certificate_no_validity` for exams only; expiry e-mail and monthly report use the certificate name.
+- [ ] **Step 1:** Tests: export headers per spec 6.4 and round-trip through the import; old workbook imports unchanged (Review Focus 4); a new name with cost or duration creates certificate plus self-preparing course and round-trips (Review Focus 8); "Course studied" that does not prepare for the certificate is a row error with the spec message; Explorer "Popular certificates"; data quality shows `certificate_no_validity` for exams only; expiry e-mail and monthly report use the certificate name.
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. **Step 4:** Run → PASS.
 - [ ] **Step 5: Commit** `feat(catalogue): import, export, dashboards and e-mails use certificates`.
 

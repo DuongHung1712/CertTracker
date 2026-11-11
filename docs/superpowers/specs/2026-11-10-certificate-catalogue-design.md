@@ -3,6 +3,7 @@
 Status: **draft for discussion** with the owner. Nothing is built yet. Supersedes section 5 of `2026-11-10-review-comments-design.md`.
 Branch: `feat/certificate-catalogue` from `dev` (Parts A–C merged, last migration `20261110000003`).
 Review comments it answers: "Courses và Certificate riêng" and "Đối với course ... bỏ validity".
+Revised 2026-11-11 after the owner's answers: the trigger validates only on a change of certificate or course; D1 and D2 ship in one commit; migration keeps only courses that carry data; import creates a self-preparing course when a row has cost or duration; credentials earned by finishing a course are worded "course completion", never "certificate" (section 2).
 
 Open questions are collected in section 10, each with a proposed answer. Sections 1–9 use the proposed answers.
 
@@ -30,9 +31,9 @@ Anti-goals: duplicate data entry for members; a migration that changes any exist
 
 | Term | Meaning | UI label |
 |---|---|---|
-| Certificate | A credential a member can hold. Has a kind. May expire. | Certificate |
-| Exam certification | Certificate earned by passing an exam (AWS SAA, NVIDIA Generative AI LLMs). | Exam |
-| Course completion | Certificate granted by finishing one specific course (Coursera ML Specialization). | Course completion |
+| Certificate | A credential a member can hold. Has a kind. May expire. Table `certificates`. | Certificate (exam kind); Course completion (completion kind) |
+| Exam certification | Earned by passing an exam (AWS SAA, NVIDIA Generative AI LLMs). | Exam certificate |
+| Course completion | Recognition from finishing one specific course (Coursera ML Specialization): a badge or a certificate of completion. Stored as a `completion` row of `certificates`, but the UI never calls it a "certificate": it says "completion" and "granted by <course>". | Course completion |
 | Course | A way to study: duration, cost, refund terms, link. Prepares for an exam, or grants a completion certificate. | Course |
 | Record | A member's tracking of one certificate: status, progress, dates, proof, refund. Table `training_records`. | Certificate (in "My certificates") |
 | Course studied | The course a member used for a record (optional for exams, implied for completions). | Course studied |
@@ -45,7 +46,7 @@ She adds a record: Certificate = AWS Solutions Architect Associate (Exam), Cours
 **S2. Exam by self-study.** Minh passes the same exam without a course. Certificate = AWS SAA, Course studied = empty.
 
 **S3. Course completion.** Hoa finishes Coursera "Machine Learning Specialization" (90 h, 49 USD), which grants a completion certificate with no expiry.
-She adds a record: Certificate = Machine Learning Specialization (Course completion). Course studied is filled in automatically and cannot be changed. Expiry shows "No expiry".
+She adds a record: Certificate field = Machine Learning Specialization (Course completion; the form label stays "Certificate" because it lists both kinds, but each option shows its kind). Course studied is filled in automatically and cannot be changed. Expiry shows "No expiry".
 
 **S4. A course that grants completion and prepares for an exam.** AWS Skill Builder "Exam Prep: Solutions Architect Associate" grants a completion badge and prepares for the AWS SAA exam. Both links are allowed: the completion certificate points to the course, and the course points to the exam it prepares for. A member can record either certificate or both (two records).
 
@@ -94,8 +95,9 @@ Courses keep: `name`, `provider_id`, `est_hours` (Duration), `cost`, `cost_curre
 | A completion certificate has exactly one granting course; an exam has none | check constraint above | 23514 |
 | A course grants at most one completion certificate | `unique (course_id)` | 23505 |
 | `courses.prepares_for_id` points to an **exam** certificate | trigger `courses_prepares_for_exam` | 23514 "prepares_for must be an exam certificate" |
-| A record for a completion certificate always has the granting course as course studied | trigger `training_records_course_matches_certificate` sets `course_id` | — |
+| A record for a completion always has the granting course as course studied | trigger `training_records_course_matches_certificate` sets `course_id` | — |
 | A record for an exam certificate has no course, or a course that prepares for it | same trigger | 23514 "course does not prepare for this certificate" |
+| The trigger runs on insert, and on update **only when `certificate_id` or `course_id` changes** | `before insert or update of certificate_id, course_id` plus an `is distinct from` check | so old records stay editable (status, progress) after an admin changes "Prepares for" |
 | One record per member and certificate | `unique (member_id, certificate_id)` | 23505 |
 | A course that grants a completion certificate cannot be deleted while that certificate exists | `on delete restrict` | 23503 |
 | A certificate with records cannot be deleted | `on delete restrict` | 23503 |
@@ -120,7 +122,7 @@ The join to `courses` becomes a left join. Every other column is unchanged. Beca
 |---|---|
 | `dashboard_breakdown(p_dimension)` | dimension `course` becomes `certificate`; `cert_type` and `provider` read the certificate; `'course'` raises 22023 |
 | `v_data_quality_issues` | join certificates; `course_no_validity` becomes `certificate_no_validity` and is raised **for exams only** (completions usually never expire) |
-| Import commit (`commit_import`) | upsert on `(member_id, certificate_id)`; creates certificates (kind exam) instead of courses for unknown names, as today's import creates courses |
+| Import commit (`commit_import`) | upsert on `(member_id, certificate_id)`; creates certificates (kind exam) instead of courses for unknown names. When the row also has cost, currency or duration, it creates a course with the same name and provider, `prepares_for_id` = that certificate, and uses it as course studied unless the row names another course |
 | Notifications (expiry e-mails, monthly report) | read `certificate_name` instead of `course_name` |
 
 ### 4.5 RLS
@@ -135,14 +137,14 @@ pgTAP covers each cell, including a refused insert and update for manager and me
 
 ## 5. Migration of existing data
 
-Every existing course row is an exam certification: the starter list (55 rows) was checked against providers' certification pages, and its cost is the exam fee.
+Every existing course row is an exam certification: the starter list (55 rows) was checked against providers' certification pages, and its cost is the exam fee. Each row becomes an exam certificate. It stays a course only when it carries course data (Q7).
 
 Steps (one migration, one transaction):
 
 1. Create the enum, `certificates`, its constraints, indexes and triggers.
 2. `insert into certificates (id, name, kind, cert_type_id, provider_id, level, validity_months, url) select id, name, 'exam', cert_type_id, provider_id, level, validity_months, url from courses` (same ids).
-3. `update courses set prepares_for_id = id`.
-4. Add `training_records.certificate_id`, `update ... set certificate_id = course_id`, set not null, swap the unique constraint, drop not null on `course_id`.
+3. Add `training_records.certificate_id`, `update ... set certificate_id = course_id`, set not null, swap the unique constraint, drop not null on `course_id`.
+4. Delete the courses that carry no course data: `cost`, `est_hours`, `refund_conditions` all null, `refundable` false, and no record uses them as `course_id`. Then `update courses set prepares_for_id = id` for the rest. (Courses with records are always kept, so `training_records.course_id` stays valid.)
 5. Drop and recreate `v_training_records`; update `dashboard_breakdown`, `v_data_quality_issues`, the import commit function and the notification functions.
 6. RLS policies on `certificates`.
 7. Drop `cert_type_id`, `level`, `validity_months` from `courses`.
@@ -151,7 +153,7 @@ Before and after, for the seed:
 
 | | Before | After |
 |---|---|---|
-| `courses` | AWS SAA (Cloud, AWS, Associate, 36 m, refundable, url); NVIDIA Generative AI LLMs (AI, NVIDIA, Associate, 24 m) | same two rows, without type/level/validity; `prepares_for_id` = their own id |
+| `courses` | AWS SAA (Cloud, AWS, Associate, 36 m, refundable, url); NVIDIA Generative AI LLMs (AI, NVIDIA, Associate, 24 m) | the rows that carry course data or records (both seed rows have records), without type/level/validity; `prepares_for_id` = their own id |
 | `certificates` | — | AWS SAA (exam, Cloud, AWS, Associate, 36 m, url); NVIDIA Generative AI LLMs (exam, AI, NVIDIA, Associate, 24 m) |
 | `training_records` | An–AWS done, Bình–NVIDIA in progress, Châu–AWS not started | same, plus `certificate_id` = old `course_id`; `course_id` kept (now "course studied") |
 | An–AWS expiry | issue date + 36 m | identical (pgTAP asserts) |
@@ -179,7 +181,7 @@ Certificate form:
 | Level | always | optional |
 | Validity (months) | always | optional; "Validity must be greater than 0"; empty = No expiry |
 | Certificate link | always | optional URL |
-| Course | only for Course completion | required: "Choose the course that grants this certificate"; lists courses that grant nothing yet |
+| Course | only for Course completion | required: "Choose the course that grants this completion"; lists courses that grant nothing yet |
 
 Changing the kind of a certificate that has records: allowed only from exam to completion when every record's course studied is empty or equals the chosen course (otherwise "This certificate has records with another course. Change them first."). See Q6.
 
@@ -221,9 +223,9 @@ Import:
 
 | Case | Behaviour |
 |---|---|
-| Admin deletes a course that grants a completion certificate | refused: "This course grants the certificate <name>. Delete or change that certificate first." |
+| Admin deletes a course that grants a completion certificate | refused: "This course grants the completion <name>. Delete or change that completion first." |
 | Admin deletes a course that prepares for an exam and is used as course studied | records keep the certificate; `course_id` set null (the records FK changes from `on delete restrict` to `on delete set null`) — see Q12 |
-| Admin changes a course's "Prepares for" while records use it as course studied | existing records keep their course (no re-validation of old rows); new saves are validated |
+| Admin changes a course's "Prepares for" while records use it as course studied | existing records keep their course and stay editable (the trigger fires only when `certificate_id` or `course_id` changes); a new or changed course choice is validated |
 | Admin changes a certificate's validity | every record's expiry is recomputed (computed in the view, decision: computed fields never stored) |
 | Admin deletes a certificate with records | refused (23503): "This certificate has records. Delete them first." |
 | Member edits a record and switches the certificate | allowed; course studied is cleared (exam) or set (completion) |
@@ -237,7 +239,7 @@ Record status, progress, dates, proof upload, refund fields, the status-dependen
 
 1. Merge into `dev` after CI.
 2. Local: `pnpm exec supabase migration up --local`, `pnpm db:types` (never `supabase db reset`).
-3. Production, with the release PR to `main`: backup (`supabase db dump --linked` schema and data), record counts of `courses` and `training_records`, `supabase db push --dry-run` (lists only the new migration), `supabase db push`, counts again (`certificates` = old `courses`, `training_records` unchanged), check one expiry date on `/records`.
+3. Production, with the release PR to `main`: backup (`supabase db dump --linked` schema and data), record counts of `courses` and `training_records`, `supabase db push --dry-run`, `supabase db push`, counts again (`certificates` = old `courses`; `courses` = old count minus the empty ones; `training_records` unchanged), check one expiry date on `/records`. The dry-run lists every migration production lacks, not only this one: at the time of writing also `20261106000001_link_account_to_member.sql`, `20261110000001_course_refund_conditions.sql` and `20261110000003_set_my_full_name.sql`. Check the list against `supabase migration list --linked` and push the account migration first if the pilot rollout (spec 2026-11-06 section 8) has not done it yet.
 4. Decision #65 in `docs/decisions.md`; data model section of `2026-09-26-certtracker-design.md` updated.
 
 ## 10. Open questions (proposed answers in bold)
@@ -245,7 +247,8 @@ Record status, progress, dates, proof upload, refund fields, the status-dependen
 | # | Question | Proposed answer | Why |
 |---|---|---|---|
 | Q6 | May an admin change a certificate's kind after it has records? | **Only exam → completion, and only when every record's course studied is empty or the chosen course.** Completion → exam is allowed when the course is cleared. | Keeps the trigger rule true for old records without silently rewriting them. |
-| Q7 | Should every migrated row also stay a course? | **Yes (each existing row becomes an exam certificate and keeps a course that prepares for it).** Alternative: keep a course only where cost, hours or refund data exist. | No data loss; the admin can delete the extra courses later. |
+| Q7 | Should every migrated row also stay a course? | **Decided 2026-11-11: no. Each row becomes an exam certificate; it stays a course (preparing for itself) only when it has cost, hours, refund data or a record.** | Keeps the "Course studied" picker free of courses that repeat an exam's name. |
+| Q13 | How do courses and certificates relate, and where are completions listed? | **Decided 2026-11-11: keep one-to-one.** One `certificates` table with two kinds; a course prepares for at most one exam (`prepares_for_id`) and grants at most one completion (`certificates.course_id`). A course used for several exams is entered once per exam. Many-to-many and moving completions out of `certificates` were considered and left for later. | Simplest model that covers S1–S4. |
 | Q8 | Where does the exam fee live? | **On the course for now (cost of the course studied).** A separate exam fee on the certificate is out of scope. | Today's cost column already mixes both; splitting fees is a later request. |
 | Q9 | Do completion certificates count in KPIs (valid, completed) like exams? | **Yes, with the kind shown where space allows.** | The owner treats completions as certificates. |
 | Q10 | Data quality: flag certificates without validity? | **Exams only.** | Completions usually never expire. |
