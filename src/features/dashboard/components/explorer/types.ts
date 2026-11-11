@@ -16,11 +16,11 @@ export type TabConfig = {
 export const CERTIFICATE_GROUP_LABEL = "Certificate";
 
 /**
- * The count shown next to a group. Groups of certificates are counted by who holds them: "2 certificates" under a
- * certificate's own name would read oddly. The wording avoids "records" (ui-copy rule).
+ * The count shown next to a group. A certificate is counted by the members who have it (every status, one row per
+ * member and certificate): "2 certificates" under a certificate's own name would read oddly. Avoids "records" (ui-copy rule).
  */
 export function groupCount(row: BreakdownRow, groupLabel: string): string {
-  return groupLabel === CERTIFICATE_GROUP_LABEL ? pluralize(row.people, "holder") : pluralize(row.records, "certificate");
+  return groupLabel === CERTIFICATE_GROUP_LABEL ? pluralize(row.people, "member") : pluralize(row.records, "certificate");
 }
 
 export const STATUS_FILTER_LABELS: Record<string, string> = {
@@ -53,6 +53,6 @@ export function matchesGroupFilters(row: BreakdownRow, statusFilter: string, min
 }
 
 /** One line of plain text for the "Copy summary" button. */
-export function copySummaryText(row: BreakdownRow): string {
-  return `${row.label}: ${pluralize(row.records, "certificate")}, ${formatRate(rateOf(row))} completed (${row.done} completed, ${row.inProgress} in progress, ${row.valid} valid, ${row.expired} expired).`;
+export function copySummaryText(row: BreakdownRow, groupLabel: string): string {
+  return `${row.label}: ${groupCount(row, groupLabel)}, ${formatRate(rateOf(row))} completed (${row.done} completed, ${row.inProgress} in progress, ${row.valid} valid, ${row.expired} expired).`;
 }

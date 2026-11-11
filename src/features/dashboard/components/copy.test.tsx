@@ -192,11 +192,23 @@ describe("[copy] explorer detail panel", () => {
     expect(render(row({ records: 3, done: 2 }))).toContain("Total: 3 certificates");
   });
 
+  it("words a certificate group by its members in the header, the footer and the copied text", () => {
+    const certificate = row({ label: "AWS SAA", people: 3, records: 3, done: 1, inProgress: 1, valid: 1, expired: 0, headcount: null });
+    const html = text(renderToStaticMarkup(<DetailPanel selectedRow={certificate} groupLabel="Certificate" peopleLabel="Members" />));
+    expect(html).toContain("Members: 3");
+    expect(html).not.toContain("Certificates: 3");
+    expect(html).toContain("Total: 3 members");
+    expect(html).not.toMatch(/records?/i);
+    expect(copySummaryText(certificate, "Certificate")).toBe(
+      "AWS SAA: 3 members, 33% completed (1 completed, 1 in progress, 1 valid, 0 expired).",
+    );
+  });
+
   it("copies a summary in plain terms", () => {
-    expect(copySummaryText(row({ label: "AWS", records: 1, done: 1, inProgress: 0, valid: 1, expired: 0 }))).toBe(
+    expect(copySummaryText(row({ label: "AWS", records: 1, done: 1, inProgress: 0, valid: 1, expired: 0 }), "Provider")).toBe(
       "AWS: 1 certificate, 100% completed (1 completed, 0 in progress, 1 valid, 0 expired).",
     );
-    expect(copySummaryText(row({ label: "AWS", records: 4, done: 2, inProgress: 1, valid: 1, expired: 1 }))).toBe(
+    expect(copySummaryText(row({ label: "AWS", records: 4, done: 2, inProgress: 1, valid: 1, expired: 1 }), "Provider")).toBe(
       "AWS: 4 certificates, 50% completed (2 completed, 1 in progress, 1 valid, 1 expired).",
     );
   });

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBar } from "@/features/dashboard/components/status-bar";
-import { copySummaryText, groupCount, rateOf } from "@/features/dashboard/components/explorer/types";
+import { CERTIFICATE_GROUP_LABEL, copySummaryText, groupCount, rateOf } from "@/features/dashboard/components/explorer/types";
 import {
   formatRate,
   studyStatusSplit,
@@ -27,7 +27,7 @@ export function DetailPanel({
 }) {
   async function handleCopySummary(row: BreakdownRow) {
     try {
-      await navigator.clipboard.writeText(copySummaryText(row));
+      await navigator.clipboard.writeText(copySummaryText(row, groupLabel));
       toast.success("Copied summary to clipboard");
     } catch {
       toast.error("Could not copy the summary. Your browser did not allow it.");
@@ -70,13 +70,17 @@ export function DetailPanel({
                   {formatNumber(selectedRow.headcount ?? selectedRow.people)}
                 </strong>
               </span>
-              <span>•</span>
-              <span>
-                Certificates:{" "}
-                <strong className="font-semibold text-foreground tabular-nums">
-                  {formatNumber(selectedRow.records)}
-                </strong>
-              </span>
+              {groupLabel !== CERTIFICATE_GROUP_LABEL && (
+                <>
+                  <span>•</span>
+                  <span>
+                    Certificates:{" "}
+                    <strong className="font-semibold text-foreground tabular-nums">
+                      {formatNumber(selectedRow.records)}
+                    </strong>
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
