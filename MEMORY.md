@@ -11,10 +11,10 @@ Nguồn đầy đủ: `docs/decisions.md`, `docs/process/04-wbs.md`. File này c
 ## 2. Backlog
 
 1. PR `feat/certificate-catalogue` vào `dev`; owner làm production: backup → `supabase db push` → merge `main` (spec §8).
-3. Pilot giai đoạn 2 (WBS 15.4–15.6): gửi/duyệt chứng chỉ, lĩnh vực quan tâm, số liệu theo tháng/quý.
-4. C2 AI (DeepSeek) → C3 hosting, G1, production.
-5. Nợ: migration xóa `team_managers` (#58).
-6. Later: Skill Matrix, mục tiêu theo quý, lộ trình role, backend Rust.
+2. Pilot giai đoạn 2 (WBS 15.4–15.6): gửi/duyệt chứng chỉ, lĩnh vực quan tâm, số liệu theo tháng/quý.
+3. C2 AI (DeepSeek) → C3 hosting, G1, production.
+4. Nợ: migration xóa `team_managers` (#58).
+5. Later: Skill Matrix, mục tiêu theo quý, lộ trình role, backend Rust.
 
 ## 3. ADR tóm tắt
 
