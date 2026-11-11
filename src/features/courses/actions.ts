@@ -44,7 +44,7 @@ export async function deleteCertType(input: { id: string }): Promise<Result<null
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("cert_types").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "Courses still use this certificate type, so it cannot be deleted." }));
+  if (error) return err(mapPostgresError(error, { restricted: "Certificates still use this certificate type, so it cannot be deleted." }));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");
@@ -79,7 +79,7 @@ export async function deleteProvider(input: { id: string }): Promise<Result<null
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("providers").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "Courses still use this provider, so it cannot be deleted." }));
+  if (error) return err(mapPostgresError(error, { restricted: "Courses or certificates still use this provider, so it cannot be deleted." }));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");

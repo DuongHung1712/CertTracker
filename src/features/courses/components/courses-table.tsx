@@ -7,7 +7,9 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
+import { ExternalLinkCell } from "@/components/data/external-link-cell";
 import { FilterBar } from "@/components/data/filter-bar";
+import type { SelectOption } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -32,7 +34,6 @@ type Course = {
   url: string | null;
   refundConditions: string | null;
 };
-type Option = { id: string; name: string };
 
 export function CoursesTable({
   courses,
@@ -42,8 +43,8 @@ export function CoursesTable({
 }: {
   courses: Course[];
   /** Exam certificates a course can prepare for. */
-  certificates: Option[];
-  providers: Option[];
+  certificates: SelectOption[];
+  providers: SelectOption[];
   canManage: boolean;
 }) {
   const [search, setSearch] = useState("");
@@ -59,8 +60,14 @@ export function CoursesTable({
   }, [courses, search]);
 
   const columns: ColumnDef<Course, unknown>[] = [
-    { accessorKey: "name", header: "Course name" },
+    { accessorKey: "name", header: "Name" },
     { accessorKey: "providerName", header: "Provider" },
+    {
+      accessorKey: "url",
+      header: "Link",
+      enableSorting: false,
+      cell: ({ row }) => <ExternalLinkCell url={row.original.url} label={`Open link for ${row.original.name}`} />,
+    },
     { accessorKey: "preparesForName", header: "Prepares for", cell: ({ row }) => row.original.preparesForName ?? "—" },
     {
       accessorKey: "grantsCertificateName",
@@ -154,7 +161,7 @@ export function CoursesTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by name, provider or certificate…"
+        searchPlaceholder="Search courses…"
         hasActiveFilters={search.length > 0}
         onClear={() => setSearch("")}
       >

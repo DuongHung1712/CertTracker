@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { OptionSelect, type SelectOption } from "@/components/option-select";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CURRENCIES, toCurrency } from "@/lib/money";
 
-type Option = { id: string; name: string };
 const NONE = "none";
 type Editing = (CourseInput & { id: string }) | null;
 
@@ -30,8 +30,8 @@ export function CourseSheet({
   onOpenChange: (open: boolean) => void;
   editing: Editing;
   /** Exam certificates a course can prepare for. */
-  certificates: Option[];
-  providers: Option[];
+  certificates: SelectOption[];
+  providers: SelectOption[];
 }) {
   const empty: CourseInput = {
     name: "",
@@ -89,21 +89,14 @@ export function CourseSheet({
               control={form.control}
               name="providerId"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="course-provider" aria-invalid={!!form.formState.errors.providerId}>
-                    {/* Base UI's SelectValue renders the raw value by default; map it back to the provider name. */}
-                    <SelectValue placeholder="Choose a provider">
-                      {(value: string) => providers.find((option) => option.id === value)?.name ?? "Choose a provider"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <OptionSelect
+                  id="course-provider"
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={providers}
+                  placeholder="Choose a provider"
+                  invalid={!!form.formState.errors.providerId}
+                />
               )}
             />
             <FieldError errors={[form.formState.errors.providerId]} />
@@ -114,24 +107,14 @@ export function CourseSheet({
               control={form.control}
               name="preparesForId"
               render={({ field }) => (
-                <Select
+                <OptionSelect
+                  id="course-prepares-for"
                   value={typeof field.value === "string" && field.value ? field.value : NONE}
-                  onValueChange={(value) => field.onChange(value === NONE ? null : value)}
-                >
-                  <SelectTrigger id="course-prepares-for" aria-invalid={!!form.formState.errors.preparesForId}>
-                    <SelectValue placeholder="None">
-                      {(value: string) => certificates.find((option) => option.id === value)?.name ?? "None"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={NONE}>None</SelectItem>
-                    {certificates.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(value) => field.onChange(value === NONE ? null : value)}
+                  options={[{ id: NONE, name: "None" }, ...certificates]}
+                  placeholder="None"
+                  invalid={!!form.formState.errors.preparesForId}
+                />
               )}
             />
             <FieldError errors={[form.formState.errors.preparesForId]} />

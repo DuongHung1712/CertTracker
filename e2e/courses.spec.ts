@@ -1,50 +1,115 @@
-import { expect, test, type Page } from "@playwright/test";
-import { signIn } from "./helpers";
+import { expect, test, type Locator, type Page } from "@playwright/test";
+import { fieldLabel, signIn } from "./helpers";
 
-test("admin adds a course and a member can only read it", async ({ page }) => {
-  await signIn(page, "admin@certtracker.test");
-  await page.goto("/courses");
+const ADMIN = "admin@certtracker.test";
+const MEMBER = "member@certtracker.test";
 
-  const courseName = `Course E2E ${Date.now()}`;
-  await page.getByRole("button", { name: "Add course" }).click();
-  // Scoped to the dialog: the table's FilterBar search box has aria-label "Search by name, type or provider…",
-  // whose substring match on "Provider" collides with the sheet's own field under an unscoped getByLabel.
-  const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Course name").fill(courseName);
-  await dialog.getByLabel("Certificate type").click();
-  // Pick by exact name, not `.first()`: the first select's popup can still be animating out (visible) when the
-  // second one opens, so a bare `getByRole("option").first()` may resolve to an option of the wrong list.
-  await page.getByRole("option", { name: "Cloud", exact: true }).click();
-  await dialog.getByLabel("Provider").click();
-  await page.getByRole("option", { name: "AWS", exact: true }).click();
-  await dialog.getByRole("button", { name: "Save" }).click();
-  // exact: the row's actions button is aria-labelled "Actions for {course name}", so an
-  // unscoped substring match on the course name also matches that cell.
-  await expect(page.getByRole("cell", { name: courseName, exact: true })).toBeVisible();
+async function openTab(page: Page, name: "Certificates" | "Courses") {
+  await page.getByRole("tab", { name }).click();
+}
 
-  // "Sign out" is a menu item behind the "Account" trigger (src/components/app-shell/user-menu.tsx), not a plain button — see e2e/auth.spec.ts for the same two-step pattern.
+async function signOut(page: Page) {
+  // "Sign out" is a menu item behind the "Account" trigger (src/components/app-shell/user-menu.tsx).
   await page.getByRole("button", { name: "Account" }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
-  await signIn(page, "member@certtracker.test");
-  await page.goto("/courses");
-  await expect(page.getByRole("cell", { name: courseName, exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add course" })).toHaveCount(0);
-});
+}
+
+async function pickOption(page: Page, dialog: Locator, label: string | RegExp, option: string) {
+  await dialog.getByLabel(label).click();
+  // Exact name: a closing popup can still be visible when the next one opens.
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
+
+async function addCertificate(page: Page, fields: { name: string; kind: "Exam" | "Course completion" }) {
+  await openTab(page, "Certificates");
+  await page.getByRole("button", { name: "Add certificate", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  await pickOption(page, dialog, fieldLabel("Kind"), fields.kind);
+  await dialog.getByLabel(fieldLabel("Name")).fill(fields.name);
+  await pickOption(page, dialog, fieldLabel("Certificate type"), "Cloud");
+  await pickOption(page, dialog, fieldLabel("Provider"), "AWS");
+  return dialog;
+}
 
 async function fillCourseBasics(page: Page, courseName: string) {
   await page.getByRole("button", { name: "Add course" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel("Course name").fill(courseName);
-  await dialog.getByLabel("Certificate type").click();
-  await page.getByRole("option", { name: "Cloud", exact: true }).click();
-  await dialog.getByLabel("Provider").click();
-  await page.getByRole("option", { name: "AWS", exact: true }).click();
+  await pickOption(page, dialog, "Provider", "AWS");
   return dialog;
 }
 
-test("admin saves a course with a USD cost and study hours, and the list shows them", async ({ page }) => {
-  await signIn(page, "admin@certtracker.test");
+async function addCourse(page: Page, name: string, preparesFor?: string) {
+  await openTab(page, "Courses");
+  const dialog = await fillCourseBasics(page, name);
+  if (preparesFor) await pickOption(page, dialog, "Prepares for", preparesFor);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+}
+
+// exact: the row's actions button is aria-labelled "Actions for {name}", so a substring match also hits that cell.
+const rowOf = (page: Page, name: string) =>
+  page.getByRole("row").filter({ has: page.getByRole("cell", { name, exact: true }) });
+
+test("admin adds an exam certificate and a course that prepares for it; a member only reads both", async ({ page }) => {
+  await signIn(page, ADMIN);
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Catalogue" }).click();
+  await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();
+
+  const stamp = Date.now();
+  const examName = `Exam E2E ${stamp}`;
+  const courseName = `Course E2E ${stamp}`;
+  const certificateDialog = await addCertificate(page, { name: examName, kind: "Exam" });
+  await certificateDialog.getByRole("button", { name: "Save" }).click();
+  await expect(certificateDialog).toBeHidden();
+  await expect(rowOf(page, examName).getByText("Exam", { exact: true })).toBeVisible();
+  await expect(rowOf(page, examName).getByText("No expiry")).toBeVisible();
+
+  await addCourse(page, courseName, examName);
+  await expect(rowOf(page, courseName).getByRole("cell", { name: examName, exact: true })).toBeVisible();
+
+  await signOut(page);
+  await signIn(page, MEMBER);
   await page.goto("/courses");
+  await expect(rowOf(page, examName)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add certificate", exact: true })).toHaveCount(0);
+  await openTab(page, "Courses");
+  await expect(rowOf(page, courseName)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add course" })).toHaveCount(0);
+});
+
+test("a course completion needs a granting course, and that course cannot be deleted while it grants", async ({ page }) => {
+  await signIn(page, ADMIN);
+  await page.goto("/courses");
+
+  const stamp = Date.now();
+  const courseName = `Granting Course ${stamp}`;
+  const completionName = `Completion E2E ${stamp}`;
+  await addCourse(page, courseName);
+
+  const dialog = await addCertificate(page, { name: completionName, kind: "Course completion" });
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog.getByText("Choose the course that grants this completion")).toBeVisible();
+  await pickOption(page, dialog, fieldLabel("Course"), courseName);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(rowOf(page, completionName).getByRole("cell", { name: courseName, exact: true })).toBeVisible();
+
+  await openTab(page, "Courses");
+  await expect(rowOf(page, courseName).getByText(`Completion: ${completionName}`)).toBeVisible();
+
+  await rowOf(page, courseName).getByRole("button", { name: `Actions for ${courseName}` }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await page.getByRole("button", { name: "Delete course" }).click();
+  await expect(
+    page.getByText(`This course grants the completion ${completionName}. Delete or change that completion first.`),
+  ).toBeVisible();
+});
+
+test("admin saves a course with a USD cost and study hours, and the list shows them", async ({ page }) => {
+  await signIn(page, ADMIN);
+  await page.goto("/courses");
+  await openTab(page, "Courses");
 
   const courseName = `Priced Course ${Date.now()}`;
   const dialog = await fillCourseBasics(page, courseName);
@@ -62,8 +127,9 @@ test("admin saves a course with a USD cost and study hours, and the list shows t
 });
 
 test("a cost without a currency is refused with a clear message", async ({ page }) => {
-  await signIn(page, "admin@certtracker.test");
+  await signIn(page, ADMIN);
   await page.goto("/courses");
+  await openTab(page, "Courses");
 
   const dialog = await fillCourseBasics(page, `Unpriced Course ${Date.now()}`);
   await dialog.getByLabel("Cost", { exact: true }).fill("150");
@@ -72,8 +138,9 @@ test("a cost without a currency is refused with a clear message", async ({ page 
 });
 
 test("admin records refund conditions on a refundable course", async ({ page }) => {
-  await signIn(page, "admin@certtracker.test");
+  await signIn(page, ADMIN);
   await page.goto("/courses");
+  await openTab(page, "Courses");
 
   const courseName = `Refund Course ${Date.now()}`;
   const text = "Pass the exam within 6 months";
