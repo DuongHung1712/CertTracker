@@ -23,9 +23,9 @@ insert into public.members (id, full_name, email, team_id) values
   ('b1000000-0000-0000-0000-00000000c001', 'MS Member A', 'ms-a@test.local', 'b1000000-0000-0000-0000-00000000a001'),
   ('b1000000-0000-0000-0000-00000000c002', 'MS Member B', 'ms-b@test.local', 'b1000000-0000-0000-0000-00000000a002'),
   ('b1000000-0000-0000-0000-00000000c003', 'MS Member C', 'ms-c@test.local', 'b1000000-0000-0000-0000-00000000a003');
-insert into public.courses (id, name, validity_months)
-  values ('b1000000-0000-0000-0000-00000000e001', 'MS Course', 12);
-insert into public.training_records (id, member_id, course_id, status, progress) values
+insert into public.certificates (id, name, kind, validity_months)
+  values ('b1000000-0000-0000-0000-00000000e001', 'MS Course', 'exam', 12);
+insert into public.training_records (id, member_id, certificate_id, status, progress) values
   ('b1000000-0000-0000-0000-00000000b001', 'b1000000-0000-0000-0000-00000000c001',
    'b1000000-0000-0000-0000-00000000e001', 'in_progress', 10),
   ('b1000000-0000-0000-0000-00000000b002', 'b1000000-0000-0000-0000-00000000c002',

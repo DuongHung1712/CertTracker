@@ -19,15 +19,12 @@ import { formatMoney, type Currency } from "@/lib/money";
 type Course = {
   id: string;
   name: string;
-  // `courses.cert_type_id`/`provider_id` are nullable FKs at the DB level (on delete restrict,
-  // no `not null`); the app's courseSchema always requires picking one on create/update, but
-  // existing rows are typed to match the real (nullable) column.
-  certTypeId: string | null;
-  certTypeName: string;
+  // `courses.provider_id` is a nullable FK at the DB level (no `not null`); the form always requires one.
   providerId: string | null;
   providerName: string;
-  level: string | null;
-  validityMonths: number | null;
+  preparesForId: string | null;
+  preparesForName: string | null;
+  grantsCertificateName: string | null;
   refundable: boolean;
   cost: number | null;
   costCurrency: Currency | null;
@@ -39,12 +36,13 @@ type Option = { id: string; name: string };
 
 export function CoursesTable({
   courses,
-  certTypes,
+  certificates,
   providers,
   canManage,
 }: {
   courses: Course[];
-  certTypes: Option[];
+  /** Exam certificates a course can prepare for. */
+  certificates: Option[];
   providers: Option[];
   canManage: boolean;
 }) {
@@ -57,22 +55,17 @@ export function CoursesTable({
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return courses;
-    return courses.filter((c) => `${c.name} ${c.certTypeName} ${c.providerName}`.toLowerCase().includes(q));
+    return courses.filter((c) => `${c.name} ${c.providerName} ${c.preparesForName ?? ""} ${c.grantsCertificateName ?? ""}`.toLowerCase().includes(q));
   }, [courses, search]);
 
   const columns: ColumnDef<Course, unknown>[] = [
     { accessorKey: "name", header: "Course name" },
-    { accessorKey: "certTypeName", header: "Type" },
     { accessorKey: "providerName", header: "Provider" },
-    { accessorKey: "level", header: "Level", cell: ({ row }) => row.original.level || "—" },
+    { accessorKey: "preparesForName", header: "Prepares for", cell: ({ row }) => row.original.preparesForName ?? "—" },
     {
-      accessorKey: "validityMonths",
-      header: "Validity",
-      cell: ({ row }) =>
-        row.original.validityMonths
-          ? `${row.original.validityMonths} ${row.original.validityMonths === 1 ? "month" : "months"}`
-          : "No expiry",
-      meta: { align: "right" },
+      accessorKey: "grantsCertificateName",
+      header: "Grants",
+      cell: ({ row }) => (row.original.grantsCertificateName ? `Completion: ${row.original.grantsCertificateName}` : "—"),
     },
     {
       accessorKey: "refundable",
@@ -161,7 +154,7 @@ export function CoursesTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by name, type or provider…"
+        searchPlaceholder="Search by name, provider or certificate…"
         hasActiveFilters={search.length > 0}
         onClear={() => setSearch("")}
       >
@@ -169,7 +162,7 @@ export function CoursesTable({
           <Button
             size="sm"
             className="ml-auto"
-            disabled={certTypes.length === 0 || providers.length === 0}
+            disabled={providers.length === 0}
             onClick={() => {
               setEditing(null);
               setSheetOpen(true);
@@ -190,7 +183,7 @@ export function CoursesTable({
               title="No courses yet"
               description={
                 canManage
-                  ? "Add the first course to make it available for certificates."
+                  ? "Add the first course to make it available as a way to study."
                   : "No courses are available yet."
               }
             />
@@ -209,10 +202,8 @@ export function CoursesTable({
                 ? {
                     id: editing.id,
                     name: editing.name,
-                    certTypeId: editing.certTypeId ?? "",
                     providerId: editing.providerId ?? "",
-                    level: editing.level ?? "",
-                    validityMonths: editing.validityMonths,
+                    preparesForId: editing.preparesForId,
                     refundable: editing.refundable,
                     cost: editing.cost,
                     costCurrency: editing.costCurrency,
@@ -222,14 +213,14 @@ export function CoursesTable({
                   }
                 : null
             }
-            certTypes={certTypes}
+            certificates={certificates}
             providers={providers}
           />
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
             title={`Delete course ${confirming?.name}?`}
-            description="A course can only be deleted when nobody has a certificate for it. This cannot be undone."
+            description="A course that grants a completion cannot be deleted. Where members used it as their course studied, it is cleared. This cannot be undone."
             confirmLabel="Delete course"
             pendingLabel="Deleting…"
             pending={pending}

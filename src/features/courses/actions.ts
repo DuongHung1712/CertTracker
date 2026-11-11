@@ -89,10 +89,8 @@ export async function deleteProvider(input: { id: string }): Promise<Result<null
 function toCourseRow(data: CourseInput) {
   return {
     name: data.name,
-    cert_type_id: data.certTypeId,
     provider_id: data.providerId,
-    level: data.level || null,
-    validity_months: data.validityMonths,
+    prepares_for_id: data.preparesForId,
     refundable: data.refundable,
     cost: data.cost,
     cost_currency: data.costCurrency,
@@ -130,7 +128,15 @@ export async function deleteCourse(input: { id: string }): Promise<Result<null>>
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("courses").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "Someone has a certificate for this course, so it cannot be deleted." }));
+  if (error) {
+    // The only restrict on courses: a completion that this course grants. Name it so the admin knows what to change.
+    const granted = await supabase.from("certificates").select("name").eq("course_id", parsed.data.id).maybeSingle();
+    return err(
+      granted.data
+        ? `This course grants the completion ${granted.data.name}. Delete or change that completion first.`
+        : mapPostgresError(error),
+    );
+  }
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");

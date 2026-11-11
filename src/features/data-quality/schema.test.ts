@@ -9,7 +9,7 @@ const base = {
   member_code: "M001",
   member_name: "Nguyễn Văn An",
   team_name: "Team Cloud",
-  course_name: "AWS SAA",
+  certificate_name: "AWS SAA",
   record_id: "d9000000-0000-0000-0000-0000000000e1",
   since: "2026-10-01",
   days: 3,
@@ -26,7 +26,7 @@ describe("parseIssues", () => {
         memberCode: "M001",
         memberName: "Nguyễn Văn An",
         teamName: "Team Cloud",
-        courseName: "AWS SAA",
+        certificateName: "AWS SAA",
         recordId: base.record_id,
         since: "2026-10-01",
         days: 3,
@@ -36,9 +36,9 @@ describe("parseIssues", () => {
 
   it("accepts the nullable columns of member-level and course-level rows", () => {
     const [row] = parseIssues([
-      { ...base, issue_type: "course_no_validity", severity: "info", member_id: null, member_code: null, member_name: null, team_name: null, record_id: null },
+      { ...base, issue_type: "certificate_no_validity", severity: "info", member_id: null, member_code: null, member_name: null, team_name: null, record_id: null },
     ]);
-    expect(row).toMatchObject({ type: "course_no_validity", memberId: null, memberName: null, recordId: null });
+    expect(row).toMatchObject({ type: "certificate_no_validity", memberId: null, memberName: null, recordId: null });
   });
 
   it("rejects an unknown issue type instead of silently dropping the row (edge #70)", () => {

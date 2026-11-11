@@ -213,8 +213,8 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
   const inserted = await adminDb
     .from("training_records")
     .insert([
-      { member_id: MEMBER_CHAU, course_id: COURSE_NVIDIA, status: "not_started", progress: 0, planned_exam_date: yesterday },
-      { member_id: MEMBER_BINH, course_id: COURSE_AWS, status: "not_started", progress: 0, planned_exam_date: yesterday },
+      { member_id: MEMBER_CHAU, certificate_id: COURSE_NVIDIA, status: "not_started", progress: 0, planned_exam_date: yesterday },
+      { member_id: MEMBER_BINH, certificate_id: COURSE_AWS, status: "not_started", progress: 0, planned_exam_date: yesterday },
     ])
     .select("id");
   if (inserted.error || inserted.data?.length !== 2) {

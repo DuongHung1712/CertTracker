@@ -23,7 +23,7 @@ function revalidate() {
 /** Columns every role may write. `undefined` values are dropped from the JSON body, so an absent company field is not sent. */
 function toRow(data: RecordInput) {
   return {
-    course_id: data.courseId,
+    certificate_id: data.courseId,
     status: data.status,
     progress: data.progress,
     planned_exam_date: data.plannedExamDate,

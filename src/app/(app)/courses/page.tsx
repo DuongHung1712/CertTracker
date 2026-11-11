@@ -1,5 +1,6 @@
 import { PageHeader } from "@/components/app-shell/page-header";
 import { getCurrentUser } from "@/features/auth/queries";
+import { listCertificates } from "@/features/certificates/queries";
 import { CertTypeSection } from "@/features/courses/components/cert-type-section";
 import { CoursesTable } from "@/features/courses/components/courses-table";
 import { ProviderSection } from "@/features/courses/components/provider-section";
@@ -8,7 +9,13 @@ import { listCertTypes, listCourses, listProviders } from "@/features/courses/qu
 export default async function CoursesPage() {
   const user = await getCurrentUser();
   const isAdmin = user?.role === "admin";
-  const [certTypes, providers, courses] = await Promise.all([listCertTypes(), listProviders(), listCourses()]);
+  const [certTypes, providers, courses, certificates] = await Promise.all([
+    listCertTypes(),
+    listProviders(),
+    listCourses(),
+    listCertificates(),
+  ]);
+  const examOptions = certificates.filter((c) => c.kind === "exam").map((c) => ({ id: c.id, name: c.name }));
 
   return (
     <div className="flex flex-col gap-8">
@@ -20,7 +27,7 @@ export default async function CoursesPage() {
         </>
       )}
       <section className="flex flex-col gap-3">
-        <CoursesTable courses={courses} certTypes={certTypes} providers={providers} canManage={isAdmin} />
+        <CoursesTable courses={courses} certificates={examOptions} providers={providers} canManage={isAdmin} />
       </section>
     </div>
   );

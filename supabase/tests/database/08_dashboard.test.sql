@@ -42,13 +42,13 @@ insert into public.providers (id, name) values
   ('eeeeeeee-0000-0000-0000-000000000001', 'Provider One'),
   ('eeeeeeee-0000-0000-0000-000000000002', 'Provider Two');
 insert into public.cert_types (id, name) values ('ffffffff-0000-0000-0000-000000000001', 'Type One');
-insert into public.courses (id, name, cert_type_id, provider_id, validity_months) values
-  ('99999999-0000-0000-0000-000000000001', 'Course One',   'ffffffff-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000001', 12),
-  ('99999999-0000-0000-0000-000000000002', 'Course Two',   null,                                   'eeeeeeee-0000-0000-0000-000000000001', 6),
-  ('99999999-0000-0000-0000-000000000003', 'Course Three', 'ffffffff-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002', null);
+insert into public.certificates (id, name, kind, cert_type_id, provider_id, validity_months) values
+  ('99999999-0000-0000-0000-000000000001', 'Course One', 'exam',   'ffffffff-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000001', 12),
+  ('99999999-0000-0000-0000-000000000002', 'Course Two', 'exam',   null,                                   'eeeeeeee-0000-0000-0000-000000000001', 6),
+  ('99999999-0000-0000-0000-000000000003', 'Course Three', 'exam', 'ffffffff-0000-0000-0000-000000000001', 'eeeeeeee-0000-0000-0000-000000000002', null);
 
 -- C1 = Course One (12 months), C2 = Course Two (6 months), C3 = Course Three (never expires)
-insert into public.training_records (member_id, course_id, status, progress, issued_date) values
+insert into public.training_records (member_id, certificate_id, status, progress, issued_date) values
   ('aaaaaaaa-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000001', 'done', 100, public.vn_today() - 30),   -- A One C1: Active
   ('aaaaaaaa-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000003', 'done', 100, public.vn_today() - 30),   -- A One C3: No Expiry
   ('aaaaaaaa-0000-0000-0000-000000000002', '99999999-0000-0000-0000-000000000001', 'done', 100, public.vn_today() - 400),  -- A Two C1: Expired
@@ -129,15 +129,15 @@ select results_eq(
   $$values (3, 3, 3, 0, 0, 2, 1)$$, 'a course without a cert type lands in "Uncategorised"');
 select results_eq(
   $$select people, records, done, in_progress, not_started, valid, expired
-      from public.dashboard_breakdown('course') where group_label = 'Course One'$$,
+      from public.dashboard_breakdown('certificate') where group_label = 'Course One'$$,
   $$values (4, 4, 3, 1, 0, 2, 1)$$, 'course one');
 select results_eq(
   $$select people, records, done, in_progress, not_started, valid, expired
-      from public.dashboard_breakdown('course') where group_label = 'Course Two'$$,
+      from public.dashboard_breakdown('certificate') where group_label = 'Course Two'$$,
   $$values (3, 3, 3, 0, 0, 2, 1)$$, 'course two');
-select is((select count(*) from public.dashboard_breakdown('course', 2)), 2::bigint, 'p_limit caps the rows');
+select is((select count(*) from public.dashboard_breakdown('certificate', 2)), 2::bigint, 'p_limit caps the rows');
 select throws_ok($$select * from public.dashboard_breakdown('galaxy')$$, '22023', null, 'an unknown dimension is refused');
-select throws_ok($$select * from public.dashboard_breakdown('course', 0)$$, '22023', null, 'p_limit below 1 is refused');
+select throws_ok($$select * from public.dashboard_breakdown('certificate', 0)$$, '22023', null, 'p_limit below 1 is refused');
 reset role;
 
 -- ============ Breakdown as member: no teams, groups under 3 learners hidden ============
@@ -150,7 +150,7 @@ select results_eq(
   $$select group_label from public.dashboard_breakdown('cert_type')$$,
   $$values ('Type One'), ('Uncategorised')$$, 'member: a group with exactly 3 learners ("Uncategorised") is shown');
 select results_eq(
-  $$select group_label from public.dashboard_breakdown('course')$$,
+  $$select group_label from public.dashboard_breakdown('certificate')$$,
   $$values ('Course One'), ('Course Two')$$, 'member: Course Two (exactly 3 learners) is shown, Course Three (2 learners) is hidden');
 reset role;
 
@@ -204,9 +204,9 @@ select ok(
   'authenticated may execute all three');
 
 -- ============ A course without a provider is grouped under "Unknown provider" ============
-insert into public.courses (id, name, cert_type_id, provider_id, validity_months)
-  values ('99999999-0000-0000-0000-000000000004', 'Course Four', null, null, 12);
-insert into public.training_records (member_id, course_id, status, progress, issued_date)
+insert into public.certificates (id, name, kind, cert_type_id, provider_id, validity_months)
+  values ('99999999-0000-0000-0000-000000000004', 'Course Four', 'exam', null, null, 12);
+insert into public.training_records (member_id, certificate_id, status, progress, issued_date)
   values ('bbbbbbbb-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000004', 'done', 100, public.vn_today() - 10);
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000a');
 select results_eq(

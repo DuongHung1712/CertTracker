@@ -40,10 +40,10 @@ insert into public.manager_scopes (team_id, user_id)
   values ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-00000000000b');
 insert into public.providers (id, name) values ('dddddddd-0000-0000-0000-000000000001', 'Test Provider');
 insert into public.cert_types (id, name) values ('dddddddd-0000-0000-0000-000000000002', 'Test Type');
-insert into public.courses (id, name, validity_months, provider_id, cert_type_id) values
-  ('cccccccc-0000-0000-0000-000000000001', 'Course 1', 36,
+insert into public.certificates (id, name, kind, validity_months, provider_id, cert_type_id) values
+  ('cccccccc-0000-0000-0000-000000000001', 'Course 1', 'exam', 36,
    'dddddddd-0000-0000-0000-000000000001', 'dddddddd-0000-0000-0000-000000000002');
-insert into public.training_records (id, member_id, course_id, status, progress) values
+insert into public.training_records (id, member_id, certificate_id, status, progress) values
   ('eeeeeeee-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001',
    'cccccccc-0000-0000-0000-000000000001', 'in_progress', 50),
   ('eeeeeeee-0000-0000-0000-00000000000b', 'bbbbbbbb-0000-0000-0000-000000000002',
@@ -56,7 +56,7 @@ insert into storage.objects (bucket_id, name) values
 
 -- Uniqueness
 select throws_ok(
-  $$insert into public.training_records (member_id, course_id)
+  $$insert into public.training_records (member_id, certificate_id)
     values ('aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001')$$,
   '23505', null, 'a member cannot have two records for the same course');
 

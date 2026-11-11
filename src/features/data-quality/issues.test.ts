@@ -4,7 +4,7 @@ import { ISSUE_TYPES, type IssueRow } from "@/features/data-quality/schema";
 
 const row = (over: Partial<IssueRow>): IssueRow => ({
   type: "overdue_exam", severity: "warning", subjectId: "s", memberId: "m", memberCode: "M001", memberName: "An",
-  teamName: "T", courseName: "C", recordId: "r", since: "2026-10-01", days: 3, ...over,
+  teamName: "T", certificateName: "C", recordId: "r", since: "2026-10-01", days: 3, ...over,
 });
 
 describe("describeIssue", () => {
@@ -20,7 +20,7 @@ describe("describeIssue", () => {
     expect(describeIssue(row({ type: "member_no_team", since: "2026-08-01" }))).toBe("Not in any team (added on 01/08/2026).");
   });
   it("tells the admin when a missing validity can be ignored", () => {
-    expect(describeIssue(row({ type: "course_no_validity" }))).toBe(
+    expect(describeIssue(row({ type: "certificate_no_validity" }))).toBe(
       "No validity period is set. Ignore this if the certificate does not expire.",
     );
   });
@@ -29,7 +29,7 @@ describe("describeIssue", () => {
 describe("countByType", () => {
   it("counts every type, including zero", () => {
     const counts = countByType([row({}), row({}), row({ type: "member_no_team" })]);
-    expect(counts).toEqual({ overdue_exam: 2, done_no_evidence: 0, member_no_team: 1, course_no_validity: 0 });
+    expect(counts).toEqual({ overdue_exam: 2, done_no_evidence: 0, member_no_team: 1, certificate_no_validity: 0 });
   });
 });
 

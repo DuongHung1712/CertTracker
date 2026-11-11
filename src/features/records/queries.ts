@@ -35,7 +35,7 @@ export type RecordRow = {
 };
 
 const COLUMNS =
-  "id, member_id, member_code, member_name, member_email, team_id, team_name, course_id, course_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
+  "id, member_id, member_code, member_name, member_email, team_id, team_name, certificate_id, certificate_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
 
 /** RLS decides what comes back: everything for Admin, managed teams (+ own) for Manager, own for Member. */
 export async function listRecords(filter: { memberId?: string } = {}): Promise<RecordRow[]> {
@@ -44,12 +44,12 @@ export async function listRecords(filter: { memberId?: string } = {}): Promise<R
     let query = supabase.from("v_training_records").select(COLUMNS);
     if (filter.memberId) query = query.eq("member_id", filter.memberId);
     // `id` makes the order total, which paging needs.
-    return query.order("member_name").order("course_name").order("id").range(from, to);
+    return query.order("member_name").order("certificate_name").order("id").range(from, to);
   });
 
   // Generated view types are all-nullable; the underlying columns are NOT NULL.
   return rows.flatMap((row) =>
-    row.id && row.member_id && row.course_id && row.status
+    row.id && row.member_id && row.certificate_id && row.status
       ? [
           {
             id: row.id,
@@ -59,8 +59,9 @@ export async function listRecords(filter: { memberId?: string } = {}): Promise<R
             memberEmail: row.member_email ?? "",
             teamId: row.team_id,
             teamName: row.team_name,
-            courseId: row.course_id,
-            courseName: row.course_name ?? "",
+            // `courseId`/`courseName` hold the certificate: the record form still calls it "course" until Part D3.
+            courseId: row.certificate_id,
+            courseName: row.certificate_name ?? "",
             certTypeName: row.cert_type_name,
             providerName: row.provider_name,
             validityMonths: row.validity_months,
@@ -98,7 +99,7 @@ export async function listMemberOptions() {
 export async function listCourseOptions() {
   const supabase = await createClient();
   const rows = await fetchAllRows((from, to) =>
-    supabase.from("courses").select("id, name, providers(name)").order("name").order("id").range(from, to),
+    supabase.from("certificates").select("id, name, providers(name)").order("name").order("id").range(from, to),
   );
   return rows.map((row) => ({ id: row.id, label: row.name, hint: row.providers?.name ?? undefined }));
 }

@@ -20,7 +20,7 @@ type RecordRow = Database["public"]["Tables"]["training_records"]["Row"];
 type SeedRecord = Pick<
   RecordRow,
   | "member_id"
-  | "course_id"
+  | "certificate_id"
   | "status"
   | "progress"
   | "planned_exam_date"
@@ -44,7 +44,7 @@ const SEED_COURSE_IDS = ["5eed0000-0000-0000-0000-00000000e001", "5eed0000-0000-
 const SEED_RECORD_COUNT = 3;
 
 const RECORD_COLUMNS =
-  "member_id, course_id, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes";
+  "member_id, certificate_id, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes";
 
 // Seed dates are relative to the day of `supabase db reset`, so the seed values are captured from the pristine
 // database instead of being recomputed. The file survives a crashed run; it is removed after a successful restore.
@@ -92,19 +92,27 @@ async function importedIds(client: Client) {
           await client.from("courses").select("id").in("provider_id", providers.map((provider) => provider.id)),
           "read imported courses",
         );
+  const certificates =
+    providers.length === 0
+      ? []
+      : check(
+          await client.from("certificates").select("id").in("provider_id", providers.map((provider) => provider.id)),
+          "read imported certificates",
+        );
   return {
     memberIds: members.map((member) => member.id),
     providerIds: providers.map((provider) => provider.id),
     courseIds: courses.map((course) => course.id),
+    certificateIds: certificates.map((certificate) => certificate.id),
   };
 }
 
 async function readSeedRecords(client: Client): Promise<SeedRecord[]> {
   const rows = check(
-    await client.from("training_records").select(RECORD_COLUMNS).in("member_id", SEED_MEMBER_IDS).in("course_id", SEED_COURSE_IDS),
+    await client.from("training_records").select(RECORD_COLUMNS).in("member_id", SEED_MEMBER_IDS).in("certificate_id", SEED_COURSE_IDS),
     "read seed records",
   );
-  return rows.sort((a, b) => `${a.member_id}${a.course_id}`.localeCompare(`${b.member_id}${b.course_id}`));
+  return rows.sort((a, b) => `${a.member_id}${a.certificate_id}`.localeCompare(`${b.member_id}${b.certificate_id}`));
 }
 
 /**
@@ -134,29 +142,30 @@ export async function restoreSeed(client: Client, seedRecords: SeedRecord[]): Pr
   // The spec only creates batches (rows cascade); the seed has none, so remove them all, including leftovers.
   check(await client.from("import_batches").delete().not("id", "is", null).select("id"), "delete import batches");
 
-  const { memberIds, providerIds, courseIds } = await importedIds(client);
+  const { memberIds, providerIds, courseIds, certificateIds } = await importedIds(client);
   if (memberIds.length > 0) {
     check(await client.from("training_records").delete().in("member_id", memberIds).select("id"), "delete imported member records");
   }
-  if (courseIds.length > 0) {
-    check(await client.from("training_records").delete().in("course_id", courseIds).select("id"), "delete imported course records");
-    check(await client.from("courses").delete().in("id", courseIds).select("id"), "delete imported courses");
+  if (certificateIds.length > 0) {
+    check(await client.from("training_records").delete().in("certificate_id", certificateIds).select("id"), "delete imported certificate records");
   }
+  if (courseIds.length > 0) check(await client.from("courses").delete().in("id", courseIds).select("id"), "delete imported courses");
+  if (certificateIds.length > 0) check(await client.from("certificates").delete().in("id", certificateIds).select("id"), "delete imported certificates");
   if (providerIds.length > 0) check(await client.from("providers").delete().in("id", providerIds).select("id"), "delete imported providers");
   if (memberIds.length > 0) check(await client.from("members").delete().in("id", memberIds).select("id"), "delete imported member");
 
   // Seed records the import updated (An: issued date; Bình: progress, planned date, notes).
-  for (const { member_id, course_id, ...seed } of seedRecords) {
+  for (const { member_id, certificate_id, ...seed } of seedRecords) {
     const updated = check(
-      await client.from("training_records").update(seed).eq("member_id", member_id).eq("course_id", course_id).select("id"),
+      await client.from("training_records").update(seed).eq("member_id", member_id).eq("certificate_id", certificate_id).select("id"),
       "restore seed record",
     );
-    if (updated.length !== 1) throw new Error(`Seed record ${member_id}|${course_id} not found (RLS refused the update?).`);
+    if (updated.length !== 1) throw new Error(`Seed record ${member_id}|${certificate_id} not found (RLS refused the update?).`);
   }
 
   // RLS turns a forbidden delete into a silent no-op, so prove the result.
   const left = await importedIds(client);
-  if (left.memberIds.length + left.providerIds.length + left.courseIds.length > 0) {
+  if (left.memberIds.length + left.providerIds.length + left.courseIds.length + left.certificateIds.length > 0) {
     throw new Error("restoreSeed left imported members/providers/courses behind (RLS refused a delete?).");
   }
   if (check(await client.from("import_batches").select("id"), "verify import batches").length > 0) {

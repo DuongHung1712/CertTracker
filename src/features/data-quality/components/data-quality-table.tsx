@@ -14,7 +14,7 @@ import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-qual
 
 /** Who or what the finding is about: a person for record/member issues, a course for catalogue issues. */
 function subjectName(row: IssueRow): string | null {
-  return row.type === "course_no_validity" ? row.courseName : row.memberName;
+  return row.type === "certificate_no_validity" ? row.certificateName : row.memberName;
 }
 
 // Warnings before suggestions, then the longest-standing first.
@@ -35,7 +35,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
     return sorted.filter((row) => {
       if (typeFilter && row.type !== typeFilter) return false;
       if (!q) return true;
-      return [row.memberName, row.memberCode, row.courseName, row.teamName].some((value) => value?.toLowerCase().includes(q));
+      return [row.memberName, row.memberCode, row.certificateName, row.teamName].some((value) => value?.toLowerCase().includes(q));
     });
   }, [sorted, search, typeFilter]);
 
@@ -62,7 +62,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
           if (!name) return "—";
           return (
             <span className="inline-flex items-baseline gap-2">
-              {row.original.type !== "course_no_validity" && row.original.memberCode && (
+              {row.original.type !== "certificate_no_validity" && row.original.memberCode && (
                 <MemberCode code={row.original.memberCode} />
               )}
               {name}

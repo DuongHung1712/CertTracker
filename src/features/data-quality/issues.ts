@@ -8,7 +8,7 @@ export const ISSUE_META: Record<IssueType, { label: string; href: string }> = {
   overdue_exam: { label: "Exam overdue", href: "/records" },
   done_no_evidence: { label: "Missing evidence", href: "/records" },
   member_no_team: { label: NO_TEAM_LABEL, href: "/members" },
-  course_no_validity: { label: "Validity not set", href: "/courses" },
+  certificate_no_validity: { label: "Validity not set", href: "/courses" },
 };
 
 export function describeIssue(row: IssueRow): string {
@@ -19,7 +19,7 @@ export function describeIssue(row: IssueRow): string {
       return `Completed on ${formatDate(row.since)} but there is no evidence file or link.`;
     case "member_no_team":
       return `Not in any team (added on ${formatDate(row.since)}).`;
-    case "course_no_validity":
+    case "certificate_no_validity":
       return "No validity period is set. Ignore this if the certificate does not expire.";
   }
 }

@@ -16,27 +16,27 @@ import { Switch } from "@/components/ui/switch";
 import { CURRENCIES, toCurrency } from "@/lib/money";
 
 type Option = { id: string; name: string };
+const NONE = "none";
 type Editing = (CourseInput & { id: string }) | null;
 
 export function CourseSheet({
   open,
   onOpenChange,
   editing,
-  certTypes,
+  certificates,
   providers,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: Editing;
-  certTypes: Option[];
+  /** Exam certificates a course can prepare for. */
+  certificates: Option[];
   providers: Option[];
 }) {
   const empty: CourseInput = {
     name: "",
-    certTypeId: "",
     providerId: "",
-    level: "",
-    validityMonths: null,
+    preparesForId: null,
     refundable: false,
     cost: null,
     costCurrency: null,
@@ -44,7 +44,7 @@ export function CourseSheet({
     url: null,
     refundConditions: null,
   };
-  // `courseSchema` has `.default()` fields (`level`, `refundable`) and several `z.preprocess`-based
+  // `courseSchema` has `.default()` fields (`refundable`) and several `z.preprocess`-based
   // nullable fields, so its input type (pre-parse) and output type (CourseInput, post-parse) diverge.
   // The three explicit generics tell react-hook-form to accept the input shape as field values and
   // hand `onSubmit` the resolved output — same fix as member-dialog.tsx's `memberSchema`.
@@ -84,31 +84,6 @@ export function CourseSheet({
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="course-cert-type">Certificate type</FieldLabel>
-            <Controller
-              control={form.control}
-              name="certTypeId"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="course-cert-type" aria-invalid={!!form.formState.errors.certTypeId}>
-                    {/* Base UI's SelectValue renders the raw value by default; map it back to the cert type name. */}
-                    <SelectValue placeholder="Choose a certificate type">
-                      {(value: string) => certTypes.find((option) => option.id === value)?.name ?? "Choose a certificate type"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {certTypes.map((option) => (
-                      <SelectItem key={option.id} value={option.id}>
-                        {option.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <FieldError errors={[form.formState.errors.certTypeId]} />
-          </Field>
-          <Field>
             <FieldLabel htmlFor="course-provider">Provider</FieldLabel>
             <Controller
               control={form.control}
@@ -134,21 +109,32 @@ export function CourseSheet({
             <FieldError errors={[form.formState.errors.providerId]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="course-level">Level</FieldLabel>
-            <Input id="course-level" className="h-9" {...form.register("level")} placeholder="Associate, Professional…" />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="course-validity">Validity (months)</FieldLabel>
-            <Input
-              id="course-validity"
-              type="number"
-              min={1}
-              className="h-9"
-              {...form.register("validityMonths")}
-              placeholder="Leave empty if it does not expire"
-              aria-invalid={!!form.formState.errors.validityMonths}
+            <FieldLabel htmlFor="course-prepares-for">Prepares for</FieldLabel>
+            <Controller
+              control={form.control}
+              name="preparesForId"
+              render={({ field }) => (
+                <Select
+                  value={typeof field.value === "string" && field.value ? field.value : NONE}
+                  onValueChange={(value) => field.onChange(value === NONE ? null : value)}
+                >
+                  <SelectTrigger id="course-prepares-for" aria-invalid={!!form.formState.errors.preparesForId}>
+                    <SelectValue placeholder="None">
+                      {(value: string) => certificates.find((option) => option.id === value)?.name ?? "None"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={NONE}>None</SelectItem>
+                    {certificates.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
-            <FieldError errors={[form.formState.errors.validityMonths]} />
+            <FieldError errors={[form.formState.errors.preparesForId]} />
           </Field>
           <Field orientation="horizontal">
             <FieldLabel htmlFor="course-refundable">Refundable</FieldLabel>
