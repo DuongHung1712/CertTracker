@@ -39,6 +39,6 @@ export function buildExplorerTabs(results: {
     { id: "team", label: "By team", groupLabel: "Team", result: results.teams },
     { id: "cert_type", label: "By certificate type", groupLabel: "Certificate type", result: results.certTypes },
     { id: "provider", label: "By provider", groupLabel: "Provider", result: results.providers },
-    { id: "course", label: "Popular courses", groupLabel: "Course", result: results.courses },
+    { id: "certificate", label: "Popular certificates", groupLabel: "Certificate", result: results.courses },
   ];
 }

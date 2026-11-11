@@ -304,9 +304,9 @@ export function DashboardRedesignDemo() {
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(2, 6) },
     },
     {
-      id: "course",
-      label: "Popular courses",
-      groupLabel: "Course",
+      id: "certificate",
+      label: "Popular certificates",
+      groupLabel: "Certificate",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 5) },
     },
   ];

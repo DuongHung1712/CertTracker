@@ -347,33 +347,33 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
 test("explorer tabs, filter row, clear filters, and keyboard row selection update detail panel", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
 
-  // Switch to "Popular courses" tab
-  await page.getByRole("tab", { name: "Popular courses" }).click();
-  const courseSection = section(page, "Popular courses");
-  await expect(courseSection).toBeVisible();
+  // Switch to "Popular certificates" tab
+  await page.getByRole("tab", { name: "Popular certificates" }).click();
+  const certificateSection = section(page, "Popular certificates");
+  await expect(certificateSection).toBeVisible();
 
-  // Detail panel reflects default first row (AWS course)
+  // Detail panel reflects default first row (AWS certificate)
   const detailPanel = page.getByRole("region", { name: "Selected item details" });
   await expect(detailPanel).toBeVisible();
   await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
 
-  // Filter input searches across courses
-  const searchInput = page.getByRole("textbox", { name: "Filter course" });
+  // Filter input searches across certificates
+  const searchInput = page.getByRole("textbox", { name: "Filter certificate" });
   await searchInput.fill("NVIDIA");
-  await expect(rowWith(courseSection, "NVIDIA")).toBeVisible();
-  await expect(courseSection.getByText(AWS)).toHaveCount(0);
+  await expect(rowWith(certificateSection, "NVIDIA")).toBeVisible();
+  await expect(certificateSection.getByText(AWS)).toHaveCount(0);
 
   // Active filter chip shows 1
   await expect(page.getByText("Active filters")).toBeVisible();
 
-  // Clear filters button restores all courses
+  // Clear filters button restores all certificates
   const clearBtn = page.getByRole("button", { name: "Clear filters" }).first();
   await clearBtn.click();
-  await expect(rowWith(courseSection, AWS)).toBeVisible();
+  await expect(rowWith(certificateSection, AWS)).toBeVisible();
   await expect(searchInput).toHaveValue("");
 
   // Keyboard navigation on rows: focus row and press Enter
-  const nvidiaRow = rowWith(courseSection, "NVIDIA");
+  const nvidiaRow = rowWith(certificateSection, "NVIDIA");
   await nvidiaRow.focus();
   await page.keyboard.press("Enter");
   await expect(nvidiaRow).toHaveAttribute("aria-selected", "true");
@@ -381,7 +381,7 @@ test("explorer tabs, filter row, clear filters, and keyboard row selection updat
 
   // Filtering that excludes the selected row falls back to first matching row
   await searchInput.fill("AWS");
-  await expect(rowWith(courseSection, AWS)).toHaveAttribute("aria-selected", "true");
+  await expect(rowWith(certificateSection, AWS)).toHaveAttribute("aria-selected", "true");
   await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
 });
 

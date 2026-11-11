@@ -70,7 +70,7 @@ const ROWS: Record<string, BreakdownRow[]> = {
   team: [row("t1", "Team Zephyr")],
   cert_type: [row("ct1", "Kind Quasar")],
   provider: [row("p1", "Vendor Nimbus")],
-  course: [row("c1", "Course Orion")],
+  certificate: [row("c1", "Course Orion")],
 };
 
 const RANKING: RankingRow[] = [
@@ -148,7 +148,7 @@ describe("DashboardPage error isolation (admin)", () => {
     expect(explorer).toContain("Could not load &quot;By team&quot;");
     expect(explorer).not.toContain("No data yet");
     // The other tabs are still offered, with their loaded counts.
-    for (const label of ["By certificate type", "By provider", "Popular courses"]) {
+    for (const label of ["By certificate type", "By provider", "Popular certificates"]) {
       expect(explorer).toContain(label);
     }
     expect(html).not.toContain("Could not load &quot;Explorer&quot;");

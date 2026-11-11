@@ -31,7 +31,7 @@ export async function loadAdminDashboard(user: SignedInUser) {
     membersResult,
   ] = await Promise.all([
     settle(getDashboardKpis()),
-    settle(getBreakdown("course", 10)),
+    settle(getBreakdown("certificate", 10)),
     settle(getBreakdown("team")),
     settle(getBreakdown("cert_type")),
     settle(getBreakdown("provider")),

@@ -49,7 +49,7 @@ describe("buildExplorerTabs", () => {
       providers: failed("p"),
       courses: failed("o"),
     });
-    expect(tabs.map((t) => t.id)).toEqual(["team", "cert_type", "provider", "course"]);
+    expect(tabs.map((t) => t.id)).toEqual(["team", "cert_type", "provider", "certificate"]);
     expect(tabs.map((t) => (t.result.ok ? "" : t.result.error))).toEqual(["t", "c", "p", "o"]);
   });
 });

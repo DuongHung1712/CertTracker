@@ -25,7 +25,7 @@ export function parseKpis(data: unknown): DashboardKpis {
   };
 }
 
-export const BREAKDOWN_DIMENSIONS = ["team", "cert_type", "provider", "course"] as const;
+export const BREAKDOWN_DIMENSIONS = ["team", "cert_type", "provider", "certificate"] as const;
 export type BreakdownDimension = (typeof BREAKDOWN_DIMENSIONS)[number];
 
 const breakdownRow = z.object({
