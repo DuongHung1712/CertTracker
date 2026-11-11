@@ -107,8 +107,12 @@ test("a new certificate with a cost brings its own course, shown in the preview 
   await page.getByRole("button", { name: "Import 1 row" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Import 1 row" }).click();
   await expect(page.getByText("Imported: created 1, updated 0")).toBeVisible();
-  const { data: course } = await admin.from("courses").select("cost, cost_currency, est_hours").like("name", `Microsoft Priced Exam ${RUN}`).single();
-  expect(course).toEqual({ cost: 165, cost_currency: "USD", est_hours: 20 });
+  const { data: course } = await admin.from("courses").select("id, prepares_for_id, cost, cost_currency, est_hours").like("name", `Microsoft Priced Exam ${RUN}`).single();
+  expect(course).toMatchObject({ cost: 165, cost_currency: "USD", est_hours: 20 });
+  // Spec 4.4: the new course is the course studied of the imported record.
+  const AN = "5eed0000-0000-0000-0000-00000000b001";
+  const { data: record } = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", course!.prepares_for_id!).single();
+  expect(record?.course_id).toBe(course?.id);
 });
 
 test("a course studied is saved on the record, and a course that does not prepare for the certificate is a row error", async ({ page }) => {
@@ -140,10 +144,12 @@ test("a course studied is saved on the record, and a course that does not prepar
     const { data: record } = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", SAA).single();
     expect(record?.course_id).toBe(course?.id);
   } finally {
-    if (course) await admin.from("courses").delete().eq("id", course.id);
-    if (unrelated) await admin.from("courses").delete().eq("id", unrelated.id);
-    // Deleting the course cleared the record's course; the seed gives Châu the exam's own course.
-    await admin.from("training_records").update({ course_id: SAA }).eq("member_id", CHAU).eq("certificate_id", SAA);
+    // The seed restore in afterAll gives Châu's record its own course back; here only the courses go, errors included.
+    for (const created of [course, unrelated]) {
+      if (!created) continue;
+      const { error } = await admin.from("courses").delete().eq("id", created.id);
+      if (error) throw new Error(`delete e2e course: ${error.message}`);
+    }
   }
 });
 

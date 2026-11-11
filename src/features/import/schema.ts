@@ -7,6 +7,7 @@ export const importSummarySchema = z.object({
   updated: z.number().int(),
   skipped: z.number().int(),
   newMembers: z.number().int(),
+  // Counts new certificates now; the key is kept so stored batches still parse.
   newCourses: z.number().int(),
 });
 export type ImportSummary = z.infer<typeof importSummarySchema>;

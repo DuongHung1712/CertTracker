@@ -21,6 +21,7 @@ type SeedRecord = Pick<
   RecordRow,
   | "member_id"
   | "certificate_id"
+  | "course_id"
   | "status"
   | "progress"
   | "planned_exam_date"
@@ -43,7 +44,7 @@ const SEED_MEMBER_IDS = [
 const SEED_COURSE_IDS = ["5eed0000-0000-0000-0000-00000000e001", "5eed0000-0000-0000-0000-00000000e002"];
 
 const RECORD_COLUMNS =
-  "member_id, certificate_id, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes";
+  "member_id, certificate_id, course_id, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes";
 
 const DAY_MS = 86_400_000;
 const AN_ISSUED_DAYS_AGO = 1070;
@@ -54,16 +55,17 @@ const addDays = (iso: string, days: number): string => new Date(Date.parse(iso) 
 /**
  * The three seed records as `supabase/seed.sql` writes them, with its relative dates counted from today. Computed,
  * not captured, so the restore works on a database that has run before and never needs `db reset` (which breaks the
- * storage index locally).
+ * storage index locally). The ids and values below mirror `supabase/seed.sql` and must stay in sync with it.
  */
 function seedRecords(today: string): SeedRecord[] {
   const untouched = { certificate_url: null, evidence_path: null, via_company: false, refund_status: "n_a", notes: null } as const;
   const [an, binh, chau] = SEED_MEMBER_IDS;
+  // Each seed record studied the course that shares its certificate's id.
   const [saa, nvidia] = SEED_COURSE_IDS;
   const records: SeedRecord[] = [
-    { member_id: an!, certificate_id: saa!, status: "done", progress: 100, issued_date: addDays(today, -AN_ISSUED_DAYS_AGO), planned_exam_date: null, ...untouched },
-    { member_id: binh!, certificate_id: nvidia!, status: "in_progress", progress: 40, issued_date: null, planned_exam_date: addDays(today, BINH_EXAM_IN_DAYS), ...untouched },
-    { member_id: chau!, certificate_id: saa!, status: "not_started", progress: 0, issued_date: null, planned_exam_date: null, ...untouched },
+    { member_id: an!, certificate_id: saa!, course_id: saa!, status: "done", progress: 100, issued_date: addDays(today, -AN_ISSUED_DAYS_AGO), planned_exam_date: null, ...untouched },
+    { member_id: binh!, certificate_id: nvidia!, course_id: nvidia!, status: "in_progress", progress: 40, issued_date: null, planned_exam_date: addDays(today, BINH_EXAM_IN_DAYS), ...untouched },
+    { member_id: chau!, certificate_id: saa!, course_id: saa!, status: "not_started", progress: 0, issued_date: null, planned_exam_date: null, ...untouched },
   ];
   return records.sort((x, y) => `${x.member_id}${x.certificate_id}`.localeCompare(`${y.member_id}${y.certificate_id}`));
 }
@@ -152,12 +154,13 @@ export async function restoreSeed(client: Client, seedRecords: SeedRecord[]): Pr
   if (certificateIds.length > 0) {
     check(await client.from("training_records").delete().in("certificate_id", certificateIds).select("id"), "delete imported certificate records");
   }
-  if (courseIds.length > 0) check(await client.from("courses").delete().in("id", courseIds).select("id"), "delete imported courses");
+  // Certificates first: a completion references its granting course (on delete restrict).
   if (certificateIds.length > 0) check(await client.from("certificates").delete().in("id", certificateIds).select("id"), "delete imported certificates");
+  if (courseIds.length > 0) check(await client.from("courses").delete().in("id", courseIds).select("id"), "delete imported courses");
   if (providerIds.length > 0) check(await client.from("providers").delete().in("id", providerIds).select("id"), "delete imported providers");
   if (memberIds.length > 0) check(await client.from("members").delete().in("id", memberIds).select("id"), "delete imported member");
 
-  // Seed records the import updated (An: issued date; Bình: progress, planned date, notes).
+  // Seed records the import updated (An: issued date; Bình: progress, planned date, notes; any: course studied).
   for (const { member_id, certificate_id, ...seed } of seedRecords) {
     const updated = check(
       await client.from("training_records").update(seed).eq("member_id", member_id).eq("certificate_id", certificate_id).select("id"),

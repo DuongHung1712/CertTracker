@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { rateOf } from "@/features/dashboard/components/explorer/types";
+import { CERTIFICATE_GROUP_LABEL, groupCount, rateOf } from "@/features/dashboard/components/explorer/types";
 import { useListboxNavigation } from "@/features/dashboard/components/explorer/use-listbox-navigation";
 import { formatRate } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
@@ -109,7 +109,9 @@ export function MasterList({
                     >
                       {row.headcount !== null
                         ? `${pluralize(row.headcount, "member")} · ${row.people} with certificates`
-                        : pluralize(row.people, "member")}
+                        : groupLabel === CERTIFICATE_GROUP_LABEL
+                          ? `${row.done} completed`
+                          : pluralize(row.people, "member")}
                     </span>
                   </div>
                 </div>
@@ -124,7 +126,7 @@ export function MasterList({
                         : "text-body font-semibold text-foreground",
                     )}
                   >
-                    {pluralize(row.records, "certificate")}
+                    {groupCount(row, groupLabel)}
                   </span>
                   <div
                     className={cn(

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBar } from "@/features/dashboard/components/status-bar";
-import { copySummaryText, rateOf } from "@/features/dashboard/components/explorer/types";
+import { copySummaryText, groupCount, rateOf } from "@/features/dashboard/components/explorer/types";
 import {
   formatRate,
   studyStatusSplit,
@@ -14,7 +14,6 @@ import {
 } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { formatNumber } from "@/lib/format";
-import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
 export function DetailPanel({
@@ -194,7 +193,7 @@ export function DetailPanel({
               <span>
                 Total:{" "}
                 <strong className="font-semibold text-foreground tabular-nums">
-                  {pluralize(selectedRow.records, "certificate")}
+                  {groupCount(selectedRow, groupLabel)}
                 </strong>
               </span>
               <span>•</span>

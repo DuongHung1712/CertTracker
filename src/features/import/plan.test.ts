@@ -245,6 +245,10 @@ describe("buildImportPlan edge cases", () => {
       expect(planned.errors).toContain("This course does not prepare for AWS SAA");
     });
 
+    it("names the certificate as the catalogue spells it, not as the file does", () => {
+      expect(planOne("Other Bootcamp", { "Khóa học": "aws saa" }).errors).toContain("This course does not prepare for AWS SAA");
+    });
+
     it("refuses an unknown course and any course for a new certificate", () => {
       expect(planOne("No Such Course").errors).toContain('Course "No Such Course" not found');
       expect(planOne("SAA Bootcamp", { "Khóa học": "Brand New" }).errors).toContain("This course does not prepare for Brand New");

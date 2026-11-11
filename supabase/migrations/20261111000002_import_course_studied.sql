@@ -65,10 +65,11 @@ begin
     v_provider_id := null;
     v_cert_type_id := null;
     n := v_row.normalized;
-    v_studied_id := (n->'courseStudied'->>'id')::uuid;
     r := n->'record';
 
     begin
+      -- Inside the block so a malformed id keeps the "import row N:" prefix.
+      v_studied_id := (n->'courseStudied'->>'id')::uuid;
       if n->'member' ? 'id' then
         v_member_id := (n->'member'->>'id')::uuid;
       else

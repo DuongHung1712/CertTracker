@@ -49,6 +49,18 @@ describe("explorer master list: header", () => {
   });
 });
 
+describe("explorer master list: count chip", () => {
+  it("counts certificates held under a certificate group, certificates elsewhere", () => {
+    const render = (groupLabel: string) =>
+      renderToStaticMarkup(
+        <MasterList rows={[row("a", "AWS SAA")]} activeKey="a" onSelectKey={() => {}} groupLabel={groupLabel} tabLabel="t" onClearFilters={() => {}} />,
+      );
+    expect(render("Certificate")).toContain("3 holders");
+    expect(render("Certificate")).not.toContain("5 certificates");
+    expect(render("Provider")).toContain("5 certificates");
+  });
+});
+
 describe("explorer master list: selected row", () => {
   const all = options();
   const selected = all.find((o) => o.selected)!;

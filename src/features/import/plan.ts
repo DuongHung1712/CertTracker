@@ -267,8 +267,9 @@ function resolveNewMemberTeam(ctx: PlanContext, teamText: string | null, issues:
 
 /* ----------------------------------------------------------- certificate */
 
-type CertificateResolution = { ref: CertificateRef | null; key: string | null };
-const NO_CERTIFICATE: CertificateResolution = { ref: null, key: null };
+/** `name` is the catalogue name of an existing certificate, else the name written in the file. */
+type CertificateResolution = { ref: CertificateRef | null; key: string | null; name: string | null };
+const NO_CERTIFICATE: CertificateResolution = { ref: null, key: null, name: null };
 
 function resolveCertificate(ctx: PlanContext, cells: RowCells, rowNumber: number, issues: Issues): CertificateResolution {
   const name = normalizeName(cells.courseName);
@@ -307,7 +308,7 @@ function resolveCertificate(ctx: PlanContext, cells: RowCells, rowNumber: number
   if (existing) {
     const priced = findStudyCourse(ctx, cells, existing.id) ?? existing;
     warnAboutCatalogDifferences(ctx, existing, priced, { certTypeText, validityMonths, ...extras }, issues);
-    return { ref: { id: existing.id }, key: existing.id };
+    return { ref: { id: existing.id }, key: existing.id, name: existing.name };
   }
   if (!validity.ok || providerText === null) return NO_CERTIFICATE;
   // A new certificate is written to the database, where cost and currency must come as a pair.
@@ -370,7 +371,7 @@ function resolveCourseStudied(ctx: PlanContext, cells: RowCells, certificate: Ce
   }
   const course = hasId(certificate.ref) ? findStudyCourse(ctx, cells, certificate.ref.id) : null;
   if (course === null) {
-    issues.errors.push(`This course does not prepare for ${normalizeName(cells.courseName)}`);
+    issues.errors.push(`This course does not prepare for ${certificate.name}`);
     return null;
   }
   return { id: course.id };
@@ -404,7 +405,7 @@ function defineNewCertificate(
     if (input.estHours !== null && input.estHours !== first.ref.estHours) {
       issues.warnings.push(`Study hours differ from the new certificate defined in row ${first.rowNumber} — using the first definition`);
     }
-    return { ref: first.ref, key };
+    return { ref: first.ref, key, name: first.ref.name };
   }
   const ref = {
     name: input.name,
@@ -416,7 +417,7 @@ function defineNewCertificate(
     estHours: input.estHours,
   };
   ctx.newCertificates.set(certificateKey, { ref, rowNumber });
-  return { ref, key };
+  return { ref, key, name: ref.name };
 }
 
 /* -------------------------------------------------------- record cells */

@@ -13,6 +13,16 @@ export type TabConfig = {
   result: TabResult;
 };
 
+export const CERTIFICATE_GROUP_LABEL = "Certificate";
+
+/**
+ * The count shown next to a group. Groups of certificates are counted by who holds them: "2 certificates" under a
+ * certificate's own name would read oddly. The wording avoids "records" (ui-copy rule).
+ */
+export function groupCount(row: BreakdownRow, groupLabel: string): string {
+  return groupLabel === CERTIFICATE_GROUP_LABEL ? pluralize(row.people, "holder") : pluralize(row.records, "certificate");
+}
+
 export const STATUS_FILTER_LABELS: Record<string, string> = {
   all: "Any status",
   has_expired: "With expired certificates",
