@@ -105,6 +105,8 @@ Part D splits certificates from courses (decision #65). Do it with the release P
      (select count(*) from public.training_records) as records;
    ```
 
+   If `courses` has rows and `records` is 0 (the old starter list was loaded), run `delete from public.courses;` before the push. Otherwise the migration turns every refundable row into a self-named course, and the new `courses.sql` then conflicts on (provider_id, name) and the two Meta rows would stay exams. The 61 and 59 growth checks below assume an empty catalogue.
+
 2. **Dry run.** `pnpm supabase db push --dry-run` lists every migration production lacks, not only this part's. Compare it with `pnpm supabase migration list --linked`. Expect, in order: `20261106000001_link_account_to_member`, `20261110000001_course_refund_conditions`, `20261110000003_set_my_full_name`, `20261111000001_certificate_catalogue`, `20261111000002_import_course_studied`, `20261111000003_lock_copy_function`. If the pilot set-up already pushed the first one, it is absent. Anything else in the list: stop and find out why.
 3. **Push.** `pnpm supabase db push`.
 4. **Count after.** `certificates` must equal the old `courses` count; `courses` must equal the old count minus the courses with no cost, duration, refund conditions or record; `records` must not change:
@@ -119,6 +121,8 @@ Part D splits certificates from courses (decision #65). Do it with the release P
    Then open `/records` and compare one expiry date with what it showed before.
 5. **Load the catalogue** (next section), then run its three checks.
 6. **Merge** the release PR into `main`. If the app deployed before the push, `/records` and `/courses` fail until step 3 is done, so push first.
+
+Between the push and the merge, the old production app fails on `/records` (the view's `course_name` and `validity_months` changed shape). That is acceptable while nobody uses production yet.
 
 ## Load the catalogue
 

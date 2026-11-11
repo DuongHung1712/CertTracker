@@ -45,7 +45,7 @@ She adds a record: Certificate = AWS Solutions Architect Associate (Exam), Cours
 
 **S2. Exam by self-study.** Minh passes the same exam without a course. Certificate = AWS SAA, Course studied = empty.
 
-**S3. Course completion.** Hoa finishes Coursera "Machine Learning Specialization" (90 h, 49 USD), which grants a completion certificate with no expiry.
+**S3. Course completion.** Hoa finishes the DeepLearning.AI course "Machine Learning Specialization" (hours and cost empty, as in the catalogue), which grants a course completion with no expiry.
 She adds a record: Certificate field = Machine Learning Specialization (Course completion; the form label stays "Certificate" because it lists both kinds, but each option shows its kind). Course studied is filled in automatically and cannot be changed. Expiry shows "No expiry".
 
 **S4. A course that grants completion and prepares for an exam.** AWS Skill Builder "Exam Prep: Solutions Architect Associate" grants a completion badge and prepares for the AWS SAA exam. Both links are allowed: the completion certificate points to the course, and the course points to the exam it prepares for. A member can record either certificate or both (two records).
@@ -138,7 +138,7 @@ pgTAP covers each cell, including a refused insert and update for manager and me
 
 ## 5. Migration of existing data
 
-Every existing course row is an exam certification: the starter list (55 rows at the time) was checked against providers' certification pages, and its cost is the exam fee. Each row becomes an exam certificate. It stays a course only when it carries course data (Q7).
+Every existing course row is an exam certification: the starter list (55 rows at the time) was checked against providers' certification pages, and its cost is the exam fee. Each row becomes an exam certificate. It stays a course only when it carries course data (Q7). The one exception is the catalogue file's two Meta professional certificates: they are Coursera courses that grant completions, not exams (see below).
 
 Steps (one migration, one transaction):
 

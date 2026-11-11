@@ -5,13 +5,12 @@ Nguồn đầy đủ: `docs/decisions.md`, `docs/process/04-wbs.md`. File này c
 ## 1. Trạng thái
 
 - **Giai đoạn:** Cert Core đã chạy trên `main` và production (2026-11-05), cloud chưa có dữ liệu thật. Đang chuẩn bị pilot DAS giai đoạn 1 (20 người, gói miễn phí; decision #61).
-- **Nhánh hiện tại:** `feat/certificate-catalogue` (đã có spec + plan catalogue chứng chỉ/khóa học, ngày 2026-11-10; chưa code).
-- `feat/cert-core-accounts` **chưa merge**; migration `20261106000001_link_account_to_member.sql` **chưa `db push` lên production**.
+- **Nhánh hiện tại:** `feat/certificate-catalogue`: Part D (tách certificate/course, decision #65) đã code xong, đã qua gate đầy đủ, **chưa merge** (tiếp theo: PR vào `dev`).
+- `feat/cert-core-accounts` đã merge vào `dev`; các migration `20261106000001`, `20261110000001/3`, `20261111000001/2/3` **chưa `db push` lên production** (rollout ở `docs/deploy/accounts-and-catalogue.md`).
 
 ## 2. Backlog
 
-1. PR `feat/cert-core-accounts` vào `dev`; owner làm production: backup → `supabase db push` → merge `main` (spec §8).
-2. Triển khai catalogue chứng chỉ/khóa học (part D, hai loại chứng chỉ).
+1. PR `feat/certificate-catalogue` vào `dev`; owner làm production: backup → `supabase db push` → merge `main` (spec §8).
 3. Pilot giai đoạn 2 (WBS 15.4–15.6): gửi/duyệt chứng chỉ, lĩnh vực quan tâm, số liệu theo tháng/quý.
 4. C2 AI (DeepSeek) → C3 hosting, G1, production.
 5. Nợ: migration xóa `team_managers` (#58).
