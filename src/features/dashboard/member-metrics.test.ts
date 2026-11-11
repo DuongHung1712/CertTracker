@@ -237,3 +237,11 @@ describe("expiryWindow (mirrors SQL expiry_status())", () => {
     expect(expiryWindow(days)).toBe(window);
   });
 });
+
+describe("member KPIs: a course completion is not a valid certificate", () => {
+  it("counts only exam certificates as valid", () => {
+    const completion = makeRecord({ id: "c", certificateKind: "completion", daysToExpiry: null, expiryDate: null, expiryStatus: "No Expiry" });
+    const kpis = calculateMemberKpis([makeRecord({ id: "e", daysToExpiry: 200 }), completion]);
+    expect(kpis).toMatchObject({ total: 2, validCount: 1 });
+  });
+});

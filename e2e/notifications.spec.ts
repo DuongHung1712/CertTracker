@@ -260,7 +260,7 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
     const member = await signedInPage(browser, "member@certtracker.test");
     try {
       const nav = member.page.getByRole("navigation", { name: "Main navigation" });
-      await expect(nav.getByRole("link", { name: "My certificates" })).toBeVisible();
+      await expect(nav.getByRole("link", { name: "My learning" })).toBeVisible();
       await expect(nav.getByRole("link", { name: /^Data quality$/ })).toHaveCount(0);
       await member.page.goto("/data-quality");
       await expect(member.page).toHaveURL(/\/me$/);

@@ -19,9 +19,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { deleteRecord } from "@/features/records/actions";
 import { RecordSheet } from "@/features/records/components/record-sheet";
+import { filterByKind, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, plannedDateHeader, type KindFilter } from "@/features/records/kind";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { RECORD_STATUSES } from "@/features/records/schema";
@@ -30,6 +32,7 @@ import { foldText } from "@/lib/text";
 
 /** A Base UI `Select` value must be a non-empty string, so "no filter" is a sentinel, not "". */
 const ALL = "all";
+const ADD_HINT = "Studying for an exam? Choose the exam, then the course you used.";
 /** Team filter value for rows without a team (`teamId === null`). */
 const NO_TEAM = "__no_team__";
 
@@ -75,6 +78,7 @@ export function RecordsTable({
   const [teamFilter, setTeamFilter] = useState(ALL);
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [expiryFilter, setExpiryFilter] = useState(ALL);
+  const [kindFilter, setKindFilter] = useState<KindFilter>(ALL);
   const [sheetOpen, setSheetOpen] = useState(false);
   // Keep the id, not the row: the sheet must see the refreshed row (e.g. `hasEvidence`) after a server action revalidates.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -88,12 +92,14 @@ export function RecordsTable({
   );
   const hasTeamless = useMemo(() => records.some((record) => record.teamId === null), [records]);
 
+  const counts = useMemo(() => kindCounts(records), [records]);
+
   const hasActiveFilters =
-    search.length > 0 || teamFilter !== ALL || statusFilter !== ALL || expiryFilter !== ALL;
+    search.length > 0 || teamFilter !== ALL || statusFilter !== ALL || expiryFilter !== ALL || kindFilter !== ALL;
 
   const rows = useMemo(() => {
     const query = foldText(search);
-    return records.filter((record) => {
+    return filterByKind(records, kindFilter).filter((record) => {
       if (query) {
         const haystack = foldText(
           `${record.memberName} ${record.memberCode} ${record.certificateName} ${record.courseName ?? ""} ${record.providerName ?? ""}`,
@@ -107,7 +113,7 @@ export function RecordsTable({
       if (expiryFilter !== ALL && record.expiryStatus !== expiryFilter) return false;
       return true;
     });
-  }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter]);
+  }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter, kindFilter]);
 
   // Memoised: react-table renders each `cell` function as a component, so a fresh `columns` array on every render
   // gives every cell a new component type and remounts it. That closed an open row menu on each Realtime refresh.
@@ -169,7 +175,7 @@ export function RecordsTable({
       },
       {
         accessorKey: "plannedExamDate",
-        header: "Planned exam date",
+        header: plannedDateHeader(kindFilter),
         cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
       },
       {
@@ -218,7 +224,7 @@ export function RecordsTable({
         },
       },
     ],
-    [isTeam, canDelete],
+    [isTeam, canDelete, kindFilter],
   );
 
   async function handleDelete() {
@@ -237,6 +243,17 @@ export function RecordsTable({
 
   return (
     <div className="flex flex-col gap-3">
+      {!isTeam && records.length > 0 && (
+        <Tabs value={kindFilter} onValueChange={(value) => setKindFilter(value as KindFilter)}>
+          <TabsList className="flex w-full flex-wrap gap-1 group-data-horizontal/tabs:h-auto">
+            {KIND_FILTERS.map((kind) => (
+              <TabsTrigger key={kind} value={kind}>
+                {`${KIND_FILTER_LABEL[kind]} (${counts[kind]})`}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
       <FilterBar
         search={search}
         onSearchChange={setSearch}
@@ -247,6 +264,7 @@ export function RecordsTable({
           setTeamFilter(ALL);
           setStatusFilter(ALL);
           setExpiryFilter(ALL);
+          setKindFilter(ALL);
         }}
       >
         {isTeam && (
@@ -264,6 +282,21 @@ export function RecordsTable({
                 </SelectItem>
               ))}
               {hasTeamless && <SelectItem value={NO_TEAM}>{NO_TEAM_LABEL}</SelectItem>}
+            </SelectContent>
+          </Select>
+        )}
+        {isTeam && (
+          <Select value={kindFilter} onValueChange={(value) => setKindFilter((value as KindFilter | null) ?? ALL)}>
+            <SelectTrigger aria-label="Kind">
+              <SelectValue>{(value: KindFilter) => (value === ALL ? "All kinds" : KIND_FILTER_LABEL[value])}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All kinds</SelectItem>
+              {KIND_FILTERS.filter((kind) => kind !== ALL).map((kind) => (
+                <SelectItem key={kind} value={kind}>
+                  {KIND_FILTER_LABEL[kind]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         )}
@@ -315,18 +348,22 @@ export function RecordsTable({
           }}
         >
           <Plus aria-hidden className="size-4" />
-          Add certificate
+          Add certificate or course completion
         </Button>
       </FilterBar>
+      {!isTeam && <p className="text-caption text-muted-foreground">{ADD_HINT}</p>}
       <DataTable
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
         empty={
           records.length === 0 ? (
-            <EmptyState title="No certificates yet" description="Add the first certificate to start tracking." />
+            <EmptyState
+              title="Nothing added yet"
+              description="Add a certificate you hold, a course you are studying or a course completion."
+            />
           ) : (
-            <EmptyState title="No certificates found" description="Try a different search or clear the filters." />
+            <EmptyState title="Nothing found" description="Try a different search or clear the filters." />
           )
         }
       />

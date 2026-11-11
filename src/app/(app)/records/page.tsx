@@ -28,8 +28,8 @@ export default async function RecordsPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Certificates"
-        description="Who holds, or is studying, which certificate."
+        title="Learning"
+        description="Who holds or is studying which exam certificate, and who has completed which course."
         actions={<ExportLinks />}
       />
       <RecordsRealtime />

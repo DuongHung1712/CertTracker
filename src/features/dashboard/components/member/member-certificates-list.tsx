@@ -19,6 +19,7 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
+import { kindCounts, plannedDateLabel } from "@/features/records/kind";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
@@ -38,6 +39,12 @@ const TILE: Record<TileTone, { icon: LucideIcon; className: string }> = {
   "in-progress": { icon: BookOpen, className: "border-primary/20 bg-primary/10 text-primary" },
   neutral: { icon: BookOpen, className: "border-border bg-muted text-muted-foreground" },
 };
+
+/** "2 exam certificates, 1 course completion": the two kinds are counted apart, never as one "certificates". */
+function learningSummary(records: RecordRow[]): string {
+  const { exam, completion } = kindCounts(records);
+  return `${pluralize(exam, "exam certificate")}, ${pluralize(completion, "course completion")}`;
+}
 
 function tileTone(record: RecordRow): TileTone {
   if (record.status === "done") return expiryMeta(toExpiryStatus(record.expiryStatus)).tone;
@@ -85,16 +92,16 @@ export function MemberCertificatesList({
 
   return (
     <section
-      aria-label="My certificates"
+      aria-label="My learning"
       className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
     >
       {/* Header and Filter strip */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-foreground">My certificates</h3>
+            <h3 className="text-sm font-semibold text-foreground">My learning</h3>
             <p className="text-xs text-muted-foreground">
-              {`${pluralize(records.length, "certificate")} for ${fullName}`}
+              {`${learningSummary(records)} for ${fullName}`}
             </p>
           </div>
 
@@ -136,19 +143,19 @@ export function MemberCertificatesList({
 
       {records.length === 0 ? (
         <EmptyState
-          title="No certificates yet"
-          description="Add your first certificate to start tracking your progress."
+          title="Nothing added yet"
+          description="Studying for an exam? Choose the exam, then the course you used."
           action={
             <Button onClick={handleAdd} size="sm">
               <Plus className="size-4" aria-hidden="true" />
-              Add your first certificate
+              Add your first certificate or course completion
             </Button>
           }
         />
       ) : visibleRecords.length === 0 ? (
         <EmptyState
-          title="No certificates in this filter"
-          description="Select another filter tab to view your certificates."
+          title="Nothing in this filter"
+          description="Select another filter tab to see the rest."
         />
       ) : (
         <div className="flex flex-col gap-3">
@@ -264,7 +271,7 @@ export function MemberCertificatesList({
 
                     {record.plannedExamDate && (
                       <div className="flex flex-col items-start sm:items-end text-caption text-muted-foreground shrink-0 sm:pl-4">
-                        <span className="text-caption">Planned exam date</span>
+                        <span className="text-caption">{plannedDateLabel(record.certificateKind)}</span>
                         <span className="font-mono text-xs font-medium text-foreground">
                           {formatDate(record.plannedExamDate)}
                         </span>
@@ -284,7 +291,7 @@ export function MemberCertificatesList({
             href="/me"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
-            View all certificates ({filteredRecords.length})
+            View all ({filteredRecords.length})
           </Link>
         </div>
       )}

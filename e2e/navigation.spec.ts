@@ -10,7 +10,7 @@ test("admin sees admin-only sections", async ({ page }) => {
 test("member sees only personal sections", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   const nav = page.getByRole("navigation", { name: "Main navigation" });
-  await expect(nav.getByRole("link", { name: "My certificates" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "My learning" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Organisation" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Members" })).toHaveCount(0);
 });
@@ -37,9 +37,9 @@ const MAIN_NAV = { name: "Main navigation" } as const;
 /** Sidebar routes: link label, route, h1 text, who sees it, and a different page to start from. */
 const ROUTES = [
   { link: "Dashboard", href: "/dashboard", heading: "Dashboard", user: "admin", from: "Catalogue" },
-  { link: "My certificates", href: "/me", heading: "My certificates", user: "member", from: "Catalogue" },
+  { link: "My learning", href: "/me", heading: "My learning", user: "member", from: "Catalogue" },
   { link: "Members", href: "/members", heading: "Members", user: "admin", from: "Catalogue" },
-  { link: "Certificates", href: "/records", heading: "Certificates", user: "admin", from: "Catalogue" },
+  { link: "Learning", href: "/records", heading: "Learning", user: "admin", from: "Catalogue" },
   { link: "Data quality", href: "/data-quality", heading: "Data quality", user: "admin", from: "Catalogue" },
   { link: "Catalogue", href: "/courses", heading: "Catalogue", user: "admin", from: "Members" },
   { link: "Organisation", href: "/org", heading: "Organisation", user: "admin", from: "Catalogue" },

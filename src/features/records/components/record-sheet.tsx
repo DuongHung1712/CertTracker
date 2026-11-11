@@ -20,6 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
 import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
 import { CourseStudiedField } from "@/features/records/components/course-studied-field";
+import { plannedDateLabel } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import {
   RECORD_STATUSES,
@@ -323,7 +324,7 @@ export function RecordSheet({
                 render={({ field }) => (
                   <DateField
                     id="record-planned"
-                    label="Planned exam date"
+                    label={plannedDateLabel(certificate?.kind ?? "exam")}
                     name={field.name}
                     value={String(field.value ?? "")}
                     onChange={field.onChange}

@@ -125,10 +125,10 @@ describe("[copy] member certificate list", () => {
     issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A",
   });
 
-  it("counts one certificate in the singular and drops Registered Records", () => {
+  it("counts one exam certificate in the singular, apart from course completions, and drops Registered Records", () => {
     const html = render([studying]);
-    expect(html).toContain("My certificates");
-    expect(html).toContain("1 certificate");
+    expect(html).toContain("My learning");
+    expect(html).toContain("1 exam certificate, 0 course completions");
     expect(html).not.toMatch(PLURAL_BUGS);
     expect(html).not.toMatch(/Registered Records|certifications registered/);
   });
@@ -138,6 +138,12 @@ describe("[copy] member certificate list", () => {
     expect(html).toContain("Study progress");
     expect(html).toContain("Planned exam date");
     expect(html).not.toMatch(/Curriculum coverage|Target exam date/);
+  });
+
+  it("calls the planned date of a course completion a planned finish date", () => {
+    const html = render([{ ...studying, certificateKind: "completion", certificateName: "Intro to Terraform" }]);
+    expect(html).toContain("Planned finish date");
+    expect(html).not.toContain("Planned exam date");
   });
 
   it("names the expiring tab with the aggregate wording", () => {

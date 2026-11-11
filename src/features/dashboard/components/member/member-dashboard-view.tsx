@@ -73,7 +73,7 @@ export function MemberDashboardView({
             <ExportLinks />
             <Button size="sm" onClick={handleAddCertificate} className="gap-1.5">
               <Plus className="size-4" aria-hidden="true" />
-              <span>Add certificate</span>
+              <span>Add certificate or course completion</span>
             </Button>
           </div>
         }
@@ -110,7 +110,7 @@ export function MemberDashboardView({
           <MemberAttentionBanner attention={attention} onUploadProof={handleUploadProof} />
 
           {recordsError ? (
-            <SectionError title="My certificates" />
+            <SectionError title="My learning" />
           ) : (
             <MemberCertificatesList
               fullName={fullName}
