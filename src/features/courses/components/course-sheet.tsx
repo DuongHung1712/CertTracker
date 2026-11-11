@@ -10,8 +10,9 @@ import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FormSheet } from "@/components/form-sheet";
+import { RequiredMark } from "@/components/required-mark";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CURRENCIES, toCurrency } from "@/lib/money";
@@ -67,176 +68,160 @@ export function CourseSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle className="text-section-title">{editing ? "Edit course" : "Add course"}</SheetTitle>
-        </SheetHeader>
-        <form className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <Field>
-            <FieldLabel htmlFor="course-name">Course name</FieldLabel>
-            <Input
-              id="course-name"
-              className="h-9"
-              {...form.register("name")}
-              aria-invalid={!!form.formState.errors.name}
+    <FormSheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={editing ? "Edit course" : "Add course"}
+      onSubmit={form.handleSubmit(onSubmit)}
+      rootError={form.formState.errors.root?.message}
+      submitting={form.formState.isSubmitting}
+    >
+      <Field>
+        <FieldLabel htmlFor="course-name">
+          Name <RequiredMark />
+        </FieldLabel>
+        <Input
+          id="course-name"
+          className="h-9"
+          {...form.register("name")}
+          aria-invalid={!!form.formState.errors.name}
+        />
+        <FieldError errors={[form.formState.errors.name]} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="course-provider">
+          Provider <RequiredMark />
+        </FieldLabel>
+        <Controller
+          control={form.control}
+          name="providerId"
+          render={({ field }) => (
+            <OptionSelect
+              id="course-provider"
+              value={field.value}
+              onChange={field.onChange}
+              options={providers}
+              placeholder="Choose a provider"
+              invalid={!!form.formState.errors.providerId}
             />
-            <FieldError errors={[form.formState.errors.name]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="course-provider">Provider</FieldLabel>
-            <Controller
-              control={form.control}
-              name="providerId"
-              render={({ field }) => (
-                <OptionSelect
-                  id="course-provider"
-                  value={field.value}
-                  onChange={field.onChange}
-                  options={providers}
-                  placeholder="Choose a provider"
-                  invalid={!!form.formState.errors.providerId}
-                />
-              )}
-            />
-            <FieldError errors={[form.formState.errors.providerId]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="course-prepares-for">Prepares for</FieldLabel>
-            <Controller
-              control={form.control}
-              name="preparesForId"
-              render={({ field }) => (
-                <OptionSelect
-                  id="course-prepares-for"
-                  value={typeof field.value === "string" && field.value ? field.value : NONE}
-                  onChange={(value) => field.onChange(value === NONE ? null : value)}
-                  options={[{ id: NONE, name: "None" }, ...certificates]}
-                  placeholder="None"
-                  invalid={!!form.formState.errors.preparesForId}
-                />
-              )}
-            />
-            <FieldError errors={[form.formState.errors.preparesForId]} />
-          </Field>
-          <Field orientation="horizontal">
-            <FieldLabel htmlFor="course-refundable">Refundable</FieldLabel>
-            <Controller
-              control={form.control}
-              name="refundable"
-              render={({ field }) => (
-                <Switch
-                  id="course-refundable"
-                  checked={field.value}
-                  onCheckedChange={(checked) => {
-                    field.onChange(checked);
-                    // Hidden stale text must never block Save with the length error.
-                    if (!checked) {
-                      form.setValue("refundConditions", "");
-                      form.clearErrors("refundConditions");
-                    }
-                  }}
-                />
-              )}
-            />
-          </Field>
-          {refundable && (
-            <Field>
-              <FieldLabel htmlFor="course-refund-conditions">Refund conditions</FieldLabel>
-              <Textarea
-                id="course-refund-conditions"
-                {...form.register("refundConditions")}
-                aria-invalid={!!form.formState.errors.refundConditions}
-              />
-              <FieldError errors={[form.formState.errors.refundConditions]} />
-            </Field>
           )}
-          <div className="grid grid-cols-[1fr_8rem] gap-3">
-            <Field>
-              <FieldLabel htmlFor="course-cost">Cost</FieldLabel>
-              <Input
-                id="course-cost"
-                type="number"
-                min={0}
-                step="any"
-                className="h-9"
-                {...form.register("cost")}
-                aria-invalid={!!form.formState.errors.cost}
-              />
-              <FieldError errors={[form.formState.errors.cost]} />
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="course-currency">Currency</FieldLabel>
-              <Controller
-                control={form.control}
-                name="costCurrency"
-                render={({ field }) => (
-                  <>
-                    <Select
-                      value={toCurrency(typeof field.value === "string" ? field.value : null)}
-                      onValueChange={(value) => field.onChange(toCurrency(value))}
-                    >
-                      <SelectTrigger id="course-currency" size="lg" aria-invalid={!!form.formState.errors.costCurrency}>
-                        <SelectValue placeholder="Currency">{(value: string | null) => value ?? "Currency"}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CURRENCIES.map((currency) => (
-                          <SelectItem key={currency} value={currency}>
-                            {currency}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {field.value ? (
-                      <Button type="button" variant="ghost" size="xs" className="self-start" onClick={() => field.onChange(null)}>
-                        Clear currency
-                      </Button>
-                    ) : null}
-                  </>
-                )}
-              />
-              <FieldError errors={[form.formState.errors.costCurrency]} />
-            </Field>
-          </div>
-          <Field>
-            <FieldLabel htmlFor="course-hours">Duration (hours)</FieldLabel>
-            <Input
-              id="course-hours"
-              type="number"
-              min={1}
-              className="h-9"
-              {...form.register("estHours")}
-              aria-invalid={!!form.formState.errors.estHours}
+        />
+        <FieldError errors={[form.formState.errors.providerId]} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="course-prepares-for">Prepares for</FieldLabel>
+        <Controller
+          control={form.control}
+          name="preparesForId"
+          render={({ field }) => (
+            <OptionSelect
+              id="course-prepares-for"
+              value={typeof field.value === "string" && field.value ? field.value : NONE}
+              onChange={(value) => field.onChange(value === NONE ? null : value)}
+              options={[{ id: NONE, name: "None" }, ...certificates]}
+              placeholder="None"
+              invalid={!!form.formState.errors.preparesForId}
             />
-            <FieldError errors={[form.formState.errors.estHours]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="course-url">Course link</FieldLabel>
-            <Input id="course-url" type="url" className="h-9" {...form.register("url")} aria-invalid={!!form.formState.errors.url} />
-            <FieldError errors={[form.formState.errors.url]} />
-          </Field>
-          {form.formState.errors.root && (
-            <p role="alert" className="text-caption text-destructive">
-              {form.formState.errors.root.message}
-            </p>
           )}
-          <SheetFooter className="flex-row justify-end gap-2 px-0 pt-2 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? "Saving…" : "Save"}
-            </Button>
-          </SheetFooter>
-        </form>
-      </SheetContent>
-    </Sheet>
+        />
+        <FieldError errors={[form.formState.errors.preparesForId]} />
+      </Field>
+      <Field orientation="horizontal">
+        <FieldLabel htmlFor="course-refundable">Refundable</FieldLabel>
+        <Controller
+          control={form.control}
+          name="refundable"
+          render={({ field }) => (
+            <Switch
+              id="course-refundable"
+              checked={field.value}
+              onCheckedChange={(checked) => {
+                field.onChange(checked);
+                // Hidden stale text must never block Save with the length error.
+                if (!checked) {
+                  form.setValue("refundConditions", "");
+                  form.clearErrors("refundConditions");
+                }
+              }}
+            />
+          )}
+        />
+      </Field>
+      {refundable && (
+        <Field>
+          <FieldLabel htmlFor="course-refund-conditions">Refund conditions</FieldLabel>
+          <Textarea
+            id="course-refund-conditions"
+            {...form.register("refundConditions")}
+            aria-invalid={!!form.formState.errors.refundConditions}
+          />
+          <FieldError errors={[form.formState.errors.refundConditions]} />
+        </Field>
+      )}
+      <div className="grid grid-cols-[1fr_8rem] gap-3">
+        <Field>
+          <FieldLabel htmlFor="course-cost">Cost</FieldLabel>
+          <Input
+            id="course-cost"
+            type="number"
+            min={0}
+            step="any"
+            className="h-9"
+            {...form.register("cost")}
+            aria-invalid={!!form.formState.errors.cost}
+          />
+          <FieldError errors={[form.formState.errors.cost]} />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="course-currency">Currency</FieldLabel>
+          <Controller
+            control={form.control}
+            name="costCurrency"
+            render={({ field }) => (
+              <>
+                <Select
+                  value={toCurrency(typeof field.value === "string" ? field.value : null)}
+                  onValueChange={(value) => field.onChange(toCurrency(value))}
+                >
+                  <SelectTrigger id="course-currency" size="lg" aria-invalid={!!form.formState.errors.costCurrency}>
+                    <SelectValue placeholder="Currency">{(value: string | null) => value ?? "Currency"}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((currency) => (
+                      <SelectItem key={currency} value={currency}>
+                        {currency}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {field.value ? (
+                  <Button type="button" variant="ghost" size="xs" className="self-start" onClick={() => field.onChange(null)}>
+                    Clear currency
+                  </Button>
+                ) : null}
+              </>
+            )}
+          />
+          <FieldError errors={[form.formState.errors.costCurrency]} />
+        </Field>
+      </div>
+      <Field>
+        <FieldLabel htmlFor="course-hours">Duration (hours)</FieldLabel>
+        <Input
+          id="course-hours"
+          type="number"
+          min={1}
+          className="h-9"
+          {...form.register("estHours")}
+          aria-invalid={!!form.formState.errors.estHours}
+        />
+        <FieldError errors={[form.formState.errors.estHours]} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="course-url">Course link</FieldLabel>
+        <Input id="course-url" type="url" className="h-9" {...form.register("url")} aria-invalid={!!form.formState.errors.url} />
+        <FieldError errors={[form.formState.errors.url]} />
+      </Field>
+    </FormSheet>
   );
 }

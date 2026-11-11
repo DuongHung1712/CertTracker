@@ -1,0 +1,15 @@
+import { Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+/** Right-aligned primary action of a table toolbar; when `blockedReason` is set the button is disabled and the reason shown beside it. */
+export function AddButton({ label, onClick, blockedReason }: { label: string; onClick: () => void; blockedReason?: string }) {
+  return (
+    <div className="ml-auto flex items-center gap-3">
+      {blockedReason && <span className="text-caption text-muted-foreground">{blockedReason}</span>}
+      <Button size="sm" disabled={!!blockedReason} onClick={onClick}>
+        <Plus aria-hidden className="size-4" />
+        {label}
+      </Button>
+    </div>
+  );
+}

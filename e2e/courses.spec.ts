@@ -3,6 +3,7 @@ import { fieldLabel, signIn } from "./helpers";
 
 const ADMIN = "admin@certtracker.test";
 const MEMBER = "member@certtracker.test";
+const MANAGER = "manager@certtracker.test";
 
 async function openTab(page: Page, name: "Certificates" | "Courses") {
   await page.getByRole("tab", { name }).click();
@@ -34,8 +35,8 @@ async function addCertificate(page: Page, fields: { name: string; kind: "Exam" |
 async function fillCourseBasics(page: Page, courseName: string) {
   await page.getByRole("button", { name: "Add course" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Course name").fill(courseName);
-  await pickOption(page, dialog, "Provider", "AWS");
+  await dialog.getByLabel(fieldLabel("Name")).fill(courseName);
+  await pickOption(page, dialog, fieldLabel("Provider"), "AWS");
   return dialog;
 }
 
@@ -47,9 +48,36 @@ async function addCourse(page: Page, name: string, preparesFor?: string) {
   await expect(dialog).toBeHidden();
 }
 
+/** Narrows the visible tab to one row, so the check does not depend on pagination as rows pile up. */
+async function searchFor(page: Page, text: string) {
+  await page.getByRole("searchbox").fill(text);
+}
+
 // exact: the row's actions button is aria-labelled "Actions for {name}", so a substring match also hits that cell.
 const rowOf = (page: Page, name: string) =>
   page.getByRole("row").filter({ has: page.getByRole("cell", { name, exact: true }) });
+
+/** Both tabs list rows but offer no add, edit or delete, and the admin-only reference sections are absent. */
+async function expectReadOnlyCatalogue(page: Page, names?: { examName: string; courseName: string }) {
+  await page.goto("/courses");
+  await expect(page.getByRole("row").nth(1)).toBeVisible();
+  if (names) {
+    await searchFor(page, names.examName);
+    await expect(rowOf(page, names.examName)).toBeVisible();
+  }
+  await expect(page.getByRole("button", { name: "Add certificate", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Actions for / })).toHaveCount(0);
+  await openTab(page, "Courses");
+  await expect(page.getByRole("row").nth(1)).toBeVisible();
+  if (names) {
+    await searchFor(page, names.courseName);
+    await expect(rowOf(page, names.courseName)).toBeVisible();
+  }
+  await expect(page.getByRole("button", { name: "Add course" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /^Actions for / })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Certificate types" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Providers" })).toHaveCount(0);
+}
 
 test("admin adds an exam certificate and a course that prepares for it; a member only reads both", async ({ page }) => {
   await signIn(page, ADMIN);
@@ -70,12 +98,12 @@ test("admin adds an exam certificate and a course that prepares for it; a member
 
   await signOut(page);
   await signIn(page, MEMBER);
-  await page.goto("/courses");
-  await expect(rowOf(page, examName)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add certificate", exact: true })).toHaveCount(0);
-  await openTab(page, "Courses");
-  await expect(rowOf(page, courseName)).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add course" })).toHaveCount(0);
+  await expectReadOnlyCatalogue(page, { examName, courseName });
+});
+
+test("a manager reads the catalogue without any way to change it", async ({ page }) => {
+  await signIn(page, MANAGER);
+  await expectReadOnlyCatalogue(page);
 });
 
 test("a course completion needs a granting course, and that course cannot be deleted while it grants", async ({ page }) => {
@@ -94,9 +122,26 @@ test("a course completion needs a granting course, and that course cannot be del
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
   await expect(rowOf(page, completionName).getByRole("cell", { name: courseName, exact: true })).toBeVisible();
+  await expect(page.getByText(`Added course completion ${completionName}`)).toBeVisible();
+
+  // A completion is never called a certificate, also when deleting it.
+  await rowOf(page, completionName).getByRole("button", { name: `Actions for ${completionName}` }).click();
+  await page.getByRole("menuitem", { name: "Delete" }).click();
+  await expect(page.getByRole("alertdialog").getByText(`Delete course completion ${completionName}?`)).toBeVisible();
+  await page.getByRole("button", { name: "Cancel" }).click();
 
   await openTab(page, "Courses");
   await expect(rowOf(page, courseName).getByText(`Completion: ${completionName}`)).toBeVisible();
+
+  // A course that grants a completion is no longer offered to the next one; a free course still is.
+  const next = await addCertificate(page, { name: `Next ${stamp}`, kind: "Course completion" });
+  await next.getByLabel(fieldLabel("Course")).click();
+  await expect(page.getByRole("option", { name: "AWS Solutions Architect Associate", exact: true })).toBeVisible();
+  await expect(page.getByRole("option", { name: courseName, exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await page.keyboard.press("Escape");
+  await expect(next).toBeHidden();
+  await openTab(page, "Courses");
 
   await rowOf(page, courseName).getByRole("button", { name: `Actions for ${courseName}` }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
@@ -121,7 +166,8 @@ test("admin saves a course with a USD cost and study hours, and the list shows t
   // Wait for the sheet to close: while it is open Radix marks the table aria-hidden and row queries find nothing.
   await expect(dialog).toBeHidden();
 
-  const row = page.getByRole("row").filter({ has: page.getByRole("cell", { name: courseName, exact: true }) });
+  await searchFor(page, courseName);
+  const row = rowOf(page, courseName);
   await expect(row.getByRole("cell", { name: "$150", exact: true })).toBeVisible();
   await expect(row.getByRole("cell", { name: "40", exact: true })).toBeVisible();
 });
@@ -153,7 +199,8 @@ test("admin records refund conditions on a refundable course", async ({ page }) 
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
 
-  const row = page.getByRole("row").filter({ has: page.getByRole("cell", { name: courseName, exact: true }) });
+  await searchFor(page, courseName);
+  const row = rowOf(page, courseName);
   await expect(row.getByText(text)).toBeVisible();
 
   await row.getByRole("button", { name: `Actions for ${courseName}` }).click();

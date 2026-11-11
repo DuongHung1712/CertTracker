@@ -2,43 +2,61 @@
 
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus } from "lucide-react";
-import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { AddButton } from "@/components/data/add-button";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { ExternalLinkCell } from "@/components/data/external-link-cell";
 import { FilterBar } from "@/components/data/filter-bar";
+import { rowActionsColumn } from "@/components/data/row-actions-column";
+import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
 import type { SelectOption } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { deleteCertificate } from "@/features/certificates/actions";
+import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { CertificateSheet } from "@/features/certificates/components/certificate-sheet";
 import type { CertificateRow } from "@/features/certificates/queries";
 import { pluralize } from "@/lib/plural";
 
-const KIND_LABEL: Record<CertificateRow["kind"], string> = { exam: "Exam", completion: "Course completion" };
+const NO_CERT_TYPES_OR_PROVIDERS_HINT = "Add a certificate type and a provider first.";
+
+function toCertificateInput(row: CertificateRow) {
+  return {
+    id: row.id,
+    kind: row.kind,
+    name: row.name,
+    certTypeId: row.certTypeId ?? "",
+    providerId: row.providerId ?? "",
+    level: row.level ?? "",
+    validityMonths: row.validityMonths,
+    url: row.url,
+    courseId: row.courseId,
+  };
+}
 
 export function CertificatesTable({
   certificates,
   certTypes,
   providers,
   courses,
+  hasCourses,
   canManage,
 }: {
   certificates: CertificateRow[];
   certTypes: SelectOption[];
   providers: SelectOption[];
-  /** Courses that grant nothing yet; the sheet adds back the one the edited completion already uses. */
+  /** Courses that grant nothing yet; the table adds back the one the edited completion already uses. */
   courses: SelectOption[];
+  hasCourses: boolean;
   canManage: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CertificateRow | null>(null);
-  const [confirming, setConfirming] = useState<CertificateRow | null>(null);
-  const [pending, setPending] = useState(false);
+  const removal = useConfirmedDelete<CertificateRow>({
+    remove: (certificate) => deleteCertificate({ id: certificate.id }),
+    successMessage: (certificate) => `Deleted ${CERTIFICATE_KIND_NOUN[certificate.kind]} ${certificate.name}`,
+  });
 
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -53,7 +71,7 @@ export function CertificatesTable({
       header: "Kind",
       cell: ({ row }) => (
         <Badge variant="secondary" className="rounded-sm">
-          {KIND_LABEL[row.original.kind]}
+          {CERTIFICATE_KIND_LABEL[row.original.kind]}
         </Badge>
       ),
     },
@@ -73,48 +91,21 @@ export function CertificatesTable({
     },
     { accessorKey: "courseName", header: "Granted by", cell: ({ row }) => row.original.courseName ?? "—" },
     ...(canManage
-      ? ([
-          {
-            id: "actions",
-            header: "",
-            enableSorting: false,
-            cell: ({ row }) => (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<Button variant="ghost" size="icon-xs" aria-label={`Actions for ${row.original.name}`} />}
-                >
-                  <MoreHorizontal aria-hidden />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setEditing(row.original);
-                      setSheetOpen(true);
-                    }}
-                  >
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ),
-          },
-        ] satisfies ColumnDef<CertificateRow, unknown>[])
+      ? [
+          rowActionsColumn<CertificateRow>({
+            rowLabel: (row) => row.name,
+            onEdit: (row) => {
+              setEditing(row);
+              setSheetOpen(true);
+            },
+            onDelete: removal.request,
+          }),
+        ]
       : []),
   ];
 
-  async function handleDelete() {
-    if (!confirming) return;
-    setPending(true);
-    const result = await deleteCertificate({ id: confirming.id });
-    setPending(false);
-    if (!result.ok) toast.error(result.error);
-    else toast.success(`Deleted certificate ${confirming.name}`);
-    setConfirming(null);
-  }
-
+  const removalNoun = removal.target ? CERTIFICATE_KIND_NOUN[removal.target.kind] : "";
+  const canAdd = certTypes.length > 0 && providers.length > 0;
   const grantingCourses = editing?.courseId
     ? [...courses, { id: editing.courseId, name: editing.courseName ?? "" }]
     : courses;
@@ -129,18 +120,14 @@ export function CertificatesTable({
         onClear={() => setSearch("")}
       >
         {canManage && (
-          <Button
-            size="sm"
-            className="ml-auto"
-            disabled={certTypes.length === 0 || providers.length === 0}
+          <AddButton
+            label="Add certificate"
+            blockedReason={canAdd ? undefined : NO_CERT_TYPES_OR_PROVIDERS_HINT}
             onClick={() => {
               setEditing(null);
               setSheetOpen(true);
             }}
-          >
-            <Plus aria-hidden className="size-4" />
-            Add certificate
-          </Button>
+          />
         )}
       </FilterBar>
       <DataTable
@@ -163,34 +150,21 @@ export function CertificatesTable({
           <CertificateSheet
             open={sheetOpen}
             onOpenChange={setSheetOpen}
-            editing={
-              editing
-                ? {
-                    id: editing.id,
-                    kind: editing.kind,
-                    name: editing.name,
-                    certTypeId: editing.certTypeId ?? "",
-                    providerId: editing.providerId ?? "",
-                    level: editing.level ?? "",
-                    validityMonths: editing.validityMonths,
-                    url: editing.url,
-                    courseId: editing.courseId,
-                  }
-                : null
-            }
+            editing={editing ? toCertificateInput(editing) : null}
             certTypes={certTypes}
             providers={providers}
             courses={grantingCourses}
+            hasCourses={hasCourses}
           />
           <ConfirmDialog
-            open={!!confirming}
-            onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Delete certificate ${confirming?.name}?`}
+            open={!!removal.target}
+            onOpenChange={(open) => !open && removal.cancel()}
+            title={`Delete ${removalNoun} ${removal.target?.name}?`}
             description="A certificate that members hold cannot be deleted. This cannot be undone."
-            confirmLabel="Delete certificate"
+            confirmLabel={`Delete ${removalNoun}`}
             pendingLabel="Deleting…"
-            pending={pending}
-            onConfirm={handleDelete}
+            pending={removal.pending}
+            onConfirm={removal.confirm}
           />
         </>
       )}

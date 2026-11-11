@@ -18,7 +18,7 @@ export default async function CataloguePage() {
     listCertificates(),
   ]);
   const examOptions = certificates.filter((c) => c.kind === "exam").map((c) => ({ id: c.id, name: c.name }));
-  const courseNotGrantingYet = courses
+  const coursesNotGrantingYet = courses
     .filter((c) => c.grantsCertificateName === null)
     .map((c) => ({ id: c.id, name: c.name }));
 
@@ -35,7 +35,8 @@ export default async function CataloguePage() {
             certificates={certificates}
             certTypes={certTypes}
             providers={providers}
-            courses={courseNotGrantingYet}
+            courses={coursesNotGrantingYet}
+            hasCourses={courses.length > 0}
             canManage={isAdmin}
           />
         </TabsContent>
