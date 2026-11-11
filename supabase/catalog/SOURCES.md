@@ -1,14 +1,18 @@
-# Course catalogue: sources
+# Certificate and course catalogue: sources
 
-Checked 2026-11-05 on the official pages: Microsoft, GitHub Actions, PMI and Spring directly in a browser, the rest through a summarising fetch tool. This is what `courses.sql` loads. Fees change: check again before relying on one.
+`courses.sql` loads three things: the exam certificates and their exam fees (checked 2026-11-05), preparation courses and course completions (checked 2026-11-11). Fees change: check again before relying on one.
+
+## Exam certificates and exam fees
+
+Checked 2026-11-05 on the official pages: Microsoft, GitHub Actions, PMI and Spring directly in a browser, the rest through a summarising fetch tool. Each row is an exam certificate; where the cost is filled, a course of the same name carries the exam fee and prepares for the exam.
 
 - **Cost** is the exam fee in the currency the vendor charges; VND only where a Vietnam organiser publishes it. Nothing was converted.
 - **Empty cost** means no official figure could be read, or there is no fixed fee. The reason is in the table.
 - **Empty validity** shows as *No expiry* in the app, so the two `UNVERIFIED` blanks below need a real answer.
-- **Study hours** are empty for every course: no vendor publishes a recommendation.
+- **Study hours** are empty for every exam-fee course: no vendor publishes a recommendation.
 - **Refundable** is the company's rule, not the vendor's. It was kept from the owner's list and not checked.
 
-| Course | Cost | Cost source | Validity (months) | Validity source |
+| Exam certificate | Cost | Cost source | Validity (months) | Validity source |
 |---|---|---|---|---|
 | AWS Certified Solutions Architect - Associate | 150 USD | Exam page | 36 | Exam page |
 | AWS Certified Cloud Practitioner | 100 USD | Exam page | 36 | Exam page |
@@ -65,6 +69,56 @@ Checked 2026-11-05 on the official pages: Microsoft, GitHub Actions, PMI and Spr
 | HSK 4 | — | UNVERIFIED: no official Vietnam fee table found | 24 | UNVERIFIED: chinesetest.cn states none; 24 is the usual figure |
 | HSK 5 | — | UNVERIFIED: no official Vietnam fee table found | 24 | UNVERIFIED: chinesetest.cn states none; 24 is the usual figure |
 | HSK 6 | — | UNVERIFIED: no official Vietnam fee table found | 24 | UNVERIFIED: chinesetest.cn states none; 24 is the usual figure |
+
+## Preparation courses
+
+Checked 2026-11-11. A duration is stored in whole hours (the column is an integer), rounded from the minutes the provider states. A cost is stored only where the page states one; a Learn path page states no price, so those costs stay empty. All 14 rows prepare for the exam in the "Prepares for" column.
+
+Microsoft Learn pages render the duration with a script that the fetch tool does not see. The Microsoft durations come from Microsoft's public catalogue API (`https://learn.microsoft.com/api/learn/catalog/?type=learningPaths`, field `duration_in_minutes`), which feeds those pages. The exam link comes from the exam's study guide in the same API (AI-901, AZ-305, AZ-400), from the series text on the Part 2 page (AZ-900) and from the path title (AZ-104).
+
+| Course | URL | Hours | Cost | Prepares for | Read |
+|---|---|---|---|---|---|
+| Introduction to Cloud Infrastructure: Describe cloud concepts | https://learn.microsoft.com/en-us/training/paths/microsoft-azure-fundamentals-describe-cloud-concepts/ | 1 | empty | AZ-900 | API: 56 min; Part 1 of the series the Part 2 page recommends for AZ-900 |
+| Introduction to Cloud Infrastructure: Describe Azure architecture and services | https://learn.microsoft.com/en-us/training/paths/azure-fundamentals-describe-azure-architecture-services/ | 3 | empty | AZ-900 | API: 168 min; page: "Complete all of the learning paths in the series if you are preparing for Exam AZ-900" |
+| Introduction to Cloud Infrastructure: Describe Azure management and governance | https://learn.microsoft.com/en-us/training/paths/describe-azure-management-governance/ | 1 | empty | AZ-900 | API: 81 min; Part 3 of the same series |
+| AZ-104: Manage identities and governance in Azure | https://learn.microsoft.com/en-us/training/paths/az-104-manage-identities-governance/ | 4 | empty | AZ-104 | API: 264 min; the title names the exam (the API lists no study guide for AZ-104) |
+| AZ-305: Design identity, governance, and monitor solutions | https://learn.microsoft.com/en-us/training/paths/design-identity-governance-monitor-solutions/ | 2 | empty | AZ-305 | API: 145 min; in the AZ-305 study guide |
+| AZ-400: Implement CI with Azure Pipelines and GitHub Actions | https://learn.microsoft.com/en-us/training/paths/az-400-implement-ci-azure-pipelines-github-actions/ | 7 | empty | AZ-400 | API: 396 min; in the AZ-400 study guide |
+| AI concepts for developers and technology professionals | https://learn.microsoft.com/en-us/training/paths/ai-concepts/ | 4 | empty | AI-901 | API: 231 min; in the AI-901 study guide |
+| Get started with AI applications and agents on Azure | https://learn.microsoft.com/en-us/training/paths/get-started-ai-apps-agents/ | 6 | empty | AI-901 | API: 389 min; in the AI-901 study guide |
+| Kubernetes Fundamentals (LFS258) | https://training.linuxfoundation.org/training/kubernetes-fundamentals/ | 35 | 299 USD | CKA | "35 Hours of Course Material"; course only $299 (a $625 bundle adds the exam and a subscription); provides the skills "also tested by" the CKA exam |
+| Kubernetes for Developers (LFD259) | https://training.linuxfoundation.org/training/kubernetes-for-developers/ | 35 | 299 USD | CKAD | "35 Hours of Course Material"; course only $299; tested by the CKAD exam |
+| Kubernetes Security Essentials (LFS260) | https://training.linuxfoundation.org/training/kubernetes-security-essentials-lfs260/ | empty | 299 USD | CKS | "26-30 Hours of Course Material" is a range, so hours stay empty; $299; tested by the CKS exam |
+| Prepare for the Terraform Associate 004 Certification Exam | https://developer.hashicorp.com/terraform/tutorials/certification-003 | empty | empty | Terraform Associate (004) | 3 tutorials of 8, 6 and 3 minutes; no total and no price stated |
+| Python Essentials 2 | https://pythoninstitute.org/python-essentials-2 | empty | 0 USD | PCAP | "7-8 weeks", no hours; "Enroll for the course for free!"; "will prepare you for the" PCAP exam |
+| Professional Cloud Architect Certification | https://www.skills.google/paths/12 | empty | empty | Professional Cloud Architect | Title and "24 activities" only; hours, level and price are not shown without signing in |
+
+## Course completions
+
+Checked 2026-11-11 on each Coursera page (summarising fetch tool). Each completion has a course of the same name that grants it. Validity is empty for all six: no page states an expiry (Coursera limits only when the certificate can be claimed, for example "180 days of certificate eligibility" on the Machine Learning page). Cost is empty because Coursera charges a monthly subscription ($49 per month on the Google and Machine Learning pages), not a one-off price. Hours are stored only where the page states a total.
+
+| Completion | URL | Type, level | Hours | Read |
+|---|---|---|---|---|
+| Google Data Analytics Professional Certificate | https://www.coursera.org/professional-certificates/google-data-analytics | Data & Analytics, Beginner | empty | "6 months at 10 hours a week"; "over 180 hours of instruction" is a lower bound, so empty; $49 per month after a 7-day trial |
+| Google Cybersecurity Professional Certificate | https://www.coursera.org/professional-certificates/google-cybersecurity | Security, Beginner | 170 | "170 hours of instruction"; "6 months at 7 hours a week"; $49 per month in the U.S. and Canada |
+| Google Project Management Professional Certificate | https://www.coursera.org/professional-certificates/google-project-management | Agile & Project Management, Beginner | empty | "6 months at 10 hours a week"; "over 140 hours of instruction" is a lower bound; $49 per month |
+| IBM Data Science Professional Certificate | https://www.coursera.org/professional-certificates/ibm-data-science | Data & Analytics, Beginner | empty | "4 months at 10 hours a week"; no total hours; "Included with Coursera Plus", price not stated |
+| Deep Learning Specialization | https://www.coursera.org/specializations/deep-learning | AI & Machine Learning, Intermediate | empty | "3 months at 10 hours a week"; per-course hours only; no price |
+| Machine Learning Specialization | https://www.coursera.org/specializations/machine-learning-introduction | AI & Machine Learning, Beginner | empty | "2 months at 10 hours a week"; per-course hours only; $49 per month |
+
+## Looked at and not added
+
+| Candidate | Why |
+|---|---|
+| AWS Skill Builder exam-prep courses | skillbuilder.aws renders with a script: the fetch returned only the site title, so no duration or price could be read. The AWS exam page links to the exam-prep plan but states no duration or price. Only a third-party listing showed a figure, which is not an official source |
+| Other Google Cloud learning paths | Only the Professional Cloud Architect path was fetched |
+| Google IT Support, Google UX Design Professional Certificates | Fetched, but no catalogue certificate type fits and no new type was invented |
+| Meta Front-End Developer Professional Certificate | Already in the catalogue as an exam row; its page states "7 months at 6 hours a week" and no price |
+| IBM AI Engineering Professional Certificate | URL returned 404 |
+| LFS158 Introduction to Kubernetes | "15-20 Hours of Course Material" is a range and the page does not say it prepares for a certification |
+| NVIDIA workshop, Databricks, Scrum.org learning path | The page had no course title, duration or exam link, or returned 404 |
+| GitHub Actions learning paths (GH-200) | No page or API field links them to the GH-200 exam |
+| Udemy | Prices change daily; not attempted |
 
 ## Removed from the owner's list
 

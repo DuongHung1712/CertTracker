@@ -190,16 +190,19 @@ describe("readCatalogueSql", () => {
   ('Languages & Soft Skills')
 on conflict (name) do nothing;
 
-insert into public.courses (name, cert_type_id, provider_id, level, validity_months, refundable, cost, cost_currency, url)
-select v.name, ct.id, p.id, v.level, v.validity_months, v.refundable, v.cost, v.cost_currency, v.url
-from (values
+create temporary table catalogue_exams as
+select * from (values
   ('Cloud Basics (CB-100)', 'Cloud', 'Example Cloud', 'Associate'::text, 36::int, true, 150::numeric, 'USD'::text, 'https://example.com/cb-100'),
   ('Cloud Starter', 'Cloud', 'Example Cloud', null, null, true, null, null, 'https://example.com/starter'),
   ('Language Level 3', 'Languages & Soft Skills', 'Example Testing Centre (ETC)', 'Level 3', 24, true, null, null, 'https://example.com/l3')
-) as v(name, cert_type, provider, level, validity_months, refundable, cost, cost_currency, url)
-join public.cert_types ct on ct.name = v.cert_type
-join public.providers p on p.name = v.provider
-on conflict (provider_id, name) do nothing;
+) as v(name, cert_type, provider, level, validity_months, refundable, cost, cost_currency, url);
+
+insert into public.courses (name, provider_id, est_hours, url)
+select v.name, p.id, v.est_hours, v.url
+from (values
+  ('Not an exam', 'Example Cloud', 4::int, 'https://example.com/course')
+) as v(name, provider, est_hours, url)
+join public.providers p on p.name = v.provider;
 `;
 
   it("reads name, validity, provider and type from each values row, and nothing else", () => {
@@ -215,22 +218,22 @@ on conflict (provider_id, name) do nothing;
   });
 
   describe("on the real catalogue file", () => {
-    const courses = readCatalogueSql(readFileSync("supabase/catalog/courses.sql", "utf8"));
+    const exams = readCatalogueSql(readFileSync("supabase/catalog/courses.sql", "utf8"));
 
     it("reads the first three rows as written", () => {
-      expect(courses.slice(0, 3)).toEqual([
+      expect(exams.slice(0, 3)).toEqual([
         { name: "AWS Certified Solutions Architect - Associate", validityMonths: 36, provider: "AWS", certType: "Cloud" },
         { name: "AWS Certified Cloud Practitioner", validityMonths: 36, provider: "AWS", certType: "Cloud" },
         { name: "AWS Certified Developer - Associate", validityMonths: 36, provider: "AWS", certType: "Cloud" },
       ]);
     });
 
-    it("reads a course without validity as null", () => {
-      expect(courses.find((c) => c.name === "Microsoft Certified: Azure Fundamentals (AZ-900)")?.validityMonths).toBeNull();
+    it("reads an exam without validity as null", () => {
+      expect(exams.find((c) => c.name === "Microsoft Certified: Azure Fundamentals (AZ-900)")?.validityMonths).toBeNull();
     });
 
-    it("reads all 55 courses", () => {
-      expect(courses).toHaveLength(55);
+    it("reads the 55 exam certificates and no course or completion", () => {
+      expect(exams).toHaveLength(55);
     });
   });
 });

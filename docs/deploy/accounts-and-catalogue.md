@@ -87,29 +87,37 @@ Check the result at `/me` for that person. The link decides whose certificates a
 
 Nothing is deleted: the member, their certificates and proof stay. This is manual on purpose (`shortcut: manual ban for leavers, automate if the admin does it more than a few times`).
 
-## When a certificate is not in the course list
+## When a certificate is not in the catalogue
 
-Only the admin adds courses. The certificate form tells members: "Can't find your course? Ask your admin to add it."
+Only the admin adds certificates and courses. The certificate form tells members: "Can't find your certificate? Ask your admin to add it."
 
-As admin: open `/courses`, add the course. Fill in the type, the provider and the validity in months where you know them, because the expiry date comes from the validity. Then tell the member to choose it in their certificate.
+As admin: open `/courses` (the catalogue), add the certificate on the Certificates tab. Fill in the type, the provider and the validity in months where you know them, because the expiry date comes from the validity. Add the course on the Courses tab if members study with one. Then tell the member to choose the certificate in their record.
 
-## Load the course catalogue
+## Load the catalogue
 
-`supabase/catalog/courses.sql` adds 10 certificate types, 23 providers and 55 courses. It matches by name, reuses what exists, and running it again changes nothing. It never overwrites a course the admin edited. Every value and gap is sourced in `supabase/catalog/SOURCES.md`; fill the empty costs at `/courses` as you confirm them.
+`supabase/catalog/courses.sql` adds 10 certificate types, 26 providers, 61 certificates (55 exams and 6 course completions) and 57 courses (37 that carry a verified exam fee, 14 preparation courses and the 6 courses that grant the completions). It matches by name, reuses what exists, and running it again changes nothing. It never overwrites a row the admin edited. Every value and gap is sourced in `supabase/catalog/SOURCES.md`; fill the empty costs and durations at `/courses` as you confirm them.
 
 ```bash
 pnpm supabase db query --linked -f supabase/catalog/courses.sql
 ```
 
-Then compare the inserted count with **55** courses. On a database that had no courses, this must return 55:
+Count before and after. On a database with no certificates and no courses, the second query must return 61 and 57; otherwise the difference between the two counts must equal them:
 
 ```sql
-select count(*) from public.courses;
+select
+  (select count(*) from public.certificates) as certificates,
+  (select count(*) from public.courses) as courses;
 ```
 
-If the database already had courses, the file reuses them by name, so expect 55 plus any course added by hand.
+If the database already had rows, the file reuses them by name, so expect those plus any added by hand. Every course that prepares for a certificate must point to an exam; this must return 0:
 
-Then check `/courses`. Delete the leftover test types `AWS`, `TOEIC`, `IELTS` and the provider `IIG` there if they are unused; they clutter the course form.
+```sql
+select count(*) from public.courses c
+join public.certificates e on e.id = c.prepares_for_id
+where e.kind <> 'exam';
+```
+
+Then check `/courses`. Delete the leftover test types `AWS`, `TOEIC`, `IELTS` and the provider `IIG` there if they are unused; they clutter the certificate form.
 
 ## Required checks
 
