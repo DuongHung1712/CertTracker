@@ -18,7 +18,7 @@ insert into public.cert_types (id, name) values
 insert into public.providers (id, name) values
   ('5eed0000-0000-0000-0000-00000000c101', 'AWS'),
   ('5eed0000-0000-0000-0000-00000000c102', 'NVIDIA'),
-  ('5eed0000-0000-0000-0000-00000000c103', 'Coursera');
+  ('5eed0000-0000-0000-0000-00000000c103', 'DeepLearning.AI');
 -- Certificates and courses share ids for the two exams, as after the catalogue migration.
 insert into public.certificates (id, name, kind, cert_type_id, provider_id, level, validity_months, url) values
   ('5eed0000-0000-0000-0000-00000000e001', 'AWS Solutions Architect Associate', 'exam',
@@ -32,8 +32,9 @@ insert into public.courses (id, name, provider_id, refundable, cost, cost_curren
   ('5eed0000-0000-0000-0000-00000000e002', 'NVIDIA Generative AI LLMs',
    '5eed0000-0000-0000-0000-00000000c102', false, null, null, null, '5eed0000-0000-0000-0000-00000000e002'),
   ('5eed0000-0000-0000-0000-00000000e003', 'Machine Learning Specialization',
-   '5eed0000-0000-0000-0000-00000000c103', false, 49, 'USD', 90, null);
--- A course completion (no validity) granted by the course above; no records, for the e2e.
+   '5eed0000-0000-0000-0000-00000000c103', false, null, null, null, null);
+-- A course completion (no validity) granted by the course above; no records, for the e2e. Same provider as supabase/catalog/courses.sql,
+-- whose page states no total hours and only a monthly subscription, so hours and cost are empty here too.
 insert into public.certificates (id, name, kind, cert_type_id, provider_id, course_id) values
   ('5eed0000-0000-0000-0000-00000000e103', 'Machine Learning Specialization', 'completion',
    '5eed0000-0000-0000-0000-00000000c002', '5eed0000-0000-0000-0000-00000000c103',

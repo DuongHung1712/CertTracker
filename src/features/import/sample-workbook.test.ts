@@ -232,8 +232,8 @@ join public.providers p on p.name = v.provider;
       expect(exams.find((c) => c.name === "Microsoft Certified: Azure Fundamentals (AZ-900)")?.validityMonths).toBeNull();
     });
 
-    it("reads the 55 exam certificates and no course or completion", () => {
-      expect(exams).toHaveLength(55);
+    it("reads the 53 exam certificates and no course or completion", () => {
+      expect(exams).toHaveLength(53);
     });
   });
 });

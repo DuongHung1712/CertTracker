@@ -95,13 +95,13 @@ As admin: open `/courses` (the catalogue), add the certificate on the Certificat
 
 ## Load the catalogue
 
-`supabase/catalog/courses.sql` adds 10 certificate types, 26 providers, 61 certificates (55 exams and 6 course completions) and 57 courses (37 that carry a verified exam fee, 14 preparation courses and the 6 courses that grant the completions). It matches by name, reuses what exists, and running it again changes nothing. It never overwrites a row the admin edited. Every value and gap is sourced in `supabase/catalog/SOURCES.md`; fill the empty costs and durations at `/courses` as you confirm them.
+`supabase/catalog/courses.sql` adds 10 certificate types, 26 providers, 61 certificates (53 exams and 8 course completions) and 59 courses (37 that carry a verified exam fee, 14 preparation courses and the 8 courses that grant the completions). It matches by name, reuses what exists, and running it again changes nothing. It never overwrites a row the admin edited. Every value and gap is sourced in `supabase/catalog/SOURCES.md`; fill the empty costs and durations at `/courses` as you confirm them.
 
 ```bash
 pnpm supabase db query --linked -f supabase/catalog/courses.sql
 ```
 
-Count before and after. On a database with no certificates and no courses, the second query must return 61 and 57; otherwise the difference between the two counts must equal them:
+Run the query below before and after loading. After the load, certificates must have grown by 61 and courses by 59 (on an empty database the counts are 61 and 59):
 
 ```sql
 select
@@ -115,6 +115,14 @@ If the database already had rows, the file reuses them by name, so expect those 
 select count(*) from public.courses c
 join public.certificates e on e.id = c.prepares_for_id
 where e.kind <> 'exam';
+```
+
+Every course completion must have its granting course; this must also return 0:
+
+```sql
+select count(*) from public.certificates c
+where c.kind = 'completion'
+  and not exists (select 1 from public.courses where id = c.course_id);
 ```
 
 Then check `/courses`. Delete the leftover test types `AWS`, `TOEIC`, `IELTS` and the provider `IIG` there if they are unused; they clutter the certificate form.

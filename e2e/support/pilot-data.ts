@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page } from "@playwright/test";
-import { buildSampleWorkbook, readCatalogueSql, rehearsalPeople } from "../../src/features/import/sample-workbook";
+import { buildSampleWorkbook, readCatalogueSql, rehearsalPeople, type CatalogueCourse } from "../../src/features/import/sample-workbook";
 import { todayVn } from "../../src/lib/dates";
 import { adminApi } from "./accounts";
 import { SEED_PROGRAM_ID } from "./manager-scopes";
@@ -109,9 +109,21 @@ export async function importRehearsalFile(page: Page): Promise<() => Promise<voi
 }
 
 /**
+ * True when supabase/catalog/courses.sql was run on this database: its exam certificates all carry a link, the rows the
+ * rehearsal import creates never do. The sweep must then leave the catalogue names alone, they are real rows.
+ */
+async function isCatalogueLoaded(admin: Admin, catalogue: CatalogueCourse[]): Promise<boolean> {
+  const linked = must(
+    await admin.from("certificates").select("id").in("name", catalogue.map((course) => course.name)).not("url", "is", null),
+    "read catalogue certificates",
+  );
+  return linked.length > 0;
+}
+
+/**
  * Removes whatever an earlier rehearsal run left behind when it crashed or timed out before its cleanup: the batches,
  * the `person%` members and their records, their rows in the send log, the three teams, and the certificates, courses, providers
- * and certificate types named in the catalogue that are not seed rows. Idempotent; run it before `createPilotTeams`.
+ * and certificate types named in the catalogue that are not seed rows (none of it when courses.sql is loaded). Idempotent; run it before `createPilotTeams`.
  */
 export async function sweepRehearsalLeftovers(): Promise<void> {
   const admin = await signInAsSeedAdmin();
@@ -128,6 +140,7 @@ export async function sweepRehearsalLeftovers(): Promise<void> {
   await deleteVerified(admin, "teams", teams.map((team) => team.id));
 
   const catalogue = readCatalogueSql(readFileSync(CATALOGUE_PATH, "utf8"));
+  if (await isCatalogueLoaded(admin, catalogue)) return;
   const names: Record<CatalogueTable, string[]> = {
     certificates: catalogue.map((course) => course.name),
     courses: catalogue.map((course) => course.name),

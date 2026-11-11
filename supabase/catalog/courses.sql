@@ -1,6 +1,7 @@
 -- Certificate and course catalogue for a new environment. Not a migration and not seed.sql: run it once by hand (docs/deploy/accounts-and-catalogue.md).
--- Loads 55 exam certificates, 37 courses that carry a verified exam fee, 14 preparation courses (Microsoft Learn, Linux Foundation, HashiCorp,
--- Python Institute, Google Cloud) and 6 course completions, each with the course that grants it.
+-- Loads 53 exam certificates, 37 courses that carry a verified exam fee, 14 preparation courses (Microsoft Learn, Linux Foundation, HashiCorp,
+-- Python Institute, Google Cloud) and 8 course completions, each with the course that grants it. A certificate is only for something you pass
+-- an exam for: what you earn by finishing a course is a completion (the Meta professional certificates are courses, so they are completions).
 -- Matches by name, so existing types and providers are reused. Running it again adds nothing and never overwrites a row the admin edited.
 -- Every value was read on the provider's own page (exams 2026-11-05, courses and completions 2026-11-11); sources and open gaps are in
 -- supabase/catalog/SOURCES.md. An empty cost, duration or validity means the page did not state it.
@@ -48,6 +49,7 @@ insert into public.providers (name) values
 on conflict (name) do nothing;
 
 -- The exam list is read twice: for the certificates and for the courses that carry the exam fee.
+drop table if exists catalogue_exams;
 create temporary table catalogue_exams as
 select * from (values
   ('AWS Certified Solutions Architect - Associate', 'Cloud', 'AWS', 'Associate'::text, 36::int, true, 150::numeric, 'USD'::text, 'https://aws.amazon.com/certification/certified-solutions-architect-associate/'),
@@ -84,8 +86,6 @@ select * from (values
   ('Spring Certified Professional (2V0-72.22)', 'Backend Development', 'VMware Tanzu (Spring)', 'Professional', null, true, 250, 'USD', 'https://spring.academy/paths/spring-certified-professional-2023'),
   ('Certified Mid-Level Vue.js Developer', 'Frontend Development', 'Certificates.dev', 'Mid-Level', null, true, 220, 'USD', 'https://certificates.dev/vuejs/'),
   ('Certified Mid-Level React Developer', 'Frontend Development', 'Certificates.dev', 'Mid-Level', 36, true, null, null, 'https://certificates.dev/react/'),
-  ('Meta Front-End Developer Professional Certificate', 'Frontend Development', 'Meta', 'Beginner', null, true, null, null, 'https://www.coursera.org/professional-certificates/meta-front-end-developer'),
-  ('Meta Back-End Developer Professional Certificate', 'Backend Development', 'Meta', 'Beginner', null, true, null, null, 'https://www.coursera.org/professional-certificates/meta-back-end-developer'),
   ('PCAP - Certified Associate Python Programmer', 'Backend Development', 'Python Institute', 'Associate', 60, true, null, null, 'https://pythoninstitute.org/pcap'),
   ('IELTS Academic', 'Languages & Soft Skills', 'British Council & IDP', null, 24, true, 4664000, 'VND', 'https://ielts.org'),
   ('IELTS General Training', 'Languages & Soft Skills', 'British Council & IDP', null, 24, true, 4664000, 'VND', 'https://ielts.org'),
@@ -157,7 +157,9 @@ from (values
   ('Google Project Management Professional Certificate', 'Google', null, 'https://www.coursera.org/professional-certificates/google-project-management'),
   ('IBM Data Science Professional Certificate', 'IBM', null, 'https://www.coursera.org/professional-certificates/ibm-data-science'),
   ('Deep Learning Specialization', 'DeepLearning.AI', null, 'https://www.coursera.org/specializations/deep-learning'),
-  ('Machine Learning Specialization', 'DeepLearning.AI', null, 'https://www.coursera.org/specializations/machine-learning-introduction')
+  ('Machine Learning Specialization', 'DeepLearning.AI', null, 'https://www.coursera.org/specializations/machine-learning-introduction'),
+  ('Meta Front-End Developer Professional Certificate', 'Meta', null, 'https://www.coursera.org/professional-certificates/meta-front-end-developer'),
+  ('Meta Back-End Developer Professional Certificate', 'Meta', null, 'https://www.coursera.org/professional-certificates/meta-back-end-developer')
 ) as v(name, provider, est_hours, url)
 join public.providers p on p.name = v.provider
 on conflict (provider_id, name) do nothing;
@@ -170,7 +172,9 @@ from (values
   ('Google Project Management Professional Certificate', 'Agile & Project Management', 'Google', 'Beginner', 'https://www.coursera.org/professional-certificates/google-project-management'),
   ('IBM Data Science Professional Certificate', 'Data & Analytics', 'IBM', 'Beginner', 'https://www.coursera.org/professional-certificates/ibm-data-science'),
   ('Deep Learning Specialization', 'AI & Machine Learning', 'DeepLearning.AI', 'Intermediate', 'https://www.coursera.org/specializations/deep-learning'),
-  ('Machine Learning Specialization', 'AI & Machine Learning', 'DeepLearning.AI', 'Beginner', 'https://www.coursera.org/specializations/machine-learning-introduction')
+  ('Machine Learning Specialization', 'AI & Machine Learning', 'DeepLearning.AI', 'Beginner', 'https://www.coursera.org/specializations/machine-learning-introduction'),
+  ('Meta Front-End Developer Professional Certificate', 'Frontend Development', 'Meta', 'Beginner', 'https://www.coursera.org/professional-certificates/meta-front-end-developer'),
+  ('Meta Back-End Developer Professional Certificate', 'Backend Development', 'Meta', 'Beginner', 'https://www.coursera.org/professional-certificates/meta-back-end-developer')
 ) as v(name, cert_type, provider, level, url)
 join public.cert_types ct on ct.name = v.cert_type
 join public.providers p on p.name = v.provider
