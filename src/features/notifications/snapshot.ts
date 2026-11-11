@@ -38,7 +38,7 @@ export async function loadSnapshot(client: SupabaseClient<Database>): Promise<Sn
       r.id && r.member_id && r.status
         ? [
             {
-              id: r.id, memberId: r.member_id, status: r.status, courseName: r.certificate_name ?? "",
+              id: r.id, memberId: r.member_id, status: r.status, certificateName: r.certificate_name ?? "",
               issuedDate: r.issued_date, expiryDate: r.expiry_date, daysToExpiry: r.days_to_expiry,
               expiryStatus: r.expiry_status ?? "N/A",
             },

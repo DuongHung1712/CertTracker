@@ -35,7 +35,7 @@ function lookupsFor(catalogue: CatalogueCourse[]): ImportLookups {
     teams: TEAMS.map((name, i) => ({ id: `team-${i}`, name })),
     providers,
     certTypes,
-    courses: catalogue.map((c, i) => ({
+    certificates: catalogue.map((c, i) => ({
       id: `course-${i}`,
       name: c.name,
       providerId: providers.find((p) => p.name === c.provider)!.id,
@@ -84,7 +84,7 @@ function rehearsalState(row: ImportPlan["rows"][number], lookups: ImportLookups)
   const { course, record } = row.normalized!;
   if (record.status === "in_progress") return "in progress";
   if (record.status === "not_started") return "not started";
-  const validityMonths = "id" in course ? lookups.courses.find((c) => c.id === course.id)!.validityMonths : null;
+  const validityMonths = "id" in course ? lookups.certificates.find((c) => c.id === course.id)!.validityMonths : null;
   return STATE_OF_EXPIRY[expiryStatusOn(record.issuedDate, validityMonths, TODAY)];
 }
 
@@ -114,7 +114,7 @@ describe("the rehearsal workbook imports cleanly", () => {
     const { plan } = rehearsal();
     expect(plan.rows.every((row) => row.action === "create")).toBe(true);
     expect(plan.newEntities.members).toHaveLength(PERSON_COUNT);
-    expect(plan.newEntities).toMatchObject({ providers: [], certTypes: [], courses: [] });
+    expect(plan.newEntities).toMatchObject({ providers: [], certTypes: [], certificates: [], courses: [] });
   });
 
   it("spreads the people over all three teams", () => {
@@ -140,7 +140,7 @@ describe("the rehearsal workbook imports cleanly", () => {
     const written = table.rows.map((row) => row.cells[column]);
     const expected = plan.rows.map(({ normalized }) => {
       const { course, record } = normalized!;
-      const validityMonths = "id" in course ? lookups.courses.find((c) => c.id === course.id)!.validityMonths : null;
+      const validityMonths = "id" in course ? lookups.certificates.find((c) => c.id === course.id)!.validityMonths : null;
       return expiryMeta(expiryStatusOn(record.issuedDate, validityMonths, TODAY)).label;
     });
     expect(written).toEqual(expected);

@@ -77,15 +77,15 @@ describe("[copy] member KPI cards", () => {
     const html = render(records);
     expect(html).toContain("1 expiring");
     expect(html).toContain("1 in progress");
-    expect(html).toContain("Courses in progress");
+    expect(html).toContain("Certificates in progress");
     expect(html).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|Expiring soon|≤|active study goals| exp |\d+ study\b/i);
-    expect(render([])).toContain("No courses in progress");
+    expect(render([])).toContain("No certificates in progress");
   });
 
   it("says the total covers courses not started or in progress, not only in progress", () => {
     const html = render([doneRecord(120)]);
-    expect(html).toContain("Including courses not started or in progress");
-    expect(html).not.toContain("Including courses in progress");
+    expect(html).toContain("Including certificates not started or in progress");
+    expect(html).not.toContain("Including certificates in progress");
   });
 });
 
@@ -167,9 +167,9 @@ describe("[copy] explorer master list", () => {
     expect(render([row({ headcount: null, people: 4, records: 7 })], "Course")).toContain("4 members");
   });
 
-  it("calls the column Certificates and never says records", () => {
+  it("calls the count column Total and never says records", () => {
     const html = render([row({ records: 2 })]);
-    expect(html).toContain("Certificates");
+    expect(html).toContain("Total");
     expect(html).toContain("2 certificates");
     expect(html).not.toMatch(/\brecords?\b/i);
   });

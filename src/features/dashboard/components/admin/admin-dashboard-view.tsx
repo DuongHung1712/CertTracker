@@ -42,7 +42,7 @@ export function AdminDashboardView({
   profile,
   profileError,
   kpis,
-  courses,
+  certificates,
   teams,
   certTypes,
   providers,
@@ -74,7 +74,7 @@ export function AdminDashboardView({
             <NoRecords />
           ) : (
             <Section title="Explorer">
-              <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, courses })} defaultTab="team" />
+              <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, certificates })} defaultTab="team" />
             </Section>
           )}
         </div>

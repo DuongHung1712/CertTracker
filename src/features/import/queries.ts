@@ -62,7 +62,7 @@ export async function loadImportLookups(): Promise<ImportLookups> {
         .order("id")
         .range(from, to),
     ),
-    // Cost and hours live on the course that prepares for a certificate (a sheet "course" is a certificate until Part D5).
+    // Cost and hours live on the course that prepares for a certificate.
     fetchAllRows((from, to) =>
       supabase
         .from("courses")
@@ -96,7 +96,7 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     teams,
     providers,
     certTypes,
-    courses: certificates.map((c) => {
+    certificates: certificates.map((c) => {
       const course = courseByCertificate.get(c.id);
       return {
         id: c.id,
@@ -112,7 +112,7 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     records: records.map((r) => ({
       id: r.id,
       memberId: r.member_id,
-      courseId: r.certificate_id,
+      certificateId: r.certificate_id,
       status: r.status,
       progress: r.progress,
       plannedExamDate: r.planned_exam_date,

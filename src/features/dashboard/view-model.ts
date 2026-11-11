@@ -33,12 +33,12 @@ export function buildExplorerTabs(results: {
   teams: TabResult;
   certTypes: TabResult;
   providers: TabResult;
-  courses: TabResult;
+  certificates: TabResult;
 }): TabConfig[] {
   return [
     { id: "team", label: "By team", groupLabel: "Team", result: results.teams },
     { id: "cert_type", label: "By certificate type", groupLabel: "Certificate type", result: results.certTypes },
     { id: "provider", label: "By provider", groupLabel: "Provider", result: results.providers },
-    { id: "certificate", label: "Popular certificates", groupLabel: "Certificate", result: results.courses },
+    { id: "certificate", label: "Popular certificates", groupLabel: "Certificate", result: results.certificates },
   ];
 }

@@ -21,8 +21,14 @@ describe("describeIssue", () => {
   });
   it("tells the admin when a missing validity can be ignored", () => {
     expect(describeIssue(row({ type: "certificate_no_validity" }))).toBe(
-      "No validity period is set. Ignore this if the certificate does not expire.",
+      "No validity period is set. Ignore this if the exam certificate does not expire.",
     );
+  });
+});
+
+describe("ISSUE_META labels", () => {
+  it("says that only exam certificates are checked for a missing validity", () => {
+    expect(ISSUE_META.certificate_no_validity.label).toBe("Exam validity not set");
   });
 });
 

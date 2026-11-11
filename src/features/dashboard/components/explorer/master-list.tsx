@@ -34,7 +34,7 @@ export function MasterList({
       {/* Header row for list */}
       <div className="flex items-center justify-between px-1 text-label font-medium uppercase text-muted-foreground">
         <span>{groupLabel}</span>
-        <span>Certificates</span>
+        <span>Total</span>
       </div>
 
       {rows.length === 0 ? (

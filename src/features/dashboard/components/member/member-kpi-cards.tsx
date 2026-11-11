@@ -25,7 +25,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.total}
           </dd>
           <dd className="text-caption text-primary-foreground/80 leading-tight">
-            Including courses not started or in progress
+            Including certificates not started or in progress
           </dd>
         </div>
 
@@ -116,7 +116,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.inProgressCount}
           </dd>
           <dd className="text-caption text-muted-foreground leading-tight">
-            Courses in progress
+            Certificates in progress
           </dd>
         </div>
 
@@ -134,7 +134,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
               </div>
             ))
           ) : (
-            <span className="text-muted-foreground text-caption">No courses in progress</span>
+            <span className="text-muted-foreground text-caption">No certificates in progress</span>
           )}
         </div>
       </div>

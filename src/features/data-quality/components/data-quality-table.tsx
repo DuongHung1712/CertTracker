@@ -12,7 +12,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { countByType, describeIssue, ISSUE_META } from "@/features/data-quality/issues";
 import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-quality/schema";
 
-/** Who or what the finding is about: a person for record/member issues, a course for catalogue issues. */
+/** Who or what the finding is about: a person for record/member issues, a certificate for catalogue issues. */
 function subjectName(row: IssueRow): string | null {
   return row.type === "certificate_no_validity" ? row.certificateName : row.memberName;
 }
@@ -113,7 +113,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by name, code, course or team…"
+        searchPlaceholder="Search by name, code, certificate or team…"
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");

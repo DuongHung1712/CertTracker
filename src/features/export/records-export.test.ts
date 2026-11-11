@@ -22,7 +22,7 @@ const ROWS: ExportRow[] = [
 ];
 
 const baseRecord = (row: ExportRow) => ({
-  id: row.id, memberId: row.memberId, courseId: row.certificateId, status: row.status, progress: row.progress,
+  id: row.id, memberId: row.memberId, certificateId: row.certificateId, status: row.status, progress: row.progress,
   plannedExamDate: row.plannedExamDate, issuedDate: row.issuedDate, certificateUrl: row.certificateUrl,
   viaCompany: row.viaCompany, refundStatus: row.refundStatus, notes: row.notes,
 });
@@ -32,7 +32,7 @@ const LOOKUPS: ImportLookups = {
   teams: [{ id: "cloud", name: "Team Cloud" }],
   providers: [{ id: "aws", name: "AWS" }, { id: "google", name: "Google" }],
   certTypes: [{ id: "tc", name: "Cloud" }],
-  courses: [
+  certificates: [
     { id: "saa", name: "AWS SAA", providerId: "aws", certTypeId: "tc", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40 },
     { id: "gcp", name: "GCP ACE", providerId: "google", certTypeId: null, validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null },
     { id: "az", name: "Azure AZ-900", providerId: "aws", certTypeId: "tc", validityMonths: 12, cost: null, costCurrency: null, estHours: 12 },
@@ -105,7 +105,7 @@ describe("records export", () => {
   it("maps import headers through the aliases and leaves display-only columns unmapped", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((c) => c.header));
     expect(duplicates).toEqual([]);
-    expect(unknown).toEqual(["Code", "Career role", "YoE", "Expiry date", "Days left", "Expiry status"]);
+    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Course studied", "Expiry date", "Days left", "Expiry status"]);
     expect(Object.keys(map)).toHaveLength(18);
   });
 
@@ -114,18 +114,24 @@ describe("records export", () => {
     expect(headers.slice(headers.indexOf("Team"), headers.indexOf("Team") + 3)).toEqual(["Team", "Career role", "YoE"]);
     const lines = recordsToCsv(ROWS).split(CRLF);
     expect(lines[1]).toContain("Team Cloud,Senior Engineer,3.5,AWS SAA");
-    expect(lines[3]).toContain("Team Cloud,,,Azure AZ-900");
+    expect(lines[3]).toContain("Team Cloud,,,Azure AZ-900,Exam");
   });
 
-  it("puts Cost, Currency and Duration (hours) right after Validity (months) and writes their values", () => {
+  it("orders the certificate and course columns as in spec 6.4", () => {
     const headers = EXPORT_COLUMNS.map((c) => c.header);
-    const at = headers.indexOf("Validity (months)");
-    expect(headers.slice(at, at + 4)).toEqual(["Validity (months)", "Cost", "Currency", "Duration (hours)"]);
+    const at = headers.indexOf("YoE");
+    expect(headers.slice(at + 1, at + 12)).toEqual([
+      "Certificate", "Kind", "Provider", "Certificate type", "Validity (months)", "Course studied", "Cost", "Currency", "Duration (hours)", "Status", "Progress (%)",
+    ]);
+    expect(headers).not.toContain("Course");
     expect(headers).not.toContain("Study hours");
-    const lines = recordsToCsv(ROWS).split(CRLF);
-    expect(lines[1]).toContain(",36,150,USD,40,");
-    expect(lines[2]).toContain(",,3500000,VND,,");
-    expect(lines[3]).toContain(",12,,,12,");
+  });
+
+  it("writes the kind and the course studied, with the cost of that course", () => {
+    const studied = { ...ROWS[0]!, certificateKind: "completion" as const, courseName: "ML Specialization" };
+    const lines = recordsToCsv([studied, ROWS[1]!]).split(CRLF);
+    expect(lines[1]).toContain("AWS SAA,Course completion,AWS,Cloud,36,ML Specialization,150,USD,40,");
+    expect(lines[2]).toContain("GCP ACE,Exam,Google,,,,3500000,VND,,");
   });
 
   it("re-imports the cost columns without a single warning or error", () => {
@@ -143,7 +149,7 @@ describe("records export", () => {
 
   it("writes English headers and labels, dd/mm/yyyy dates and guarded text in CSV", () => {
     const csv = recordsToCsv(ROWS);
-    expect(csv.startsWith("\uFEFFCode,Full name,Email,Team,Career role,YoE,Course")).toBe(true);
+    expect(csv.startsWith("\uFEFFCode,Full name,Email,Team,Career role,YoE,Certificate,Kind")).toBe(true);
     expect(csv).toContain("29/02/2024");
     expect(csv).toContain("Completed");
     expect(csv).toContain("Refunded");

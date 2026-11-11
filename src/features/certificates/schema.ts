@@ -9,6 +9,12 @@ export const CERTIFICATE_KIND_LABEL: Record<CertificateKind, string> = { exam: "
 /** What to call one row in a sentence: a completion is never a "certificate" in the UI. */
 export const CERTIFICATE_KIND_NOUN: Record<CertificateKind, string> = { exam: "certificate", completion: "course completion" };
 
+export const certificateSheetTitle = (editing: boolean, kind: CertificateKind): string =>
+  `${editing ? "Edit" : "Add"} ${CERTIFICATE_KIND_NOUN[kind]}`;
+
+export const certificateDeleteHint = (kind: CertificateKind): string =>
+  `A ${CERTIFICATE_KIND_NOUN[kind]} that members hold cannot be deleted. This cannot be undone.`;
+
 /** Fields without the cross-field rule, so a caller can `.extend()` them (e.g. with an id) and re-apply the rule. */
 export const certificateFields = z.object({
   kind: z.enum(CERTIFICATE_KINDS, "Choose a kind"),

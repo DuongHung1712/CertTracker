@@ -2,6 +2,7 @@
 import * as XLSX from "xlsx";
 import { RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { expiryMeta, toExpiryStatus } from "@/components/status/expiry";
+import { CERTIFICATE_KIND_LABEL } from "@/features/certificates/schema";
 import { toCsv } from "@/features/export/csv";
 import { isoToExcelSerial } from "@/features/import/clean";
 import type { RecordRow } from "@/features/records/queries";
@@ -34,7 +35,7 @@ type ExportColumn = {
 
 /**
  * Column order and headers are the export contract: the import accepts an exported file unchanged (decision #26).
- * Import-relevant headers resolve through HEADER_ALIASES; "Code", "Career role", "YoE", "Expiry date", "Days left"
+ * Import-relevant headers resolve through HEADER_ALIASES; "Code", "Career role", "YoE", "Kind", "Course studied", "Expiry date", "Days left"
  * and "Expiry status" are display-only and are reported as unknown (ignored) columns on re-import.
  */
 export const EXPORT_COLUMNS: ExportColumn[] = [
@@ -44,10 +45,12 @@ export const EXPORT_COLUMNS: ExportColumn[] = [
   { header: "Team", kind: "text", value: (r) => r.teamName },
   { header: "Career role", kind: "text", value: (r) => r.careerRoleName },
   { header: "YoE", kind: "number", value: (r) => r.yoeYears },
-  { header: "Course", kind: "text", value: (r) => r.certificateName, width: 28 },
+  { header: "Certificate", kind: "text", value: (r) => r.certificateName, width: 28 },
+  { header: "Kind", kind: "text", value: (r) => CERTIFICATE_KIND_LABEL[r.certificateKind] },
   { header: "Provider", kind: "text", value: (r) => r.providerName },
   { header: "Certificate type", kind: "text", value: (r) => r.certTypeName },
   { header: "Validity (months)", kind: "number", value: (r) => r.validityMonths },
+  { header: "Course studied", kind: "text", value: (r) => r.courseName, width: 28 },
   { header: "Cost", kind: "number", value: (r) => r.cost },
   { header: "Currency", kind: "text", value: (r) => r.costCurrency },
   { header: "Duration (hours)", kind: "number", value: (r) => r.estHours },

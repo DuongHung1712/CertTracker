@@ -34,7 +34,7 @@ describe("parseIssues", () => {
     ]);
   });
 
-  it("accepts the nullable columns of member-level and course-level rows", () => {
+  it("accepts the nullable columns of member-level and certificate-level rows", () => {
     const [row] = parseIssues([
       { ...base, issue_type: "certificate_no_validity", severity: "info", member_id: null, member_code: null, member_name: null, team_name: null, record_id: null },
     ]);

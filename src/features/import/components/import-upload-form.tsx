@@ -83,7 +83,7 @@ export function ImportUploadForm() {
           }}
         />
         <FieldDescription id="import-file-hint" className="text-caption">
-          Up to 4 MB and 2000 rows. The header row needs an Email column and a Course column.
+          Up to 4 MB and 2000 rows. The header row needs an Email column and a Certificate column.
         </FieldDescription>
       </Field>
       {file && (

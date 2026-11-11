@@ -63,7 +63,7 @@ const DEFAULT_DATA: AdminDashboardData = {
       noExpiryCerts: 0,
     },
   },
-  courses: { ok: true, data: [breakdown("c1", "Cloud Architect")] },
+  certificates: { ok: true, data: [breakdown("c1", "Cloud Architect")] },
   teams: { ok: true, data: [breakdown("t1", "Team Cloud", 2)] },
   certTypes: { ok: true, data: [breakdown("ct1", "Cloud")] },
   providers: { ok: true, data: [breakdown("p1", "AWS")] },

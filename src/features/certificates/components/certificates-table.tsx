@@ -13,7 +13,7 @@ import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
 import type { SelectOption } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
 import { deleteCertificate } from "@/features/certificates/actions";
-import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
+import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN, certificateDeleteHint } from "@/features/certificates/schema";
 import { CertificateSheet } from "@/features/certificates/components/certificate-sheet";
 import type { CertificateRow } from "@/features/certificates/queries";
 import { pluralize } from "@/lib/plural";
@@ -160,7 +160,7 @@ export function CertificatesTable({
             open={!!removal.target}
             onOpenChange={(open) => !open && removal.cancel()}
             title={`Delete ${removalNoun} ${removal.target?.name}?`}
-            description="A certificate that members hold cannot be deleted. This cannot be undone."
+            description={removal.target ? certificateDeleteHint(removal.target.kind) : ""}
             confirmLabel={`Delete ${removalNoun}`}
             pendingLabel="Deleting…"
             pending={removal.pending}

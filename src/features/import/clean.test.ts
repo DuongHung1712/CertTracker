@@ -229,7 +229,7 @@ describe("headers", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((column) => column.header));
     expect(duplicates).toEqual([]);
     expect(Object.keys(map).sort()).toEqual([...IMPORT_FIELDS].sort());
-    expect(unknown).toEqual(["Code", "Career role", "YoE", "Expiry date", "Days left", "Expiry status"]);
+    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Course studied", "Expiry date", "Days left", "Expiry status"]);
   });
   it("still resolves the Vietnamese headers the previous export wrote", () => {
     expect(mapHeaders(["Khóa học", "Trạng thái", "Tiến độ (%)"]).map).toEqual({ courseName: 0, status: 1, progress: 2 });

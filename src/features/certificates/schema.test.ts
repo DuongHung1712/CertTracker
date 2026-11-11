@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { certificateSchema } from "@/features/certificates/schema";
+import { certificateDeleteHint, certificateSheetTitle, certificateSchema } from "@/features/certificates/schema";
 
 const ID = "00000000-0000-0000-0000-000000000000";
 const COURSE = "00000000-0000-0000-0000-000000000009";
@@ -52,6 +52,14 @@ describe("certificateSchema", () => {
       ["courseId", "Choose the course that grants this completion"],
     ]);
     expect(certificateSchema.safeParse({ ...exam, kind: "completion", courseId: COURSE }).success).toBe(true);
+  });
+
+  it("words the sheet title and the delete hint after the kind", () => {
+    expect(certificateSheetTitle(false, "exam")).toBe("Add certificate");
+    expect(certificateSheetTitle(false, "completion")).toBe("Add course completion");
+    expect(certificateSheetTitle(true, "completion")).toBe("Edit course completion");
+    expect(certificateDeleteHint("exam")).toBe("A certificate that members hold cannot be deleted. This cannot be undone.");
+    expect(certificateDeleteHint("completion")).toBe("A course completion that members hold cannot be deleted. This cannot be undone.");
   });
 
   it("an exam never keeps a course", () => {

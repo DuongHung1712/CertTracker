@@ -20,7 +20,7 @@ export async function loadAdminDashboard(user: SignedInUser) {
   const { memberId } = user;
   const [
     kpis,
-    courses,
+    certificates,
     teams,
     certTypes,
     providers,
@@ -62,7 +62,7 @@ export async function loadAdminDashboard(user: SignedInUser) {
     profile,
     profileError: profileFailure && !profileFailure.ok ? profileFailure.error : undefined,
     kpis,
-    courses,
+    certificates,
     teams,
     certTypes,
     providers,

@@ -109,55 +109,17 @@ export function CourseSheet({
         <FieldError errors={[form.formState.errors.providerId]} />
       </Field>
       <Field>
-        <FieldLabel htmlFor="course-prepares-for">Prepares for</FieldLabel>
-        <Controller
-          control={form.control}
-          name="preparesForId"
-          render={({ field }) => (
-            <OptionSelect
-              id="course-prepares-for"
-              value={typeof field.value === "string" && field.value ? field.value : NONE}
-              onChange={(value) => field.onChange(value === NONE ? null : value)}
-              options={[{ id: NONE, name: "None" }, ...certificates]}
-              placeholder="None"
-              invalid={!!form.formState.errors.preparesForId}
-            />
-          )}
+        <FieldLabel htmlFor="course-hours">Duration (hours)</FieldLabel>
+        <Input
+          id="course-hours"
+          type="number"
+          min={1}
+          className="h-9"
+          {...form.register("estHours")}
+          aria-invalid={!!form.formState.errors.estHours}
         />
-        <FieldError errors={[form.formState.errors.preparesForId]} />
+        <FieldError errors={[form.formState.errors.estHours]} />
       </Field>
-      <Field orientation="horizontal">
-        <FieldLabel htmlFor="course-refundable">Refundable</FieldLabel>
-        <Controller
-          control={form.control}
-          name="refundable"
-          render={({ field }) => (
-            <Switch
-              id="course-refundable"
-              checked={field.value}
-              onCheckedChange={(checked) => {
-                field.onChange(checked);
-                // Hidden stale text must never block Save with the length error.
-                if (!checked) {
-                  form.setValue("refundConditions", "");
-                  form.clearErrors("refundConditions");
-                }
-              }}
-            />
-          )}
-        />
-      </Field>
-      {refundable && (
-        <Field>
-          <FieldLabel htmlFor="course-refund-conditions">Refund conditions</FieldLabel>
-          <Textarea
-            id="course-refund-conditions"
-            {...form.register("refundConditions")}
-            aria-invalid={!!form.formState.errors.refundConditions}
-          />
-          <FieldError errors={[form.formState.errors.refundConditions]} />
-        </Field>
-      )}
       <div className="grid grid-cols-[1fr_8rem] gap-3">
         <Field>
           <FieldLabel htmlFor="course-cost">Cost</FieldLabel>
@@ -205,22 +167,60 @@ export function CourseSheet({
           <FieldError errors={[form.formState.errors.costCurrency]} />
         </Field>
       </div>
-      <Field>
-        <FieldLabel htmlFor="course-hours">Duration (hours)</FieldLabel>
-        <Input
-          id="course-hours"
-          type="number"
-          min={1}
-          className="h-9"
-          {...form.register("estHours")}
-          aria-invalid={!!form.formState.errors.estHours}
+      <Field orientation="horizontal">
+        <FieldLabel htmlFor="course-refundable">Refundable</FieldLabel>
+        <Controller
+          control={form.control}
+          name="refundable"
+          render={({ field }) => (
+            <Switch
+              id="course-refundable"
+              checked={field.value}
+              onCheckedChange={(checked) => {
+                field.onChange(checked);
+                // Hidden stale text must never block Save with the length error.
+                if (!checked) {
+                  form.setValue("refundConditions", "");
+                  form.clearErrors("refundConditions");
+                }
+              }}
+            />
+          )}
         />
-        <FieldError errors={[form.formState.errors.estHours]} />
       </Field>
+      {refundable && (
+        <Field>
+          <FieldLabel htmlFor="course-refund-conditions">Refund conditions</FieldLabel>
+          <Textarea
+            id="course-refund-conditions"
+            {...form.register("refundConditions")}
+            aria-invalid={!!form.formState.errors.refundConditions}
+          />
+          <FieldError errors={[form.formState.errors.refundConditions]} />
+        </Field>
+      )}
       <Field>
         <FieldLabel htmlFor="course-url">Course link</FieldLabel>
         <Input id="course-url" type="url" className="h-9" {...form.register("url")} aria-invalid={!!form.formState.errors.url} />
         <FieldError errors={[form.formState.errors.url]} />
+      </Field>
+      <Field>
+        <FieldLabel htmlFor="course-prepares-for">Prepares for</FieldLabel>
+        <Controller
+          control={form.control}
+          name="preparesForId"
+          render={({ field }) => (
+            <OptionSelect
+              id="course-prepares-for"
+              value={typeof field.value === "string" && field.value ? field.value : NONE}
+              onChange={(value) => field.onChange(value === NONE ? null : value)}
+              options={[{ id: NONE, name: "None" }, ...certificates]}
+              placeholder="None"
+              invalid={!!form.formState.errors.preparesForId}
+            />
+          )}
+        />
+        <FieldError errors={[form.formState.errors.preparesForId]} />
       </Field>
     </FormSheet>
   );

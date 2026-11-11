@@ -14,6 +14,7 @@ import { createCertificate, updateCertificate } from "@/features/certificates/ac
 import {
   CERTIFICATE_KIND_LABEL,
   CERTIFICATE_KIND_NOUN,
+  certificateSheetTitle,
   CERTIFICATE_KINDS,
   certificateSchema,
   type CertificateInput,
@@ -77,7 +78,7 @@ export function CertificateSheet({
     <FormSheet
       open={open}
       onOpenChange={onOpenChange}
-      title={editing ? `Edit ${CERTIFICATE_KIND_NOUN[editing.kind]}` : "Add certificate"}
+      title={certificateSheetTitle(!!editing, kind)}
       onSubmit={form.handleSubmit(onSubmit)}
       rootError={errors.root?.message}
       submitting={isSubmitting}
