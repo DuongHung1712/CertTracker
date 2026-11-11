@@ -1,9 +1,28 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { fieldLabel, signIn } from "./helpers";
+import { signInAsSeedAdmin } from "./support/restore-seed";
 
 const ADMIN = "admin@certtracker.test";
 const MEMBER = "member@certtracker.test";
 const MANAGER = "manager@certtracker.test";
+
+/** Names of the catalogue rows a test saves, so afterEach can remove them and the catalogue does not grow run after run. */
+const created: string[] = [];
+function track(name: string): string {
+  created.push(name);
+  return name;
+}
+
+test.afterEach(async () => {
+  const names = created.splice(0);
+  if (names.length === 0) return;
+  const admin = await signInAsSeedAdmin();
+  // Certificates first: a completion restricts the deletion of its granting course.
+  const certificates = await admin.from("certificates").delete().in("name", names);
+  if (certificates.error) throw new Error(`remove certificates: ${certificates.error.message}`);
+  const courses = await admin.from("courses").delete().in("name", names);
+  if (courses.error) throw new Error(`remove courses: ${courses.error.message}`);
+});
 
 async function openTab(page: Page, name: "Certificates" | "Courses") {
   await page.getByRole("tab", { name }).click();
@@ -85,8 +104,8 @@ test("admin adds an exam certificate and a course that prepares for it; a member
   await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();
 
   const stamp = Date.now();
-  const examName = `Exam E2E ${stamp}`;
-  const courseName = `Course E2E ${stamp}`;
+  const examName = track(`Exam E2E ${stamp}`);
+  const courseName = track(`Course E2E ${stamp}`);
   const certificateDialog = await addCertificate(page, { name: examName, kind: "Exam" });
   await certificateDialog.getByRole("button", { name: "Save" }).click();
   await expect(certificateDialog).toBeHidden();
@@ -113,8 +132,8 @@ test("a course completion needs a granting course, and that course cannot be del
   await page.goto("/courses");
 
   const stamp = Date.now();
-  const courseName = `Granting Course ${stamp}`;
-  const completionName = `Completion E2E ${stamp}`;
+  const courseName = track(`Granting Course ${stamp}`);
+  const completionName = track(`Completion E2E ${stamp}`);
   await addCourse(page, courseName);
 
   const dialog = await addCertificate(page, { name: completionName, kind: "Course completion" });
@@ -162,7 +181,7 @@ test("admin saves a course with a USD cost and study hours, and the list shows t
   await page.goto("/courses");
   await openTab(page, "Courses");
 
-  const courseName = `Priced Course ${Date.now()}`;
+  const courseName = track(`Priced Course ${Date.now()}`);
   const dialog = await fillCourseBasics(page, courseName);
   await dialog.getByLabel("Cost", { exact: true }).fill("150");
   await dialog.getByLabel("Currency", { exact: true }).click();
@@ -183,7 +202,7 @@ test("a cost without a currency is refused with a clear message", async ({ page 
   await page.goto("/courses");
   await openTab(page, "Courses");
 
-  const dialog = await fillCourseBasics(page, `Unpriced Course ${Date.now()}`);
+  const dialog = await fillCourseBasics(page, track(`Unpriced Course ${Date.now()}`));
   await dialog.getByLabel("Cost", { exact: true }).fill("150");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Choose a currency for the cost")).toBeVisible();
@@ -194,7 +213,7 @@ test("admin records refund conditions on a refundable course", async ({ page }) 
   await page.goto("/courses");
   await openTab(page, "Courses");
 
-  const courseName = `Refund Course ${Date.now()}`;
+  const courseName = track(`Refund Course ${Date.now()}`);
   const text = "Pass the exam within 6 months";
   const dialog = await fillCourseBasics(page, courseName);
   await expect(dialog.getByLabel("Duration (hours)")).toBeVisible();

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { deleteCertificate, updateCertificate } from "@/features/certificates/actions";
+import { createCertificate, deleteCertificate, updateCertificate } from "@/features/certificates/actions";
 import { deleteCourse } from "@/features/courses/actions";
 
 const ID = "00000000-0000-0000-0000-000000000001";
@@ -20,6 +20,7 @@ function chain(table: string) {
     updateValues(table, values);
     return self;
   };
+  self.insert = () => self;
   self.maybeSingle = next;
   self.then = (resolve: (reply: Reply) => unknown) => next().then(resolve);
   return self;
@@ -55,9 +56,34 @@ describe("deleteCertificate", () => {
   });
 });
 
+describe("createCertificate", () => {
+  const unique = { code: "23505", message: "duplicate key" };
+
+  it("words a duplicate by kind: certificate for an exam, course completion for a completion", async () => {
+    replies.certificates = [{ data: null, error: unique }];
+    expect(await createCertificate(exam)).toEqual({
+      ok: false,
+      error: `A certificate named "${exam.name}" already exists for this provider, or this course already grants a completion.`,
+    });
+    replies.certificates = [{ data: null, error: unique }];
+    expect(await createCertificate(completion)).toEqual({
+      ok: false,
+      error: `A course completion named "${exam.name}" already exists for this provider, or this course already grants a completion.`,
+    });
+  });
+});
+
 describe("updateCertificate kind change (spec Q6)", () => {
+  it("refuses a completion whose granting course changes while a record studied another course", async () => {
+    replies.training_records = [{ data: [{ course_id: COURSE }], error: null }];
+    expect(await updateCertificate({ ...completion, courseId: OTHER_COURSE })).toEqual({
+      ok: false,
+      error: "This certificate has records with another course. Change them first.",
+    });
+    expect(updateValues).not.toHaveBeenCalled();
+  });
+
   it("refuses exam to completion when a record studied another course", async () => {
-    replies.certificates = [{ data: { kind: "exam" }, error: null }];
     replies.training_records = [{ data: [{ course_id: OTHER_COURSE }], error: null }];
     expect(await updateCertificate(completion)).toEqual({
       ok: false,
@@ -67,7 +93,7 @@ describe("updateCertificate kind change (spec Q6)", () => {
   });
 
   it("allows exam to completion when the records are empty or use the granting course", async () => {
-    replies.certificates = [{ data: { kind: "exam" }, error: null }, { data: [{ id: ID }], error: null }];
+    replies.certificates = [{ data: [{ id: ID }], error: null }];
     replies.training_records = [{ data: [{ course_id: COURSE }], error: null }];
     expect(await updateCertificate(completion)).toEqual({ ok: true, data: null });
   });

@@ -1,3 +1,4 @@
+import { preparingCourseByCertificate } from "@/features/import/preparing-course";
 import type { ImportLookups, PlannedRow } from "@/features/import/plan";
 import {
   importActionSchema,
@@ -79,7 +80,7 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     ),
   ]);
 
-  const courseByCertificate = new Map(courses.filter((c) => c.prepares_for_id).map((c) => [c.prepares_for_id, c]));
+  const courseByCertificate = preparingCourseByCertificate(courses, new Map(certificates.map((c) => [c.id, c.name])));
   const grantedByCourse = new Map(certificates.filter((c) => c.course_id).map((c) => [c.course_id, c.id]));
   return {
     members: members.map((m) => ({
