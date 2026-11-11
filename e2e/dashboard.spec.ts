@@ -35,12 +35,14 @@ function rowWith(scope: Locator, ...texts: string[]): Locator {
 }
 
 async function expectOrgWideTiles(page: Page) {
-  await expect(tileValue(page, "Certificates")).toHaveText("3");
+  // The seed holds exam certificates only: the exam group has the figures, the completion group is empty.
   await expect(tileValue(page, "Completed")).toHaveText("1");
   await expect(tileValue(page, "In progress")).toHaveText("1");
   await expect(tileValue(page, "Valid")).toHaveText("1");
   await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
   await expect(tileValue(page, "Expired")).toHaveText("0");
+  await expect(tileValue(page, "Completions in progress")).toHaveText("0");
+  await expect(tileValue(page, "Completed this month")).toHaveText("0");
 }
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
@@ -245,7 +247,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /^Individual ranking$/ })).toHaveCount(0);
 
   // Filter tabs with counts for member certificates
-  const certSection = page.getByRole("region", { name: "My certificates" });
+  const certSection = page.getByRole("region", { name: "My learning" });
   await expect(certSection).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^All \(1\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^Valid \(0\)$/ })).toBeVisible();

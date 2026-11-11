@@ -2,6 +2,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { countIssuedThisMonth } from "@/features/dashboard/admin-metrics";
+import { calculateCompletionKpis } from "@/features/dashboard/completion-metrics";
 import { AdminComingSoonCard } from "@/features/dashboard/components/admin/admin-coming-soon-card";
 import { AdminHeader } from "@/features/dashboard/components/admin/admin-header";
 import { AdminKpiCards } from "@/features/dashboard/components/admin/admin-kpi-cards";
@@ -61,6 +62,7 @@ export function AdminDashboardView({
         <AdminKpiCards
           kpis={kpis.data}
           issuedThisMonth={records.ok ? countIssuedThisMonth(records.data) : undefined}
+          completions={records.ok ? calculateCompletionKpis(records.data) : undefined}
           teams={teams}
         />
       ) : (

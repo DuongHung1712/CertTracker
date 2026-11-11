@@ -199,6 +199,45 @@ test("a record for a course completion saves the granting course, and the table 
   }
 });
 
+test("the Kind filter separates exam certificates from course completions, and the dashboard counts them apart", async ({ page }) => {
+  const completion = await createCompletionFixture();
+  try {
+    const admin = await signInAsSeedAdmin();
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+    const added = await admin
+      .from("training_records")
+      .insert({ member_id: AN, certificate_id: completion.certificateId, status: "done", progress: 100, issued_date: today });
+    if (added.error) throw new Error(`add completion record: ${added.error.message}`);
+
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+    await expect(page.getByRole("heading", { name: "Learning", level: 1 })).toBeVisible();
+    const completionRow = recordRow(page, "Nguyễn Văn An", completion.certificateName);
+    const examRow = recordRow(page, "Nguyễn Văn An", AWS);
+
+    await page.getByRole("combobox", { name: "Kind" }).click();
+    await page.getByRole("option", { name: "Course completions" }).click();
+    await expect(completionRow).toBeVisible();
+    await expect(examRow).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "Planned finish date" })).toBeVisible();
+
+    await page.getByRole("combobox", { name: "Kind" }).click();
+    await page.getByRole("option", { name: "Exam certificates" }).click();
+    await expect(examRow).toBeVisible();
+    await expect(completionRow).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "Planned exam date" })).toBeVisible();
+
+    // Overview: the completion is counted in its own group and not in the exam figures (seed: 1 completed exam).
+    await page.goto("/dashboard");
+    const completions = page.getByRole("group", { name: "Course completions" });
+    await expect(completions.locator("dl > div").filter({ hasText: "Completed this month" }).locator("dd")).toHaveText("1");
+    const exams = page.getByRole("group", { name: "Exam certificates" });
+    await expect(exams.locator("dl > div").filter({ hasText: /^Completed/ }).locator("dd")).toHaveText("1");
+  } finally {
+    await completion.remove();
+  }
+});
+
 test("an exam record saves the course studied that prepares for it", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
@@ -574,4 +613,17 @@ test("the list updates live for another user", async ({ browser }) => {
     await managerContext.close();
     await adminContext.close();
   }
+});
+
+test("a member's My learning page offers kind tabs, one add action and the exam-then-course hint", async ({ page }) => {
+  await signIn(page, "member@certtracker.test");
+  await page.goto("/me");
+  await expect(page.getByRole("heading", { name: "My learning", level: 1 })).toBeVisible();
+  await expect(page.getByText("Exam certificates you hold, courses you have studied and course completions.")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "All (1)" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Exam certificates (1)" })).toBeVisible();
+  await page.getByRole("tab", { name: "Course completions (0)" }).click();
+  await expect(page.getByText("Nothing found")).toBeVisible();
+  await expect(page.getByText("Studying for an exam? Choose the exam, then the course you used.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add certificate or course completion" })).toBeVisible();
 });

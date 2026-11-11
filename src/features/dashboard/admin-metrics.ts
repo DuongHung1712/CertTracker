@@ -1,4 +1,5 @@
 import { URGENT_WINDOW_DAYS } from "@/features/dashboard/member-metrics";
+import { isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
@@ -16,12 +17,12 @@ const isAdminExpiringUrgent = (r: RecordRow): boolean =>
   r.daysToExpiry <= URGENT_WINDOW_DAYS;
 
 /**
- * Counts certificates completed with an issued date in the current calendar month
+ * Counts exam certificates completed with an issued date in the current calendar month
  * in Asia/Ho_Chi_Minh time.
  */
 export function countIssuedThisMonth(records: RecordRow[], now: Date = new Date()): number {
   const currentMonthKey = todayVn(now).slice(0, 7);
-  return records.filter((r) => r.status === "done" && r.issuedDate?.slice(0, 7) === currentMonthKey).length;
+  return records.filter((r) => isExam(r) && r.status === "done" && r.issuedDate?.slice(0, 7) === currentMonthKey).length;
 }
 
 /** Expired plus expiring-within-30-days certificates: what Needs attention would list without the limit. */

@@ -280,6 +280,8 @@ export function DashboardRedesignDemo() {
     expiringSoonCerts: 3,
     expiredCerts: 2,
     noExpiryCerts: 8,
+    completionDoneRecords: 0,
+    completionInProgressRecords: 0,
   };
   const sampleBuckets: ExpiryBucket[] = expiryBuckets(sampleKpis);
   const validSegments = validBuckets(sampleKpis);

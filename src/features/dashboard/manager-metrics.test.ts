@@ -251,3 +251,38 @@ describe("manager-metrics", () => {
     });
   });
 });
+
+describe("manager-metrics: exam certificates only", () => {
+  const completion = (partial: Parameters<typeof makeRecord>[0]) =>
+    makeRecord({ certificateKind: "completion", validityMonths: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry", ...partial });
+
+  it("leaves course completions out of the exam KPIs", () => {
+    const kpis = calculateManagerKpis([
+      doneRecord(20),
+      doneRecord(-5),
+      completion({ id: "c1", status: "done" }),
+      completion({ id: "c2", status: "in_progress", progress: 30, issuedDate: null }),
+    ]);
+    expect(kpis).toMatchObject({ doneCount: 2, validCount: 1, expiringCount: 1, expiredCount: 1, inProgressCount: 0 });
+    expect(kpis.totalCertificates).toBe(2);
+  });
+
+  it("counts planned exams in the next 60 days and ignores a planned finish date", () => {
+    const now = new Date("2026-11-08T10:00:00Z");
+    const records = [
+      makeRecord({ id: "e", status: "in_progress", plannedExamDate: "2026-11-20" }),
+      completion({ id: "c", status: "in_progress", plannedExamDate: "2026-11-20" }),
+    ];
+    expect(getPlannedExams(records, 60, now).map((p) => p.recordId)).toEqual(["e"]);
+  });
+
+  it("does not count completions in the monthly certificates earned", () => {
+    const now = new Date("2026-11-08T10:00:00Z");
+    const months = getCertificatesEarnedByMonth(
+      [makeRecord({ id: "e", issuedDate: "2026-11-02" }), completion({ id: "c", status: "done", issuedDate: "2026-11-03" })],
+      6,
+      now,
+    );
+    expect(months.at(-1)?.count).toBe(1);
+  });
+});

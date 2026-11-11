@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AdminDashboardView } from "@/features/dashboard/components/admin/admin-dashboard-view";
 import type { AdminDashboardData } from "@/features/dashboard/load";
-import { doneRecord } from "@/features/records/__fixtures__/record-row";
+import { doneRecord, noExpiryRecord } from "@/features/records/__fixtures__/record-row";
 import type { RecordRow } from "@/features/records/queries";
 
 vi.mock("@/features/records/components/records-realtime", () => ({
@@ -61,6 +61,8 @@ const DEFAULT_DATA: AdminDashboardData = {
       expiringSoonCerts: 0,
       expiredCerts: 0,
       noExpiryCerts: 0,
+      completionDoneRecords: 0,
+      completionInProgressRecords: 0,
     },
   },
   certificates: { ok: true, data: [breakdown("c1", "Cloud Architect")] },
@@ -499,5 +501,44 @@ describe("AdminDashboardView: accessibility of the KPI row", () => {
     expect(expiry).toMatch(/role="img"[^>]*aria-label="Certificate expiry:|aria-label="Certificate expiry:[^"]*"[^>]*role="img"/);
     expect(expiry).not.toContain("<ul");
     expect(expiry).not.toContain("<li");
+  });
+});
+
+describe("AdminDashboardView: exam certificates and course completions are separate groups", () => {
+  const completion = (id: string, patch: Parameters<typeof noExpiryRecord>[0]) =>
+    noExpiryRecord({ id, certificateKind: "completion", ...patch });
+  const group = (html: string, name: string) => elementWith(html, `role="group" aria-label="${name}"`);
+
+  it("renders the two groups inside Overview", () => {
+    const overview = region(render(), "Overview");
+    expect(count(overview, 'role="group"')).toBe(2);
+    expect(textOf(group(overview, "Exam certificates"))).toContain("Valid certificates");
+    expect(textOf(group(overview, "Course completions"))).not.toContain("Valid certificates");
+  });
+
+  it("counts completions this month, this quarter and in progress, and keeps them out of the exam group", () => {
+    const records = [
+      CALM_RECORD,
+      completion("c1", { status: "done", issuedDate: "2026-11-02" }),
+      completion("c2", { status: "done", issuedDate: "2026-10-12" }),
+      completion("c3", { status: "in_progress", issuedDate: null, progress: 30 }),
+    ];
+    const html = render({
+      records: { ok: true, data: records },
+      kpis: withKpis({ doneRecords: 3, inProgressRecords: 1, completionDoneRecords: 2, completionInProgressRecords: 1 }),
+    });
+    const completions = textOf(group(region(html, "Overview"), "Course completions"));
+    expect(completions).toContain("Completed this month 1");
+    expect(completions).toContain("Completed this quarter 2");
+    expect(completions).toContain("Completions in progress 1");
+    // The valid card divides by exam certificates only: 3 done minus 2 completions.
+    expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("of 1 completed");
+    expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("In progress 0");
+  });
+
+  it("shows a dash for the monthly figures when the certificate list failed to load", () => {
+    const completions = textOf(group(region(render({ records: failed }), "Overview"), "Course completions"));
+    expect(completions).toContain("Completed this month —");
+    expect(completions).toContain("Completions in progress 0");
   });
 });

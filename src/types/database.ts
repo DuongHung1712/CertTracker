@@ -846,6 +846,8 @@ export type Database = {
         Args: never
         Returns: {
           active_certs: number
+          completion_done_records: number
+          completion_in_progress_records: number
           done_records: number
           expired_certs: number
           expiring_60_certs: number

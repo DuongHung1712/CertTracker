@@ -180,3 +180,14 @@ describe("admin-metrics", () => {
     });
   });
 });
+
+describe("countIssuedThisMonth: exam certificates only", () => {
+  it("does not count a course completion", () => {
+    const now = new Date("2026-11-08T10:00:00Z");
+    const records = [
+      mockRecord({ id: "r1", status: "done", issuedDate: "2026-11-02" }),
+      mockRecord({ id: "r2", status: "done", issuedDate: "2026-11-02", certificateKind: "completion" }),
+    ];
+    expect(countIssuedThisMonth(records, now)).toBe(1);
+  });
+});

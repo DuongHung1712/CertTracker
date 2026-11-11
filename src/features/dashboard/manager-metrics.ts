@@ -1,5 +1,6 @@
 import { EXPIRING_WINDOW_DAYS, URGENT_WINDOW_DAYS } from "@/features/dashboard/member-metrics";
 import { formatRate, ratePercent } from "@/features/dashboard/metrics";
+import { isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
@@ -38,7 +39,9 @@ export type ManagerKpis = {
   teamReadinessFormatted: string;
 };
 
-export function calculateManagerKpis(records: RecordRow[]): ManagerKpis {
+/** Exam certificates only: a course completion has no expiry and is counted by `calculateCompletionKpis`. */
+export function calculateManagerKpis(allRecords: RecordRow[]): ManagerKpis {
+  const records = allRecords.filter(isExam);
   let doneCount = 0;
   let validCount = 0;
   let expiringCount = 0;
@@ -112,8 +115,9 @@ export type MemberReadinessRow = {
 
 export function getTeamReadinessLeague(
   members: { id: string; fullName: string; teamName: string | null }[],
-  records: RecordRow[],
+  allRecords: RecordRow[],
 ): MemberReadinessRow[] {
+  const records = allRecords.filter(isExam);
   const recordsByMember = new Map<string, RecordRow[]>();
   for (const r of records) {
     const list = recordsByMember.get(r.memberId) ?? [];
@@ -172,7 +176,7 @@ export type CertificatesEarnedMonth = {
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
-/** Last N calendar months of completed certificates in scope. */
+/** Last N calendar months of completed exam certificates in scope. */
 export function getCertificatesEarnedByMonth(
   records: RecordRow[],
   monthsCount = 6,
@@ -203,7 +207,7 @@ export function getCertificatesEarnedByMonth(
 
   const countsByKey = new Map<string, number>();
   for (const r of records) {
-    if (r.status === "done" && r.issuedDate) {
+    if (isExam(r) && r.status === "done" && r.issuedDate) {
       const key = r.issuedDate.slice(0, 7);
       countsByKey.set(key, (countsByKey.get(key) ?? 0) + 1);
     }
@@ -245,7 +249,7 @@ export function getPlannedExams(
   const items: PlannedExamItem[] = [];
 
   for (const r of records) {
-    if (r.plannedExamDate) {
+    if (isExam(r) && r.plannedExamDate) {
       const examTime = Date.parse(r.plannedExamDate);
       if (!Number.isNaN(examTime) && !Number.isNaN(todayTime)) {
         const daysRemaining = Math.round((examTime - todayTime) / 86_400_000);

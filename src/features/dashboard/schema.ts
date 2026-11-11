@@ -6,12 +6,15 @@ const kpisRow = z.object({
   total_members: count, total_records: count, done_records: count, in_progress_records: count,
   not_started_records: count, active_certs: count, expiring_60_certs: count, expiring_soon_certs: count,
   expired_certs: count, no_expiry_certs: count,
+  completion_done_records: count, completion_in_progress_records: count,
 });
 
 export type DashboardKpis = {
   totalMembers: number; totalRecords: number; doneRecords: number; inProgressRecords: number;
   notStartedRecords: number; activeCerts: number; expiring60Certs: number; expiringSoonCerts: number;
   expiredCerts: number; noExpiryCerts: number;
+  /** Course completions; the five expiry counts above hold exam certificates only. */
+  completionDoneRecords: number; completionInProgressRecords: number;
 };
 
 /** `dashboard_kpis()` returns exactly one row; anything else is a contract break. */
@@ -22,6 +25,7 @@ export function parseKpis(data: unknown): DashboardKpis {
     inProgressRecords: r.in_progress_records, notStartedRecords: r.not_started_records,
     activeCerts: r.active_certs, expiring60Certs: r.expiring_60_certs, expiringSoonCerts: r.expiring_soon_certs,
     expiredCerts: r.expired_certs, noExpiryCerts: r.no_expiry_certs,
+    completionDoneRecords: r.completion_done_records, completionInProgressRecords: r.completion_in_progress_records,
   };
 }
 

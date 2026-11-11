@@ -41,15 +41,18 @@ const { default: DashboardPage } = await import("./page");
 
 const KPIS: DashboardKpis = {
   totalMembers: 7,
-  totalRecords: 4321,
+  totalRecords: 4400,
   doneRecords: 30,
-  inProgressRecords: 5,
+  // 5 exams plus 4,321 completions in progress: the second figure is the one the tests look for.
+  inProgressRecords: 4326,
   notStartedRecords: 2,
   activeCerts: 10,
   expiring60Certs: 4,
   expiringSoonCerts: 3,
   expiredCerts: 6,
   noExpiryCerts: 7,
+  completionDoneRecords: 0,
+  completionInProgressRecords: 4321,
 };
 
 function row(key: string, label: string): BreakdownRow {

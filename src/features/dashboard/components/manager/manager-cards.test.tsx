@@ -150,6 +150,27 @@ describe("ManagerTabStrip & the merged Coming soon card", () => {
   });
 });
 
+const NO_COMPLETIONS = { doneThisMonth: 0, doneThisQuarter: 0, inProgress: 0 };
+
+describe("TopKpiRow: exam certificates and course completions", () => {
+  it("shows two labelled groups with their own figures", () => {
+    const kpis = calculateManagerKpis([doneRecord(20), doneRecord(-5), doneRecord(200)]);
+    const html = renderToStaticMarkup(
+      <TopKpiRow kpis={kpis} completions={{ doneThisMonth: 2, doneThisQuarter: 5, inProgress: 3 }} plannedExams={4} />,
+    );
+    expect(count(html, 'role="group"')).toBe(2);
+    const exam = html.slice(html.indexOf('aria-label="Exam certificates"'), html.indexOf('aria-label="Course completions"'));
+    const completions = html.slice(html.indexOf('aria-label="Course completions"'));
+    const text = (markup: string) => markup.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(text(exam)).toContain("Valid 2");
+    expect(text(exam)).toContain("Planned exams 4");
+    expect(text(completions)).toContain("Completed this month 2");
+    expect(text(completions)).toContain("Completed this quarter 5");
+    expect(text(completions)).toContain("Completions in progress 3");
+    expect(text(completions)).not.toContain("Expired");
+  });
+});
+
 describe("TeamReadinessDonutCard & TopKpiRow", () => {
   it("renders the donut from certificates only: valid of completed, with no member headcount chip", () => {
     const kpis = calculateManagerKpis([doneRecord(20), doneRecord(-5)]);
@@ -178,7 +199,7 @@ describe("TeamReadinessDonutCard & TopKpiRow", () => {
 
   it("renders TopKpiRow with 3 tiles and only real numbers", () => {
     const kpis = calculateManagerKpis([doneRecord(20), doneRecord(45), doneRecord(-5)]);
-    const html = renderToStaticMarkup(<TopKpiRow kpis={kpis} pastDueText="Minh (PMP)" />);
+    const html = renderToStaticMarkup(<TopKpiRow kpis={kpis} completions={NO_COMPLETIONS} plannedExams={0} pastDueText="Minh (PMP)" />);
     expect(html).toContain("Expiring within 60 days");
     expect(html).toContain("Expired");
     expect(html).toContain("Waiting for approval");

@@ -22,8 +22,10 @@ import { TeamReadinessDonutCard } from "@/features/dashboard/components/manager/
 import { TeamReadinessDossier } from "@/features/dashboard/components/manager/team-readiness-dossier";
 import { TeamScopeFilter } from "@/features/dashboard/components/manager/team-scope-filter";
 import { TopKpiRow } from "@/features/dashboard/components/manager/top-kpi-row";
+import { calculateCompletionKpis } from "@/features/dashboard/completion-metrics";
 import {
   calculateManagerKpis,
+  getPlannedExams,
   getMembersWithoutCerts,
   getTeamReadinessLeague,
   getNeedsAttentionItems,
@@ -66,6 +68,8 @@ export function ManagerDashboardView({
   }, [members, selectedTeam]);
 
   const kpis = useMemo(() => calculateManagerKpis(filteredRecords), [filteredRecords]);
+  const completions = useMemo(() => calculateCompletionKpis(filteredRecords), [filteredRecords]);
+  const plannedExams = useMemo(() => getPlannedExams(filteredRecords).length, [filteredRecords]);
 
   const teamsWithCounts = useMemo(() => {
     return managedTeamNames.map((name) => ({
@@ -134,7 +138,7 @@ export function ManagerDashboardView({
             <div className="flex flex-col gap-6 lg:order-2 lg:col-span-6">
               <section aria-label="Overview" className="flex flex-col gap-3">
                 <h2 className="sr-only">Overview</h2>
-                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} pastDueText={pastDueText} />}
+                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} completions={completions} plannedExams={plannedExams} pastDueText={pastDueText} />}
               </section>
 
               <ManagerTabStrip />
