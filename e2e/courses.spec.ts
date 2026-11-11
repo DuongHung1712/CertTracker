@@ -90,10 +90,12 @@ test("admin adds an exam certificate and a course that prepares for it; a member
   const certificateDialog = await addCertificate(page, { name: examName, kind: "Exam" });
   await certificateDialog.getByRole("button", { name: "Save" }).click();
   await expect(certificateDialog).toBeHidden();
+  await searchFor(page, examName);
   await expect(rowOf(page, examName).getByText("Exam", { exact: true })).toBeVisible();
   await expect(rowOf(page, examName).getByText("No expiry")).toBeVisible();
 
   await addCourse(page, courseName, examName);
+  await searchFor(page, courseName);
   await expect(rowOf(page, courseName).getByRole("cell", { name: examName, exact: true })).toBeVisible();
 
   await signOut(page);
@@ -122,6 +124,7 @@ test("a course completion needs a granting course, and that course cannot be del
   await pickOption(page, dialog, fieldLabel("Course"), courseName);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
+  await searchFor(page, completionName);
   await expect(rowOf(page, completionName).getByRole("cell", { name: courseName, exact: true })).toBeVisible();
   await expect(page.getByText(`Added course completion ${completionName}`)).toBeVisible();
 
@@ -132,6 +135,7 @@ test("a course completion needs a granting course, and that course cannot be del
   await page.getByRole("button", { name: "Cancel" }).click();
 
   await openTab(page, "Courses");
+  await searchFor(page, courseName);
   await expect(rowOf(page, courseName).getByText(`Completion: ${completionName}`)).toBeVisible();
 
   // A course that grants a completion is no longer offered to the next one; a free course still is.
@@ -144,6 +148,7 @@ test("a course completion needs a granting course, and that course cannot be del
   await expect(next).toBeHidden();
   await openTab(page, "Courses");
 
+  await searchFor(page, courseName);
   await rowOf(page, courseName).getByRole("button", { name: `Actions for ${courseName}` }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   await page.getByRole("button", { name: "Delete course" }).click();

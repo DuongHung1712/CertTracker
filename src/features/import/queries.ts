@@ -47,7 +47,7 @@ export type ImportRowView = {
  */
 export async function loadImportLookups(): Promise<ImportLookups> {
   const supabase = await createClient();
-  const [members, teams, providers, certTypes, certificates, preparingCourses, records] = await Promise.all([
+  const [members, teams, providers, certTypes, certificates, courses, records] = await Promise.all([
     fetchAllRows((from, to) =>
       supabase.from("members").select("id, email, full_name, team_id, is_active").order("email").order("id").range(from, to),
     ),
@@ -57,25 +57,20 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     fetchAllRows((from, to) =>
       supabase
         .from("certificates")
-        .select("id, name, provider_id, cert_type_id, validity_months")
+        .select("id, name, provider_id, cert_type_id, validity_months, course_id")
         .order("name")
         .order("id")
         .range(from, to),
     ),
-    // Cost and hours live on the course that prepares for a certificate.
+    // Cost and hours live on the course; a record names the course studied.
     fetchAllRows((from, to) =>
-      supabase
-        .from("courses")
-        .select("id, prepares_for_id, cost, cost_currency, est_hours")
-        .not("prepares_for_id", "is", null)
-        .order("id")
-        .range(from, to),
+      supabase.from("courses").select("id, name, prepares_for_id, cost, cost_currency, est_hours").order("id").range(from, to),
     ),
     fetchAllRows((from, to) =>
       supabase
         .from("training_records")
         .select(
-          "id, member_id, certificate_id, status, progress, planned_exam_date, issued_date, certificate_url, via_company, refund_status, notes",
+          "id, member_id, certificate_id, course_id, status, progress, planned_exam_date, issued_date, certificate_url, via_company, refund_status, notes",
         )
         .order("member_id")
         .order("certificate_id")
@@ -84,7 +79,8 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     ),
   ]);
 
-  const courseByCertificate = new Map(preparingCourses.map((p) => [p.prepares_for_id, p]));
+  const courseByCertificate = new Map(courses.filter((c) => c.prepares_for_id).map((c) => [c.prepares_for_id, c]));
+  const grantedByCourse = new Map(certificates.filter((c) => c.course_id).map((c) => [c.course_id, c.id]));
   return {
     members: members.map((m) => ({
       id: m.id,
@@ -109,10 +105,20 @@ export async function loadImportLookups(): Promise<ImportLookups> {
         estHours: course?.est_hours ?? null,
       };
     }),
+    studyCourses: courses.map((c) => ({
+      id: c.id,
+      name: c.name,
+      preparesForId: c.prepares_for_id,
+      grantsId: grantedByCourse.get(c.id) ?? null,
+      cost: c.cost,
+      costCurrency: toCurrency(c.cost_currency),
+      estHours: c.est_hours,
+    })),
     records: records.map((r) => ({
       id: r.id,
       memberId: r.member_id,
       certificateId: r.certificate_id,
+      courseId: r.course_id,
       status: r.status,
       progress: r.progress,
       plannedExamDate: r.planned_exam_date,

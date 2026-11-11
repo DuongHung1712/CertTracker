@@ -22,7 +22,7 @@ const ROWS: ExportRow[] = [
 ];
 
 const baseRecord = (row: ExportRow) => ({
-  id: row.id, memberId: row.memberId, certificateId: row.certificateId, status: row.status, progress: row.progress,
+  id: row.id, memberId: row.memberId, certificateId: row.certificateId, courseId: row.courseId, status: row.status, progress: row.progress,
   plannedExamDate: row.plannedExamDate, issuedDate: row.issuedDate, certificateUrl: row.certificateUrl,
   viaCompany: row.viaCompany, refundStatus: row.refundStatus, notes: row.notes,
 });
@@ -37,6 +37,7 @@ const LOOKUPS: ImportLookups = {
     { id: "gcp", name: "GCP ACE", providerId: "google", certTypeId: null, validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null },
     { id: "az", name: "Azure AZ-900", providerId: "aws", certTypeId: "tc", validityMonths: 12, cost: null, costCurrency: null, estHours: 12 },
   ],
+  studyCourses: [{ id: "k-saa", name: "SAA Bootcamp", preparesForId: "saa", grantsId: null, cost: 150, costCurrency: "USD", estHours: 40 }],
   records: ROWS.map(baseRecord),
 };
 
@@ -79,6 +80,13 @@ describe("records export", () => {
     expect(sheet[XLSX.utils.encode_cell({ r: 3, c: column })]?.v).toBe(NOTE);
   });
 
+  it("round-trips the course studied: unchanged when the record has it, an update when it differs", () => {
+    const studied = [{ ...ROWS[0]!, courseId: "k-saa", courseName: "SAA Bootcamp" }, ROWS[1]!, ROWS[2]!];
+    expect(actions(studied, lookupsFor(studied))).toEqual([["skip", []], ["skip", []], ["skip", []]]);
+    const before = studied.map((row, i) => (i === 0 ? { ...row, courseId: null } : row));
+    expect(actions(studied, lookupsFor(before))[0]).toEqual(["update", []]);
+  });
+
   it("round-trips a column where every progress is exactly 100%", () => {
     const rows = ROWS.map((row) => ({ ...row, status: "done" as const, progress: 100, issuedDate: row.issuedDate ?? "2025-03-01" }));
     expect(actions(rows, lookupsFor(rows))).toEqual([["skip", []], ["skip", []], ["skip", []]]);
@@ -105,8 +113,8 @@ describe("records export", () => {
   it("maps import headers through the aliases and leaves display-only columns unmapped", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((c) => c.header));
     expect(duplicates).toEqual([]);
-    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Course studied", "Expiry date", "Days left", "Expiry status"]);
-    expect(Object.keys(map)).toHaveLength(18);
+    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Expiry date", "Days left", "Expiry status"]);
+    expect(Object.keys(map)).toHaveLength(19);
   });
 
   it("puts Career role and YoE right after Team and writes their values", () => {

@@ -5,11 +5,11 @@ import { buildLegacyWorkbook, LEGACY_EXPECTED } from "@/features/import/__fixtur
 import { readImportTable } from "@/features/import/workbook";
 
 const TODAY = "2026-09-30";
-const HEADERS = ["Họ tên", "Email", "Team", "Khóa học", "Nhà cung cấp", "Loại", "Thời hạn", "Trạng thái", "Tiến độ", "Ngày thi", "Ngày cấp", "Ghi chú", "Cost", "Currency", "Study hours"];
+const HEADERS = ["Họ tên", "Email", "Team", "Khóa học", "Nhà cung cấp", "Loại", "Thời hạn", "Trạng thái", "Tiến độ", "Ngày thi", "Ngày cấp", "Ghi chú", "Cost", "Currency", "Study hours", "Course studied"];
 
 function table(rows: Cell[][], headers = HEADERS): ImportTable {
   const map = Object.fromEntries(
-    headers.map((h, i) => [({ "Họ tên": "memberName", Email: "email", Team: "team", "Khóa học": "courseName", "Nhà cung cấp": "provider", Loại: "certType", "Thời hạn": "validityMonths", "Trạng thái": "status", "Tiến độ": "progress", "Ngày thi": "plannedExamDate", "Ngày cấp": "issuedDate", "Ghi chú": "notes", Cost: "cost", Currency: "costCurrency", "Study hours": "estHours" } as Record<string, string>)[h], i]),
+    headers.map((h, i) => [({ "Họ tên": "memberName", Email: "email", Team: "team", "Khóa học": "courseName", "Nhà cung cấp": "provider", Loại: "certType", "Thời hạn": "validityMonths", "Trạng thái": "status", "Tiến độ": "progress", "Ngày thi": "plannedExamDate", "Ngày cấp": "issuedDate", "Ghi chú": "notes", Cost: "cost", Currency: "costCurrency", "Study hours": "estHours", "Course studied": "courseStudied" } as Record<string, string>)[h], i]),
   );
   return { sheetName: "S", headerRowNumber: 1, headers, map, unknownColumns: [], rows: rows.map((cells, i) => ({ rowNumber: i + 2, cells })), date1904: false };
 }
@@ -29,8 +29,12 @@ const LOOKUPS: ImportLookups = {
     { id: "c-a", name: "Shared Name", providerId: "p-aws", certTypeId: null, validityMonths: null, ...NO_COST },
     { id: "c-b", name: "Shared Name", providerId: "p-other", certTypeId: null, validityMonths: null, ...NO_COST },
   ],
+  studyCourses: [
+    { id: "k-prep", name: "SAA Bootcamp", preparesForId: "c-saa", grantsId: null, cost: 15, costCurrency: "USD", estHours: 27 },
+    { id: "k-other", name: "Other Bootcamp", preparesForId: "c-a", grantsId: null, ...NO_COST },
+  ],
   records: [
-    { id: "r-1", memberId: "m-an", certificateId: "c-saa", status: "in_progress", progress: 40, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: "cũ" },
+    { id: "r-1", memberId: "m-an", certificateId: "c-saa", courseId: null, status: "in_progress", progress: 40, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: "cũ" },
   ],
 };
 
@@ -220,6 +224,52 @@ describe("buildImportPlan edge cases", () => {
     expect(newEntities.courses).toEqual(["Priced Course"]);
   });
 
+  describe("Course studied", () => {
+    const planOne = (studied: Cell, overrides: Partial<Record<string, Cell>> = {}) =>
+      buildImportPlan(table([row({ "Course studied": studied, ...overrides })]), LOOKUPS, TODAY).rows[0]!;
+
+    it("names a course that prepares for the certificate and marks the update", () => {
+      const planned = planOne("SAA Bootcamp");
+      expect(planned.errors).toEqual([]);
+      expect(planned.normalized!.courseStudied).toEqual({ id: "k-prep" });
+      expect(planned.action).toBe("update");
+    });
+
+    it("leaves an old row (no Course studied) without courseStudied", () => {
+      expect(planOne(null).normalized!).not.toHaveProperty("courseStudied");
+    });
+
+    it("refuses a course that does not prepare for the certificate, with the spec message", () => {
+      const planned = planOne("Other Bootcamp");
+      expect(planned).toMatchObject({ action: "skip", normalized: null });
+      expect(planned.errors).toContain("This course does not prepare for AWS SAA");
+    });
+
+    it("refuses an unknown course and any course for a new certificate", () => {
+      expect(planOne("No Such Course").errors).toContain('Course "No Such Course" not found');
+      expect(planOne("SAA Bootcamp", { "Khóa học": "Brand New" }).errors).toContain("This course does not prepare for Brand New");
+    });
+
+    it("accepts the course that grants a completion certificate", () => {
+      const lookups: ImportLookups = {
+        ...LOOKUPS,
+        certificates: [...LOOKUPS.certificates, { id: "c-ml", name: "ML Specialization", providerId: "p-aws", certTypeId: null, validityMonths: null, ...NO_COST }],
+        studyCourses: [...LOOKUPS.studyCourses, { id: "k-ml", name: "ML Course", preparesForId: null, grantsId: "c-ml", ...NO_COST }],
+      };
+      const [planned] = buildImportPlan(table([row({ "Khóa học": "ML Specialization", "Course studied": "ML Course" })]), lookups, TODAY).rows;
+      expect(planned!.errors).toEqual([]);
+      expect(planned!.normalized!.courseStudied).toEqual({ id: "k-ml" });
+    });
+
+    it("is unchanged when the record already has that course, and compares the cost with that course", () => {
+      const lookups: ImportLookups = { ...LOOKUPS, records: LOOKUPS.records.map((r) => ({ ...r, courseId: "k-prep" })) };
+      const [same] = buildImportPlan(table([row({ "Course studied": "SAA Bootcamp", Cost: 15, Currency: "USD", "Study hours": 27 })]), lookups, TODAY).rows;
+      expect(same!.warnings.join()).not.toMatch(/Cost|Study hours/);
+      const [other] = buildImportPlan(table([row({ "Course studied": "SAA Bootcamp", Cost: 99, Currency: "USD" })]), lookups, TODAY).rows;
+      expect(other!.warnings.join()).toMatch(/Cost in the file differs/);
+    });
+  });
+
   it("reports an unknown currency as a row error", () => {
     const [planned] = buildImportPlan(
       table([row({ "Khóa học": "Priced Course", Cost: 150, Currency: "EUR" })]),
@@ -328,7 +378,7 @@ describe("buildImportPlan edge cases", () => {
 
 describe("commit_import safety of emitted records", () => {
   const doneInDb: ImportLookups["records"][number] = {
-    id: "r-done", memberId: "m-an", certificateId: "c-saa", status: "done", progress: 100, plannedExamDate: null,
+    id: "r-done", memberId: "m-an", certificateId: "c-saa", courseId: null, status: "done", progress: 100, plannedExamDate: null,
     issuedDate: "2023-10-26", certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: "cũ",
   };
   const withRecord = (record: ImportLookups["records"][number] | null): ImportLookups => ({ ...LOOKUPS, records: record ? [record] : [] });
@@ -410,13 +460,13 @@ describe("reconcileRecord (decision #22)", () => {
     expect(reconcileRecord({ status: "in_progress", progress: 100, issuedDate: null }, none, TODAY)).toMatchObject({ status: "in_progress", progress: 99 });
   });
   it("counts the existing issue date when 100% arrives with in_progress", () => {
-    const existing = { id: "r", memberId: "m", certificateId: "c", status: "done" as const, progress: 100, plannedExamDate: null, issuedDate: "2024-05-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };
+    const existing = { id: "r", memberId: "m", certificateId: "c", courseId: null, status: "done" as const, progress: 100, plannedExamDate: null, issuedDate: "2024-05-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };
     const result = reconcileRecord({ status: "in_progress", progress: 100, issuedDate: null }, existing, TODAY);
     expect(result).toMatchObject({ status: "done", progress: 100, errors: [] });
     expect(result.warnings).toHaveLength(1);
   });
   it("keeps an existing in-progress value when the file has no progress", () => {
-    const existing = { id: "r", memberId: "m", certificateId: "c", status: "in_progress" as const, progress: 40, plannedExamDate: null, issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };
+    const existing = { id: "r", memberId: "m", certificateId: "c", courseId: null, status: "in_progress" as const, progress: 40, plannedExamDate: null, issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };
     expect(reconcileRecord({ status: "in_progress", progress: null, issuedDate: null }, existing, TODAY)).toMatchObject({ progress: 40 });
     expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, existing, TODAY)).toMatchObject({ status: "in_progress", progress: 40, errors: [] });
   });
@@ -426,7 +476,7 @@ describe("reconcileRecord (decision #22)", () => {
     expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The issue date cannot be in the future"]);
   });
   it("accepts a done record whose issue date already exists in the database", () => {
-    const existing = { id: "r", memberId: "m", certificateId: "c", status: "done" as const, progress: 100, plannedExamDate: null, issuedDate: "2024-05-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };
+    const existing = { id: "r", memberId: "m", certificateId: "c", courseId: null, status: "done" as const, progress: 100, plannedExamDate: null, issuedDate: "2024-05-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };
     expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, existing, TODAY).errors).toEqual([]);
   });
 });
@@ -445,10 +495,11 @@ it("produces the documented plan for the legacy fixture against seed-like lookup
       { id: "saa", name: "AWS Solutions Architect Associate", providerId: "aws", certTypeId: "tc", validityMonths: 36, ...NO_COST },
       { id: "nv", name: "NVIDIA Generative AI LLMs", providerId: "nvidia", certTypeId: "tai", validityMonths: 24, ...NO_COST },
     ],
-    records: [
-      { id: "r1", memberId: "an", certificateId: "saa", status: "done", progress: 100, plannedExamDate: null, issuedDate: "2023-10-26", certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
-      { id: "r2", memberId: "binh", certificateId: "nv", status: "in_progress", progress: 40, plannedExamDate: "2026-10-20", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
-      { id: "r3", memberId: "chau", certificateId: "saa", status: "not_started", progress: 0, plannedExamDate: null, issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
+    studyCourses: [],
+  records: [
+      { id: "r1", memberId: "an", certificateId: "saa", courseId: null, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2023-10-26", certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
+      { id: "r2", memberId: "binh", certificateId: "nv", courseId: null, status: "in_progress", progress: 40, plannedExamDate: "2026-10-20", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
+      { id: "r3", memberId: "chau", certificateId: "saa", courseId: null, status: "not_started", progress: 0, plannedExamDate: null, issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
     ],
   };
   const read = readImportTable(buildLegacyWorkbook());

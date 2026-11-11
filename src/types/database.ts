@@ -826,6 +826,7 @@ export type Database = {
         }[]
       }
       commit_import: { Args: { p_batch_id: string }; Returns: Json }
+      copy_courses_to_certificates: { Args: never; Returns: undefined }
       dashboard_breakdown: {
         Args: { p_dimension: string; p_limit?: number }
         Returns: {

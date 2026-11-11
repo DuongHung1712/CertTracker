@@ -45,6 +45,7 @@ function lookupsFor(catalogue: CatalogueCourse[]): ImportLookups {
       costCurrency: null,
       estHours: null,
     })),
+    studyCourses: [],
     records: [],
   };
 }

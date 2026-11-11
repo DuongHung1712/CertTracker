@@ -35,7 +35,7 @@ type ExportColumn = {
 
 /**
  * Column order and headers are the export contract: the import accepts an exported file unchanged (decision #26).
- * Import-relevant headers resolve through HEADER_ALIASES; "Code", "Career role", "YoE", "Kind", "Course studied", "Expiry date", "Days left"
+ * Import-relevant headers resolve through HEADER_ALIASES; "Code", "Career role", "YoE", "Kind", "Expiry date", "Days left"
  * and "Expiry status" are display-only and are reported as unknown (ignored) columns on re-import.
  */
 export const EXPORT_COLUMNS: ExportColumn[] = [

@@ -11,7 +11,7 @@ import { foldText } from "@/lib/text";
 /* ---------------------------------------------------------------- types */
 
 export type ExistingRecord = {
-  id: string; memberId: string; certificateId: string; status: RecordStatus; progress: number;
+  id: string; memberId: string; certificateId: string; courseId: string | null; status: RecordStatus; progress: number;
   plannedExamDate: string | null; issuedDate: string | null; certificateUrl: string | null;
   viaCompany: boolean; refundStatus: RefundStatus; notes: string | null;
 };
@@ -23,6 +23,11 @@ export type ImportLookups = {
   certTypes: { id: string; name: string }[];
   certificates: {
     id: string; name: string; providerId: string | null; certTypeId: string | null; validityMonths: number | null;
+    cost: number | null; costCurrency: Currency | null; estHours: number | null;
+  }[];
+  /** Courses a record can name as the course studied; "grantsId" is the completion a course grants. */
+  studyCourses: {
+    id: string; name: string; preparesForId: string | null; grantsId: string | null;
     cost: number | null; costCurrency: Currency | null; estHours: number | null;
   }[];
   records: ExistingRecord[];
@@ -44,9 +49,9 @@ type NormalizedRecord = {
 /**
  * The `normalized` JSON contract that `commit_import` consumes (migration 20261111000001). The key stays `course`
  * because stored batches use it; the value is a certificate. Cost, currency or hours on a new one make the commit
- * also create the self-preparing course studied.
+ * also create the self-preparing course studied; `courseStudied` names an existing course instead.
  */
-export type NormalizedRow = { member: MemberRef; course: CertificateRef; record: NormalizedRecord };
+export type NormalizedRow = { member: MemberRef; course: CertificateRef; courseStudied?: { id: string }; record: NormalizedRecord };
 
 export type PlannedRow = {
   rowNumber: number;
@@ -143,6 +148,7 @@ type PlanContext = {
   certTypesByName: Map<string, { id: string }>;
   certTypeNameById: Map<string, string>;
   certificatesByName: Map<string, ImportLookups["certificates"]>;
+  studyCoursesByName: Map<string, ImportLookups["studyCourses"]>;
   recordsByKey: Map<string, ExistingRecord>;
   newMembers: Map<string, FirstNewMember>;
   newProviders: Map<string, string>;
@@ -178,6 +184,7 @@ function createContext(table: ImportTable, lookups: ImportLookups, today: string
     certTypesByName: firstByName(lookups.certTypes),
     certTypeNameById: new Map(lookups.certTypes.map((certType) => [certType.id, certType.name])),
     certificatesByName: groupBy(lookups.certificates, (certificate) => foldText(certificate.name)),
+    studyCoursesByName: groupBy(lookups.studyCourses, (course) => foldText(course.name)),
     recordsByKey: new Map(lookups.records.map((record) => [`${record.memberId}|${record.certificateId}`, record])),
     newMembers: new Map(),
     newProviders: new Map(),
@@ -298,7 +305,8 @@ function resolveCertificate(ctx: PlanContext, cells: RowCells, rowNumber: number
   }
 
   if (existing) {
-    warnAboutCatalogDifferences(ctx, existing, { certTypeText, validityMonths, ...extras }, issues);
+    const priced = findStudyCourse(ctx, cells, existing.id) ?? existing;
+    warnAboutCatalogDifferences(ctx, existing, priced, { certTypeText, validityMonths, ...extras }, issues);
     return { ref: { id: existing.id }, key: existing.id };
   }
   if (!validity.ok || providerText === null) return NO_CERTIFICATE;
@@ -322,6 +330,7 @@ const hasCost = (extras: CourseDetails): extras is { cost: number; costCurrency:
 function warnAboutCatalogDifferences(
   ctx: PlanContext,
   certificate: ImportLookups["certificates"][number],
+  priced: CourseDetails,
   input: { certTypeText: string | null; validityMonths: number | null } & CourseDetails,
   issues: Issues,
 ): void {
@@ -335,12 +344,36 @@ function warnAboutCatalogDifferences(
   if (validityMonths !== null && validityMonths !== certificate.validityMonths) {
     issues.warnings.push("Validity in the file differs from the catalogue — keeping the catalogue");
   }
-  if (hasCost(input) && (input.cost !== certificate.cost || input.costCurrency !== certificate.costCurrency)) {
+  if (hasCost(input) && (input.cost !== priced.cost || input.costCurrency !== priced.costCurrency)) {
     issues.warnings.push("Cost in the file differs from the catalogue — keeping the catalogue");
   }
-  if (input.estHours !== null && input.estHours !== certificate.estHours) {
+  if (input.estHours !== null && input.estHours !== priced.estHours) {
     issues.warnings.push("Study hours in the file differ from the catalogue — keeping the catalogue");
   }
+}
+
+/** The named course studied, when it prepares for (or is granted by) the certificate; `null` when it is blank or does not fit. */
+function findStudyCourse(ctx: PlanContext, cells: RowCells, certificateId: string): ImportLookups["studyCourses"][number] | null {
+  const name = normalizeName(cells.courseStudied);
+  if (name === null) return null;
+  const sameName = ctx.studyCoursesByName.get(foldText(name)) ?? [];
+  return sameName.find((course) => course.preparesForId === certificateId || course.grantsId === certificateId) ?? null;
+}
+
+/** Spec 6.4: the course studied must prepare for the certificate; a new certificate has no course yet, so it cannot name one. */
+function resolveCourseStudied(ctx: PlanContext, cells: RowCells, certificate: CertificateResolution, issues: Issues): { id: string } | null {
+  const name = normalizeName(cells.courseStudied);
+  if (name === null || certificate.ref === null) return null;
+  if (!ctx.studyCoursesByName.has(foldText(name))) {
+    issues.errors.push(`Course "${name}" not found`);
+    return null;
+  }
+  const course = hasId(certificate.ref) ? findStudyCourse(ctx, cells, certificate.ref.id) : null;
+  if (course === null) {
+    issues.errors.push(`This course does not prepare for ${normalizeName(cells.courseName)}`);
+    return null;
+  }
+  return { id: course.id };
 }
 
 /** A provider / cert type: the existing one by folded name, else the first spelling seen in this file. */
@@ -418,9 +451,11 @@ function readRecordCells(ctx: PlanContext, cells: RowCells, issues: Issues): Rec
 
 const hasId = <T extends { id: string } | object>(ref: T): ref is Extract<T, { id: string }> => "id" in ref;
 
-function decideAction(record: NormalizedRecord, existing: ExistingRecord | undefined): PlannedRow["action"] {
+function decideAction(record: NormalizedRecord, courseStudied: { id: string } | null, existing: ExistingRecord | undefined): PlannedRow["action"] {
   if (!existing) return "create";
   const unchanged =
+    // no course named = "not provided", which counts as equal to whatever the database holds
+    (courseStudied === null || courseStudied.id === existing.courseId) &&
     record.status === existing.status &&
     record.progress === existing.progress &&
     // null = "not provided", which counts as equal to whatever the database holds
@@ -452,6 +487,7 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
 
   const member = resolveMember(ctx, cells, source.rowNumber, issues);
   const certificate = resolveCertificate(ctx, cells, source.rowNumber, issues);
+  const courseStudied = resolveCourseStudied(ctx, cells, certificate, issues);
   const record = readRecordCells(ctx, cells, issues);
 
   if (member.email !== null && certificate.key !== null) {
@@ -477,8 +513,8 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
   const normalizedRecord: NormalizedRecord = { ...record, status: reconciled.status, progress: reconciled.progress, issuedDate };
   return {
     ...base,
-    normalized: { member: member.ref, course: certificate.ref, record: normalizedRecord },
-    action: decideAction(normalizedRecord, existing),
+    normalized: { member: member.ref, course: certificate.ref, ...(courseStudied && { courseStudied }), record: normalizedRecord },
+    action: decideAction(normalizedRecord, courseStudied, existing),
     ...issues,
   };
 }

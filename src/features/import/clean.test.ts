@@ -229,12 +229,13 @@ describe("headers", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((column) => column.header));
     expect(duplicates).toEqual([]);
     expect(Object.keys(map).sort()).toEqual([...IMPORT_FIELDS].sort());
-    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Course studied", "Expiry date", "Days left", "Expiry status"]);
+    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Expiry date", "Days left", "Expiry status"]);
   });
   it("still resolves the Vietnamese headers the previous export wrote", () => {
     expect(mapHeaders(["Khóa học", "Trạng thái", "Tiến độ (%)"]).map).toEqual({ courseName: 0, status: 1, progress: 2 });
     const old = mapHeaders(["Mã", "Họ tên", "Email", "Team", "Career role", "YoE", "Khóa học", "Nhà cung cấp", "Loại chứng chỉ", "Thời hạn (tháng)", "Cost", "Currency", "Study hours", "Trạng thái", "Tiến độ (%)", "Ngày thi dự kiến", "Ngày cấp", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn", "Link chứng chỉ", "Qua công ty", "Hoàn tiền", "Ghi chú"]);
-    expect(Object.keys(old.map).sort()).toEqual([...IMPORT_FIELDS].sort());
+    // The old export predates "Course studied" (Review Focus 4: such a file imports unchanged).
+    expect(Object.keys(old.map).sort()).toEqual(IMPORT_FIELDS.filter((field) => field !== "courseStudied").sort());
     expect(old.unknown).toEqual(["Mã", "Career role", "YoE", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn"]);
   });
   it("reports a field mapped twice", () => {
