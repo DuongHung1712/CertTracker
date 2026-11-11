@@ -91,6 +91,26 @@ test("re-importing the same file changes nothing", async ({ page }) => {
   await expect(committed.getByRole("link", { name: /^View/ })).toBeVisible();
 });
 
+test("a new certificate with a cost brings its own course, shown in the preview and created on import", async ({ page }) => {
+  test.setTimeout(60_000);
+  const sheet = XLSX.utils.aoa_to_sheet([
+    ["Email", "Certificate", "Provider", "Cost", "Currency", "Duration (hours)", "Status"],
+    ["an@certtracker.test", `Microsoft Priced Exam ${RUN}`, "Microsoft", 165, "USD", 20, "Not started"],
+  ]);
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Sheet1");
+  await signIn(page, "admin@certtracker.test");
+  await upload(page, `priced-${RUN}.xlsx`, Buffer.from(XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer));
+  await expect(page).toHaveURL(BATCH_URL);
+  await expect(page.getByText(/^Will create: .*1 certificate, 1 course$/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Import 1 row" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Import 1 row" }).click();
+  await expect(page.getByText("Imported: created 1, updated 0")).toBeVisible();
+  const { data: course } = await admin.from("courses").select("cost, cost_currency, est_hours").like("name", `Microsoft Priced Exam ${RUN}`).single();
+  expect(course).toEqual({ cost: 165, cost_currency: "USD", est_hours: 20 });
+});
+
 test("a file without the required columns is rejected", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   const sheet = XLSX.utils.aoa_to_sheet([

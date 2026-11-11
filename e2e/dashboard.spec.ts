@@ -251,7 +251,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(certSection.getByRole("tab", { name: /^Valid \(0\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^Expiring within 60 days \(0\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^In progress \(0\)$/ })).toBeVisible();
-  await expect(certSection.getByText(AWS)).toBeVisible();
+  await expect(certSection.getByRole("heading", { name: AWS })).toBeVisible();
 
   // Attention banner is hidden when nothing expires within 60 days
   await expect(page.getByRole("complementary", { name: "Certificate attention required" })).toHaveCount(0);

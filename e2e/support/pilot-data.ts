@@ -22,8 +22,9 @@ const REHEARSAL_FILE_PREFIX = "rehearsal-";
 const SEED_ID_PREFIX = "5eed0000-";
 
 type Admin = Awaited<ReturnType<typeof signInAsSeedAdmin>>;
-type CatalogueTable = "courses" | "providers" | "cert_types";
-const CATALOGUE_TABLES: CatalogueTable[] = ["courses", "providers", "cert_types"];
+type CatalogueTable = "certificates" | "courses" | "providers" | "cert_types";
+// Child before parent: certificates reference courses (completions), providers and types; courses reference providers.
+const CATALOGUE_TABLES: CatalogueTable[] = ["certificates", "courses", "providers", "cert_types"];
 
 function must<T>(result: { data: T | null; error: { message: string } | null }, what: string): T {
   if (result.error) throw new Error(`${what}: ${result.error.message}`);
@@ -83,7 +84,7 @@ async function catalogueIds(admin: Admin): Promise<Record<CatalogueTable, Set<st
 
 /**
  * Builds the rehearsal file (20 people over the three teams, courses from the real catalogue), imports it as the
- * signed-in admin and returns a cleanup that removes the people, their certificates, the batch and the courses,
+ * signed-in admin and returns a cleanup that removes the people, their records, the batch and the certificates, courses,
  * providers and certificate types that did not exist before the import.
  */
 export async function importRehearsalFile(page: Page): Promise<() => Promise<void>> {
@@ -100,7 +101,6 @@ export async function importRehearsalFile(page: Page): Promise<() => Promise<voi
     const memberIds = people.map((person) => person.id);
     must(await admin.from("training_records").delete().in("member_id", memberIds).select("id"), "delete rehearsal records");
     await deleteVerified(admin, "members", memberIds);
-    // Child before parent: courses reference providers and certificate types.
     const after = await catalogueIds(admin);
     for (const table of CATALOGUE_TABLES) {
       await deleteVerified(admin, table, [...after[table]].filter((id) => !before[table].has(id)));
@@ -110,7 +110,7 @@ export async function importRehearsalFile(page: Page): Promise<() => Promise<voi
 
 /**
  * Removes whatever an earlier rehearsal run left behind when it crashed or timed out before its cleanup: the batches,
- * the `person%` members and their records, their rows in the send log, the three teams, and the courses, providers
+ * the `person%` members and their records, their rows in the send log, the three teams, and the certificates, courses, providers
  * and certificate types named in the catalogue that are not seed rows. Idempotent; run it before `createPilotTeams`.
  */
 export async function sweepRehearsalLeftovers(): Promise<void> {
@@ -129,11 +129,11 @@ export async function sweepRehearsalLeftovers(): Promise<void> {
 
   const catalogue = readCatalogueSql(readFileSync(CATALOGUE_PATH, "utf8"));
   const names: Record<CatalogueTable, string[]> = {
+    certificates: catalogue.map((course) => course.name),
     courses: catalogue.map((course) => course.name),
     providers: [...new Set(catalogue.map((course) => course.provider))],
     cert_types: [...new Set(catalogue.map((course) => course.certType))],
   };
-  // Child before parent: courses reference providers and certificate types.
   for (const table of CATALOGUE_TABLES) {
     const rows = must(await admin.from(table).select("id").in("name", names[table]), `read ${table}`);
     await deleteVerified(admin, table, rows.map((row) => row.id).filter((id) => !id.startsWith(SEED_ID_PREFIX)));

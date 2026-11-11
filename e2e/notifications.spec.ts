@@ -252,7 +252,7 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
       await expect(manager.page.getByRole("button", { name: "Exam overdue (1)" })).toBeVisible();
       // Member- and course-level findings are for admins only.
       await expect(manager.page.getByRole("button", { name: /^No team/ })).toHaveCount(0);
-      await expect(manager.page.getByRole("button", { name: /^Validity not set/ })).toHaveCount(0);
+      await expect(manager.page.getByRole("button", { name: /^Exam validity not set/ })).toHaveCount(0);
     } finally {
       await manager.close();
     }

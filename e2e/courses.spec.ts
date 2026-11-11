@@ -116,6 +116,7 @@ test("a course completion needs a granting course, and that course cannot be del
   await addCourse(page, courseName);
 
   const dialog = await addCertificate(page, { name: completionName, kind: "Course completion" });
+  await expect(dialog.getByRole("heading", { name: "Add course completion" })).toBeVisible();
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Choose the course that grants this completion")).toBeVisible();
   await pickOption(page, dialog, fieldLabel("Course"), courseName);

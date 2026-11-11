@@ -1,8 +1,8 @@
-import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import path from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { assertLocalSupabaseUrl } from "../../src/lib/assert-local-supabase-url";
+import { todayVn } from "../../src/lib/dates";
 import type { Database } from "../../src/types/database";
 import { SEED_PASSWORD } from "../helpers";
 import { readEnvFile } from "./env";
@@ -41,14 +41,32 @@ const SEED_MEMBER_IDS = [
   "5eed0000-0000-0000-0000-00000000b003",
 ];
 const SEED_COURSE_IDS = ["5eed0000-0000-0000-0000-00000000e001", "5eed0000-0000-0000-0000-00000000e002"];
-const SEED_RECORD_COUNT = 3;
 
 const RECORD_COLUMNS =
   "member_id, certificate_id, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes";
 
-// Seed dates are relative to the day of `supabase db reset`, so the seed values are captured from the pristine
-// database instead of being recomputed. The file survives a crashed run; it is removed after a successful restore.
-const SNAPSHOT_FILE = path.join(tmpdir(), "certtracker-e2e-import-seed-snapshot.json");
+const DAY_MS = 86_400_000;
+const AN_ISSUED_DAYS_AGO = 1070;
+const BINH_EXAM_IN_DAYS = 20;
+
+const addDays = (iso: string, days: number): string => new Date(Date.parse(iso) + days * DAY_MS).toISOString().slice(0, 10);
+
+/**
+ * The three seed records as `supabase/seed.sql` writes them, with its relative dates counted from today. Computed,
+ * not captured, so the restore works on a database that has run before and never needs `db reset` (which breaks the
+ * storage index locally).
+ */
+function seedRecords(today: string): SeedRecord[] {
+  const untouched = { certificate_url: null, evidence_path: null, via_company: false, refund_status: "n_a", notes: null } as const;
+  const [an, binh, chau] = SEED_MEMBER_IDS;
+  const [saa, nvidia] = SEED_COURSE_IDS;
+  const records: SeedRecord[] = [
+    { member_id: an!, certificate_id: saa!, status: "done", progress: 100, issued_date: addDays(today, -AN_ISSUED_DAYS_AGO), planned_exam_date: null, ...untouched },
+    { member_id: binh!, certificate_id: nvidia!, status: "in_progress", progress: 40, issued_date: null, planned_exam_date: addDays(today, BINH_EXAM_IN_DAYS), ...untouched },
+    { member_id: chau!, certificate_id: saa!, status: "not_started", progress: 0, issued_date: null, planned_exam_date: null, ...untouched },
+  ];
+  return records.sort((x, y) => `${x.member_id}${x.certificate_id}`.localeCompare(`${y.member_id}${y.certificate_id}`));
+}
 
 /** The Playwright process does not load `.env.local` (only Next does), so read it here when the env is not set. */
 function supabaseConfig(): { url: string; anonKey: string } {
@@ -115,24 +133,9 @@ async function readSeedRecords(client: Client): Promise<SeedRecord[]> {
   return rows.sort((a, b) => `${a.member_id}${a.certificate_id}`.localeCompare(`${b.member_id}${b.certificate_id}`));
 }
 
-/**
- * Call before the first import. On a pristine database it captures the seed records; on a dirty one (a previous
- * run crashed before restoring) it reuses the captured file and restores first, so the run starts from the seed.
- */
+/** Call before the first import: puts the database in its seed state (a previous run may have crashed) and returns that state. */
 export async function prepareSeedState(client: Client): Promise<SeedRecord[]> {
-  const { memberIds, providerIds } = await importedIds(client);
-  if (memberIds.length === 0 && providerIds.length === 0) {
-    const records = await readSeedRecords(client);
-    if (records.length !== SEED_RECORD_COUNT) {
-      throw new Error(`Expected the ${SEED_RECORD_COUNT} seed records, found ${records.length}; run \`pnpm supabase db reset\`.`);
-    }
-    writeFileSync(SNAPSHOT_FILE, JSON.stringify(records));
-    return records;
-  }
-  if (!existsSync(SNAPSHOT_FILE)) {
-    throw new Error("The database holds imported data but no seed snapshot exists; run `pnpm supabase db reset`.");
-  }
-  const records = JSON.parse(readFileSync(SNAPSHOT_FILE, "utf8")) as SeedRecord[];
+  const records = seedRecords(todayVn());
   await restoreSeed(client, records);
   return records;
 }
@@ -174,6 +177,5 @@ export async function restoreSeed(client: Client, seedRecords: SeedRecord[]): Pr
   const total = check(await client.from("training_records").select("id"), "verify record count");
   if (total.length !== seedRecords.length) throw new Error(`Expected ${seedRecords.length} training records after restore, found ${total.length}.`);
   const now = await readSeedRecords(client);
-  if (JSON.stringify(now) !== JSON.stringify(seedRecords)) throw new Error("Seed records were not restored.");
-  rmSync(SNAPSHOT_FILE, { force: true });
+  if (!isDeepStrictEqual(now, seedRecords)) throw new Error("Seed records were not restored.");
 }
