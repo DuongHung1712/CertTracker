@@ -47,12 +47,9 @@ function recordRow(page: Page, ...texts: string[]): Locator {
 
 /** Opens a searchable combobox in the sheet, types a query and picks the option with `optionName`. */
 async function pickOption(page: Page, dialog: Locator, label: string, query: string, optionName: string) {
-  // A debounced Realtime refresh after an earlier save can reset the typed query, so retry the whole pick.
-  await expect(async () => {
-    await dialog.getByLabel(fieldLabel(label)).fill(query);
-    // The popup is portalled outside the dialog.
-    await page.getByRole("option", { name: optionName }).click({ timeout: 2_000 });
-  }).toPass({ timeout: 15_000 });
+  await dialog.getByLabel(fieldLabel(label)).fill(query);
+  // The popup is portalled outside the dialog.
+  await page.getByRole("option", { name: optionName }).click();
 }
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */

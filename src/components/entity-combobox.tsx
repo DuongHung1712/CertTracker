@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   Combobox,
   ComboboxContent,
@@ -47,7 +48,13 @@ export function EntityCombobox({
 }) {
   // Base UI resolves the displayed text from the selected *item*, so pass the option object
   // rather than the id — otherwise the closed control would show the raw id.
-  const selected = options.find((option) => option.id === value) ?? null;
+  // The object is kept stable by id and label: a refreshed `options` array holds new objects, and a new
+  // selected object would make Base UI replace what the user is typing with the current label.
+  const selectedLabel = options.find((option) => option.id === value)?.label;
+  const selected = useMemo<ComboboxOption | null>(
+    () => (selectedLabel === undefined ? null : { id: value, label: selectedLabel }),
+    [value, selectedLabel],
+  );
 
   return (
     <Combobox<ComboboxOption>
