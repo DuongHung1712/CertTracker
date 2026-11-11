@@ -235,7 +235,7 @@ export function TeamReadinessDossier({
             {/* Registered Certificates List */}
             <div className="flex flex-col gap-2 pt-1">
               <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-                Registered certificates
+                Registered learning
               </span>
 
               {selectedRecords.length === 0 ? (

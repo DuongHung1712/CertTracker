@@ -82,10 +82,10 @@ describe("ManagerDashboardView: each region once", () => {
     expect(count(html, ">Skills<")).toBe(1);
   });
 
-  it("offers export and View certificates once (header only)", () => {
+  it("offers export and View learning once (header only)", () => {
     const html = render();
     expect(count(html, "/api/export/records")).toBe(1);
-    expect(count(html, ">View certificates<")).toBe(1);
+    expect(count(html, ">View learning<")).toBe(1);
   });
 });
 

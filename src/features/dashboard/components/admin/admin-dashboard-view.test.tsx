@@ -259,21 +259,21 @@ describe("AdminDashboardView: one Planned features card", () => {
 });
 
 describe("AdminDashboardView: actions", () => {
-  it("Quick actions: Add certificate, Add member, Import from Excel (no export, no invite)", () => {
+  it("Quick actions: Add learning, Add member, Import from Excel (no export, no invite)", () => {
     const quick = region(render(), "Quick actions");
     const links = [...quick.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)].map(
       ([, href, inner]) => [textOf(inner), href],
     );
     expect(links).toEqual([
-      ["Add certificate", "/records"],
+      ["Add learning", "/records"],
       ["Add member", "/members"],
       ["Import from Excel", "/import"],
     ]);
   });
 
-  it("offers Add certificate and the CSV export once each on the page", () => {
+  it("offers Add learning and the CSV export once each on the page", () => {
     const html = render();
-    expect(count(textOf(html), "Add certificate")).toBe(1);
+    expect(count(textOf(html), "Add learning")).toBe(1);
     expect(count(html, "/api/export/records")).toBe(1);
     expect(textOf(html)).toContain("Export CSV");
     expect(html).not.toContain("Download data");
@@ -528,12 +528,22 @@ describe("AdminDashboardView: exam certificates and course completions are separ
       kpis: withKpis({ doneRecords: 3, inProgressRecords: 1, completionDoneRecords: 2, completionInProgressRecords: 1 }),
     });
     const completions = textOf(group(region(html, "Overview"), "Course completions"));
+    expect(completions).toContain("Completed, all time 2");
     expect(completions).toContain("Completed this month 1");
     expect(completions).toContain("Completed this quarter 2");
     expect(completions).toContain("Completions in progress 1");
     // The valid card divides by exam certificates only: 3 done minus 2 completions.
     expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("of 1 completed");
     expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("In progress 0");
+  });
+
+  it("counts planned exams in the next 60 days in the exam group, not planned finish dates, and shows a dash when the list failed", () => {
+    const planned = (id: string, kind: "exam" | "completion") =>
+      doneRecord(120, { id, certificateKind: kind, status: "in_progress", plannedExamDate: "2026-11-20" });
+    const html = render({ records: { ok: true, data: [planned("e1", "exam"), planned("e2", "exam"), planned("c1", "completion")] } });
+    expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("Planned exams 2");
+    const failedHtml = render({ records: failed });
+    expect(textOf(group(region(failedHtml, "Overview"), "Exam certificates"))).toContain("Planned exams —");
   });
 
   it("shows a dash for the monthly figures when the certificate list failed to load", () => {

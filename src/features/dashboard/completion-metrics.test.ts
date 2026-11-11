@@ -16,7 +16,7 @@ describe("calculateCompletionKpis", () => {
       completion({ id: "d", status: "in_progress", progress: 40, issuedDate: null }),
       completion({ id: "e", status: "not_started", progress: 0, issuedDate: null }),
     ];
-    expect(calculateCompletionKpis(records, NOW)).toEqual({ doneThisMonth: 1, doneThisQuarter: 2, inProgress: 1 });
+    expect(calculateCompletionKpis(records, NOW)).toEqual({ doneThisMonth: 1, doneThisQuarter: 2, doneTotal: 3, inProgress: 1 });
   });
 
   it("ignores exam certificates", () => {
@@ -24,7 +24,7 @@ describe("calculateCompletionKpis", () => {
       makeRecord({ id: "x", status: "done", issuedDate: "2026-11-02" }),
       makeRecord({ id: "y", status: "in_progress", issuedDate: null }),
     ];
-    expect(calculateCompletionKpis(records, NOW)).toEqual({ doneThisMonth: 0, doneThisQuarter: 0, inProgress: 0 });
+    expect(calculateCompletionKpis(records, NOW)).toEqual({ doneThisMonth: 0, doneThisQuarter: 0, doneTotal: 0, inProgress: 0 });
   });
 
   it("does not leak into the next year when the quarter keys match", () => {

@@ -4,7 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const ACTIONS = [
-  { href: "/records", label: "Add certificate", icon: PlusCircle },
+  { href: "/records", label: "Add learning", icon: PlusCircle },
   { href: "/members", label: "Add member", icon: UserPlus },
   { href: "/import", label: "Import from Excel", icon: FileSpreadsheet },
 ];

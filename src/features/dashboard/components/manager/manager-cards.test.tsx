@@ -150,13 +150,13 @@ describe("ManagerTabStrip & the merged Coming soon card", () => {
   });
 });
 
-const NO_COMPLETIONS = { doneThisMonth: 0, doneThisQuarter: 0, inProgress: 0 };
+const NO_COMPLETIONS = { doneThisMonth: 0, doneThisQuarter: 0, doneTotal: 0, inProgress: 0 };
 
 describe("TopKpiRow: exam certificates and course completions", () => {
   it("shows two labelled groups with their own figures", () => {
     const kpis = calculateManagerKpis([doneRecord(20), doneRecord(-5), doneRecord(200)]);
     const html = renderToStaticMarkup(
-      <TopKpiRow kpis={kpis} completions={{ doneThisMonth: 2, doneThisQuarter: 5, inProgress: 3 }} plannedExams={4} />,
+      <TopKpiRow kpis={kpis} completions={{ doneThisMonth: 2, doneThisQuarter: 5, doneTotal: 9, inProgress: 3 }} plannedExams={4} />,
     );
     expect(count(html, 'role="group"')).toBe(2);
     const exam = html.slice(html.indexOf('aria-label="Exam certificates"'), html.indexOf('aria-label="Course completions"'));
@@ -164,6 +164,7 @@ describe("TopKpiRow: exam certificates and course completions", () => {
     const text = (markup: string) => markup.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
     expect(text(exam)).toContain("Valid 2");
     expect(text(exam)).toContain("Planned exams 4");
+    expect(text(completions)).toContain("Completed, all time 9");
     expect(text(completions)).toContain("Completed this month 2");
     expect(text(completions)).toContain("Completed this quarter 5");
     expect(text(completions)).toContain("Completions in progress 3");
@@ -264,7 +265,7 @@ describe("PeopleWithoutCertsCard, AllocatedScopeCard, QuickActionsCard", () => {
   it("keeps only real navigation in quick actions (export lives once, in the page header)", () => {
     const html = renderToStaticMarkup(<QuickActionsCard />);
     expect(html).toContain("Quick actions");
-    expect(html).toContain("Add certificate");
+    expect(html).toContain("Add learning");
     expect(html).toContain('href="/records"');
     expect(html).toContain("View team data quality");
     expect(html).toContain('href="/data-quality"');

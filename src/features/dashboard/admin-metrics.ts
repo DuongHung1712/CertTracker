@@ -7,11 +7,12 @@ import { pluralize } from "@/lib/plural";
 /** Most certificate rows Needs attention lists; the data quality row comes after them. */
 export const ADMIN_ATTENTION_LIMIT = 10;
 
+// Exam certificates only: a completion never expires, even when its certificate carries a validity.
 const isAdminExpired = (r: RecordRow): boolean =>
-  r.status === "done" && r.daysToExpiry !== null && r.daysToExpiry < 0;
+  isExam(r) && r.status === "done" && r.daysToExpiry !== null && r.daysToExpiry < 0;
 
 const isAdminExpiringUrgent = (r: RecordRow): boolean =>
-  r.status === "done" &&
+  isExam(r) && r.status === "done" &&
   r.daysToExpiry !== null &&
   r.daysToExpiry >= 0 &&
   r.daysToExpiry <= URGENT_WINDOW_DAYS;

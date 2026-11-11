@@ -100,7 +100,7 @@ export function ManagerDashboardView({
           <div className="flex flex-wrap items-center gap-2">
             <ExportLinks label="Download team data" />
             <Link href="/records" className={buttonVariants()}>
-              View certificates
+              View learning
             </Link>
           </div>
         }
@@ -116,7 +116,7 @@ export function ManagerDashboardView({
           description="Ask an admin to assign you as a manager to a team or program so your team's certificates show here."
           action={
             <Link href="/records" className={buttonVariants()}>
-              View certificates
+              View learning
             </Link>
           }
         />

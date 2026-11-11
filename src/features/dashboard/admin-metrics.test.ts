@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   ADMIN_ATTENTION_LIMIT,
+  countAdminAttentionRecords,
   countIssuedThisMonth,
   getAdminNeedsAttentionItems,
 } from "@/features/dashboard/admin-metrics";
@@ -189,5 +190,15 @@ describe("countIssuedThisMonth: exam certificates only", () => {
       mockRecord({ id: "r2", status: "done", issuedDate: "2026-11-02", certificateKind: "completion" }),
     ];
     expect(countIssuedThisMonth(records, now)).toBe(1);
+  });
+});
+
+describe("a course completion that carries a validity never needs attention", () => {
+  const expiredCompletion = mockRecord({ id: "c-exp", certificateKind: "completion", status: "done", daysToExpiry: -5, expiryStatus: "Expired" });
+  const expiringCompletion = mockRecord({ id: "c-soon", certificateKind: "completion", status: "done", daysToExpiry: 10, expiryStatus: "Expiring Soon" });
+
+  it("stays out of the Needs attention list and its count", () => {
+    expect(getAdminNeedsAttentionItems([expiredCompletion, expiringCompletion], 0)).toEqual([]);
+    expect(countAdminAttentionRecords([expiredCompletion, expiringCompletion])).toBe(0);
   });
 });

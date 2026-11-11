@@ -13,12 +13,15 @@ export function AdminKpiCards({
   kpis,
   issuedThisMonth,
   completions,
+  plannedExams,
   teams,
 }: {
   kpis: DashboardKpis;
-  /** Both are undefined when the certificate list failed to load: those figures are then left out. */
+  /** These three are undefined when the certificate list failed to load: those figures are then left out. */
   issuedThisMonth: number | undefined;
   completions: CompletionKpis | undefined;
+  /** Planned exams in the next 60 days (the same count as the manager's list). */
+  plannedExams: number | undefined;
   teams: Result<BreakdownRow[]>;
 }) {
   const valid = validCerts(kpis);
@@ -44,6 +47,7 @@ export function AdminKpiCards({
             ["Active members", kpis.totalMembers],
             ["Completed", examDone],
             ["In progress", kpis.inProgressRecords - kpis.completionInProgressRecords],
+            ["Planned exams", plannedExams],
           ]}
         />
         <TeamCountsSummary teams={teams} />
@@ -51,6 +55,7 @@ export function AdminKpiCards({
       <KpiGroup title="Course completions">
         <StatStrip
           stats={[
+            ["Completed, all time", kpis.completionDoneRecords],
             ["Completed this month", completions?.doneThisMonth],
             ["Completed this quarter", completions?.doneThisQuarter],
             ["Completions in progress", kpis.completionInProgressRecords],

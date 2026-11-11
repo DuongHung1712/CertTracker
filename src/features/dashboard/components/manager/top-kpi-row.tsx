@@ -36,6 +36,7 @@ export function TopKpiRow({
       <KpiGroup title="Course completions">
         <StatStrip
           stats={[
+            ["Completed, all time", completions.doneTotal],
             ["Completed this month", completions.doneThisMonth],
             ["Completed this quarter", completions.doneThisQuarter],
             ["Completions in progress", completions.inProgress],

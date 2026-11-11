@@ -42,6 +42,8 @@ async function expectOrgWideTiles(page: Page) {
   await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
   await expect(tileValue(page, "Expired")).toHaveText("0");
   await expect(tileValue(page, "Completions in progress")).toHaveText("0");
+  await expect(tileValue(page, "Completed, all time")).toHaveText("0");
+  await expect(tileValue(page, "Planned exams")).toHaveText(/^\d+$/);
   await expect(tileValue(page, "Completed this month")).toHaveText("0");
 }
 
@@ -458,10 +460,10 @@ test("admin header and Quick actions offer each action once, with plain names", 
   const main = page.getByRole("main");
 
   const quick = section(page, "Quick actions");
-  await expect(quick.getByRole("link")).toHaveText(["Add certificate", "Add member", "Import from Excel"]);
+  await expect(quick.getByRole("link")).toHaveText(["Add learning", "Add member", "Import from Excel"]);
   await expect(quick.getByRole("link", { name: "Add member" })).toHaveAttribute("href", "/members");
 
-  await expect(main.getByRole("link", { name: "Add certificate" })).toHaveCount(1);
+  await expect(main.getByRole("link", { name: "Add learning" })).toHaveCount(1);
   await expect(main.getByRole("link", { name: "Export CSV" })).toHaveCount(1);
   await expect(main.getByText("Download data")).toHaveCount(0);
   await expect(main.getByText(/Invite/)).toHaveCount(0);

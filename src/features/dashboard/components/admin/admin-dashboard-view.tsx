@@ -9,6 +9,7 @@ import { AdminKpiCards } from "@/features/dashboard/components/admin/admin-kpi-c
 import { AdminNeedsAttention } from "@/features/dashboard/components/admin/admin-needs-attention";
 import { AdminProfileCard } from "@/features/dashboard/components/admin/admin-profile-card";
 import { AdminQuickActionsCard } from "@/features/dashboard/components/admin/admin-quick-actions-card";
+import { getPlannedExams } from "@/features/dashboard/manager-metrics";
 import { DashboardTabStrip } from "@/features/dashboard/components/dashboard-tab-strip";
 import { Explorer } from "@/features/dashboard/components/explorer";
 import { MonthlyEarnedChart } from "@/features/dashboard/components/manager/monthly-earned-chart";
@@ -63,6 +64,7 @@ export function AdminDashboardView({
           kpis={kpis.data}
           issuedThisMonth={records.ok ? countIssuedThisMonth(records.data) : undefined}
           completions={records.ok ? calculateCompletionKpis(records.data) : undefined}
+          plannedExams={records.ok ? getPlannedExams(records.data).length : undefined}
           teams={teams}
         />
       ) : (

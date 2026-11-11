@@ -6,10 +6,11 @@ import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
 
 export const isDone = (r: RecordRow): boolean => r.status === "done";
+// Exam certificates only: a completion never expires, even when its certificate carries a validity.
 export const isExpiring60 = (r: RecordRow): boolean =>
-  isDone(r) && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= EXPIRING_WINDOW_DAYS;
+  isExam(r) && isDone(r) && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= EXPIRING_WINDOW_DAYS;
 export const isExpired = (r: RecordRow): boolean =>
-  isDone(r) && r.daysToExpiry !== null && r.daysToExpiry < 0;
+  isExam(r) && isDone(r) && r.daysToExpiry !== null && r.daysToExpiry < 0;
 
 /** Formats a list of team names: ["Cloud"], ["Cloud", "AI"] -> "Cloud and AI", ["A", "B", "C"] -> "A, B and C". */
 function formatTeamNames(teamNames: string[]): string {

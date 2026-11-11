@@ -286,3 +286,16 @@ describe("manager-metrics: exam certificates only", () => {
     expect(months.at(-1)?.count).toBe(1);
   });
 });
+
+describe("manager-metrics: a completion with a validity stays out of expiry lists", () => {
+  const completion = (id: string, days: number) =>
+    doneRecord(days, { id, certificateKind: "completion", validityMonths: 12 });
+
+  it("is neither expiring nor expired, and is in neither list", () => {
+    const records = [completion("c-exp", -5), completion("c-soon", 20)];
+    expect(records.some(isExpired)).toBe(false);
+    expect(records.some(isExpiring60)).toBe(false);
+    expect(getNextToExpire(records)).toEqual([]);
+    expect(getNeedsAttentionItems(records)).toEqual([]);
+  });
+});

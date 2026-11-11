@@ -4,7 +4,7 @@ import { todayVn } from "@/lib/dates";
 
 const MONTHS_PER_QUARTER = 3;
 
-export type CompletionKpis = { doneThisMonth: number; doneThisQuarter: number; inProgress: number };
+export type CompletionKpis = { doneThisMonth: number; doneThisQuarter: number; doneTotal: number; inProgress: number };
 
 /** "2026-11-08" -> "2026-Q4": periods follow the Vietnam calendar, like the monthly figures elsewhere. */
 function quarterKey(isoDate: string): string {
@@ -23,6 +23,7 @@ export function calculateCompletionKpis(records: RecordRow[], now: Date = new Da
   return {
     doneThisMonth: finished.filter((r) => r.issuedDate?.slice(0, 7) === thisMonth).length,
     doneThisQuarter: finished.filter((r) => r.issuedDate !== null && quarterKey(r.issuedDate) === thisQuarter).length,
+    doneTotal: completions.filter((r) => r.status === "done").length,
     inProgress: completions.filter((r) => r.status === "in_progress").length,
   };
 }

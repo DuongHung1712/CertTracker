@@ -245,3 +245,13 @@ describe("member KPIs: a course completion is not a valid certificate", () => {
     expect(kpis).toMatchObject({ total: 2, validCount: 1 });
   });
 });
+
+describe("member attention: a completion with a validity is never flagged", () => {
+  it("returns no attention record", () => {
+    const records = [
+      doneRecord(-5, { id: "c1", certificateKind: "completion" }),
+      doneRecord(10, { id: "c2", certificateKind: "completion" }),
+    ];
+    expect(getAttentionRecord(records)).toBeNull();
+  });
+});
