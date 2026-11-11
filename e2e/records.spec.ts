@@ -185,7 +185,7 @@ test("a record for a course completion saves the granting course, and the table 
     await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
     await pickOption(page, dialog, "Certificate", completion.certificateName, completion.optionName);
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Added certificate")).toBeVisible();
+    await expect(page.getByText("Added course completion")).toBeVisible();
 
     const admin = await signInAsSeedAdmin();
     const saved = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", completion.certificateId).single();
