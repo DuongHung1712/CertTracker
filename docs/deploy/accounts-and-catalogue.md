@@ -93,6 +93,33 @@ Only the admin adds certificates and courses. The certificate form tells members
 
 As admin: open `/courses` (the catalogue), add the certificate on the Certificates tab. Fill in the type, the provider and the validity in months where you know them, because the expiry date comes from the validity. Add the course on the Courses tab if members study with one. Then tell the member to choose the certificate in their record.
 
+## Roll out the certificate catalogue
+
+Part D splits certificates from courses (decision #65). Do it with the release PR to `main`, after the backup in `backup-and-restore.md`. Never run `supabase db reset` against anything but a throwaway local stack.
+
+1. **Count before.** In the SQL Editor:
+
+   ```sql
+   select
+     (select count(*) from public.courses) as courses,
+     (select count(*) from public.training_records) as records;
+   ```
+
+2. **Dry run.** `pnpm supabase db push --dry-run` lists every migration production lacks, not only this part's. Compare it with `pnpm supabase migration list --linked`. Expect, in order: `20261106000001_link_account_to_member`, `20261110000001_course_refund_conditions`, `20261110000003_set_my_full_name`, `20261111000001_certificate_catalogue`, `20261111000002_import_course_studied`, `20261111000003_lock_copy_function`. If the pilot set-up already pushed the first one, it is absent. Anything else in the list: stop and find out why.
+3. **Push.** `pnpm supabase db push`.
+4. **Count after.** `certificates` must equal the old `courses` count; `courses` must equal the old count minus the courses with no cost, duration, refund conditions or record; `records` must not change:
+
+   ```sql
+   select
+     (select count(*) from public.certificates) as certificates,
+     (select count(*) from public.courses) as courses,
+     (select count(*) from public.training_records) as records;
+   ```
+
+   Then open `/records` and compare one expiry date with what it showed before.
+5. **Load the catalogue** (next section), then run its three checks.
+6. **Merge** the release PR into `main`. If the app deployed before the push, `/records` and `/courses` fail until step 3 is done, so push first.
+
 ## Load the catalogue
 
 `supabase/catalog/courses.sql` adds 10 certificate types, 26 providers, 61 certificates (53 exams and 8 course completions) and 59 courses (37 that carry a verified exam fee, 14 preparation courses and the 8 courses that grant the completions). It matches by name, reuses what exists, and running it again changes nothing. It never overwrites a row the admin edited. Every value and gap is sourced in `supabase/catalog/SOURCES.md`; fill the empty costs and durations at `/courses` as you confirm them.
@@ -100,6 +127,8 @@ As admin: open `/courses` (the catalogue), add the certificate on the Certificat
 ```bash
 pnpm supabase db query --linked -f supabase/catalog/courses.sql
 ```
+
+The file creates a temporary table (`catalogue_exams`) and drops it at the end, and `db query --linked` runs the whole file as one query. If that fails, paste the file into the Dashboard SQL Editor and run it as a single run. Running it again changes nothing.
 
 Run the query below before and after loading. After the load, certificates must have grown by 61 and courses by 59 (on an empty database the counts are 61 and 59):
 

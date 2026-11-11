@@ -1,6 +1,6 @@
 # Certificate and course catalogues: design (Part D)
 
-Status: **draft for discussion** with the owner. Nothing is built yet. Supersedes section 5 of `2026-11-10-review-comments-design.md`.
+Status: **built** on `feat/certificate-catalogue` (decision #65); sections 4.4, 5 and 9 below were brought in line with what shipped, the rest is the design as agreed. Supersedes section 5 of `2026-11-10-review-comments-design.md`.
 Branch: `feat/certificate-catalogue` from `dev` (Parts A–C merged, last migration `20261110000003`).
 Review comments it answers: "Courses và Certificate riêng" and "Đối với course ... bỏ validity".
 Revised 2026-11-11 after the owner's answers: the trigger validates only on a change of certificate or course; D1 and D2 ship in one commit; migration keeps only courses that carry data; import creates a self-preparing course when a row has cost or duration; credentials earned by finishing a course are worded "course completion", never "certificate" (section 2).
@@ -124,6 +124,7 @@ The join to `courses` becomes a left join. Every other column is unchanged. Beca
 | `v_data_quality_issues` | join certificates; `course_no_validity` becomes `certificate_no_validity` and is raised **for exams only** (completions usually never expire) |
 | Import commit (`commit_import`) | upsert on `(member_id, certificate_id)`; creates certificates (kind exam) instead of courses for unknown names. When the row also has cost, currency or duration, it creates a course with the same name and provider, `prepares_for_id` = that certificate, and uses it as course studied unless the row names another course |
 | Notifications (expiry e-mails, monthly report) | read `certificate_name` instead of `course_name` |
+| Import commit, second step (`20261111000002_import_course_studied.sql`) | replaces `commit_import` again: `normalized.courseStudied.id` is saved as `course_id` on insert and on conflict (a row that names none leaves the stored course alone); the trigger still refuses a course that does not prepare for the certificate (23514) |
 
 ### 4.5 RLS
 
@@ -137,7 +138,7 @@ pgTAP covers each cell, including a refused insert and update for manager and me
 
 ## 5. Migration of existing data
 
-Every existing course row is an exam certification: the starter list (55 rows) was checked against providers' certification pages, and its cost is the exam fee. Each row becomes an exam certificate. It stays a course only when it carries course data (Q7).
+Every existing course row is an exam certification: the starter list (55 rows at the time) was checked against providers' certification pages, and its cost is the exam fee. Each row becomes an exam certificate. It stays a course only when it carries course data (Q7).
 
 Steps (one migration, one transaction):
 
@@ -149,6 +150,8 @@ Steps (one migration, one transaction):
 6. RLS policies on `certificates`.
 7. Drop `cert_type_id`, `level`, `validity_months` from `courses`.
 
+Built as one function, `copy_courses_to_certificates()`, that the migration calls once and pgTAP 20 calls on synthetic old-shape data. It reads dropped columns after the migration, so `20261111000003_lock_copy_function.sql` revokes execute from every API role (the function stays for pgTAP).
+
 Before and after, for the seed:
 
 | | Before | After |
@@ -158,7 +161,9 @@ Before and after, for the seed:
 | `training_records` | An–AWS done, Bình–NVIDIA in progress, Châu–AWS not started | same, plus `certificate_id` = old `course_id`; `course_id` kept (now "course studied") |
 | An–AWS expiry | issue date + 36 m | identical (pgTAP asserts) |
 
-The seed also gains one completion example (a course "Machine Learning Specialization" on Coursera and its completion certificate, no records) so the e2e can cover S3.
+The seed also gains one completion example (the course "Machine Learning Specialization" from DeepLearning.AI, hours and cost empty, and its course completion, no records). Its provider is DeepLearning.AI because that is who publishes the course on Coursera; the catalogue file uses the same row.
+
+The catalogue file `supabase/catalog/courses.sql` (not a migration) loads the production catalogue: 53 exam certificates and 8 course completions (61 certificates) and 59 courses. The Meta Front-End and Back-End Professional Certificates are Coursera courses that grant completions, not exams (owner rule: a course gives a course completion; a certificate needs an exam), so the count is 53 exams, not 55. Only courses that carry data stay: 37 with a verified exam fee, 14 preparation courses and the 8 courses that grant the completions.
 
 Cloud: Q2 says production has no real certificates yet; the rollout is still backup → `supabase db push` → counts before and after (section 9).
 
@@ -239,7 +244,7 @@ Record status, progress, dates, proof upload, refund fields, the status-dependen
 
 1. Merge into `dev` after CI.
 2. Local: `pnpm exec supabase migration up --local`, `pnpm db:types` (never `supabase db reset`).
-3. Production, with the release PR to `main`: backup (`supabase db dump --linked` schema and data), record counts of `courses` and `training_records`, `supabase db push --dry-run`, `supabase db push`, counts again (`certificates` = old `courses`; `courses` = old count minus the empty ones; `training_records` unchanged), check one expiry date on `/records`. The dry-run lists every migration production lacks, not only this one: at the time of writing also `20261106000001_link_account_to_member.sql`, `20261110000001_course_refund_conditions.sql` and `20261110000003_set_my_full_name.sql`. Check the list against `supabase migration list --linked` and push the account migration first if the pilot rollout (spec 2026-11-06 section 8) has not done it yet.
+3. Production, with the release PR to `main`: backup (`supabase db dump --linked` schema and data), record counts of `courses` and `training_records`, `supabase db push --dry-run`, `supabase db push`, counts again (`certificates` = old `courses`; `courses` = old count minus the empty ones; `training_records` unchanged), check one expiry date on `/records`. The dry-run lists every migration production lacks, not only these: at the time of writing `20261106000001_link_account_to_member.sql`, `20261110000001_course_refund_conditions.sql`, `20261110000003_set_my_full_name.sql`, and this part's `20261111000001_certificate_catalogue.sql`, `20261111000002_import_course_studied.sql` and `20261111000003_lock_copy_function.sql`. The step-by-step runbook with the count queries is in `docs/deploy/accounts-and-catalogue.md` ("Roll out the certificate catalogue"). Check the list against `supabase migration list --linked` and push the account migration first if the pilot rollout (spec 2026-11-06 section 8) has not done it yet.
 4. Decision #65 in `docs/decisions.md`; data model section of `2026-09-26-certtracker-design.md` updated.
 
 ## 10. Open questions (proposed answers in bold)
