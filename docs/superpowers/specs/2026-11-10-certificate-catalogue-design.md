@@ -210,7 +210,9 @@ Certificate options show the kind, e.g. "AWS Solutions Architect Associate · Ex
 
 - Records table: column "Course" becomes "Certificate" (name + kind badge); a new optional column "Course studied" (hidden by default on narrow screens).
 - Dashboards: Explorer tab "Popular courses" becomes "Popular certificates"; "By certificate type" and "By provider" read the certificate. Manager "Next to expire" and "Planned exams" show the certificate name.
-- Member dashboard and "My certificates": certificate name; the course studied appears as a secondary line when set.
+- Member dashboard and "My learning" (was "My certificates"): certificate name; the course studied appears as a secondary line when set. The `/me` page has filter tabs All / Exam certificates / Course completions next to the existing status and expiry filters, one add button ("Add certificate or course completion") and the hint "Studying for an exam? Choose the exam, then the course you used."
+- The admin and manager list at `/records` is called "Learning" (menu and page title; the route is unchanged). A Kind filter (All kinds / Exam certificates / Course completions) sits in the filter bar. The planned date is labelled by kind: "Planned exam date" for an exam, "Planned finish date" for a completion (label only: the column and the overdue logic are unchanged); in a list the column header follows the Kind filter and reads "Planned date" while it is on All.
+- Admin and manager dashboards show two KPI groups. "Exam certificates": valid, expiring within 60 days, expired, planned exams (exam rows only). "Course completions": completed this month, completed this quarter, in progress. A completion never expires, so it is never in expiring or expired. `dashboard_kpis()` returns the totals for every kind (`done_records` = exam done + `completion_done_records`) and the five expiry buckets for exams only. Month and quarter follow the Vietnam calendar and place a completion by its issued date.
 - E-mails (expiry reminder, monthly report): certificate name.
 
 ### 6.4 Export and import (records)

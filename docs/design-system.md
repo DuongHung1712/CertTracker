@@ -220,9 +220,9 @@ When the database **blocks** the delete (for example a course that certificates 
 | Item | Admin | Manager | Member |
 |---|---|---|---|
 | Dashboard | ✓ | ✓ | ✓ |
-| My certificates¹ | ✓ | ✓ | ✓ |
+| My learning¹ | ✓ | ✓ | ✓ |
 | Members | ✓ | ✓ (own teams) | Hidden |
-| Records (by person) | ✓ | ✓ (own teams) | Hidden |
+| Learning (by person) | ✓ | ✓ (own teams) | Hidden |
 | Data quality | ✓ | ✓ (own teams) | Hidden |
 | Courses | ✓ | ✓ (view only) | ✓ (view only) |
 | Organisation (DC / Program / Team) | ✓ | Hidden | Hidden |
@@ -238,11 +238,11 @@ Hiding is only UX; every permission is still enforced by RLS.
 ### 4.6 Admin Dashboard
 - **Layout:** header, then the **Overview** (3 KPI cards and a stat strip) at full width, then three independent columns (`lg:grid-cols-12`: Left `lg:col-span-3`, Centre `lg:col-span-6`, Right `lg:col-span-3`, all `gap-6`), then **Individual ranking** at full width. In the markup the Centre column comes first, then Right, then Left; from `lg` up `lg:order-2/3/1` shows them as Left, Centre, Right. On a phone the order is Overview, Explorer, Needs attention, Planned features, profile, Quick actions, chart, ranking. `e2e/column-heights.spec.ts` guards the balance at 1440px: the tallest and the shortest column may differ by at most 350px (measured with the seed: Left 555, Centre 897, Right 808, a gap of 342px).
 - **Header:** title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), the "Filter groups" button (smooth scroll and focus to the search box in `#dashboard-filters`, honouring `prefers-reduced-motion`) and "Export CSV" (`ExportLinks`). "Add certificate" lives only in Quick actions.
-- **Overview (`aria-label="Overview"`):** 3 cards in `dl > div` (`dt` label, bare number in the `dd`), built from `KpiTile`, then the stat strip. Cards use status tokens and `text-primary-foreground-muted`; no `amber-`/`rose-` utility colours and no `opacity-<n>` text.
+- **Overview (`aria-label="Overview"`):** two `KpiGroup`s (`role="group"` with an `h3` title, shared with the manager page): "Exam certificates" (3 cards and a stat strip) and "Course completions" (a stat strip). The cards are in `dl > div` (`dt` label, bare number in the `dd`), built from `KpiTile`. Cards use status tokens and `text-primary-foreground-muted`; no `amber-`/`rose-` utility colours and no `opacity-<n>` text.
   1. "Valid certificates" (`ValidCard`): solid `bg-primary` card, "<n>% valid" chip, "<valid>" with "of <completed> completed", a progress ring whose dash length is `2πr` of a radius constant, and "<n> certificates issued this month" or "None issued this month". When the records query fails the caption is left out.
   2. "Expiry" (`ExpiringCard`): "<n>% of completed" chip, the count of "Expiring within 60 days", a thin share bar, and the `Certificate expiry` region with one image summary ("30 days or less: n", "31–60 days: n"; the accessible label also carries "More than 60 days n").
   3. "Expired" (`ExpiredCard`): the count, an "Action needed" badge and "Past expiry date. Members need to renew these." when above 0, or "No expired certificates" when 0. It never uses the teams query.
-  - **Stat strip (`StatStrip`):** Active members, Certificates, Completed, In progress, plus one screen-reader image "Certificates by team: …".
+  - **Stat strips (`StatStrip`, `components/stat-strip.tsx`, takes `[term, value]` pairs; a value that could not load shows "—"):** exam group: Active members, Completed, In progress (exam only); completion group: Completed this month, Completed this quarter, Completions in progress. One screen-reader image "Certificates by team: …" (`TeamCountsSummary`) sits in the exam group. The valid card and the expiry share divide by the exam certificates that are done, so a completion never changes them.
 - **Centre column:** tab strip (`DashboardTabStrip`, shared with the manager page: live `Overview` plus disabled `Approvals`, `Goals`, `Skills` chips marked "Soon"), then the **Explorer** (filter row `#dashboard-filters`, tabs `By team`, `By certificate type`, `By provider`, `Popular certificates`, master list and detail panel; the selected row is solid `bg-primary`, keyboard focus is a `focus-visible` ring with a `ring-offset-card` offset, checked in `tokens.test.ts`). With no certificates at all the Explorer is replaced by the "No certificates yet" empty state with a "Go to certificates" link.
 - **Right column:**
   - **Needs attention:** live feed from the records: expired certificates (most overdue first), then certificates expiring within 30 days (soonest first), at most `ADMIN_ATTENTION_LIMIT` (10), then one "Data quality" row ("<n> issues to check") that the cut never drops. When the list is cut it ends with "Showing 10 of N. View all certificates" (link to `/records`). One `AttentionRow` with a tone map (`expired`, `expiring_soon`, `data_quality`); each row is a link with a `focus-visible` ring. Empty: "Nothing needs attention". If the data quality query fails the row says "Data quality could not be loaded" and the empty state is not shown.
@@ -271,7 +271,7 @@ Hiding is only UX; every permission is still enforced by RLS.
 ### 4.8 Manager Dashboard
 - **Header:** Title "Dashboard", server-built greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), subtitle "You look after <team names> (<N> members)." (or "No teams assigned yet." if unassigned), primary button "View certificates" (`/records`), and an outlined "Download team data" using `ExportLinks`.
 - **Team filter:** Group "Filter by team scope" with pills "All teams" and one per managed team (no counts, no period selector). The only download is the header "Download team data"; the only "View certificates" button is in the header.
-- **Overview:** region "Overview" with the readiness donut and three KPI tiles scoped to the manager's teams (`dl > div` with bare numbers in the first `dd`):
+- **Overview:** region "Overview" with two `KpiGroup`s scoped to the manager's teams: "Exam certificates" (tiles 2-4 below plus a stat strip: Valid, Completed, In progress, Planned exams) and "Course completions" (stat strip: Completed this month, Completed this quarter, Completions in progress). The readiness donut and every exam figure count exam certificates only. Tiles (`dl > div` with bare numbers in the first `dd`):
   1. "Team readiness" donut: centre percentage (valid share of completed certificates), "{valid} of {completed} completed certificates" under the ring, and one legend row "Members without a completed certificate: {n}". With no completed certificates the centre shows an em dash. Valid and Expired counts are not repeated (the Expired tile shows the latter).
   2. "Expiring within 60 days": count of in-scope completed certificates with 0-60 days left, caption "{n} with 30 days or less".
   3. "Expired": count of in-scope overdue certificates; "Past due: <most overdue member (course)>".
