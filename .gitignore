@@ -58,3 +58,6 @@ next-env.d.ts
 
 # UI polish screenshots (binary artifacts stay outside git)
 docs/ui-polish/*.png
+
+# graphify knowledge graph (generated, rebuilt by post-commit hook)
+/graphify-out/
