@@ -34,7 +34,7 @@ const breakdown = (key: string, label: string, headcount: number | null = null) 
 const CALM_RECORD = doneRecord(120, {
   id: "rec-1",
   memberName: "Nguyễn Văn An",
-  courseName: "Cloud Architect",
+  certificateName: "Cloud Architect",
   issuedDate: "2026-11-01",
 });
 
@@ -432,7 +432,7 @@ describe("AdminDashboardView: Needs attention", () => {
       kpis: withKpis({ expiredCerts: 1 }),
       records: {
         ok: true,
-        data: [doneRecord(-5, { id: "r-exp", memberName: "Trần Thị Bình", courseName: "CKA" })],
+        data: [doneRecord(-5, { id: "r-exp", memberName: "Trần Thị Bình", certificateName: "CKA" })],
       },
     });
     const attention = region(html, "Needs attention");
@@ -456,7 +456,7 @@ describe("AdminDashboardView: Needs attention", () => {
 
   it("keeps the data quality item when the list is cut, and links to all certificates", () => {
     const expired: RecordRow[] = Array.from({ length: 12 }, (_, i) =>
-      doneRecord(-(i + 1), { id: `exp-${i}`, memberName: `Member ${i}`, courseName: `Course ${i}` }),
+      doneRecord(-(i + 1), { id: `exp-${i}`, memberName: `Member ${i}`, certificateName: `Course ${i}` }),
     );
     const html = render({
       kpis: withKpis({ expiredCerts: 12 }),

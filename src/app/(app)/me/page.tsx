@@ -5,7 +5,7 @@ import { getCurrentUser } from "@/features/auth/queries";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
-import { listCourseOptions, listRecords } from "@/features/records/queries";
+import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
 
 export default async function MePage() {
   const user = await getCurrentUser();
@@ -23,9 +23,10 @@ export default async function MePage() {
     );
   }
 
-  const [records, courseOptions] = await Promise.all([
+  const [records, certificateOptions, studyCourses] = await Promise.all([
     listRecords({ memberId: user.memberId }),
-    listCourseOptions(),
+    listCertificateOptions(),
+    listStudyCourses(),
   ]);
 
   return (
@@ -40,7 +41,8 @@ export default async function MePage() {
       <RecordsTable
         records={records}
         memberOptions={[]}
-        courseOptions={courseOptions}
+        certificateOptions={certificateOptions}
+        studyCourses={studyCourses}
         mode="self"
         fixedMemberId={user.memberId}
         canDelete={user.role !== "member"}

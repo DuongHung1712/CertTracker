@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert, type LucideIcon } from "lucide-react";
 import { EmptyState } from "@/components/data/empty-state";
-import type { ComboboxOption } from "@/components/entity-combobox";
+import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { clampPercent } from "@/components/status/labels";
@@ -47,7 +47,8 @@ function tileTone(record: RecordRow): TileTone {
 export function MemberCertificatesList({
   fullName,
   records,
-  courseOptions,
+  certificateOptions,
+  studyCourses,
   memberId,
   sheetOpen,
   onSheetOpenChange,
@@ -56,7 +57,8 @@ export function MemberCertificatesList({
 }: {
   fullName: string;
   records: RecordRow[];
-  courseOptions: ComboboxOption[];
+  certificateOptions: CertificateChoice[];
+  studyCourses: StudyCourse[];
   memberId: string;
   sheetOpen: boolean;
   onSheetOpenChange: (open: boolean) => void;
@@ -173,12 +175,15 @@ export function MemberCertificatesList({
 
                     <div className="flex flex-col min-w-0">
                       <h4 className="text-sm font-semibold text-foreground leading-snug truncate">
-                        {record.courseName}
+                        {record.certificateName}
                       </h4>
                       <p className="text-xs font-mono text-muted-foreground truncate">
                         {record.providerName ?? "Provider not set"}
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
                       </p>
+                      {record.courseName && (
+                        <p className="text-xs text-muted-foreground truncate">Course studied: {record.courseName}</p>
+                      )}
                     </div>
                   </div>
 
@@ -210,7 +215,7 @@ export function MemberCertificatesList({
                                     rel="noopener noreferrer"
                                   />
                                 }
-                                aria-label={`View evidence for ${record.courseName}`}
+                                aria-label={`View evidence for ${record.certificateName}`}
                               >
                                 <FileText className="size-3.5" aria-hidden="true" />
                               </Button>
@@ -227,7 +232,7 @@ export function MemberCertificatesList({
                               variant="ghost"
                               size="icon-xs"
                               onClick={() => handleEdit(record)}
-                              aria-label={`Edit ${record.courseName}`}
+                              aria-label={`Edit ${record.certificateName}`}
                             >
                               <Pencil className="size-3.5" aria-hidden="true" />
                             </Button>
@@ -289,7 +294,8 @@ export function MemberCertificatesList({
         onOpenChange={onSheetOpenChange}
         editing={editingRecord}
         memberOptions={[]}
-        courseOptions={courseOptions}
+        certificateOptions={certificateOptions}
+              studyCourses={studyCourses}
         showCompanyFields={false}
         fixedMemberId={memberId}
       />

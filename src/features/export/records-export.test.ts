@@ -10,9 +10,9 @@ const CRLF = String.fromCharCode(13, 10);
 const NOTE ="Dòng một\nDòng hai\n\nDòng bốn";
 
 const RECORDS: RecordRow[] = [
-  { id: "r1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "saa", courseName: "AWS SAA", certTypeName: "Cloud", providerName: "AWS", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2024-02-29", certificateUrl: "https://credly.com/b/1", hasEvidence: false, viaCompany: true, refundStatus: "paid", notes: "=cần kiểm tra", expiryDate: "2027-02-28", daysToExpiry: 150, expiryStatus: "Active" },
-  { id: "r2", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "gcp", courseName: "GCP ACE", certTypeName: null, providerName: "Google", validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null, status: "in_progress", progress: 1, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry" },
-  { id: "r3", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "az", courseName: "Azure AZ-900", certTypeName: "Cloud", providerName: "AWS", validityMonths: 12, cost: null, costCurrency: null, estHours: 12, status: "in_progress", progress: 55, plannedExamDate: null, issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "pending", notes: NOTE, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" },
+  { id: "r1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", certificateId: "saa", certificateName: "AWS SAA", certificateKind: "exam", courseId: null, courseName: null, certTypeName: "Cloud", providerName: "AWS", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2024-02-29", certificateUrl: "https://credly.com/b/1", hasEvidence: false, viaCompany: true, refundStatus: "paid", notes: "=cần kiểm tra", expiryDate: "2027-02-28", daysToExpiry: 150, expiryStatus: "Active" },
+  { id: "r2", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", certificateId: "gcp", certificateName: "GCP ACE", certificateKind: "exam", courseId: null, courseName: null, certTypeName: null, providerName: "Google", validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null, status: "in_progress", progress: 1, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry" },
+  { id: "r3", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", certificateId: "az", certificateName: "Azure AZ-900", certificateKind: "exam", courseId: null, courseName: null, certTypeName: "Cloud", providerName: "AWS", validityMonths: 12, cost: null, costCurrency: null, estHours: 12, status: "in_progress", progress: 55, plannedExamDate: null, issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "pending", notes: NOTE, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" },
 ];
 
 const ROWS: ExportRow[] = [
@@ -22,7 +22,7 @@ const ROWS: ExportRow[] = [
 ];
 
 const baseRecord = (row: ExportRow) => ({
-  id: row.id, memberId: row.memberId, courseId: row.courseId, status: row.status, progress: row.progress,
+  id: row.id, memberId: row.memberId, courseId: row.certificateId, status: row.status, progress: row.progress,
   plannedExamDate: row.plannedExamDate, issuedDate: row.issuedDate, certificateUrl: row.certificateUrl,
   viaCompany: row.viaCompany, refundStatus: row.refundStatus, notes: row.notes,
 });

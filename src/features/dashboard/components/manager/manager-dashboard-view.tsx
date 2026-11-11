@@ -85,7 +85,7 @@ export function ManagerDashboardView({
   );
 
   const mostOverdue = useMemo(() => getNeedsAttentionItems(filteredRecords)[0]?.record, [filteredRecords]);
-  const pastDueText = mostOverdue ? `${mostOverdue.memberName} (${mostOverdue.courseName})` : undefined;
+  const pastDueText = mostOverdue ? `${mostOverdue.memberName} (${mostOverdue.certificateName})` : undefined;
 
   return (
     <div className="flex min-w-0 flex-col gap-6">

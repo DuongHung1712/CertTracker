@@ -57,7 +57,7 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
                 </td>
                 <td className="px-3 py-2.5">
                   <div className="flex flex-col min-w-0">
-                    <span className="font-medium text-foreground truncate max-w-xs">{row.courseName}</span>
+                    <span className="font-medium text-foreground truncate max-w-xs">{row.certificateName}</span>
                     {row.providerName && (
                       <span className="text-caption text-muted-foreground">{row.providerName}</span>
                     )}

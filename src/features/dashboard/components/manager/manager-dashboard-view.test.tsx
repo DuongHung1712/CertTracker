@@ -15,10 +15,10 @@ const MEMBERS = [
 
 // One expired, one 20-day and one 45-day certificate (the overlap fixture for Needs attention vs Next to expire).
 const RECORDS: RecordRow[] = [
-  doneRecord(-3, { id: "r-exp", memberId: "m1", memberName: "Nguyễn Văn An", courseName: "Course Expired" }),
-  doneRecord(20, { id: "r-20", memberId: "m1", memberName: "Nguyễn Văn An", courseName: "Course Twenty" }),
-  doneRecord(45, { id: "r-45", memberId: "m2", memberName: "Lê Minh Châu", courseName: "Course FortyFive" }),
-  makeRecord({ id: "r-ip", memberId: "m2", memberName: "Lê Minh Châu", courseName: "Course Planned", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: null }),
+  doneRecord(-3, { id: "r-exp", memberId: "m1", memberName: "Nguyễn Văn An", certificateName: "Course Expired" }),
+  doneRecord(20, { id: "r-20", memberId: "m1", memberName: "Nguyễn Văn An", certificateName: "Course Twenty" }),
+  doneRecord(45, { id: "r-45", memberId: "m2", memberName: "Lê Minh Châu", certificateName: "Course FortyFive" }),
+  makeRecord({ id: "r-ip", memberId: "m2", memberName: "Lê Minh Châu", certificateName: "Course Planned", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: null }),
 ];
 
 function render({ records = RECORDS }: { records?: RecordRow[] } = {}): string {
@@ -164,8 +164,8 @@ describe("ManagerDashboardView: Needs attention and Next to expire do not overla
   it("names the most overdue certificate in the Expired tile, not the first one in the list", () => {
     const html = render({
       records: [
-        doneRecord(-3, { id: "a", memberName: "Recent Lapse", courseName: "Course A" }),
-        doneRecord(-40, { id: "b", memberName: "Long Lapse", courseName: "Course B" }),
+        doneRecord(-3, { id: "a", memberName: "Recent Lapse", certificateName: "Course A" }),
+        doneRecord(-40, { id: "b", memberName: "Long Lapse", certificateName: "Course B" }),
       ],
     });
     expect(region(html, "Overview")).toContain("Past due: Long Lapse (Course B)");

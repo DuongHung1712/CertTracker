@@ -251,7 +251,7 @@ export function TeamReadinessDossier({
                     >
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-foreground truncate">
-                          {r.courseName}
+                          {r.certificateName}
                         </span>
                         <span className="text-caption text-muted-foreground font-mono truncate">
                           ID: {r.id.slice(0, 8).toUpperCase()}

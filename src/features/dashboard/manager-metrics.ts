@@ -93,7 +93,7 @@ export function getNextToExpire(records: RecordRow[], limit = 8): RecordRow[] {
       if (daysDiff !== 0) return daysDiff;
       const nameDiff = a.memberName.localeCompare(b.memberName);
       if (nameDiff !== 0) return nameDiff;
-      return a.courseName.localeCompare(b.courseName);
+      return a.certificateName.localeCompare(b.certificateName);
     })
     .slice(0, limit);
 }
@@ -228,7 +228,7 @@ export type PlannedExamItem = {
   recordId: string;
   memberId: string;
   memberName: string;
-  courseName: string;
+  certificateName: string;
   plannedExamDate: string;
   daysRemaining: number;
 };
@@ -254,7 +254,7 @@ export function getPlannedExams(
             recordId: r.id,
             memberId: r.memberId,
             memberName: r.memberName,
-            courseName: r.courseName,
+            certificateName: r.certificateName,
             plannedExamDate: r.plannedExamDate,
             daysRemaining,
           });
@@ -281,7 +281,7 @@ export function getNeedsAttentionItems(records: RecordRow[]): NeedsAttentionItem
     .sort((a, b) => (a.daysToExpiry ?? 0) - (b.daysToExpiry ?? 0))
     .map((record) => ({
       record,
-      description: `${record.memberName}'s ${record.courseName} expired ${pluralize(-(record.daysToExpiry ?? 0), "day")} ago.`,
+      description: `${record.memberName}'s ${record.certificateName} expired ${pluralize(-(record.daysToExpiry ?? 0), "day")} ago.`,
     }));
 }
 

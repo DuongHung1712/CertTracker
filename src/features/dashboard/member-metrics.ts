@@ -164,7 +164,7 @@ export function filterMemberRecords(
 
   return [...filtered].sort((a, b) => {
     if (sort === "name") {
-      return collatorVi.compare(a.courseName, b.courseName);
+      return collatorVi.compare(a.certificateName, b.certificateName);
     }
 
     // Default: sort by expiry
@@ -174,11 +174,11 @@ export function filterMemberRecords(
 
     if (daysA !== null && daysB !== null) {
       if (daysA !== daysB) return daysA - daysB;
-      return collatorVi.compare(a.courseName, b.courseName);
+      return collatorVi.compare(a.certificateName, b.certificateName);
     }
     if (daysA !== null && daysB === null) return -1;
     if (daysA === null && daysB !== null) return 1;
 
-    return collatorVi.compare(a.courseName, b.courseName);
+    return collatorVi.compare(a.certificateName, b.certificateName);
   });
 }

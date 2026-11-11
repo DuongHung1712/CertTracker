@@ -110,7 +110,8 @@ describe("[copy] member certificate list", () => {
       <MemberCertificatesList
         fullName="Lê Minh Châu"
         records={records}
-        courseOptions={[]}
+        certificateOptions={[]}
+        studyCourses={[]}
         memberId="m1"
         sheetOpen={false}
         onSheetOpenChange={() => {}}

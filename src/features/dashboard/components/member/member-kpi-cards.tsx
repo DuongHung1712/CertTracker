@@ -90,8 +90,8 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         <div className="border-t border-border pt-2 flex flex-col gap-0.5 text-caption">
           {kpis.leastDaysRecord ? (
             <>
-              <span className="font-medium text-foreground truncate max-w-full" title={kpis.leastDaysRecord.courseName}>
-                Next to expire: {kpis.leastDaysRecord.courseName}
+              <span className="font-medium text-foreground truncate max-w-full" title={kpis.leastDaysRecord.certificateName}>
+                Next to expire: {kpis.leastDaysRecord.certificateName}
               </span>
               <span className="font-mono text-caption font-semibold text-[var(--status-expiring-soon-fg)]">
                 {daysLeftLabel(kpis.leastDaysRecord.daysToExpiry)}
@@ -128,7 +128,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
                 className="flex items-center justify-between rounded bg-muted/50 px-1.5 py-0.5 font-mono"
               >
                 <span className="truncate max-w-[90px] font-medium text-foreground">
-                  {row.courseName}
+                  {row.certificateName}
                 </span>
                 <span className="font-semibold text-foreground">{row.progress}%</span>
               </div>

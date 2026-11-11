@@ -18,6 +18,8 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { createRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
+import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
+import { CourseStudiedField } from "@/features/records/components/course-studied-field";
 import type { RecordRow } from "@/features/records/queries";
 import {
   RECORD_STATUSES,
@@ -39,7 +41,8 @@ export function RecordSheet({
   onOpenChange,
   editing,
   memberOptions,
-  courseOptions,
+  certificateOptions,
+  studyCourses,
   showCompanyFields,
   fixedMemberId,
 }: {
@@ -47,7 +50,8 @@ export function RecordSheet({
   onOpenChange: (open: boolean) => void;
   editing: Editing;
   memberOptions: ComboboxOption[];
-  courseOptions: ComboboxOption[];
+  certificateOptions: CertificateChoice[];
+  studyCourses: StudyCourse[];
   /** False for role "member": those fields are then never registered nor sent (a DB trigger rejects them). */
   showCompanyFields: boolean;
   /** /me: the record always belongs to this member, so the picker is not rendered. */
@@ -68,7 +72,8 @@ export function RecordSheet({
     if (editing) {
       return {
         memberId: editing.memberId,
-        courseId: editing.courseId,
+        certificateId: editing.certificateId,
+        courseId: editing.courseId ?? "",
         status: editing.status,
         progress: editing.progress,
         plannedExamDate: editing.plannedExamDate ? formatDate(editing.plannedExamDate) : "",
@@ -80,6 +85,7 @@ export function RecordSheet({
     }
     return {
       memberId: fixedMemberId ?? "",
+      certificateId: "",
       courseId: "",
       status: "not_started",
       progress: 0,
@@ -172,6 +178,16 @@ export function RecordSheet({
   const errors = form.formState.errors;
   const status = useWatch({ control: form.control, name: "status" });
   const shown = visibleFields(status);
+  const certificateId = useWatch({ control: form.control, name: "certificateId" });
+  const courseId = useWatch({ control: form.control, name: "courseId" });
+  const certificate = certificateOptions.find((option) => option.id === certificateId);
+
+  function handleCertificateChange(nextId: string) {
+    form.setValue("certificateId", nextId, { shouldDirty: true });
+    const next = certificateOptions.find((option) => option.id === nextId);
+    form.setValue("courseId", courseAfterCertificateChange(next, studyCourses, String(courseId ?? "")), { shouldDirty: true });
+    form.clearErrors("certificateId");
+  }
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -212,30 +228,30 @@ export function RecordSheet({
             </Field>
           )}
           <Field>
-            <FieldLabel htmlFor="record-course">
-              Course
+            <FieldLabel htmlFor="record-certificate">
+              Certificate
               <RequiredMark />
             </FieldLabel>
-            <Controller
-              control={form.control}
-              name="courseId"
-              render={({ field }) => (
-                <EntityCombobox
-                  id="record-course"
-                  value={field.value}
-                  onChange={field.onChange}
-                  options={courseOptions}
-                  placeholder="Choose a course"
-                  emptyText="No courses found"
-                  aria-invalid={!!errors.courseId}
-                  aria-required
-                  aria-describedby="record-course-hint"
-                />
-              )}
+            <EntityCombobox
+              id="record-certificate"
+              value={certificateId}
+              onChange={handleCertificateChange}
+              options={certificateOptions}
+              placeholder="Choose a certificate"
+              emptyText="No certificates found"
+              aria-invalid={!!errors.certificateId}
+              aria-required
+              aria-describedby="record-certificate-hint"
             />
-            <FieldDescription id="record-course-hint">Can&apos;t find your course? Ask your admin to add it.</FieldDescription>
-            <FieldError errors={[errors.courseId]} />
+            <FieldDescription id="record-certificate-hint">Can&apos;t find your certificate? Ask your admin to add it.</FieldDescription>
+            <FieldError errors={[errors.certificateId]} />
           </Field>
+          <CourseStudiedField
+            certificate={certificate}
+            courses={studyCourses}
+            value={String(courseId ?? "")}
+            onChange={(next) => form.setValue("courseId", next, { shouldDirty: true })}
+          />
           <Field>
             <FieldLabel htmlFor="record-status">
               Status
@@ -339,7 +355,7 @@ export function RecordSheet({
                 )}
               />
               <FieldDescription id="record-issued-hint">
-                The day the certificate was issued. The expiry date is worked out from the course.
+                The day it was issued. The expiry date is worked out from its validity period.
               </FieldDescription>
               <FieldError errors={[errors.issuedDate]} />
             </Field>

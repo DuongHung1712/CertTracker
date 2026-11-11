@@ -15,11 +15,14 @@ import { NO_TEAM_LABEL, RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { MemberCode } from "@/components/status/member-code";
 import { ProgressInline } from "@/components/status/progress-inline";
 import { RecordStatusLabel } from "@/components/status/record-status";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { deleteRecord } from "@/features/records/actions";
 import { RecordSheet } from "@/features/records/components/record-sheet";
+import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { RECORD_STATUSES } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
@@ -47,7 +50,8 @@ function byDaysToExpiry(
 export function RecordsTable({
   records,
   memberOptions,
-  courseOptions,
+  certificateOptions,
+  studyCourses,
   mode,
   canDelete,
   showCompanyFields,
@@ -56,7 +60,8 @@ export function RecordsTable({
 }: {
   records: RecordRow[];
   memberOptions: ComboboxOption[];
-  courseOptions: ComboboxOption[];
+  certificateOptions: CertificateChoice[];
+  studyCourses: StudyCourse[];
   /** "self" hides the member/team columns and the team filter. */
   mode: "team" | "self";
   canDelete: boolean;
@@ -91,7 +96,7 @@ export function RecordsTable({
     return records.filter((record) => {
       if (query) {
         const haystack = foldText(
-          `${record.memberName} ${record.memberCode} ${record.courseName} ${record.providerName ?? ""}`,
+          `${record.memberName} ${record.memberCode} ${record.certificateName} ${record.courseName ?? ""} ${record.providerName ?? ""}`,
         );
         if (!haystack.includes(query)) return false;
       }
@@ -117,16 +122,27 @@ export function RecordsTable({
           ] satisfies ColumnDef<RecordRow, unknown>[])
         : []),
       {
-        accessorKey: "courseName",
-        header: "Course",
+        accessorKey: "certificateName",
+        header: "Certificate",
         cell: ({ row }) => (
           <div className="flex flex-col">
-            <span>{row.original.courseName}</span>
+            <span className="flex items-center gap-1.5">
+              {row.original.certificateName}
+              <Badge variant="secondary" className="rounded-sm">
+                {CERTIFICATE_KIND_LABEL[row.original.certificateKind]}
+              </Badge>
+            </span>
             {row.original.providerName && (
               <span className="text-caption text-muted-foreground">{row.original.providerName}</span>
             )}
           </div>
         ),
+      },
+      {
+        accessorKey: "courseName",
+        header: "Course studied",
+        cell: ({ row }) => row.original.courseName ?? "—",
+        meta: { className: "hidden 2xl:table-cell" },
       },
       { accessorKey: "status", header: "Status", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
       { accessorKey: "progress", header: "Progress", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
@@ -163,7 +179,7 @@ export function RecordsTable({
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={`Actions for ${record.memberName} · ${record.courseName}`}
+                    aria-label={`Actions for ${record.memberName} · ${record.certificateName}`}
                   />
                 }
               >
@@ -218,7 +234,7 @@ export function RecordsTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={isTeam ? "Search by name, code or course…" : "Search by course…"}
+        searchPlaceholder={isTeam ? "Search by name, code or certificate…" : "Search by certificate…"}
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -286,7 +302,7 @@ export function RecordsTable({
         <Button
           size="sm"
           className="ml-auto"
-          disabled={courseOptions.length === 0 || (isTeam && memberOptions.length === 0)}
+          disabled={certificateOptions.length === 0 || (isTeam && memberOptions.length === 0)}
           onClick={() => {
             setEditingId(null);
             setSheetOpen(true);
@@ -313,7 +329,8 @@ export function RecordsTable({
         onOpenChange={setSheetOpen}
         editing={editing}
         memberOptions={memberOptions}
-        courseOptions={courseOptions}
+        certificateOptions={certificateOptions}
+        studyCourses={studyCourses}
         showCompanyFields={showCompanyFields}
         fixedMemberId={fixedMemberId}
       />
@@ -321,7 +338,7 @@ export function RecordsTable({
         <ConfirmDialog
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
-          title={`Delete the ${confirming?.courseName} certificate of ${confirming?.memberName}?`}
+          title={confirming ? `Delete the ${confirming.certificateName} ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]} of ${confirming.memberName}?` : ""}
           description="The certificate and its evidence file will be deleted. This cannot be undone."
           confirmLabel="Delete certificate"
           pendingLabel="Deleting…"

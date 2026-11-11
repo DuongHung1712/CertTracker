@@ -74,9 +74,10 @@ export function EntityCombobox({
         <ComboboxList>
           {(option: ComboboxOption) => (
             <ComboboxItem key={option.id} value={option}>
-              <span className="truncate">{option.label}</span>
+              {/* Wraps instead of truncating: a long certificate name must not hide the kind at its end. */}
+              <span className="min-w-0 flex-1 break-words">{option.label}</span>
               {option.hint ? (
-                <span className="truncate text-caption text-muted-foreground">{option.hint}</span>
+                <span className="max-w-[40%] shrink-0 truncate text-caption text-muted-foreground">{option.hint}</span>
               ) : null}
             </ComboboxItem>
           )}

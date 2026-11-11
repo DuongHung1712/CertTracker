@@ -54,7 +54,7 @@ export function getAdminNeedsAttentionItems(
     return {
       id: `${expired ? "expired" : "expiring"}-${r.id}`,
       type: expired ? "expired" : "expiring_soon",
-      label: `${r.memberName} · ${r.courseName}`,
+      label: `${r.memberName} · ${r.certificateName}`,
       detail,
       href: `/records?search=${encodeURIComponent(r.memberName)}`,
     };

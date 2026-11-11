@@ -43,7 +43,7 @@ describe("NextToExpireTable", () => {
   });
 
   it("renders upcoming certificates with a view link and no second title inside the section", () => {
-    const records = [doneRecord(25, { memberName: "Nguyễn Văn An", courseName: "AWS SAA" })];
+    const records = [doneRecord(25, { memberName: "Nguyễn Văn An", certificateName: "AWS SAA" })];
     const html = renderToStaticMarkup(<NextToExpireTable records={records} />);
     expect(html).toContain("Nguyễn Văn An");
     expect(html).toContain("AWS SAA");
@@ -69,7 +69,7 @@ describe("PlannedExamsList", () => {
     const records = [
       makeRecord({
         memberName: "Trần Thị Bình",
-        courseName: "NVIDIA AI",
+        certificateName: "NVIDIA AI",
         plannedExamDate: "2026-11-20",
       }),
     ];
@@ -89,8 +89,8 @@ describe("NeedsAttentionFeed", () => {
 
   it("lists expired certificates only, each linking to /records (upcoming ones live in Next to expire)", () => {
     const records = [
-      doneRecord(-5, { id: "e1", memberName: "Minh", courseName: "PMP" }),
-      doneRecord(10, { id: "u1", memberName: "An", courseName: "AWS" }),
+      doneRecord(-5, { id: "e1", memberName: "Minh", certificateName: "PMP" }),
+      doneRecord(10, { id: "u1", memberName: "An", certificateName: "AWS" }),
     ];
     const html = renderToStaticMarkup(<NeedsAttentionFeed records={records} />);
     expect(html).toContain("Expired certificate");

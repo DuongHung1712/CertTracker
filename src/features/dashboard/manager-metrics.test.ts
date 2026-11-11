@@ -207,11 +207,11 @@ describe("manager-metrics", () => {
 
   describe("getNeedsAttentionItems", () => {
     it("lists only expired certificates, most overdue first (upcoming ones belong to Next to expire)", () => {
-      const exp1 = doneRecord(-5, { id: "e1", memberName: "Minh", courseName: "PMP" });
-      const exp2 = doneRecord(-1, { id: "e2", memberName: "Tuan", courseName: "CKA" });
-      const soon1 = doneRecord(12, { id: "s1", memberName: "Linh", courseName: "AWS SAA" });
-      const today = doneRecord(0, { id: "s0", memberName: "Hoa", courseName: "GCP" });
-      const later = doneRecord(50, { id: "l1", memberName: "An", courseName: "Terraform" });
+      const exp1 = doneRecord(-5, { id: "e1", memberName: "Minh", certificateName: "PMP" });
+      const exp2 = doneRecord(-1, { id: "e2", memberName: "Tuan", certificateName: "CKA" });
+      const soon1 = doneRecord(12, { id: "s1", memberName: "Linh", certificateName: "AWS SAA" });
+      const today = doneRecord(0, { id: "s0", memberName: "Hoa", certificateName: "GCP" });
+      const later = doneRecord(50, { id: "l1", memberName: "An", certificateName: "Terraform" });
 
       const items = getNeedsAttentionItems([later, soon1, today, exp2, exp1]);
       expect(items.map((i) => i.record.id)).toEqual(["e1", "e2"]);
