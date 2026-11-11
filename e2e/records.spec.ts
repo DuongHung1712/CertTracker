@@ -192,7 +192,8 @@ test("a record for a course completion saves the granting course, and the table 
     expect(saved.data?.course_id).toBe(completion.courseId);
     const row = recordRow(page, "Nguyễn Văn An", completion.certificateName);
     await expect(row).toContainText("Course completion");
-    await expect(row).toContainText(completion.courseName);
+    // The Course studied column is shown from the xl breakpoint; Playwright's 1280 px viewport is one.
+    await expect(row.getByText(completion.courseName)).toBeVisible();
   } finally {
     await completion.remove();
   }
@@ -207,15 +208,90 @@ test("an exam record saves the course studied that prepares for it", async ({ pa
   await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs · Exam");
   await pickSelect(page, dialog, "Course studied", "NVIDIA Generative AI LLMs");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Added certificate")).toBeVisible();
-
   try {
+    await expect(page.getByText("Added certificate")).toBeVisible();
     const admin = await signInAsSeedAdmin();
     const saved = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", NVIDIA_ID).single();
     expect(saved.data?.course_id).toBe(NVIDIA_ID);
     await expect(recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs")).toContainText("Exam");
   } finally {
     await removeAnNvidiaRecord();
+  }
+});
+
+/** Châu's seed record, put back after a test changed its certificate or course. */
+async function restoreChauAwsCertificate() {
+  const admin = await signInAsSeedAdmin();
+  const { error } = await admin.from("training_records").update({ certificate_id: AWS_ID, course_id: AWS_ID }).eq("member_id", CHAU).neq("certificate_id", AWS_ID);
+  if (error) throw new Error(`restore Châu–AWS: ${error.message}`);
+}
+
+async function chauCourseId(certificateId: string) {
+  const admin = await signInAsSeedAdmin();
+  const { data, error } = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", certificateId).single();
+  if (error) throw new Error(`read Châu's record: ${error.message}`);
+  return data.course_id;
+}
+
+async function switchChauCertificate(page: Page, from: string, query: string, optionName: string, to: string) {
+  await clickMenuItem(page, recordRow(page, "Lê Minh Châu", from), "Edit");
+  const dialog = page.getByRole("dialog");
+  await pickOption(page, dialog, "Certificate", query, optionName);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toHaveCount(0);
+  // The refreshed list shows the new certificate; a Realtime refresh would otherwise detach the next popup mid-click.
+  await expect(recordRow(page, "Lê Minh Châu", to)).toBeVisible();
+}
+
+test("switching the certificate of a record clears the course studied for an exam and sets it for a completion", async ({ page }) => {
+  const completion = await createCompletionFixture();
+  try {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+
+    await switchChauCertificate(page, AWS, "nvidia", "NVIDIA Generative AI LLMs · Exam", "NVIDIA Generative AI LLMs");
+    expect(await chauCourseId(NVIDIA_ID)).toBeNull();
+
+    await switchChauCertificate(page, "NVIDIA Generative AI LLMs", completion.certificateName, completion.optionName, completion.certificateName);
+    expect(await chauCourseId(completion.certificateId)).toBe(completion.courseId);
+  } finally {
+    await restoreChauAwsCertificate();
+    await completion.remove();
+  }
+});
+
+test("a saved course that no longer prepares for the certificate stays visible and survives an unchanged save", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  const created = await admin.from("courses").insert({ name: `Unlinked course ${Date.now()}`, provider_id: "5eed0000-0000-0000-0000-00000000c101", refundable: false, prepares_for_id: AWS_ID }).select("id, name").single();
+  if (created.error) throw new Error(`create course: ${created.error.message}`);
+  const course = created.data;
+  try {
+    const attach = await admin.from("training_records").update({ course_id: course.id }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
+    if (attach.error) throw new Error(`attach course: ${attach.error.message}`);
+    // The admin later unlinks the course; the record keeps it.
+    const unlink = await admin.from("courses").update({ prepares_for_id: null }).eq("id", course.id);
+    if (unlink.error) throw new Error(`unlink course: ${unlink.error.message}`);
+
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+    await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByLabel(fieldLabel("Course studied"))).toContainText(`${course.name} (no longer linked to this certificate)`);
+
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(await chauCourseId(AWS_ID)).toBe(course.id);
+
+    await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
+    await pickSelect(page, page.getByRole("dialog"), "Course studied", "None (self-study)");
+    await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect.poll(() => chauCourseId(AWS_ID)).toBeNull();
+  } finally {
+    const restore = await admin.from("training_records").update({ course_id: AWS_ID }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
+    if (restore.error) throw new Error(`restore course: ${restore.error.message}`);
+    const removed = await admin.from("courses").delete().eq("id", course.id);
+    if (removed.error) throw new Error(`remove course: ${removed.error.message}`);
   }
 });
 

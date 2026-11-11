@@ -26,9 +26,12 @@ export async function createCompletionFixture() {
     optionName: `${certificateName} · Course completion`,
     /** Records first (the foreign key restricts), then the completion, then its course. */
     async remove() {
-      await admin.from("training_records").delete().eq("certificate_id", certificate.data.id);
-      await admin.from("certificates").delete().eq("id", certificate.data.id);
-      await admin.from("courses").delete().eq("id", course.data.id);
+      const results = [
+        await admin.from("training_records").delete().eq("certificate_id", certificate.data.id),
+        await admin.from("certificates").delete().eq("id", certificate.data.id),
+        await admin.from("courses").delete().eq("id", course.data.id),
+      ];
+      for (const { error } of results) if (error) throw new Error(`remove completion fixture: ${error.message}`);
     },
   };
 }

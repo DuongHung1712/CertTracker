@@ -43,6 +43,12 @@ export type RecordRow = {
 const COLUMNS =
   "id, member_id, member_code, member_name, member_email, team_id, team_name, certificate_id, certificate_name, certificate_kind, course_id, course_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
 
+/** The view joins `certificates` inner, so a missing kind means a broken join: stop instead of showing a wrong badge. */
+function requireKind(kind: CertificateKind | null): CertificateKind {
+  if (!kind) throw new Error("the certificate has no kind (broken view join)");
+  return kind;
+}
+
 /** RLS decides what comes back: everything for Admin, managed teams (+ own) for Manager, own for Member. */
 export async function listRecords(filter: { memberId?: string } = {}): Promise<RecordRow[]> {
   const supabase = await createClient();
@@ -67,7 +73,7 @@ export async function listRecords(filter: { memberId?: string } = {}): Promise<R
             teamName: row.team_name,
             certificateId: row.certificate_id,
             certificateName: row.certificate_name ?? "",
-            certificateKind: row.certificate_kind ?? "exam",
+            certificateKind: requireKind(row.certificate_kind),
             courseId: row.course_id,
             courseName: row.course_name,
             certTypeName: row.cert_type_name,

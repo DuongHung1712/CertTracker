@@ -33,7 +33,7 @@ declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     align?: "left" | "right" | "center";
-    /** Extra classes for the header and body cells, e.g. `hidden 2xl:table-cell` for a column that narrow screens drop. */
+    /** Extra classes for the header and body cells, e.g. `hidden xl:table-cell` for a column that narrow screens drop. */
     className?: string;
   }
 }

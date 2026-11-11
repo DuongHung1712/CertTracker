@@ -3,8 +3,8 @@ import { fieldLabel, signIn } from "./helpers";
 import { createCompletionFixture } from "./support/completion-fixture";
 import { signInAsSeedAdmin } from "./support/restore-seed";
 
-// The form is opened and cancelled only: nothing is saved, so the seed stays untouched (R16 edits one seed note and
-// puts it back).
+// The form is opened and cancelled only: nothing is saved, so the seed stays untouched. Two exceptions put everything
+// back: R16 edits one seed note, and the Course studied test creates a completion (and its course) and removes it.
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
 async function pickSelect(page: Page, dialog: Locator, label: string, optionName: string) {

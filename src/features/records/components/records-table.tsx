@@ -125,10 +125,12 @@ export function RecordsTable({
         accessorKey: "certificateName",
         header: "Certificate",
         cell: ({ row }) => (
-          <div className="flex flex-col">
+          <div className="flex max-w-60 flex-col">
             <span className="flex items-center gap-1.5">
-              {row.original.certificateName}
-              <Badge variant="secondary" className="rounded-sm">
+              <span className="truncate" title={row.original.certificateName}>
+                {row.original.certificateName}
+              </span>
+              <Badge variant="secondary" className="shrink-0 rounded-sm">
                 {CERTIFICATE_KIND_LABEL[row.original.certificateKind]}
               </Badge>
             </span>
@@ -141,8 +143,12 @@ export function RecordsTable({
       {
         accessorKey: "courseName",
         header: "Course studied",
-        cell: ({ row }) => row.original.courseName ?? "—",
-        meta: { className: "hidden 2xl:table-cell" },
+        cell: ({ row }) => (
+          <span className="block max-w-40 truncate" title={row.original.courseName ?? undefined}>
+            {row.original.courseName ?? "—"}
+          </span>
+        ),
+        meta: { className: "hidden xl:table-cell" },
       },
       { accessorKey: "status", header: "Status", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
       { accessorKey: "progress", header: "Progress", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
@@ -339,7 +345,7 @@ export function RecordsTable({
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
           title={confirming ? `Delete the ${confirming.certificateName} ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]} of ${confirming.memberName}?` : ""}
-          description="The certificate and its evidence file will be deleted. This cannot be undone."
+          description={`The ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"} and its evidence file will be deleted. This cannot be undone.`}
           confirmLabel="Delete certificate"
           pendingLabel="Deleting…"
           pending={pending}

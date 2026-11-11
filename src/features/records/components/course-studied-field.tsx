@@ -3,7 +3,7 @@
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { studyCoursesFor, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
+import { courseChoicesFor, type CertificateChoice, type SavedCourse, type StudyCourse } from "@/features/records/certificate-course";
 
 /** A Base UI `Select` value must be a non-empty string, so "no course" is a sentinel, not "". */
 const SELF_STUDY = "self-study";
@@ -14,11 +14,14 @@ const FIELD_ID = "record-course-studied";
 export function CourseStudiedField({
   certificate,
   courses,
+  saved,
   value,
   onChange,
 }: {
   certificate: CertificateChoice | undefined;
   courses: StudyCourse[];
+  /** The record being edited, so a course that no longer prepares for its certificate stays visible. */
+  saved: SavedCourse | null;
   value: string;
   onChange: (courseId: string) => void;
 }) {
@@ -34,8 +37,8 @@ export function CourseStudiedField({
     );
   }
 
-  const choices = studyCoursesFor(courses, certificate.id);
-  const labelOf = (id: string) => (id === SELF_STUDY ? SELF_STUDY_LABEL : (choices.find((course) => course.id === id)?.name ?? SELF_STUDY_LABEL));
+  const choices = courseChoicesFor(courses, certificate.id, saved);
+  const labelOf = (id: string) => (id === SELF_STUDY ? SELF_STUDY_LABEL : (choices.find((choice) => choice.id === id)?.label ?? SELF_STUDY_LABEL));
   return (
     <Field>
       <FieldLabel htmlFor={FIELD_ID}>Course studied</FieldLabel>
@@ -45,13 +48,14 @@ export function CourseStudiedField({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value={SELF_STUDY}>{SELF_STUDY_LABEL}</SelectItem>
-          {choices.map((course) => (
-            <SelectItem key={course.id} value={course.id}>
-              {course.name}
+          {choices.map((choice) => (
+            <SelectItem key={choice.id} value={choice.id}>
+              {choice.label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
+      {choices.length === 0 && <FieldDescription>No course prepares for this exam yet.</FieldDescription>}
     </Field>
   );
 }

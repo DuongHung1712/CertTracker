@@ -182,7 +182,7 @@ export function MemberCertificatesList({
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
                       </p>
                       {record.courseName && (
-                        <p className="text-xs text-muted-foreground truncate">Course studied: {record.courseName}</p>
+                        <p className="text-caption text-muted-foreground truncate">Course studied: {record.courseName}</p>
                       )}
                     </div>
                   </div>
@@ -295,7 +295,7 @@ export function MemberCertificatesList({
         editing={editingRecord}
         memberOptions={[]}
         certificateOptions={certificateOptions}
-              studyCourses={studyCourses}
+        studyCourses={studyCourses}
         showCompanyFields={false}
         fixedMemberId={memberId}
       />

@@ -249,6 +249,7 @@ export function RecordSheet({
           <CourseStudiedField
             certificate={certificate}
             courses={studyCourses}
+            saved={editing?.courseId ? { id: editing.courseId, name: editing.courseName ?? "", certificateId: editing.certificateId } : null}
             value={String(courseId ?? "")}
             onChange={(next) => form.setValue("courseId", next, { shouldDirty: true })}
           />
