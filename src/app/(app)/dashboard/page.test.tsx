@@ -29,7 +29,8 @@ vi.mock("@/features/members/queries", () => ({
 vi.mock("@/features/career/queries", () => ({ getMemberCareer: vi.fn(async () => ({})) }));
 vi.mock("@/features/records/queries", () => ({
   listRecords: vi.fn(async () => []),
-  listCourseOptions: vi.fn(async () => []),
+  listCertificateOptions: vi.fn(async () => []),
+  listStudyCourses: vi.fn(async () => []),
 }));
 // The member view pulls in server actions; the admin path never renders it.
 vi.mock("@/features/dashboard/components/member/member-dashboard-view", () => ({
@@ -40,15 +41,18 @@ const { default: DashboardPage } = await import("./page");
 
 const KPIS: DashboardKpis = {
   totalMembers: 7,
-  totalRecords: 4321,
+  totalRecords: 4400,
   doneRecords: 30,
-  inProgressRecords: 5,
+  // 5 exams plus 4,321 completions in progress: the second figure is the one the tests look for.
+  inProgressRecords: 4326,
   notStartedRecords: 2,
   activeCerts: 10,
   expiring60Certs: 4,
   expiringSoonCerts: 3,
   expiredCerts: 6,
   noExpiryCerts: 7,
+  completionDoneRecords: 0,
+  completionInProgressRecords: 4321,
 };
 
 function row(key: string, label: string): BreakdownRow {
@@ -70,7 +74,7 @@ const ROWS: Record<string, BreakdownRow[]> = {
   team: [row("t1", "Team Zephyr")],
   cert_type: [row("ct1", "Kind Quasar")],
   provider: [row("p1", "Vendor Nimbus")],
-  course: [row("c1", "Course Orion")],
+  certificate: [row("c1", "Course Orion")],
 };
 
 const RANKING: RankingRow[] = [
@@ -148,7 +152,7 @@ describe("DashboardPage error isolation (admin)", () => {
     expect(explorer).toContain("Could not load &quot;By team&quot;");
     expect(explorer).not.toContain("No data yet");
     // The other tabs are still offered, with their loaded counts.
-    for (const label of ["By certificate type", "By provider", "Popular courses"]) {
+    for (const label of ["By certificate type", "By provider", "Popular certificates"]) {
       expect(explorer).toContain(label);
     }
     expect(html).not.toContain("Could not load &quot;Explorer&quot;");

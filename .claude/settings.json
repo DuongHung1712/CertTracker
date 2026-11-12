@@ -1,5 +1,41 @@
 {
   "enabledPlugins": {
     "academic-research-skills@academic-research-skills": false
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/duong/AppData/Roaming/uv/tools/graphifyy/Scripts/graphify.exe hook-guard search",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/duong/AppData/Roaming/uv/tools/graphifyy/Scripts/graphify.exe hook-guard read",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "C:/Users/duong/AppData/Roaming/uv/tools/graphifyy/Scripts/graphify.exe hook-guard compact",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }

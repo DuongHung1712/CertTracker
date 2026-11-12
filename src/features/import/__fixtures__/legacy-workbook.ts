@@ -38,5 +38,5 @@ export const LEGACY_EXPECTED = {
   newMembers: ["Phạm Thu Hà"],
   newProviders: ["Google", "Microsoft"],
   newCertTypes: [] as string[],
-  newCourses: ["Google Cloud Digital Leader", "Azure Fundamentals"],
+  newCertificates: ["Google Cloud Digital Leader", "Azure Fundamentals"],
 };

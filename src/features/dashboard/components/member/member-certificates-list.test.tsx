@@ -13,7 +13,8 @@ function render(records: RecordRow[]): string {
     <MemberCertificatesList
       fullName="Lê Minh Châu"
       records={records}
-      courseOptions={[]}
+      certificateOptions={[]}
+        studyCourses={[]}
       memberId="m1"
       sheetOpen={false}
       onSheetOpenChange={() => {}}
@@ -43,24 +44,24 @@ const EXPIRY_TONES: readonly string[] = ["active", "expiring-60", "expiring-soon
 
 // One row per real `expiry_status` value (SQL `expiry_status()`), plus study states.
 const CASES: { record: RecordRow; tone: ExpiryTone | "in-progress" | "neutral"; label: string }[] = [
-  { record: doneRecord(120, { id: "a", courseName: "Course Active" }), tone: "active", label: "Valid" },
-  { record: doneRecord(45, { id: "b", courseName: "Course Sixty" }), tone: "expiring-60", label: "Expires in 31–60 days" },
-  { record: doneRecord(12, { id: "c", courseName: "Course Soon" }), tone: "expiring-soon", label: "Expires within 30 days" },
-  { record: doneRecord(-5, { id: "d", courseName: "Course Expired" }), tone: "expired", label: "Expired" },
-  { record: noExpiryRecord({ id: "e", courseName: "Course Forever" }), tone: "no-expiry", label: "No expiry" },
+  { record: doneRecord(120, { id: "a", certificateName: "Course Active" }), tone: "active", label: "Valid" },
+  { record: doneRecord(45, { id: "b", certificateName: "Course Sixty" }), tone: "expiring-60", label: "Expires in 31–60 days" },
+  { record: doneRecord(12, { id: "c", certificateName: "Course Soon" }), tone: "expiring-soon", label: "Expires within 30 days" },
+  { record: doneRecord(-5, { id: "d", certificateName: "Course Expired" }), tone: "expired", label: "Expired" },
+  { record: noExpiryRecord({ id: "e", certificateName: "Course Forever" }), tone: "no-expiry", label: "No expiry" },
   {
     // A done row the view cannot date (no issued date). The DB CHECK normally prevents it; the UI must still not lie.
-    record: makeRecord({ id: "f", courseName: "Course Undated", issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
+    record: makeRecord({ id: "f", certificateName: "Course Undated", issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
     tone: "na",
     label: "Not issued yet",
   },
   {
-    record: makeRecord({ id: "g", courseName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
+    record: makeRecord({ id: "g", certificateName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
     tone: "in-progress",
     label: "In progress",
   },
   {
-    record: makeRecord({ id: "h", courseName: "Course Later", status: "not_started", progress: 0, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
+    record: makeRecord({ id: "h", certificateName: "Course Later", status: "not_started", progress: 0, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
     tone: "neutral",
     label: "Not started",
   },
@@ -73,9 +74,9 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
     expect(rows.size).toBe(CASES.length);
   });
 
-  it.each(CASES)("$record.courseName ($record.expiryStatus, $record.status) -> tone $tone, label $label", ({ record, tone, label }) => {
-    const row = rows.get(record.courseName);
-    expect(row, `row for ${record.courseName}`).toBeDefined();
+  it.each(CASES)("$record.certificateName ($record.expiryStatus, $record.status) -> tone $tone, label $label", ({ record, tone, label }) => {
+    const row = rows.get(record.certificateName);
+    expect(row, `row for ${record.certificateName}`).toBeDefined();
     expect(row?.tone).toBe(tone);
     expect(row?.html).toContain(`>${label}<`);
     // The tile is coloured with the generated status utilities (globals.css has no --status-valid-*).
@@ -84,12 +85,12 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
 
   it("never gives a done, dated certificate the neutral tile", () => {
     for (const { record } of CASES.filter((c) => c.record.status === "done")) {
-      expect(rows.get(record.courseName)?.tone).not.toBe("neutral");
+      expect(rows.get(record.certificateName)?.tone).not.toBe("neutral");
     }
   });
 
   it("treats an unknown status string as N/A instead of trusting it", () => {
-    const odd: RecordRow = { ...makeRecord({ id: "z", courseName: "Course Odd" }), expiryStatus: "valid" };
+    const odd: RecordRow = { ...makeRecord({ id: "z", certificateName: "Course Odd" }), expiryStatus: "valid" };
     const row = rowsByCourse(render([odd])).get("Course Odd");
     expect(row?.tone).toBe("na");
     expect(row?.html).toContain(">Not issued yet<");
@@ -99,8 +100,8 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
 describe("study progress bar", () => {
   // I2: the bar uses the shared, rounding `clampPercent` from `@/components/status/labels`.
   it("rounds and clamps the bar width", () => {
-    const studying = (id: string, courseName: string, progress: number) =>
-      makeRecord({ id, courseName, status: "in_progress", progress, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
+    const studying = (id: string, certificateName: string, progress: number) =>
+      makeRecord({ id, certificateName, status: "in_progress", progress, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
     const html = render([studying("p", "Course Partial", 47.6), studying("o", "Course Over", 140)]);
     expect(html).toContain("width:48%");
     expect(html).toContain("width:100%");

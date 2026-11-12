@@ -1,9 +1,10 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { fieldLabel, signIn } from "./helpers";
+import { createCompletionFixture } from "./support/completion-fixture";
 import { signInAsSeedAdmin } from "./support/restore-seed";
 
-// The form is opened and cancelled only: nothing is saved, so the seed stays untouched (R16 edits one seed note and
-// puts it back).
+// The form is opened and cancelled only: nothing is saved, so the seed stays untouched. Two exceptions put everything
+// back: R16 edits one seed note, and the Course studied test creates a completion (and its course) and removes it.
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
 async function pickSelect(page: Page, dialog: Locator, label: string, optionName: string) {
@@ -95,6 +96,33 @@ test("the calendar button fills the date field as dd/mm/yyyy", async ({ page }) 
   await expect(dialog.getByLabel(fieldLabel("Issue date"))).toHaveValue("01/08/2026");
 });
 
+test("Course studied follows the certificate: hidden, optional for an exam, read-only for a completion", async ({ page }) => {
+  const dialog = await openAddForm(page);
+  const hint = dialog.getByText("Can't find your certificate? Ask your admin to add it.", { exact: true });
+  await expect(hint).toBeVisible();
+  await expect(dialog.getByLabel(fieldLabel("Course studied"))).toHaveCount(0);
+
+  await dialog.getByLabel(fieldLabel("Certificate")).fill("aws");
+  await page.getByRole("option", { name: "AWS Solutions Architect Associate · Exam" }).click();
+  await dialog.getByLabel(fieldLabel("Course studied")).click();
+  await expect(page.getByRole("option", { name: "None (self-study)", exact: true })).toBeVisible();
+  await expect(page.getByRole("option", { name: "AWS Solutions Architect Associate", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  const completion = await createCompletionFixture();
+  try {
+    await page.reload();
+    await page.getByRole("button", { name: "Add certificate" }).click();
+    await dialog.getByLabel(fieldLabel("Certificate")).fill(completion.certificateName);
+    await page.getByRole("option", { name: completion.optionName }).click();
+    const studied = dialog.getByLabel(fieldLabel("Course studied"));
+    await expect(studied).toHaveValue(completion.courseName);
+    await expect(studied).toHaveAttribute("readonly", "");
+  } finally {
+    await completion.remove();
+  }
+});
+
 // ROUND 2: R10, R11, R12, R16, R18.
 
 async function openOwnForm(page: Page): Promise<Locator> {
@@ -124,7 +152,7 @@ async function expectOptional(dialog: Locator, text: string) {
   await expect(dialog.getByLabel(fieldLabel(text))).not.toHaveAttribute("aria-required", "true");
 }
 
-const ISSUE_DATE_HINT = "The day the certificate was issued. The expiry date is worked out from the course.";
+const ISSUE_DATE_HINT = "The day it was issued. The expiry date is worked out from its validity period.";
 
 test("R10: Notes is in the admin and manager forms but not in a member's", async ({ page }) => {
   let dialog = await openAddForm(page);
@@ -142,7 +170,7 @@ test("R10: Notes is in the admin and manager forms but not in a member's", async
   await page.context().clearCookies();
   dialog = await openOwnForm(page);
   // Anchor on a field that is there, so a count of 0 cannot pass before the sheet has rendered.
-  await expect(dialog.getByLabel(fieldLabel("Course"))).toBeVisible();
+  await expect(dialog.getByLabel(fieldLabel("Certificate"))).toBeVisible();
   await expect(dialog.getByLabel("Notes", { exact: true })).toHaveCount(0);
   await expect(dialog.getByText("Notes", { exact: true })).toHaveCount(0);
 });
@@ -179,7 +207,7 @@ test("R12: required fields carry a red star and aria-required; optional ones car
 
   // Not started (the default).
   await expectRequired(dialog, "Member");
-  await expectRequired(dialog, "Course");
+  await expectRequired(dialog, "Certificate");
   await expectRequired(dialog, "Status");
   await expectOptional(dialog, "Planned exam date");
   await expectOptional(dialog, "Notes");
@@ -195,10 +223,10 @@ test("R12: required fields carry a red star and aria-required; optional ones car
   await expect(dialog.getByText("(optional)")).toHaveCount(0);
 });
 
-test("R12: a member's form marks Course and Status, and has no Member picker", async ({ page }) => {
+test("R12: a member's form marks Certificate and Status, and has no Member picker", async ({ page }) => {
   const dialog = await openOwnForm(page);
   await expect(dialog.getByText(/^\*\s*Required$/)).toBeVisible();
-  await expectRequired(dialog, "Course");
+  await expectRequired(dialog, "Certificate");
   await expectRequired(dialog, "Status");
   await expect(labelOf(dialog, "Member")).toHaveCount(0);
 });
@@ -225,7 +253,7 @@ test("R16: a live update while the sheet is open does not bring back an issue da
   const AN = "5eed0000-0000-0000-0000-00000000b001";
   const AWS_ID = "5eed0000-0000-0000-0000-00000000e001";
   const admin = await signInAsSeedAdmin();
-  const { data: before, error } = await admin.from("training_records").select("notes").eq("member_id", AN).eq("course_id", AWS_ID).single();
+  const { data: before, error } = await admin.from("training_records").select("notes").eq("member_id", AN).eq("certificate_id", AWS_ID).single();
   if (error) throw new Error(`read An's note: ${error.message}`);
   const marker = `live update ${Date.now()}`;
 
@@ -241,7 +269,7 @@ test("R16: a live update while the sheet is open does not bring back an issue da
     await expect(dialog.getByLabel(fieldLabel("Issue date"))).toHaveCount(0);
 
     // Someone else edits the same certificate; Realtime refreshes the open sheet (the untouched Notes shows it).
-    const { error: updateError } = await admin.from("training_records").update({ notes: marker }).eq("member_id", AN).eq("course_id", AWS_ID);
+    const { error: updateError } = await admin.from("training_records").update({ notes: marker }).eq("member_id", AN).eq("certificate_id", AWS_ID);
     if (updateError) throw new Error(`update An's note: ${updateError.message}`);
     await expect(dialog.getByLabel("Notes", { exact: true })).toHaveValue(marker, { timeout: 15_000 });
 
@@ -249,7 +277,7 @@ test("R16: a live update while the sheet is open does not bring back an issue da
     await expect(dialog.getByLabel(fieldLabel("Issue date"))).toHaveValue("");
   } finally {
     await dialog.getByRole("button", { name: "Cancel" }).click();
-    const { error: restoreError } = await admin.from("training_records").update({ notes: before.notes }).eq("member_id", AN).eq("course_id", AWS_ID);
+    const { error: restoreError } = await admin.from("training_records").update({ notes: before.notes }).eq("member_id", AN).eq("certificate_id", AWS_ID);
     if (restoreError) throw new Error(`restore An's note: ${restoreError.message}`);
   }
 });

@@ -10,9 +10,9 @@ const CRLF = String.fromCharCode(13, 10);
 const NOTE ="Dòng một\nDòng hai\n\nDòng bốn";
 
 const RECORDS: RecordRow[] = [
-  { id: "r1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "saa", courseName: "AWS SAA", certTypeName: "Cloud", providerName: "AWS", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2024-02-29", certificateUrl: "https://credly.com/b/1", hasEvidence: false, viaCompany: true, refundStatus: "paid", notes: "=cần kiểm tra", expiryDate: "2027-02-28", daysToExpiry: 150, expiryStatus: "Active" },
-  { id: "r2", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "gcp", courseName: "GCP ACE", certTypeName: null, providerName: "Google", validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null, status: "in_progress", progress: 1, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry" },
-  { id: "r3", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", courseId: "az", courseName: "Azure AZ-900", certTypeName: "Cloud", providerName: "AWS", validityMonths: 12, cost: null, costCurrency: null, estHours: 12, status: "in_progress", progress: 55, plannedExamDate: null, issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "pending", notes: NOTE, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" },
+  { id: "r1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", certificateId: "saa", certificateName: "AWS SAA", certificateKind: "exam", courseId: null, courseName: null, certTypeName: "Cloud", providerName: "AWS", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40, status: "done", progress: 100, plannedExamDate: null, issuedDate: "2024-02-29", certificateUrl: "https://credly.com/b/1", hasEvidence: false, viaCompany: true, refundStatus: "paid", notes: "=cần kiểm tra", expiryDate: "2027-02-28", daysToExpiry: 150, expiryStatus: "Active" },
+  { id: "r2", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", certificateId: "gcp", certificateName: "GCP ACE", certificateKind: "exam", courseId: null, courseName: null, certTypeName: null, providerName: "Google", validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null, status: "in_progress", progress: 1, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry" },
+  { id: "r3", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud", certificateId: "az", certificateName: "Azure AZ-900", certificateKind: "exam", courseId: null, courseName: null, certTypeName: "Cloud", providerName: "AWS", validityMonths: 12, cost: null, costCurrency: null, estHours: 12, status: "in_progress", progress: 55, plannedExamDate: null, issuedDate: null, certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "pending", notes: NOTE, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" },
 ];
 
 const ROWS: ExportRow[] = [
@@ -22,7 +22,7 @@ const ROWS: ExportRow[] = [
 ];
 
 const baseRecord = (row: ExportRow) => ({
-  id: row.id, memberId: row.memberId, courseId: row.courseId, status: row.status, progress: row.progress,
+  id: row.id, memberId: row.memberId, certificateId: row.certificateId, courseId: row.courseId, status: row.status, progress: row.progress,
   plannedExamDate: row.plannedExamDate, issuedDate: row.issuedDate, certificateUrl: row.certificateUrl,
   viaCompany: row.viaCompany, refundStatus: row.refundStatus, notes: row.notes,
 });
@@ -32,11 +32,12 @@ const LOOKUPS: ImportLookups = {
   teams: [{ id: "cloud", name: "Team Cloud" }],
   providers: [{ id: "aws", name: "AWS" }, { id: "google", name: "Google" }],
   certTypes: [{ id: "tc", name: "Cloud" }],
-  courses: [
+  certificates: [
     { id: "saa", name: "AWS SAA", providerId: "aws", certTypeId: "tc", validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40 },
     { id: "gcp", name: "GCP ACE", providerId: "google", certTypeId: null, validityMonths: null, cost: 3500000, costCurrency: "VND", estHours: null },
     { id: "az", name: "Azure AZ-900", providerId: "aws", certTypeId: "tc", validityMonths: 12, cost: null, costCurrency: null, estHours: 12 },
   ],
+  studyCourses: [{ id: "k-saa", name: "SAA Bootcamp", preparesForId: "saa", grantsId: null, cost: 150, costCurrency: "USD", estHours: 40 }],
   records: ROWS.map(baseRecord),
 };
 
@@ -79,6 +80,13 @@ describe("records export", () => {
     expect(sheet[XLSX.utils.encode_cell({ r: 3, c: column })]?.v).toBe(NOTE);
   });
 
+  it("round-trips the course studied: unchanged when the record has it, an update when it differs", () => {
+    const studied = [{ ...ROWS[0]!, courseId: "k-saa", courseName: "SAA Bootcamp" }, ROWS[1]!, ROWS[2]!];
+    expect(actions(studied, lookupsFor(studied))).toEqual([["skip", []], ["skip", []], ["skip", []]]);
+    const before = studied.map((row, i) => (i === 0 ? { ...row, courseId: null } : row));
+    expect(actions(studied, lookupsFor(before))[0]).toEqual(["update", []]);
+  });
+
   it("round-trips a column where every progress is exactly 100%", () => {
     const rows = ROWS.map((row) => ({ ...row, status: "done" as const, progress: 100, issuedDate: row.issuedDate ?? "2025-03-01" }));
     expect(actions(rows, lookupsFor(rows))).toEqual([["skip", []], ["skip", []], ["skip", []]]);
@@ -105,8 +113,8 @@ describe("records export", () => {
   it("maps import headers through the aliases and leaves display-only columns unmapped", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((c) => c.header));
     expect(duplicates).toEqual([]);
-    expect(unknown).toEqual(["Code", "Career role", "YoE", "Expiry date", "Days left", "Expiry status"]);
-    expect(Object.keys(map)).toHaveLength(18);
+    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Expiry date", "Days left", "Expiry status"]);
+    expect(Object.keys(map)).toHaveLength(19);
   });
 
   it("puts Career role and YoE right after Team and writes their values", () => {
@@ -114,18 +122,24 @@ describe("records export", () => {
     expect(headers.slice(headers.indexOf("Team"), headers.indexOf("Team") + 3)).toEqual(["Team", "Career role", "YoE"]);
     const lines = recordsToCsv(ROWS).split(CRLF);
     expect(lines[1]).toContain("Team Cloud,Senior Engineer,3.5,AWS SAA");
-    expect(lines[3]).toContain("Team Cloud,,,Azure AZ-900");
+    expect(lines[3]).toContain("Team Cloud,,,Azure AZ-900,Exam");
   });
 
-  it("puts Cost, Currency and Duration (hours) right after Validity (months) and writes their values", () => {
+  it("orders the certificate and course columns as in spec 6.4", () => {
     const headers = EXPORT_COLUMNS.map((c) => c.header);
-    const at = headers.indexOf("Validity (months)");
-    expect(headers.slice(at, at + 4)).toEqual(["Validity (months)", "Cost", "Currency", "Duration (hours)"]);
+    const at = headers.indexOf("YoE");
+    expect(headers.slice(at + 1, at + 12)).toEqual([
+      "Certificate", "Kind", "Provider", "Certificate type", "Validity (months)", "Course studied", "Cost", "Currency", "Duration (hours)", "Status", "Progress (%)",
+    ]);
+    expect(headers).not.toContain("Course");
     expect(headers).not.toContain("Study hours");
-    const lines = recordsToCsv(ROWS).split(CRLF);
-    expect(lines[1]).toContain(",36,150,USD,40,");
-    expect(lines[2]).toContain(",,3500000,VND,,");
-    expect(lines[3]).toContain(",12,,,12,");
+  });
+
+  it("writes the kind and the course studied, with the cost of that course", () => {
+    const studied = { ...ROWS[0]!, certificateKind: "completion" as const, courseName: "ML Specialization" };
+    const lines = recordsToCsv([studied, ROWS[1]!]).split(CRLF);
+    expect(lines[1]).toContain("AWS SAA,Course completion,AWS,Cloud,36,ML Specialization,150,USD,40,");
+    expect(lines[2]).toContain("GCP ACE,Exam,Google,,,,3500000,VND,,");
   });
 
   it("re-imports the cost columns without a single warning or error", () => {
@@ -143,7 +157,7 @@ describe("records export", () => {
 
   it("writes English headers and labels, dd/mm/yyyy dates and guarded text in CSV", () => {
     const csv = recordsToCsv(ROWS);
-    expect(csv.startsWith("\uFEFFCode,Full name,Email,Team,Career role,YoE,Course")).toBe(true);
+    expect(csv.startsWith("\uFEFFCode,Full name,Email,Team,Career role,YoE,Certificate,Kind")).toBe(true);
     expect(csv).toContain("29/02/2024");
     expect(csv).toContain("Completed");
     expect(csv).toContain("Refunded");

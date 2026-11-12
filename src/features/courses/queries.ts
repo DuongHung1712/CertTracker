@@ -20,19 +20,19 @@ export async function listCourses() {
   const { data, error } = await supabase
     .from("courses")
     .select(
-      "id, name, cert_type_id, provider_id, level, validity_months, refundable, cost, cost_currency, est_hours, url, refund_conditions, cert_types(name), providers(name)",
+      "id, name, provider_id, refundable, cost, cost_currency, est_hours, url, refund_conditions, prepares_for_id, providers(name), prepares_for:certificates!courses_prepares_for_id_fkey(name), grants:certificates!certificates_course_id_fkey(name)",
     )
     .order("name");
   if (error) throw new Error(error.message);
   return data.map((row) => ({
     id: row.id,
     name: row.name,
-    certTypeId: row.cert_type_id,
-    certTypeName: row.cert_types?.name ?? "—",
     providerId: row.provider_id,
     providerName: row.providers?.name ?? "—",
-    level: row.level,
-    validityMonths: row.validity_months,
+    preparesForId: row.prepares_for_id,
+    preparesForName: row.prepares_for?.name ?? null,
+    // certificates.course_id is unique, so a course grants at most one completion.
+    grantsCertificateName: row.grants?.name ?? null,
     refundable: row.refundable,
     cost: row.cost,
     costCurrency: toCurrency(row.cost_currency),

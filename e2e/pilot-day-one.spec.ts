@@ -18,19 +18,20 @@ import {
 const VIETNAMESE_NAME = "Nguyễn Thị Hằng";
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 
-function recordsTile(page: Page): Locator {
+// The pilot member adds a Completed exam certificate, so the Completed figure of the exam group moves by one.
+function completedExamsTile(page: Page): Locator {
   return page
     .getByRole("region", { name: "Overview", exact: true })
     .locator("dl > div")
-    .filter({ has: page.getByText("Certificates", { exact: true }) })
+    .filter({ has: page.getByText("Completed", { exact: true }) })
     .locator("dd")
     .first();
 }
 
-async function readRecordsCount(page: Page): Promise<number> {
+async function readCompletedExams(page: Page): Promise<number> {
   await page.goto("/dashboard");
-  await expect(recordsTile(page)).toHaveText(/^\d+$/);
-  return Number(await recordsTile(page).textContent());
+  await expect(completedExamsTile(page)).toHaveText(/^\d+$/);
+  return Number(await completedExamsTile(page).textContent());
 }
 
 async function expectNoHorizontalScroll(page: Page) {
@@ -54,7 +55,7 @@ test("E-1: a member's whole first day reaches the manager, the dashboard and the
   const removeManagerMember = await giveSeedManagerAMember();
   try {
     await signIn(adminPage, "admin@certtracker.test");
-    const recordsBefore = await readRecordsCount(adminPage);
+    const completedBefore = await readCompletedExams(adminPage);
 
     await adminPage.goto("/members");
     await adminPage.getByRole("button", { name: "Add member" }).click();
@@ -81,7 +82,7 @@ test("E-1: a member's whole first day reaches the manager, the dashboard and the
     expect(href).toMatch(/^\/api\/records\/[0-9a-f-]+\/evidence$/);
     expect((await managerPage.request.get(href, { maxRedirects: 0 })).status()).toBe(307);
 
-    expect(await readRecordsCount(adminPage)).toBe(recordsBefore + 1);
+    expect(await readCompletedExams(adminPage)).toBe(completedBefore + 1);
     expect((await downloadExport(adminPage, "Export CSV")).toString("utf8")).toContain(VIETNAMESE_NAME);
   } finally {
     await removeManagerMember();
@@ -98,7 +99,7 @@ test("E-2: a login invited before its member exists is linked once the admin add
 
   await addPilotMember("Pilot Linked Later", email);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "My certificates" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My learning" })).toBeVisible();
   await expect(page.getByText("Your account is not linked to a member")).toHaveCount(0);
 });
 

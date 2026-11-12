@@ -46,7 +46,7 @@ describe("describeNewEntities", () => {
     expect(describeNewEntities([row({ rowNo: 1, action: "create", refs: existingRefs })])).toBeNull();
   });
 
-  it("lists new members, providers, cert types and courses once each, from create rows only", () => {
+  it("lists new members, providers, cert types and certificates once each, from create rows only", () => {
     const newCourse = (name: string, provider: string, certType: string | null) => ({
       member: { email: "ha@x.vn", fullName: "Hà" },
       course: { name, provider: { name: provider }, certType: certType === null ? null : { name: certType } },
@@ -60,7 +60,7 @@ describe("describeNewEntities", () => {
       row({ rowNo: 5, action: "skip", errors: ["x"], refs: null }),
     ];
     expect(describeNewEntities(rows)).toBe(
-      "Will create: 1 member (Hà), 2 providers, 1 certificate type, 2 courses",
+      "Will create: 1 member (Hà), 2 providers, 1 certificate type, 2 certificates",
     );
   });
 
@@ -72,7 +72,21 @@ describe("describeNewEntities", () => {
         refs: { member: { id: "m" }, course: { name: "New course", provider: { id: "p" }, certType: { id: "t" } } },
       }),
     ];
-    expect(describeNewEntities(rows)).toBe("Will create: 1 course");
+    expect(describeNewEntities(rows)).toBe("Will create: 1 certificate");
+  });
+
+  it("also counts the course studied that a priced new certificate brings", () => {
+    const rows = [
+      row({
+        rowNo: 1,
+        action: "create",
+        refs: {
+          member: { id: "m" },
+          course: { name: "Priced exam", provider: { id: "p" }, certType: null, cost: 150, costCurrency: "USD", estHours: null },
+        },
+      }),
+    ];
+    expect(describeNewEntities(rows)).toBe("Will create: 1 certificate, 1 course");
   });
 
   it("truncates a long list of member names", () => {

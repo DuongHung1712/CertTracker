@@ -14,10 +14,10 @@ select is(public.expiry_status('2026-01-01', 12, date '2027-01-01' - 61), 'Activ
 
 insert into public.members (id, full_name, email)
 values ('aaaaaaaa-0000-0000-0000-000000000001', 'Member A', 'a@test.local');
-insert into public.courses (id, name, validity_months) values
-  ('cccccccc-0000-0000-0000-000000000001', 'Short cert', 1),
-  ('cccccccc-0000-0000-0000-000000000002', 'Lifetime cert', null);
-insert into public.training_records (id, member_id, course_id, status, progress, issued_date) values
+insert into public.certificates (id, name, kind, validity_months) values
+  ('cccccccc-0000-0000-0000-000000000001', 'Short cert', 'exam', 1),
+  ('cccccccc-0000-0000-0000-000000000002', 'Lifetime cert', 'exam', null);
+insert into public.training_records (id, member_id, certificate_id, status, progress, issued_date) values
   ('eeeeeeee-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001',
    'cccccccc-0000-0000-0000-000000000001', 'done', 100, public.vn_today() - 10),
   ('eeeeeeee-0000-0000-0000-00000000000b', 'aaaaaaaa-0000-0000-0000-000000000001',

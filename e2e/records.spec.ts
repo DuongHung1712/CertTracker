@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { fieldLabel, signIn } from "./helpers";
+import { createCompletionFixture } from "./support/completion-fixture";
 import { signInAsSeedAdmin } from "./support/restore-seed";
 
 // Seed rows (supabase/seed.sql): An–AWS done, Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
@@ -10,7 +11,7 @@ const NVIDIA_ID = "5eed0000-0000-0000-0000-00000000e002";
 /** An has no NVIDIA record in the seed; tests that create one must not leave it for the next test. */
 async function removeAnNvidiaRecord() {
   const admin = await signInAsSeedAdmin();
-  const { error } = await admin.from("training_records").delete().eq("member_id", AN).eq("course_id", NVIDIA_ID);
+  const { error } = await admin.from("training_records").delete().eq("member_id", AN).eq("certificate_id", NVIDIA_ID);
   if (error) throw new Error(`remove An–NVIDIA record: ${error.message}`);
 }
 
@@ -20,7 +21,7 @@ const AWS_ID = "5eed0000-0000-0000-0000-00000000e001";
 /** Châu–AWS back to the seed state (Not started, 0%, no issue date, no proof file), without going through the UI. */
 async function restoreChauAwsSeed() {
   const admin = await signInAsSeedAdmin();
-  const record = await admin.from("training_records").select("evidence_path").eq("member_id", CHAU).eq("course_id", AWS_ID).single();
+  const record = await admin.from("training_records").select("evidence_path").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
   if (record.error) throw new Error(`read Châu–AWS: ${record.error.message}`);
   if (record.data.evidence_path) {
     const removed = await admin.storage.from("certificates").remove([record.data.evidence_path]);
@@ -30,7 +31,7 @@ async function restoreChauAwsSeed() {
     .from("training_records")
     .update({ status: "not_started", progress: 0, issued_date: null, evidence_path: null })
     .eq("member_id", CHAU)
-    .eq("course_id", AWS_ID);
+    .eq("certificate_id", AWS_ID);
   if (reset.error) throw new Error(`reset Châu–AWS: ${reset.error.message}`);
 }
 
@@ -96,7 +97,7 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   const dialog = page.getByRole("dialog");
   // "tran" (no diacritics) must find "Trần Thị Bình".
   await pickOption(page, dialog, "Member", "tran", "Trần Thị Bình");
-  await pickOption(page, dialog, "Course", "aws", AWS);
+  await pickOption(page, dialog, "Certificate", "aws", AWS);
   await pickSelect(page, dialog, "Status", "Completed");
   // Completed hides Progress (it is saved as 100).
   await expect(dialog.getByLabel("Progress (%)")).toHaveCount(0);
@@ -158,20 +159,179 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   }
 });
 
-test("a second record for the same member and course is refused", async ({ page }) => {
+test("a second record for the same member and certificate is refused", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
 
   await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
   await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
-  await pickOption(page, dialog, "Course", "aws", AWS);
+  await pickOption(page, dialog, "Certificate", "aws", AWS);
   await dialog.getByRole("button", { name: "Save" }).click();
 
   await expect(
-    dialog.getByText("This member already has a certificate for this course. Edit the existing certificate instead of creating a new one."),
+    dialog.getByText("This member already has this certificate. Edit the existing one instead of creating a new one."),
   ).toBeVisible();
   await expect(dialog).toBeVisible();
+});
+
+test("a record for a course completion saves the granting course, and the table shows the kind and course studied", async ({ page }) => {
+  const completion = await createCompletionFixture();
+  try {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+    await page.getByRole("button", { name: "Add certificate" }).click();
+    const dialog = page.getByRole("dialog");
+    await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
+    await pickOption(page, dialog, "Certificate", completion.certificateName, completion.optionName);
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Added course completion")).toBeVisible();
+
+    const admin = await signInAsSeedAdmin();
+    const saved = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", completion.certificateId).single();
+    expect(saved.data?.course_id).toBe(completion.courseId);
+    const row = recordRow(page, "Nguyễn Văn An", completion.certificateName);
+    await expect(row).toContainText("Course completion");
+    // The Course studied column is shown from the xl breakpoint; Playwright's 1280 px viewport is one.
+    await expect(row.getByText(completion.courseName)).toBeVisible();
+  } finally {
+    await completion.remove();
+  }
+});
+
+test("the Kind filter separates exam certificates from course completions, and the dashboard counts them apart", async ({ page }) => {
+  const completion = await createCompletionFixture();
+  try {
+    const admin = await signInAsSeedAdmin();
+    const today = new Date().toLocaleDateString("sv-SE", { timeZone: "Asia/Ho_Chi_Minh" });
+    const added = await admin
+      .from("training_records")
+      .insert({ member_id: AN, certificate_id: completion.certificateId, status: "done", progress: 100, issued_date: today });
+    if (added.error) throw new Error(`add completion record: ${added.error.message}`);
+
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+    await expect(page.getByRole("heading", { name: "Learning", level: 1 })).toBeVisible();
+    const completionRow = recordRow(page, "Nguyễn Văn An", completion.certificateName);
+    const examRow = recordRow(page, "Nguyễn Văn An", AWS);
+
+    await page.getByRole("combobox", { name: "Kind" }).click();
+    await page.getByRole("option", { name: "Course completions" }).click();
+    await expect(completionRow).toBeVisible();
+    await expect(examRow).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "Planned finish date" })).toBeVisible();
+
+    await page.getByRole("combobox", { name: "Kind" }).click();
+    await page.getByRole("option", { name: "Exam certificates" }).click();
+    await expect(examRow).toBeVisible();
+    await expect(completionRow).toHaveCount(0);
+    await expect(page.getByRole("columnheader", { name: "Planned exam date" })).toBeVisible();
+
+    // Overview: the completion is counted in its own group and not in the exam figures (seed: 1 completed exam).
+    await page.goto("/dashboard");
+    const completions = page.getByRole("group", { name: "Course completions" });
+    await expect(completions.locator("dl > div").filter({ hasText: "Completed this month" }).locator("dd")).toHaveText("1");
+    const exams = page.getByRole("group", { name: "Exam certificates" });
+    await expect(exams.locator("dl > div").filter({ hasText: /^Completed/ }).locator("dd")).toHaveText("1");
+  } finally {
+    await completion.remove();
+  }
+});
+
+test("an exam record saves the course studied that prepares for it", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+  await page.goto("/records");
+  await page.getByRole("button", { name: "Add certificate" }).click();
+  const dialog = page.getByRole("dialog");
+  await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
+  await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs · Exam");
+  await pickSelect(page, dialog, "Course studied", "NVIDIA Generative AI LLMs");
+  await dialog.getByRole("button", { name: "Save" }).click();
+  try {
+    await expect(page.getByText("Added certificate")).toBeVisible();
+    const admin = await signInAsSeedAdmin();
+    const saved = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", NVIDIA_ID).single();
+    expect(saved.data?.course_id).toBe(NVIDIA_ID);
+    await expect(recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs")).toContainText("Exam");
+  } finally {
+    await removeAnNvidiaRecord();
+  }
+});
+
+/** Châu's seed record, put back after a test changed its certificate or course. */
+async function restoreChauAwsCertificate() {
+  const admin = await signInAsSeedAdmin();
+  const { error } = await admin.from("training_records").update({ certificate_id: AWS_ID, course_id: AWS_ID }).eq("member_id", CHAU).neq("certificate_id", AWS_ID);
+  if (error) throw new Error(`restore Châu–AWS: ${error.message}`);
+}
+
+async function chauCourseId(certificateId: string) {
+  const admin = await signInAsSeedAdmin();
+  const { data, error } = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", certificateId).single();
+  if (error) throw new Error(`read Châu's record: ${error.message}`);
+  return data.course_id;
+}
+
+async function switchChauCertificate(page: Page, from: string, query: string, optionName: string, to: string) {
+  await clickMenuItem(page, recordRow(page, "Lê Minh Châu", from), "Edit");
+  const dialog = page.getByRole("dialog");
+  await pickOption(page, dialog, "Certificate", query, optionName);
+  await dialog.getByRole("button", { name: "Save" }).click();
+  await expect(dialog).toHaveCount(0);
+  // The refreshed list shows the new certificate; a Realtime refresh would otherwise detach the next popup mid-click.
+  await expect(recordRow(page, "Lê Minh Châu", to)).toBeVisible();
+}
+
+test("switching the certificate of a record clears the course studied for an exam and sets it for a completion", async ({ page }) => {
+  const completion = await createCompletionFixture();
+  try {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+
+    await switchChauCertificate(page, AWS, "nvidia", "NVIDIA Generative AI LLMs · Exam", "NVIDIA Generative AI LLMs");
+    expect(await chauCourseId(NVIDIA_ID)).toBeNull();
+
+    await switchChauCertificate(page, "NVIDIA Generative AI LLMs", completion.certificateName, completion.optionName, completion.certificateName);
+    expect(await chauCourseId(completion.certificateId)).toBe(completion.courseId);
+  } finally {
+    await restoreChauAwsCertificate();
+    await completion.remove();
+  }
+});
+
+test("a saved course that no longer prepares for the certificate stays visible and survives an unchanged save", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  const created = await admin.from("courses").insert({ name: `Unlinked course ${Date.now()}`, provider_id: "5eed0000-0000-0000-0000-00000000c101", refundable: false, prepares_for_id: AWS_ID }).select("id, name").single();
+  if (created.error) throw new Error(`create course: ${created.error.message}`);
+  const course = created.data;
+  try {
+    const attach = await admin.from("training_records").update({ course_id: course.id }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
+    if (attach.error) throw new Error(`attach course: ${attach.error.message}`);
+    // The admin later unlinks the course; the record keeps it.
+    const unlink = await admin.from("courses").update({ prepares_for_id: null }).eq("id", course.id);
+    if (unlink.error) throw new Error(`unlink course: ${unlink.error.message}`);
+
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+    await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByLabel(fieldLabel("Course studied"))).toContainText(`${course.name} (no longer linked to this certificate)`);
+
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(dialog).toHaveCount(0);
+    expect(await chauCourseId(AWS_ID)).toBe(course.id);
+
+    await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
+    await pickSelect(page, page.getByRole("dialog"), "Course studied", "None (self-study)");
+    await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect.poll(() => chauCourseId(AWS_ID)).toBeNull();
+  } finally {
+    const restore = await admin.from("training_records").update({ course_id: AWS_ID }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
+    if (restore.error) throw new Error(`restore course: ${restore.error.message}`);
+    const removed = await admin.from("courses").delete().eq("id", course.id);
+    if (removed.error) throw new Error(`remove course: ${removed.error.message}`);
+  }
 });
 
 test("status rules are enforced in the form", async ({ page }) => {
@@ -182,7 +342,7 @@ test("status rules are enforced in the form", async ({ page }) => {
   const dialog = page.getByRole("dialog");
   // An has no NVIDIA record, so a stray successful save would be visible as a new row (and would fail the count below).
   await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
-  await pickOption(page, dialog, "Course", "nvidia", "NVIDIA Generative AI LLMs");
+  await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs");
   await pickSelect(page, dialog, "Status", "Completed");
 
   await dialog.getByRole("button", { name: "Save" }).click();
@@ -208,7 +368,7 @@ test("R13: a future date left in the calendar never blocks Save silently", async
   await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
   await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
-  await pickOption(page, dialog, "Course", "nvidia", "NVIDIA Generative AI LLMs");
+  await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs");
   await pickSelect(page, dialog, "Status", "Completed");
   const row = recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs");
   try {
@@ -238,10 +398,10 @@ test("R13: a future date left in the calendar never blocks Save silently", async
 
 test("R10: a member's save keeps the notes an admin wrote", async ({ page }) => {
   const admin = await signInAsSeedAdmin();
-  const seed = await admin.from("training_records").select("notes").eq("member_id", CHAU).eq("course_id", AWS_ID).single();
+  const seed = await admin.from("training_records").select("notes").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
   if (seed.error) throw new Error(`read seed note: ${seed.error.message}`);
   const note = `Admin note ${Date.now()}`;
-  const set = await admin.from("training_records").update({ notes: note }).eq("member_id", CHAU).eq("course_id", AWS_ID).select("id");
+  const set = await admin.from("training_records").update({ notes: note }).eq("member_id", CHAU).eq("certificate_id", AWS_ID).select("id");
   if (set.error || set.data.length !== 1) throw new Error(`set note: ${set.error?.message ?? "no row"}`);
 
   try {
@@ -258,7 +418,7 @@ test("R10: a member's save keeps the notes an admin wrote", async ({ page }) => 
     await expect(page.getByText("Saved certificate").first()).toBeVisible();
     await expect(row).toContainText("30%");
 
-    const after = await admin.from("training_records").select("notes, progress").eq("member_id", CHAU).eq("course_id", AWS_ID).single();
+    const after = await admin.from("training_records").select("notes, progress").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
     expect(after.data).toEqual({ notes: note, progress: 30 });
   } finally {
     // Seed state: Not started / 0, the seed note.
@@ -266,7 +426,7 @@ test("R10: a member's save keeps the notes an admin wrote", async ({ page }) => 
       .from("training_records")
       .update({ status: "not_started", progress: 0, notes: seed.data.notes })
       .eq("member_id", CHAU)
-      .eq("course_id", AWS_ID)
+      .eq("certificate_id", AWS_ID)
       .select("id");
     if (restore.error || restore.data.length !== 1) throw new Error(`restore seed record: ${restore.error?.message ?? "no row"}`);
   }
@@ -321,7 +481,7 @@ test("member updates own progress and cannot see company fields", async ({ page 
     await page.getByRole("menuitem", { name: "Edit" }).click();
 
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel(fieldLabel("Course"))).toBeVisible();
+    await expect(dialog.getByLabel(fieldLabel("Certificate"))).toBeVisible();
     await expect(dialog.getByLabel("Registered through the company")).toHaveCount(0);
     await expect(dialog.getByLabel("Refund status")).toHaveCount(0);
     await expect(dialog.getByLabel(fieldLabel("Member"))).toHaveCount(0);
@@ -339,8 +499,8 @@ test("member updates own progress and cannot see company fields", async ({ page 
   }
 });
 
-test("the certificate form says what to do when a course is missing", async ({ page }) => {
-  const hint = "Can't find your course? Ask your admin to add it.";
+test("the certificate form says what to do when a certificate is missing", async ({ page }) => {
+  const hint = "Can't find your certificate? Ask your admin to add it.";
   await signIn(page, "member@certtracker.test");
   await page.goto("/records");
   await expect(page).toHaveURL(/\/me$/);
@@ -349,9 +509,9 @@ test("the certificate form says what to do when a course is missing", async ({ p
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
 
-  await dialog.getByLabel(fieldLabel("Course")).fill("zzzz-no-such-course");
+  await dialog.getByLabel(fieldLabel("Certificate")).fill("zzzz-no-such-certificate");
   // The popup is portalled outside the dialog.
-  await expect(page.getByText("No courses found", { exact: true })).toBeVisible();
+  await expect(page.getByText("No certificates found", { exact: true })).toBeVisible();
   await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
 });
 
@@ -370,7 +530,7 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     await expect(evidenceLink).toHaveCount(0);
     await page.getByRole("menuitem", { name: "Edit" }).click();
     let dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel(fieldLabel("Course"))).toBeVisible();
+    await expect(dialog.getByLabel(fieldLabel("Certificate"))).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Remove evidence" })).toHaveCount(0);
     // R11: evidence is only offered for a Completed certificate.
     await expect(dialog.getByLabel("Evidence", { exact: true })).toHaveCount(0);
@@ -453,4 +613,17 @@ test("the list updates live for another user", async ({ browser }) => {
     await managerContext.close();
     await adminContext.close();
   }
+});
+
+test("a member's My learning page offers kind tabs, one add action and the exam-then-course hint", async ({ page }) => {
+  await signIn(page, "member@certtracker.test");
+  await page.goto("/me");
+  await expect(page.getByRole("heading", { name: "My learning", level: 1 })).toBeVisible();
+  await expect(page.getByText("Exam certificates you hold, courses you have studied and course completions.")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "All (1)" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Exam certificates (1)" })).toBeVisible();
+  await page.getByRole("tab", { name: "Course completions (0)" }).click();
+  await expect(page.getByText("Nothing found")).toBeVisible();
+  await expect(page.getByText("Studying for an exam? Choose the exam, then the course you used.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add certificate or course completion" })).toBeVisible();
 });

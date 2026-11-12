@@ -23,8 +23,8 @@ insert into public.programs (id, name, dc_id)
   values ('e1000000-0000-0000-0000-0000000000f1', 'AL Program', 'e1000000-0000-0000-0000-0000000000d1');
 insert into public.teams (id, name, program_id)
   values ('e1000000-0000-0000-0000-00000000a001', 'AL Team', 'e1000000-0000-0000-0000-0000000000f1');
-insert into public.courses (id, name, validity_months)
-  values ('e1000000-0000-0000-0000-00000000e001', 'AL Course', 12);
+insert into public.certificates (id, name, kind, validity_months)
+  values ('e1000000-0000-0000-0000-00000000e001', 'AL Course', 'exam', 12);
 
 -- Members that exist before their login, or never get one through the trigger.
 insert into public.members (id, full_name, email, team_id) values
@@ -35,7 +35,7 @@ insert into public.members (id, full_name, email, team_id) values
   ('e1000000-0000-0000-0000-00000000c0b2', 'AL Other', 'al-other@test.local', 'e1000000-0000-0000-0000-00000000a001'),
   ('e1000000-0000-0000-0000-00000000c0c1', 'AL Already Linked', 'al-already@test.local', 'e1000000-0000-0000-0000-00000000a001'),
   ('e1000000-0000-0000-0000-00000000c007', 'AL Colleague', 'al-colleague@test.local', 'e1000000-0000-0000-0000-00000000a001');
-insert into public.training_records (id, member_id, course_id, status, progress) values
+insert into public.training_records (id, member_id, certificate_id, status, progress) values
   ('e1000000-0000-0000-0000-00000000b005', 'e1000000-0000-0000-0000-00000000c005',
    'e1000000-0000-0000-0000-00000000e001', 'in_progress', 50),
   ('e1000000-0000-0000-0000-00000000b0d1', 'e1000000-0000-0000-0000-00000000c0d1',
@@ -193,7 +193,7 @@ select is((select count(*) from public.profiles where member_id is not null),
   (select linked from al_linked_before), 'DB-6: adding a member with no login links nobody');
 
 -- ===== DB-7: the login linked in DB-1 sees only its own data =====
-insert into public.training_records (id, member_id, course_id, status, progress)
+insert into public.training_records (id, member_id, certificate_id, status, progress)
   values ('e1000000-0000-0000-0000-00000000b001', 'e1000000-0000-0000-0000-00000000c001',
           'e1000000-0000-0000-0000-00000000e001', 'in_progress', 10);
 select pg_temp.login_as('e1000000-0000-0000-0000-00000000f001');

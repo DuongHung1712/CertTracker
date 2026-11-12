@@ -22,7 +22,7 @@ const record = (id: string, memberId: string, over: Partial<SnapshotRecord> = {}
   id,
   memberId,
   status: "done",
-  courseName: `Course ${id}`,
+  certificateName: `Course ${id}`,
   issuedDate: "2026-01-01",
   expiryDate: "2026-11-01",
   daysToExpiry: 25,
@@ -273,12 +273,12 @@ describe("planExpiryAlerts", () => {
       ],
       staff: [manager("boss", { email: "boss@x.test", teamIds: ["t1"] })],
       records: [
-        record("r1", "z", { daysToExpiry: 10, courseName: "B" }),
-        record("r2", "a", { daysToExpiry: 10, courseName: "B" }),
-        record("r3", "z", { daysToExpiry: 10, courseName: "A" }),
-        record("r4", "e", { daysToExpiry: -3, expiryStatus: "Expired", courseName: "X" }),
-        record("r5", "a", { daysToExpiry: 40, expiryStatus: "Expiring in 60d", courseName: "Y" }),
-        record("r6", "a", { daysToExpiry: 10, courseName: "A" }),
+        record("r1", "z", { daysToExpiry: 10, certificateName: "B" }),
+        record("r2", "a", { daysToExpiry: 10, certificateName: "B" }),
+        record("r3", "z", { daysToExpiry: 10, certificateName: "A" }),
+        record("r4", "e", { daysToExpiry: -3, expiryStatus: "Expired", certificateName: "X" }),
+        record("r5", "a", { daysToExpiry: 40, expiryStatus: "Expiring in 60d", certificateName: "Y" }),
+        record("r6", "a", { daysToExpiry: 10, certificateName: "A" }),
       ],
     });
     const first = planExpiryAlerts(s);
@@ -298,7 +298,7 @@ describe("planExpiryAlerts", () => {
           member("y", { fullName: "Same", code: "A-001", email: "y@x.test" }),
         ],
         staff: [manager("boss")],
-        records: order.map((id) => record(`r-${id}`, id, { courseName: "Same course", daysToExpiry: 7 })),
+        records: order.map((id) => record(`r-${id}`, id, { certificateName: "Same course", daysToExpiry: 7 })),
       });
     for (const order of [["x", "y"], ["y", "x"]]) {
       const boss = planExpiryAlerts(build(order)).alerts.find((a) => a.email === "boss@x.test");

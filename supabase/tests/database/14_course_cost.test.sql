@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(12);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -41,10 +41,13 @@ select throws_ok(
   '23514', null, 'setting a cost on a course without a currency is rejected');
 
 -- The record list view carries the course cost, currency and hours (the export reads them)
-insert into public.courses (id, name, provider_id, cost, cost_currency, est_hours)
-  values ('c5000000-0000-0000-0000-0000000000c3', 'Viewed', 'c5000000-0000-0000-0000-0000000000d1', 3500000, 'VND', 12);
-insert into public.training_records (member_id, course_id, status, progress)
-  values ('c5000000-0000-0000-0000-000000000001', 'c5000000-0000-0000-0000-0000000000c3', 'not_started', 0);
+insert into public.certificates (id, name, kind, provider_id)
+  values ('c5000000-0000-0000-0000-0000000000e3', 'Viewed', 'exam', 'c5000000-0000-0000-0000-0000000000d1');
+insert into public.courses (id, name, provider_id, cost, cost_currency, est_hours, prepares_for_id)
+  values ('c5000000-0000-0000-0000-0000000000c3', 'Viewed', 'c5000000-0000-0000-0000-0000000000d1', 3500000, 'VND', 12,
+          'c5000000-0000-0000-0000-0000000000e3');
+insert into public.training_records (member_id, certificate_id, course_id, status, progress)
+  values ('c5000000-0000-0000-0000-000000000001', 'c5000000-0000-0000-0000-0000000000e3', 'c5000000-0000-0000-0000-0000000000c3', 'not_started', 0);
 select results_eq(
   $$select cost, cost_currency, est_hours from public.v_training_records where course_id = 'c5000000-0000-0000-0000-0000000000c3'$$,
   $$values (3500000.00::numeric, 'VND'::text, 12)$$,
@@ -70,11 +73,14 @@ reset role;
 select results_eq(
   $$select cost, cost_currency, est_hours from public.courses where name = 'Imported Priced'$$,
   $$values (150.00::numeric, 'USD'::text, 40)$$,
-  'a new course from the import has cost 150, USD and 40 hours');
+  'a new certificate with cost on the row also creates the course studied with cost 150, USD and 40 hours');
+select is((select count(*) from public.training_records r join public.courses c on c.id = r.course_id
+  where c.name = 'Imported Priced' and c.prepares_for_id = r.certificate_id), 1::bigint,
+  'the record uses that course as course studied');
 select results_eq(
-  $$select cost, cost_currency, est_hours from public.courses where name = 'Imported Plain'$$,
-  $$values (null::numeric, null::text, null::int)$$,
-  'a new course without those columns has no cost, currency or hours');
+  $$select count(*)::int from public.courses where name = 'Imported Plain'$$,
+  $$values (0)$$,
+  'a new certificate without cost, currency or hours creates no course');
 
 select * from finish();
 rollback;

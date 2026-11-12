@@ -12,15 +12,15 @@ Five review comments on CertTracker, the current state of each in the code, and 
 
 ## 0. Owner decisions
 
-The owner has not answered these yet. Each has a default (marked **Default**) that this spec and its plan use. A different answer changes only the part named.
+Each question had a default that this spec and its plan used. Answers from the owner are marked **Answered** with the date; a different answer changes only the part named.
 
 | # | Question | Default | Changes |
 |---|---|---|---|
-| Q1 | In the certificate form, does a member pick a **certificate** (the credential, with validity) and optionally the course they studied, or still a course? | Pick a certificate; the course is optional | Part D |
+| Q1 | In the certificate form, does a member pick a **certificate** (the credential, with validity) and optionally the course they studied, or still a course? | **Answered 2026-11-10:** separate courses and certificates. The owner noted that a course can itself grant a certificate of completion while a certification is earned by an exam, and asked for a proposal: section 5 (two kinds of certificate; the member picks a certificate, the course is optional or implied). | Part D |
 | Q2 | Has DAS entered real data in the cloud database? | No (checked 2026-11-05: no courses, no certificates). Part D migrates existing rows anyway, so the answer only changes how carefully the cloud migration is rehearsed. | Part D rollout |
 | Q3 | Does importing users also send invitations? | No. Import creates members; invitations stay as today (Supabase Dashboard, runbook in `docs/deploy/`). | Part C |
 | Q4 | "Thêm link" in comment 4: which link? | The course link, which already exists ("Course link"). The certificate gets its own link in Part D ("Certificate link", for the exam or credential page). | Parts A, D |
-| Q5 | May a member change their own name or email on the profile page? | No. Both are read-only with "Ask your admin to change your name or email." Name and email belong to `members`, which only an admin (or the manager of the team) may edit, and an email change would break the account-to-member link (decision #60). | Part B |
+| Q5 | May a member change their own name or email on the profile page? | **Answered 2026-11-10:** the name yes (the user edits it through `set_my_full_name`), the email no (the admin changes it; the account is linked to the member by email, decision #60). Decision #63. | Part B |
 
 ## 1. Comment 1: manager based on the organisation (Part A, no code)
 
@@ -72,35 +72,64 @@ Validation runs on the server for both preview and import (the import action re-
 
 ## 5. Comments 3 and 4 (second part): separate certificates and courses (Part D)
 
-### 5.1 Model
+> Superseded by `docs/superpowers/specs/2026-11-10-certificate-catalogue-design.md` (draft for discussion). The text below is kept for history.
 
-- **Certificate** (new table `certificates`): what a member holds and what expires. `name`, `cert_type_id`, `provider_id`, `level`, `validity_months`, `url` ("Certificate link": exam or credential page), timestamps, unique `(provider_id, name)`.
-- **Course** (table `courses`, slimmed): how a member studies. `name`, `provider_id`, `est_hours` (Duration), `cost`, `cost_currency`, `refundable`, `refund_conditions`, `url` (Course link), and `certificate_id` (nullable: the certificate it prepares for). `cert_type_id`, `level` and `validity_months` move to `certificates` and are dropped from `courses`.
-- **Record** (`training_records`): gains `certificate_id uuid not null`; `course_id` becomes nullable (the course studied, optional). Uniqueness moves from `(member_id, course_id)` to `(member_id, certificate_id)`. Status, progress, dates, proof, refund fields stay on the record.
-- **Expiry** = issue date + the **certificate's** validity.
+### 5.1 The idea
 
-### 5.2 Migration of existing data (no loss)
+A member tracks **certificates**: the document they hold, which may expire. A certificate is earned in one of two ways, so there are two kinds:
 
-In one migration, inside a transaction:
+- **Exam certification**: earned by passing an exam (AWS Solutions Architect Associate, NVIDIA Generative AI LLMs). Usually has a validity in months.
+- **Course completion**: granted by finishing one course (for example a Coursera specialisation). Usually has no expiry.
 
-1. Create `certificates` and copy every course into it **with the same id** (`certificates.id = courses.id`), taking name, cert type, provider, level, validity, and `url` as the certificate link only when the course has no separate course link (keep it on the course otherwise).
-2. Set `courses.certificate_id = courses.id` for every existing course.
-3. Add `training_records.certificate_id`, fill it with `course_id`, set it not null, swap the unique constraint, make `course_id` nullable.
-4. Recreate `v_training_records` (security_invoker) to join `certificates` for type, provider, level, validity, expiry, and `courses` (left join) for course name, cost, duration. New column `certificate_name`; `course_name` now means the course studied and may be null.
+A **course** is how someone studies: it has a duration, a cost, refund terms and a link. A course either **grants** a completion certificate, or **prepares for** an exam certification.
+
+| Course | Certificate | How they connect |
+|---|---|---|
+| "Ultimate AWS Certified Solutions Architect Associate" (Udemy, 27 h, 15 USD, refundable if the exam is passed within 6 months) | "AWS Solutions Architect Associate" (exam, Cloud, AWS, 36 months) | the course prepares for the certificate |
+| "Machine Learning Specialization" (Coursera, 90 h, 49 USD) | "Machine Learning Specialization" (course completion, AI, Coursera, no expiry) | the course grants the certificate |
+| none | "AWS Solutions Architect Associate" | a member who self-studied records only the certificate |
+
+### 5.2 Model
+
+- **`certificates`** (new): `name`, `kind` (`exam` or `completion`), `cert_type_id`, `provider_id`, `level`, `validity_months` (null = no expiry), `url` ("Certificate link": the exam or credential page), `course_id` (only for `completion`: the course that grants it), timestamps.
+  - Unique `(provider_id, name)`.
+  - Check: `kind = 'completion'` requires `course_id`; `kind = 'exam'` requires `course_id is null`.
+  - `course_id` is unique: a course grants at most one completion certificate.
+- **`courses`** (slimmed): `name`, `provider_id`, `est_hours` (Duration), `cost`, `cost_currency`, `refundable`, `refund_conditions`, `url` (Course link), `prepares_for_id` (nullable; must point to an `exam` certificate, enforced by a trigger). `cert_type_id`, `level` and `validity_months` move to `certificates` and are dropped from `courses`.
+- **Record** (`training_records`): gains `certificate_id uuid not null`; `course_id` becomes nullable and means "the course studied". Uniqueness moves from `(member_id, course_id)` to `(member_id, certificate_id)`. Status, progress, dates, proof and refund fields stay on the record.
+  - For a `completion` certificate, `course_id` is always the granting course (a trigger sets it; the form shows it read-only).
+  - For an `exam` certificate, `course_id` is optional and, when set, must be a course that prepares for that certificate (trigger).
+- **Expiry** = issue date + the **certificate's** validity. No validity: "No expiry".
+
+### 5.3 Migration of existing data (no loss)
+
+Every existing course row is an exam certification with its own cost, hours and refund data (the starter list was checked against the providers' certification pages). In one migration, in a transaction:
+
+1. Create `certificates` and copy every course into it **with the same id**, `kind = 'exam'`, taking name, cert type, provider, level, validity and url.
+2. Keep every course row and set `courses.prepares_for_id = courses.id` (each existing course prepares for the certificate copied from it). The admin can later rename or delete courses that are not real courses.
+3. Add `training_records.certificate_id`, fill it with `course_id` (same id), set it not null, swap the unique constraint, make `course_id` nullable (existing rows keep `course_id`, which now means the course studied).
+4. Recreate `v_training_records` (security_invoker) to join `certificates` for kind, type, provider, level, validity and expiry, and `courses` (left join) for the course studied, its cost and duration. New columns `certificate_name` and `certificate_kind`; `course_name` becomes the course studied and may be null.
 5. Update `dashboard_breakdown` (dimension `course` becomes `certificate`; `cert_type` and `provider` read the certificate), the data-quality view, the import commit function (`on conflict (member_id, certificate_id)`), and the notification queries.
-6. RLS on `certificates`: everyone signed in reads; only admin writes (same as `courses` today). pgTAP for the three roles, including a member and a manager being refused a write.
+6. RLS on `certificates`: everyone signed in reads; only the admin writes (same as `courses`). pgTAP for the three roles, including refused writes by a manager and a member, and the kind and course rules.
 7. Drop the moved columns from `courses` last.
 
-### 5.3 Screens
+The expiry date of every existing record must be the same before and after (pgTAP).
 
-- `/courses` becomes **"Catalogue"** with two tabs: **Certificates** (name, type, provider, level, validity, link) and **Courses** (name, provider, duration, cost, refundable + conditions, link, prepares for). Only the admin edits (as today).
-- Certificate form: **Certificate** (required, picker over certificates) replaces Course; **Course studied** (optional, picker filtered to courses that prepare for the chosen certificate, plus "Other course" off). "Can't find your certificate? Ask your admin to add it."
-- Records table, member list, dashboards and exports say "Certificate" where they mean the credential. The Explorer tab "Popular courses" becomes "Popular certificates".
-- Import: the Excel "Course" column maps to the certificate (as today's course rows become certificates); a new optional "Course studied" column maps to the course.
+### 5.4 Screens
 
-### 5.4 Out of scope
+- `/courses` becomes **"Catalogue"** with two tabs; only the admin edits, as today.
+  - **Certificates**: name, kind ("Exam" or "Course completion"), type, provider, level, validity, link. The form asks for the kind first; "Course completion" shows a required **Course** picker (the granting course).
+  - **Courses**: name, provider, duration, cost, refundable and conditions, link, and "Prepares for" (optional picker over exam certificates). A course that grants a completion certificate shows that certificate's name in the table.
+- Certificate form (records): **Certificate** (required) replaces Course; each option shows its kind. Then:
+  - exam certificate: optional **Course studied** picker listing only the courses that prepare for it;
+  - course completion: **Course** shown read-only (the granting course).
+  - Hint: "Can't find your certificate? Ask your admin to add it."
+- Records table, member list, dashboards and exports say "Certificate" for the credential and "Course studied" for the course. The Explorer tab "Popular courses" becomes "Popular certificates"; breakdowns by type and provider use the certificate.
+- Import (records): the Excel "Course" column maps to the certificate by name (today's rows are certificates); a new optional "Course studied" column maps to a course.
 
-Many-to-many between courses and certificates (one course prepares for at most one certificate), course enrolment without a certificate, renaming the `training_records` table.
+### 5.5 Out of scope
+
+A course preparing for several certificates (many-to-many), tracking a course that leads to no certificate, renaming the `training_records` table, exam fees as a separate cost.
 
 ## 6. Global constraints
 
@@ -111,4 +140,4 @@ Many-to-many between courses and certificates (one course prepares for at most o
 - Schema change = new migration + RLS tests + `pnpm db:types`.
 - UI text in English, sentence case, design-system tokens only.
 - Each part ships on its own branch from `dev` (`feat/course-details`, `feat/profile-page`, `feat/import-members`, `feat/certificate-catalogue`).
-- New decision entries in `docs/decisions.md` for Parts B (profile read-only name and email), C (no invitations) and D (model split).
+- New decision entries in `docs/decisions.md` for Parts B (#63), C (#64) and D (#65: certificates and courses are separate catalogues; two kinds of certificate).

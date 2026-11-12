@@ -85,7 +85,7 @@ export function ProviderSection({ providers }: { providers: Provider[] }) {
         open={!!confirming}
         onOpenChange={(open) => !open && setConfirming(null)}
         title={`Delete provider ${confirming?.name}?`}
-        description="A provider can only be deleted when no course uses it."
+        description="A provider can only be deleted when no course or certificate uses it."
         confirmLabel="Delete provider"
         pendingLabel="Deleting…"
         pending={pending}

@@ -33,6 +33,8 @@ declare module "@tanstack/react-table" {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     align?: "left" | "right" | "center";
+    /** Extra classes for the header and body cells, e.g. `hidden xl:table-cell` for a column that narrow screens drop. */
+    className?: string;
   }
 }
 
@@ -110,6 +112,7 @@ export function DataTable<TData, TValue>({
                       className={cn(
                         "h-8 bg-muted px-2.5 text-label uppercase text-muted-foreground first:sticky first:left-0 first:z-[1]",
                         alignClass,
+                        meta?.className,
                       )}
                     >
                       {header.isPlaceholder ? null : header.column.getCanSort() ? (
@@ -180,6 +183,7 @@ export function DataTable<TData, TValue>({
                         className={cn(
                           "px-2.5 py-1 transition-colors first:sticky first:left-0 first:z-[1] first:bg-card group-hover:first:bg-accent",
                           alignClass,
+                          meta?.className,
                         )}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

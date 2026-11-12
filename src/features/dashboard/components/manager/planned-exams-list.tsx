@@ -38,7 +38,7 @@ export function PlannedExamsList({ records }: { records: RecordRow[] }) {
             </span>
             <div className="flex flex-col min-w-0">
               <span className="text-body font-medium text-foreground truncate">{exam.memberName}</span>
-              <span className="text-caption text-muted-foreground truncate">{exam.courseName}</span>
+              <span className="text-caption text-muted-foreground truncate">{exam.certificateName}</span>
             </div>
           </div>
 

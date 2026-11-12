@@ -137,8 +137,11 @@ Every component (shadcn ones included) imports `cn` from `@/lib/utils`, the vers
 | | `RequiredMark` | `components/required-mark.tsx` | A red `*` (`text-destructive`, `aria-hidden`) after a required field's label; the control also gets `aria-required` | ✓ |
 | | `FileDropzone` | `components/file-dropzone.tsx` | Drag and drop one file; `accept` takes MIME types or extensions (`.xlsx,.csv`), `hint` and `wrongTypeMessage` override the evidence wording. Evidence by default; also the member import dialog | ✓ |
 | Navigation | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | `components/ui/tabs.tsx` | shadcn `tabs` (Base UI); keyboard navigation (arrows, Home, End); horizontal scrollable strip on mobile | ✓ |
+| | `FormSheet` | `components/form-sheet.tsx` | Right-hand `Sheet` around a form: title, scrolling fields, one root error line, Cancel and Save ("Saving…" while pending); used by the certificate and course forms | ✓ |
+| | `OptionSelect` | `components/option-select.tsx` | `Select` over `{ id, name }` options with a placeholder (Provider, Certificate type, Prepares for) | ✓ |
 | Overlays | `Dialog`, `Sheet`, `DropdownMenu`, `Tooltip` | shadcn | See §4.2 | ✓ |
 | | `ConfirmDialog` | `components/confirm-dialog.tsx` | The title names the object; the description states the consequence; the `destructive` confirm button names the exact action | ✓ |
+| Table helpers | `rowActionsColumn`, `useConfirmedDelete`, `AddButton`, `ExternalLinkCell` | `components/data/` | `rowActionsColumn`: trailing "Actions for <row>" menu with Edit and Delete, added only for users who can manage the table. `useConfirmedDelete`: asks first, runs the delete, reports it in a toast. `AddButton`: when the list cannot be added to yet, it is disabled and the reason ("Add a provider first.") shows beside it, tied to the button by `aria-describedby`. `ExternalLinkCell`: the Link column | ✓ |
 | Feedback | `Toast` | shadcn `sonner` | Bottom right; success 4s, errors stay until dismissed (`duration: Infinity`) | ✓ |
 | | `Alert` | shadcn | In-page message | ✓ |
 | Dashboard | `KpiTile` | `components/data/` | `kpi` figure, `label` label, optional caption; no "change against the previous period" (there is no history, spec §11) | ✓ |
@@ -168,6 +171,16 @@ The first column identifies the row (code or name), the last column is the "⋯"
 | An object with child data (a member and their certificates) | Detail page `/members/[id]` |
 | Quick view / quick edit of one record while keeping the table in view | `Sheet` on the right |
 
+### 4.2b Catalogue (`/courses`)
+
+The page is titled "Catalogue" and has two tabs, **Certificates** and **Courses**. Everyone reads; only the admin sees the add button, the row menu and the Certificate types and Providers sections below the tabs. Both tables have a Link column (`ExternalLinkCell`).
+
+- **Kind badge:** `secondary` badge, `rounded-sm`, with `CERTIFICATE_KIND_LABEL`: "Exam" or "Course completion". It appears in the Certificates table, in the records table next to the certificate name, and in the certificate picker options ("AWS Solutions Architect Associate · Exam"). A credential from finishing a course is a course completion, never a certificate, in text, toasts and dialogs (`CERTIFICATE_KIND_NOUN` picks the noun).
+- **Certificate form:** Kind first. The Course picker appears only for a course completion and lists courses that grant nothing yet (plus the edited completion's own). Empty states differ: "No courses yet. Add a course first." and "Every course already grants a completion." The title follows the selected kind.
+- **Course form:** Name, Provider, Duration (hours), Cost and Currency, Refundable, Course link, Prepares for (exam certificates only).
+- **Courses table:** Name, Provider, Duration, Cost, Refundable, Link, Prepares for, Grants ("Completion: <name>"); Grants is reached by the table's own scroll at 1280 px.
+- **Record form, Course studied field:** hidden until a certificate is chosen; for an exam an optional `Select` whose options are the courses that prepare for it, with "None (self-study)"; for a course completion read-only, showing the granting course. A saved course that no longer prepares for the certificate stays listed as "<name> (no longer linked to this certificate)". The records table shows the column from `xl`.
+
 Course form (`Sheet`): the estimated study time is labelled "Duration (hours)". The "Refund conditions" `Textarea` appears only while "Refundable" is on; turning it off clears the text. The courses table shows the conditions truncated under the "Yes" badge, with the full text in a `Tooltip`.
 
 The save button sits at the end of the form, on the right; "Cancel" is the secondary button to its left. While saving, the button reads "Saving…" and is disabled.
@@ -186,7 +199,7 @@ In the certificate form, mark the required fields with `RequiredMark` after the 
 > This member's 5 certificates will be deleted too. This cannot be undone.
 > [Cancel] [Delete member]
 
-When the database **blocks** the delete (for example a course that certificates still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course is used by 3 certificates. Move the certificates to another course before deleting it."*).
+When the database **blocks** the delete (for example a course that certificates still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course grants the completion <name>. Delete or change that completion first."*).
 
 ### 4.4 Feedback
 
@@ -207,9 +220,9 @@ When the database **blocks** the delete (for example a course that certificates 
 | Item | Admin | Manager | Member |
 |---|---|---|---|
 | Dashboard | ✓ | ✓ | ✓ |
-| My certificates¹ | ✓ | ✓ | ✓ |
+| My learning¹ | ✓ | ✓ | ✓ |
 | Members | ✓ | ✓ (own teams) | Hidden |
-| Records (by person) | ✓ | ✓ (own teams) | Hidden |
+| Learning (by person) | ✓ | ✓ (own teams) | Hidden |
 | Data quality | ✓ | ✓ (own teams) | Hidden |
 | Courses | ✓ | ✓ (view only) | ✓ (view only) |
 | Organisation (DC / Program / Team) | ✓ | Hidden | Hidden |
@@ -224,26 +237,26 @@ Hiding is only UX; every permission is still enforced by RLS.
 
 ### 4.6 Admin Dashboard
 - **Layout:** header, then the **Overview** (3 KPI cards and a stat strip) at full width, then three independent columns (`lg:grid-cols-12`: Left `lg:col-span-3`, Centre `lg:col-span-6`, Right `lg:col-span-3`, all `gap-6`), then **Individual ranking** at full width. In the markup the Centre column comes first, then Right, then Left; from `lg` up `lg:order-2/3/1` shows them as Left, Centre, Right. On a phone the order is Overview, Explorer, Needs attention, Planned features, profile, Quick actions, chart, ranking. `e2e/column-heights.spec.ts` guards the balance at 1440px: the tallest and the shortest column may differ by at most 350px (measured with the seed: Left 555, Centre 897, Right 808, a gap of 342px).
-- **Header:** title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), the "Filter groups" button (smooth scroll and focus to the search box in `#dashboard-filters`, honouring `prefers-reduced-motion`) and "Export CSV" (`ExportLinks`). "Add certificate" lives only in Quick actions.
-- **Overview (`aria-label="Overview"`):** 3 cards in `dl > div` (`dt` label, bare number in the `dd`), built from `KpiTile`, then the stat strip. Cards use status tokens and `text-primary-foreground-muted`; no `amber-`/`rose-` utility colours and no `opacity-<n>` text.
+- **Header:** title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), the "Filter groups" button (smooth scroll and focus to the search box in `#dashboard-filters`, honouring `prefers-reduced-motion`) and "Export CSV" (`ExportLinks`). "Add learning" lives only in Quick actions.
+- **Overview (`aria-label="Overview"`):** two `KpiGroup`s (`role="group"` with an `h3` title, shared with the manager page): "Exam certificates" (3 cards and a stat strip) and "Course completions" (a stat strip). The cards are in `dl > div` (`dt` label, bare number in the `dd`), built from `KpiTile`. Cards use status tokens and `text-primary-foreground-muted`; no `amber-`/`rose-` utility colours and no `opacity-<n>` text.
   1. "Valid certificates" (`ValidCard`): solid `bg-primary` card, "<n>% valid" chip, "<valid>" with "of <completed> completed", a progress ring whose dash length is `2πr` of a radius constant, and "<n> certificates issued this month" or "None issued this month". When the records query fails the caption is left out.
   2. "Expiry" (`ExpiringCard`): "<n>% of completed" chip, the count of "Expiring within 60 days", a thin share bar, and the `Certificate expiry` region with one image summary ("30 days or less: n", "31–60 days: n"; the accessible label also carries "More than 60 days n").
   3. "Expired" (`ExpiredCard`): the count, an "Action needed" badge and "Past expiry date. Members need to renew these." when above 0, or "No expired certificates" when 0. It never uses the teams query.
-  - **Stat strip (`StatStrip`):** Active members, Certificates, Completed, In progress, plus one screen-reader image "Certificates by team: …".
-- **Centre column:** tab strip (`DashboardTabStrip`, shared with the manager page: live `Overview` plus disabled `Approvals`, `Goals`, `Skills` chips marked "Soon"), then the **Explorer** (filter row `#dashboard-filters`, tabs `By team`, `By certificate type`, `By provider`, `Popular courses`, master list and detail panel; the selected row is solid `bg-primary`, keyboard focus is a `focus-visible` ring with a `ring-offset-card` offset, checked in `tokens.test.ts`). With no certificates at all the Explorer is replaced by the "No certificates yet" empty state with a "Go to certificates" link.
+  - **Stat strips (`StatStrip`, `components/stat-strip.tsx`, takes `[term, value]` pairs; a value that could not load shows "—"):** exam group: Active members, Completed, In progress, Planned exams (exam only; Planned exams and the completion month/quarter figures show "—" when the certificate list failed); completion group: Completed all time (`completion_done_records`), Completed this month, Completed this quarter, Completions in progress. One screen-reader image "Certificates by team: …" (`TeamCountsSummary`) sits in the exam group. The valid card and the expiry share divide by the exam certificates that are done, so a completion never changes them.
+- **Centre column:** tab strip (`DashboardTabStrip`, shared with the manager page: live `Overview` plus disabled `Approvals`, `Goals`, `Skills` chips marked "Soon"), then the **Explorer** (filter row `#dashboard-filters`, tabs `By team`, `By certificate type`, `By provider`, `Popular certificates`, master list and detail panel; the selected row is solid `bg-primary`, keyboard focus is a `focus-visible` ring with a `ring-offset-card` offset, checked in `tokens.test.ts`). With no certificates at all the Explorer is replaced by the "No certificates yet" empty state with a "Go to certificates" link.
 - **Right column:**
   - **Needs attention:** live feed from the records: expired certificates (most overdue first), then certificates expiring within 30 days (soonest first), at most `ADMIN_ATTENTION_LIMIT` (10), then one "Data quality" row ("<n> issues to check") that the cut never drops. When the list is cut it ends with "Showing 10 of N. View all certificates" (link to `/records`). One `AttentionRow` with a tone map (`expired`, `expiring_soon`, `data_quality`); each row is a link with a `focus-visible` ring. Empty: "Nothing needs attention". If the data quality query fails the row says "Data quality could not be loaded" and the empty state is not shown.
   - **Planned features (`Planned features (Coming soon)`):** one card with a "Coming soon" chip and seven items: Approvals, Goals, Skills, Focus area, Ask about certificates, Monthly summary, Risk alerts. Each ends with "Not available yet."; no buttons or inputs.
 - **Left column:**
   - **Your profile (`AdminProfileCard`):** initials avatar (`getInitials` from `src/lib/initials.ts`), full name (the e-mail when the admin has no member record), an "Admin" badge, and the role, team and experience of a linked admin or "Not linked to a member". If the members or career query fails it shows `SectionError` "Your profile".
-  - **Quick actions (`AdminQuickActionsCard`):** "Add certificate" (`/records`), "Add member" (`/members`), "Import from Excel" (`/import`). No keyboard-shortcut chips.
+  - **Quick actions (`AdminQuickActionsCard`):** "Add learning" (`/records`), "Add member" (`/members`), "Import from Excel" (`/import`). No keyboard-shortcut chips.
   - **Certificates earned** chart (`MonthlyEarnedChart`, shared with the manager page).
 - **Failures:** every query settles on its own and a failure shows in its own region (`SectionError`, or the honest row above); a failed query is never shown as "All clear", "None issued" or a default value. `loadAdminDashboard(user)` takes the signed-in user (no placeholder e-mail).
 - **Card headers** on the admin page are sentence case (no `uppercase`).
 - **Real data constraints and banned copy:** no invented mock strings ("Audit Hash", "Legal Expiration Guard", "HRIS sync", "Lead: Minh Pham", "4 pending proofs"), no audit, pool, department, credential or "verified" wording, no dead controls. `admin-copy.test.ts` scans the admin components and fails on them.
 
 ### 4.7 Member Dashboard
-- **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate" opening the record sheet).
+- **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate or course completion" opening the record sheet).
 - **Attention Banner:** Expiry palette alert banner for the certificate expiring soonest within 30 days (expiring-soon tokens) or already expired (expired tokens, "Expired on <date>"), with "Upload proof" action button opening the record sheet. Hidden when nothing expires within 60 days.
 - **Overview:** 4 personal KPI cards for the member's own records inside region "Overview" (`dl > div` with bare numbers in the first `dd`):
   1. "Recorded certificates": inverted solid-teal highlight card with "N valid of M".
@@ -256,15 +269,15 @@ Hiding is only UX; every permission is still enforced by RLS.
 - **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
 
 ### 4.8 Manager Dashboard
-- **Header:** Title "Dashboard", server-built greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), subtitle "You look after <team names> (<N> members)." (or "No teams assigned yet." if unassigned), primary button "View certificates" (`/records`), and an outlined "Download team data" using `ExportLinks`.
-- **Team filter:** Group "Filter by team scope" with pills "All teams" and one per managed team (no counts, no period selector). The only download is the header "Download team data"; the only "View certificates" button is in the header.
-- **Overview:** region "Overview" with the readiness donut and three KPI tiles scoped to the manager's teams (`dl > div` with bare numbers in the first `dd`):
+- **Header:** Title "Dashboard", server-built greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), subtitle "You look after <team names> (<N> members)." (or "No teams assigned yet." if unassigned), primary button "View learning" (`/records`), and an outlined "Download team data" using `ExportLinks`.
+- **Team filter:** Group "Filter by team scope" with pills "All teams" and one per managed team (no counts, no period selector). The only download is the header "Download team data"; the only "View learning" button is in the header.
+- **Overview:** region "Overview" with two `KpiGroup`s scoped to the manager's teams: "Exam certificates" (tiles 2-4 below plus a stat strip: Valid, Completed, In progress, Planned exams) and "Course completions" (stat strip: Completed all time, Completed this month, Completed this quarter, Completions in progress). The readiness donut and every exam figure count exam certificates only. Tiles (`dl > div` with bare numbers in the first `dd`):
   1. "Team readiness" donut: centre percentage (valid share of completed certificates), "{valid} of {completed} completed certificates" under the ring, and one legend row "Members without a completed certificate: {n}". With no completed certificates the centre shows an em dash. Valid and Expired counts are not repeated (the Expired tile shows the latter).
   2. "Expiring within 60 days": count of in-scope completed certificates with 0-60 days left, caption "{n} with 30 days or less".
   3. "Expired": count of in-scope overdue certificates; "Past due: <most overdue member (course)>".
   4. "Waiting for approval": dashed placeholder tile with the value "—" (no number that looks real) and a Soon chip.
 - **Needs attention:** region "Needs attention" next to the Overview: expired certificates only, most overdue first, each with a "Resolve" link (no count badge: the rows are the count) to `/records?search=<name>`. Certificates that are still valid are in Next to expire, so no certificate appears in both.
-- **Allocated scope / Quick actions:** team names with member counts; links "Add certificate" (`/records`) and "View team data quality" (`/data-quality`) only.
+- **Allocated scope / Quick actions:** team names with member counts; links "Add learning" (`/records`) and "View team data quality" (`/data-quality`) only.
 - **Tab Strip:** View switcher tab pills with `Overview` (active), and coming-soon disabled tabs `Approvals`, `Goals`, `Skills` (accessible names "Approvals Soon", "Goals Soon", "Skills Soon"). These and the "Waiting for approval" tile are the only places approvals, goals and skills appear.
 - **Next to Expire:** Table of in-scope completed certificates with 0-60 days left (max 8, soonest first) with member initials avatar, course, expiry date, `ExpiryBadge`, and link "View" to `/records`.
 - **Team Readiness:** ranked list of in-scope members (rank `#n`, valid / in progress counts, segmented bar) plus the selected member's details and the link "View member certificates" (`/records?search=<name>`). It is the only ranking on this page (the manager loader does not call `getRanking`).

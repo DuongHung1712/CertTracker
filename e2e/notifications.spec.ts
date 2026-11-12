@@ -213,8 +213,8 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
   const inserted = await adminDb
     .from("training_records")
     .insert([
-      { member_id: MEMBER_CHAU, course_id: COURSE_NVIDIA, status: "not_started", progress: 0, planned_exam_date: yesterday },
-      { member_id: MEMBER_BINH, course_id: COURSE_AWS, status: "not_started", progress: 0, planned_exam_date: yesterday },
+      { member_id: MEMBER_CHAU, certificate_id: COURSE_NVIDIA, status: "not_started", progress: 0, planned_exam_date: yesterday },
+      { member_id: MEMBER_BINH, certificate_id: COURSE_AWS, status: "not_started", progress: 0, planned_exam_date: yesterday },
     ])
     .select("id");
   if (inserted.error || inserted.data?.length !== 2) {
@@ -252,7 +252,7 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
       await expect(manager.page.getByRole("button", { name: "Exam overdue (1)" })).toBeVisible();
       // Member- and course-level findings are for admins only.
       await expect(manager.page.getByRole("button", { name: /^No team/ })).toHaveCount(0);
-      await expect(manager.page.getByRole("button", { name: /^Validity not set/ })).toHaveCount(0);
+      await expect(manager.page.getByRole("button", { name: /^Exam validity not set/ })).toHaveCount(0);
     } finally {
       await manager.close();
     }
@@ -260,7 +260,7 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
     const member = await signedInPage(browser, "member@certtracker.test");
     try {
       const nav = member.page.getByRole("navigation", { name: "Main navigation" });
-      await expect(nav.getByRole("link", { name: "My certificates" })).toBeVisible();
+      await expect(nav.getByRole("link", { name: "My learning" })).toBeVisible();
       await expect(nav.getByRole("link", { name: /^Data quality$/ })).toHaveCount(0);
       await member.page.goto("/data-quality");
       await expect(member.page).toHaveURL(/\/me$/);

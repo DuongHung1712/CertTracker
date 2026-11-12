@@ -155,8 +155,8 @@ describe("no completed records", () => {
 describe("getAttentionRecord ordering", () => {
   it("picks the record with the fewest days left among expiring ones", () => {
     const result = getAttentionRecord([
-      doneRecord(50, { id: "b", courseName: "Course B" }),
-      doneRecord(25, { id: "a", courseName: "Course A" }),
+      doneRecord(50, { id: "b", certificateName: "Course B" }),
+      doneRecord(25, { id: "a", certificateName: "Course A" }),
     ]);
     expect(result).toEqual({ record: expect.objectContaining({ id: "a" }), urgency: "urgent" });
   });
@@ -204,10 +204,10 @@ describe("calculateMemberKpis", () => {
 
 describe("filterMemberRecords sorting", () => {
   const records = [
-    doneRecord(15, { id: "1", courseName: "AWS Solution" }),
-    doneRecord(90, { id: "2", courseName: "Google Cloud" }),
-    doneRecord(-5, { id: "3", courseName: "Azure Dev" }),
-    makeRecord({ id: "4", courseName: "Python Basics", status: "in_progress", progress: 40, ...notDated }),
+    doneRecord(15, { id: "1", certificateName: "AWS Solution" }),
+    doneRecord(90, { id: "2", certificateName: "Google Cloud" }),
+    doneRecord(-5, { id: "3", certificateName: "Azure Dev" }),
+    makeRecord({ id: "4", certificateName: "Python Basics", status: "in_progress", progress: 40, ...notDated }),
   ];
 
   it("sorts by expiry (default): dated ascending, undated last", () => {
@@ -215,7 +215,7 @@ describe("filterMemberRecords sorting", () => {
   });
 
   it("sorts by name (Vietnamese collation)", () => {
-    expect(filterMemberRecords(records, "all", "name").map((r) => r.courseName)).toEqual([
+    expect(filterMemberRecords(records, "all", "name").map((r) => r.certificateName)).toEqual([
       "AWS Solution",
       "Azure Dev",
       "Google Cloud",
@@ -235,5 +235,23 @@ describe("expiryWindow (mirrors SQL expiry_status())", () => {
     [61, "later"],
   ] as const)("%s days -> %s", (days, window) => {
     expect(expiryWindow(days)).toBe(window);
+  });
+});
+
+describe("member KPIs: a course completion is not a valid certificate", () => {
+  it("counts only exam certificates as valid", () => {
+    const completion = makeRecord({ id: "c", certificateKind: "completion", daysToExpiry: null, expiryDate: null, expiryStatus: "No Expiry" });
+    const kpis = calculateMemberKpis([makeRecord({ id: "e", daysToExpiry: 200 }), completion]);
+    expect(kpis).toMatchObject({ total: 2, validCount: 1 });
+  });
+});
+
+describe("member attention: a completion with a validity is never flagged", () => {
+  it("returns no attention record", () => {
+    const records = [
+      doneRecord(-5, { id: "c1", certificateKind: "completion" }),
+      doneRecord(10, { id: "c2", certificateKind: "completion" }),
+    ];
+    expect(getAttentionRecord(records)).toBeNull();
   });
 });

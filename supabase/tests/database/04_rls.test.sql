@@ -28,11 +28,11 @@ update public.profiles set role = 'admin' where user_id = 'a0000000-0000-0000-00
 update public.profiles set role = 'manager' where user_id = 'a0000000-0000-0000-0000-00000000000b';
 insert into public.manager_scopes (team_id, user_id)
   values ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-00000000000b');
-insert into public.courses (id, name, validity_months)
-  values ('cccccccc-0000-0000-0000-000000000001', 'AWS SAA', 36);
-insert into public.courses (id, name, validity_months)
-  values ('cccccccc-0000-0000-0000-000000000002', 'Second course', 12);
-insert into public.training_records (id, member_id, course_id, status, progress) values
+insert into public.certificates (id, name, kind, validity_months)
+  values ('cccccccc-0000-0000-0000-000000000001', 'AWS SAA', 'exam', 36);
+insert into public.certificates (id, name, kind, validity_months)
+  values ('cccccccc-0000-0000-0000-000000000002', 'Second course', 'exam', 12);
+insert into public.training_records (id, member_id, certificate_id, status, progress) values
   ('eeeeeeee-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001',
    'cccccccc-0000-0000-0000-000000000001', 'in_progress', 50),
   ('eeeeeeee-0000-0000-0000-00000000000b', 'bbbbbbbb-0000-0000-0000-000000000002',
@@ -66,9 +66,9 @@ select lives_ok(
 );
 select is((select count(*) from public.v_training_records), 1::bigint, 'view respects RLS for manager');
 select throws_ok(
-  $$insert into public.courses (name) values ('New course')$$,
+  $$insert into public.certificates (name, kind) values ('New certificate', 'exam')$$,
   '42501', null,
-  'manager cannot create courses'
+  'manager cannot create certificates'
 );
 update public.training_records set progress = 60 where id = 'eeeeeeee-0000-0000-0000-00000000000b';
 reset role;
@@ -91,8 +91,8 @@ select results_eq(
   'member sees only own records'
 );
 select ok(
-  exists (select 1 from public.courses where id = 'cccccccc-0000-0000-0000-000000000001'),
-  'member can read the course catalog');
+  exists (select 1 from public.certificates where id = 'cccccccc-0000-0000-0000-000000000001'),
+  'member can read the certificate catalogue');
 select lives_ok(
   $$update public.training_records set progress = 80 where id = 'eeeeeeee-0000-0000-0000-00000000000a'$$,
   'member can update own progress'
@@ -104,13 +104,13 @@ select throws_ok(
   'member cannot change refund_status'
 );
 select throws_ok(
-  $$insert into public.training_records (member_id, course_id)
+  $$insert into public.training_records (member_id, certificate_id)
     values ('bbbbbbbb-0000-0000-0000-000000000002', 'cccccccc-0000-0000-0000-000000000001')$$,
   '42501', null,
   'member cannot create a record for someone else'
 );
 select lives_ok(
-  $$insert into public.training_records (id, member_id, course_id, refund_status, via_company)
+  $$insert into public.training_records (id, member_id, certificate_id, refund_status, via_company)
     values ('eeeeeeee-0000-0000-0000-00000000000c', 'aaaaaaaa-0000-0000-0000-000000000001',
             'cccccccc-0000-0000-0000-000000000002', 'paid', true)$$,
   'member can create an own record'

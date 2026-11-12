@@ -1,14 +1,16 @@
 import { EXPIRING_WINDOW_DAYS, URGENT_WINDOW_DAYS } from "@/features/dashboard/member-metrics";
 import { formatRate, ratePercent } from "@/features/dashboard/metrics";
+import { isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
 
 export const isDone = (r: RecordRow): boolean => r.status === "done";
+// Exam certificates only: a completion never expires, even when its certificate carries a validity.
 export const isExpiring60 = (r: RecordRow): boolean =>
-  isDone(r) && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= EXPIRING_WINDOW_DAYS;
+  isExam(r) && isDone(r) && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= EXPIRING_WINDOW_DAYS;
 export const isExpired = (r: RecordRow): boolean =>
-  isDone(r) && r.daysToExpiry !== null && r.daysToExpiry < 0;
+  isExam(r) && isDone(r) && r.daysToExpiry !== null && r.daysToExpiry < 0;
 
 /** Formats a list of team names: ["Cloud"], ["Cloud", "AI"] -> "Cloud and AI", ["A", "B", "C"] -> "A, B and C". */
 function formatTeamNames(teamNames: string[]): string {
@@ -38,7 +40,9 @@ export type ManagerKpis = {
   teamReadinessFormatted: string;
 };
 
-export function calculateManagerKpis(records: RecordRow[]): ManagerKpis {
+/** Exam certificates only: a course completion has no expiry and is counted by `calculateCompletionKpis`. */
+export function calculateManagerKpis(allRecords: RecordRow[]): ManagerKpis {
+  const records = allRecords.filter(isExam);
   let doneCount = 0;
   let validCount = 0;
   let expiringCount = 0;
@@ -93,7 +97,7 @@ export function getNextToExpire(records: RecordRow[], limit = 8): RecordRow[] {
       if (daysDiff !== 0) return daysDiff;
       const nameDiff = a.memberName.localeCompare(b.memberName);
       if (nameDiff !== 0) return nameDiff;
-      return a.courseName.localeCompare(b.courseName);
+      return a.certificateName.localeCompare(b.certificateName);
     })
     .slice(0, limit);
 }
@@ -112,8 +116,9 @@ export type MemberReadinessRow = {
 
 export function getTeamReadinessLeague(
   members: { id: string; fullName: string; teamName: string | null }[],
-  records: RecordRow[],
+  allRecords: RecordRow[],
 ): MemberReadinessRow[] {
+  const records = allRecords.filter(isExam);
   const recordsByMember = new Map<string, RecordRow[]>();
   for (const r of records) {
     const list = recordsByMember.get(r.memberId) ?? [];
@@ -172,7 +177,7 @@ export type CertificatesEarnedMonth = {
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
 
-/** Last N calendar months of completed certificates in scope. */
+/** Last N calendar months of completed exam certificates in scope. */
 export function getCertificatesEarnedByMonth(
   records: RecordRow[],
   monthsCount = 6,
@@ -203,7 +208,7 @@ export function getCertificatesEarnedByMonth(
 
   const countsByKey = new Map<string, number>();
   for (const r of records) {
-    if (r.status === "done" && r.issuedDate) {
+    if (isExam(r) && r.status === "done" && r.issuedDate) {
       const key = r.issuedDate.slice(0, 7);
       countsByKey.set(key, (countsByKey.get(key) ?? 0) + 1);
     }
@@ -228,7 +233,7 @@ export type PlannedExamItem = {
   recordId: string;
   memberId: string;
   memberName: string;
-  courseName: string;
+  certificateName: string;
   plannedExamDate: string;
   daysRemaining: number;
 };
@@ -245,7 +250,7 @@ export function getPlannedExams(
   const items: PlannedExamItem[] = [];
 
   for (const r of records) {
-    if (r.plannedExamDate) {
+    if (isExam(r) && r.plannedExamDate) {
       const examTime = Date.parse(r.plannedExamDate);
       if (!Number.isNaN(examTime) && !Number.isNaN(todayTime)) {
         const daysRemaining = Math.round((examTime - todayTime) / 86_400_000);
@@ -254,7 +259,7 @@ export function getPlannedExams(
             recordId: r.id,
             memberId: r.memberId,
             memberName: r.memberName,
-            courseName: r.courseName,
+            certificateName: r.certificateName,
             plannedExamDate: r.plannedExamDate,
             daysRemaining,
           });
@@ -281,7 +286,7 @@ export function getNeedsAttentionItems(records: RecordRow[]): NeedsAttentionItem
     .sort((a, b) => (a.daysToExpiry ?? 0) - (b.daysToExpiry ?? 0))
     .map((record) => ({
       record,
-      description: `${record.memberName}'s ${record.courseName} expired ${pluralize(-(record.daysToExpiry ?? 0), "day")} ago.`,
+      description: `${record.memberName}'s ${record.certificateName} expired ${pluralize(-(record.daysToExpiry ?? 0), "day")} ago.`,
     }));
 }
 

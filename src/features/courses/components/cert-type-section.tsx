@@ -85,7 +85,7 @@ export function CertTypeSection({ certTypes }: { certTypes: CertType[] }) {
         open={!!confirming}
         onOpenChange={(open) => !open && setConfirming(null)}
         title={`Delete certificate type ${confirming?.name}?`}
-        description="A certificate type can only be deleted when no course uses it."
+        description="A certificate type can only be deleted when no certificate uses it."
         confirmLabel="Delete certificate type"
         pendingLabel="Deleting…"
         pending={pending}

@@ -58,10 +58,10 @@ insert into public.manager_scopes (id, user_id, team_id) values
 -- The demoted manager keeps the Team A scope row (spec: rows grant nothing).
 update public.profiles set role = 'member' where user_id = 'f1600000-0000-0000-0000-00000000f002';
 
-insert into public.courses (id, name, validity_months) values
-  ('f1600000-0000-0000-0000-00000000e001', 'AM Course', 12),
-  ('f1600000-0000-0000-0000-00000000e002', 'AM Second Course', 12);
-insert into public.training_records (id, member_id, course_id, status, progress) values
+insert into public.certificates (id, name, kind, validity_months) values
+  ('f1600000-0000-0000-0000-00000000e001', 'AM Course', 'exam', 12),
+  ('f1600000-0000-0000-0000-00000000e002', 'AM Second Course', 'exam', 12);
+insert into public.training_records (id, member_id, certificate_id, status, progress) values
   ('f1600000-0000-0000-0000-00000000b001', 'f1600000-0000-0000-0000-00000000c001',
    'f1600000-0000-0000-0000-00000000e001', 'in_progress', 10),
   ('f1600000-0000-0000-0000-00000000b002', 'f1600000-0000-0000-0000-00000000c002',
@@ -144,11 +144,11 @@ select is(
   pg_temp.affected($$update public.training_records set progress = 70 where id = 'f1600000-0000-0000-0000-00000000b001'$$),
   1::bigint, 'training_records: a manager updates a record in scope');
 select is(
-  pg_temp.affected($$insert into public.training_records (id, member_id, course_id) values
+  pg_temp.affected($$insert into public.training_records (id, member_id, certificate_id) values
     ('f1600000-0000-0000-0000-00000000b004', 'f1600000-0000-0000-0000-00000000c001', 'f1600000-0000-0000-0000-00000000e002')$$),
   1::bigint, 'training_records: a manager adds a record in scope');
 select throws_ok(
-  $$insert into public.training_records (member_id, course_id) values
+  $$insert into public.training_records (member_id, certificate_id) values
     ('f1600000-0000-0000-0000-00000000c002', 'f1600000-0000-0000-0000-00000000e002')$$,
   '42501', null, 'training_records: a manager cannot add a record out of scope');
 select is(
@@ -212,7 +212,7 @@ select is(
   pg_temp.affected($$update public.training_records set progress = 99 where id = 'f1600000-0000-0000-0000-00000000b001'$$),
   0::bigint, 'training_records: a demoted manager cannot update a record of their former team');
 select throws_ok(
-  $$insert into public.training_records (member_id, course_id) values
+  $$insert into public.training_records (member_id, certificate_id) values
     ('f1600000-0000-0000-0000-00000000c001', 'f1600000-0000-0000-0000-00000000e002')$$,
   '42501', null, 'training_records: a demoted manager cannot add a record in their former team');
 select is(

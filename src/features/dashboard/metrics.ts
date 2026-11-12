@@ -17,6 +17,9 @@ export const formatRate = (rate: number | null): string => (rate === null ? "—
 export const validCerts = (k: DashboardKpis): number =>
   k.activeCerts + k.expiring60Certs + k.expiringSoonCerts + k.noExpiryCerts;
 
+/** Done exam certificates: every expiry bucket. Completions are counted apart (`completionDoneRecords`). */
+export const examDoneCerts = (k: DashboardKpis): number => validCerts(k) + k.expiredCerts;
+
 export const expiringCerts = (k: DashboardKpis): number => k.expiring60Certs + k.expiringSoonCerts;
 
 export type ExpiryBucket = { status: ExpiryStatus; label: string; count: number };

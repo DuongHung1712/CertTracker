@@ -328,7 +328,7 @@ describe("workbook-wide limits", () => {
     expect(result.ok && result.value.sheetName).toBe("Data");
     const onlyWide = readImportTable(multiSheetBytes([wide]));
     expect(onlyWide.ok).toBe(false);
-    expect(!onlyWide.ok && onlyWide.error).toMatch(/No header row with an Email column and a Course column/);
+    expect(!onlyWide.ok && onlyWide.error).toMatch(/No header row with an Email column and a Certificate column/);
   });
 });
 

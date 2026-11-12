@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/features/auth/queries";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
-import { listCourseOptions, listMemberOptions, listRecords } from "@/features/records/queries";
+import { listCertificateOptions, listMemberOptions, listRecords, listStudyCourses } from "@/features/records/queries";
 
 export default async function RecordsPage({
   searchParams,
@@ -15,10 +15,11 @@ export default async function RecordsPage({
   const user = await getCurrentUser();
   // UX only — RLS would show a Member just their own rows here anyway; /me is their screen.
   if (user?.role === "member") redirect("/me");
-  const [records, memberOptions, courseOptions] = await Promise.all([
+  const [records, memberOptions, certificateOptions, studyCourses] = await Promise.all([
     listRecords(),
     listMemberOptions(),
-    listCourseOptions(),
+    listCertificateOptions(),
+    listStudyCourses(),
   ]);
 
   // Dashboard links open the list already searched (?search=<name>); the key remounts the table when it changes.
@@ -27,8 +28,8 @@ export default async function RecordsPage({
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Certificates"
-        description="Who holds, or is studying, which certificate."
+        title="Learning"
+        description="Who holds or is studying which exam certificate, and who has completed which course."
         actions={<ExportLinks />}
       />
       <RecordsRealtime />
@@ -37,7 +38,8 @@ export default async function RecordsPage({
         initialSearch={initialSearch}
         records={records}
         memberOptions={memberOptions}
-        courseOptions={courseOptions}
+        certificateOptions={certificateOptions}
+        studyCourses={studyCourses}
         mode="team"
         canDelete
         showCompanyFields

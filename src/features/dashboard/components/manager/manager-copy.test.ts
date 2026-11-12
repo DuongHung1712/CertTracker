@@ -77,7 +77,7 @@ const BANNED_EXACT = ["DAS", "Program", "Month", "Quarter", "Year", "Approvals (
 
 describe("[copy] manager dashboard has no mock data", () => {
   it("reads the manager files (self-check of the scanner)", () => {
-    expect(pieces.some((p) => p.where.includes("manager-dashboard-view.tsx") && p.text === "View certificates")).toBe(true);
+    expect(pieces.some((p) => p.where.includes("manager-dashboard-view.tsx") && p.text === "View learning")).toBe(true);
   });
 
   it("contains none of the invented strings", () => {

@@ -35,12 +35,16 @@ function rowWith(scope: Locator, ...texts: string[]): Locator {
 }
 
 async function expectOrgWideTiles(page: Page) {
-  await expect(tileValue(page, "Certificates")).toHaveText("3");
+  // The seed holds exam certificates only: the exam group has the figures, the completion group is empty.
   await expect(tileValue(page, "Completed")).toHaveText("1");
   await expect(tileValue(page, "In progress")).toHaveText("1");
   await expect(tileValue(page, "Valid")).toHaveText("1");
   await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
   await expect(tileValue(page, "Expired")).toHaveText("0");
+  await expect(tileValue(page, "Completions in progress")).toHaveText("0");
+  await expect(tileValue(page, "Completed, all time")).toHaveText("0");
+  await expect(tileValue(page, "Planned exams")).toHaveText(/^\d+$/);
+  await expect(tileValue(page, "Completed this month")).toHaveText("0");
 }
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
@@ -245,13 +249,13 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /^Individual ranking$/ })).toHaveCount(0);
 
   // Filter tabs with counts for member certificates
-  const certSection = page.getByRole("region", { name: "My certificates" });
+  const certSection = page.getByRole("region", { name: "My learning" });
   await expect(certSection).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^All \(1\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^Valid \(0\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^Expiring within 60 days \(0\)$/ })).toBeVisible();
   await expect(certSection.getByRole("tab", { name: /^In progress \(0\)$/ })).toBeVisible();
-  await expect(certSection.getByText(AWS)).toBeVisible();
+  await expect(certSection.getByRole("heading", { name: AWS })).toBeVisible();
 
   // Attention banner is hidden when nothing expires within 60 days
   await expect(page.getByRole("complementary", { name: "Certificate attention required" })).toHaveCount(0);
@@ -347,33 +351,33 @@ test("the dashboard updates live when a record changes elsewhere", async ({ brow
 test("explorer tabs, filter row, clear filters, and keyboard row selection update detail panel", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
 
-  // Switch to "Popular courses" tab
-  await page.getByRole("tab", { name: "Popular courses" }).click();
-  const courseSection = section(page, "Popular courses");
-  await expect(courseSection).toBeVisible();
+  // Switch to "Popular certificates" tab
+  await page.getByRole("tab", { name: "Popular certificates" }).click();
+  const certificateSection = section(page, "Popular certificates");
+  await expect(certificateSection).toBeVisible();
 
-  // Detail panel reflects default first row (AWS course)
+  // Detail panel reflects default first row (AWS certificate)
   const detailPanel = page.getByRole("region", { name: "Selected item details" });
   await expect(detailPanel).toBeVisible();
   await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
 
-  // Filter input searches across courses
-  const searchInput = page.getByRole("textbox", { name: "Filter course" });
+  // Filter input searches across certificates
+  const searchInput = page.getByRole("textbox", { name: "Filter certificate" });
   await searchInput.fill("NVIDIA");
-  await expect(rowWith(courseSection, "NVIDIA")).toBeVisible();
-  await expect(courseSection.getByText(AWS)).toHaveCount(0);
+  await expect(rowWith(certificateSection, "NVIDIA")).toBeVisible();
+  await expect(certificateSection.getByText(AWS)).toHaveCount(0);
 
   // Active filter chip shows 1
   await expect(page.getByText("Active filters")).toBeVisible();
 
-  // Clear filters button restores all courses
+  // Clear filters button restores all certificates
   const clearBtn = page.getByRole("button", { name: "Clear filters" }).first();
   await clearBtn.click();
-  await expect(rowWith(courseSection, AWS)).toBeVisible();
+  await expect(rowWith(certificateSection, AWS)).toBeVisible();
   await expect(searchInput).toHaveValue("");
 
   // Keyboard navigation on rows: focus row and press Enter
-  const nvidiaRow = rowWith(courseSection, "NVIDIA");
+  const nvidiaRow = rowWith(certificateSection, "NVIDIA");
   await nvidiaRow.focus();
   await page.keyboard.press("Enter");
   await expect(nvidiaRow).toHaveAttribute("aria-selected", "true");
@@ -381,7 +385,7 @@ test("explorer tabs, filter row, clear filters, and keyboard row selection updat
 
   // Filtering that excludes the selected row falls back to first matching row
   await searchInput.fill("AWS");
-  await expect(rowWith(courseSection, AWS)).toHaveAttribute("aria-selected", "true");
+  await expect(rowWith(certificateSection, AWS)).toHaveAttribute("aria-selected", "true");
   await expect(detailPanel.getByRole("heading", { name: AWS })).toBeVisible();
 });
 
@@ -456,10 +460,10 @@ test("admin header and Quick actions offer each action once, with plain names", 
   const main = page.getByRole("main");
 
   const quick = section(page, "Quick actions");
-  await expect(quick.getByRole("link")).toHaveText(["Add certificate", "Add member", "Import from Excel"]);
+  await expect(quick.getByRole("link")).toHaveText(["Add learning", "Add member", "Import from Excel"]);
   await expect(quick.getByRole("link", { name: "Add member" })).toHaveAttribute("href", "/members");
 
-  await expect(main.getByRole("link", { name: "Add certificate" })).toHaveCount(1);
+  await expect(main.getByRole("link", { name: "Add learning" })).toHaveCount(1);
   await expect(main.getByRole("link", { name: "Export CSV" })).toHaveCount(1);
   await expect(main.getByText("Download data")).toHaveCount(0);
   await expect(main.getByText(/Invite/)).toHaveCount(0);

@@ -10,10 +10,18 @@ import { createSupabaseStorage } from "@/lib/storage/supabase-storage";
 import { createClient } from "@/lib/supabase/server";
 
 const MESSAGES = {
-  duplicate: "This member already has a certificate for this course. Edit the existing certificate instead of creating a new one.",
-  restricted: "The member or the course no longer exists. Reload the page and try again.",
+  duplicate: "This member already has this certificate. Edit the existing one instead of creating a new one.",
+  restricted: "The member, the certificate or the course no longer exists. Reload the page and try again.",
   invalid: "Status, progress and issue date do not match.",
 };
+const COURSE_MISMATCH_MESSAGE = "That course does not prepare for this certificate. Choose another course or None (self-study).";
+/** The `training_records_course_matches_certificate` trigger raises this text with the same 23514 as the status CHECKs. */
+const COURSE_MISMATCH_DB_TEXT = "course does not prepare for this certificate";
+
+function recordErrorMessage(error: { code?: string | null; message: string }): string {
+  if (error.code === "23514" && error.message.includes(COURSE_MISMATCH_DB_TEXT)) return COURSE_MISMATCH_MESSAGE;
+  return mapPostgresError(error, MESSAGES);
+}
 
 function revalidate() {
   revalidatePath("/records");
@@ -23,6 +31,7 @@ function revalidate() {
 /** Columns every role may write. `undefined` values are dropped from the JSON body, so an absent company field is not sent. */
 function toRow(data: RecordInput) {
   return {
+    certificate_id: data.certificateId,
     course_id: data.courseId,
     status: data.status,
     progress: data.progress,
@@ -44,7 +53,7 @@ export async function createRecord(input: RecordInput): Promise<Result<{ id: str
     .insert({ member_id: parsed.data.memberId, ...toRow(parsed.data) })
     .select("id")
     .single();
-  if (error) return err(mapPostgresError(error, MESSAGES));
+  if (error) return err(recordErrorMessage(error));
   revalidate();
   return ok({ id: data.id });
 }
@@ -60,7 +69,7 @@ export async function updateRecord(
   const { id, ...data } = parsed.data;
   const supabase = await createClient();
   const { data: rows, error } = await supabase.from("training_records").update(keepNotes ? { ...toRow(data), notes: undefined } : toRow(data)).eq("id", id).select("id");
-  if (error) return err(mapPostgresError(error, MESSAGES));
+  if (error) return err(recordErrorMessage(error));
   const guard = assertAffected(rows);
   if (guard) return guard;
   revalidate();

@@ -40,6 +40,29 @@ function classesOf(chunk: string, text: string): string[] {
 
 const FILL = /^bg-/;
 
+describe("explorer master list: header", () => {
+  it("does not repeat the group label in the count column of the Popular certificates tab", () => {
+    const certificates = renderToStaticMarkup(
+      <MasterList rows={[row("a", "AWS SAA")]} activeKey="a" onSelectKey={() => {}} groupLabel="Certificate" tabLabel="Popular certificates" onClearFilters={() => {}} />,
+    );
+    expect(certificates).toContain("<span>Certificate</span><span>Total</span>");
+  });
+});
+
+describe("explorer master list: count chip", () => {
+  it("counts members under a certificate group, certificates elsewhere", () => {
+    const render = (groupLabel: string) =>
+      renderToStaticMarkup(
+        // A certificate group has one row per member, so people equals records.
+        <MasterList rows={[{ ...row("a", "AWS SAA"), headcount: null, people: 5 }]} activeKey="a" onSelectKey={() => {}} groupLabel={groupLabel} tabLabel="t" onClearFilters={() => {}} />,
+      );
+    expect(render("Certificate")).toContain("5 members");
+    expect(render("Certificate")).not.toContain("5 certificates");
+    expect(render("Certificate")).toContain("3 completed");
+    expect(render("Provider")).toContain("5 certificates");
+  });
+});
+
 describe("explorer master list: selected row", () => {
   const all = options();
   const selected = all.find((o) => o.selected)!;

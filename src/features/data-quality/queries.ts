@@ -8,7 +8,7 @@ export async function listDataQualityIssues(): Promise<IssueRow[]> {
   const rows = await fetchAllRows((from, to) =>
     supabase
       .from("v_data_quality_issues")
-      .select("issue_type, severity, subject_id, member_id, member_code, member_name, team_name, course_name, record_id, since, days")
+      .select("issue_type, severity, subject_id, member_id, member_code, member_name, team_name, certificate_name, record_id, since, days")
       // (issue_type, subject_id) is unique, so the order is total and paging cannot repeat or skip rows.
       .order("issue_type")
       .order("subject_id")

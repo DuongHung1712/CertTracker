@@ -43,7 +43,7 @@ describe("NextToExpireTable", () => {
   });
 
   it("renders upcoming certificates with a view link and no second title inside the section", () => {
-    const records = [doneRecord(25, { memberName: "Nguyễn Văn An", courseName: "AWS SAA" })];
+    const records = [doneRecord(25, { memberName: "Nguyễn Văn An", certificateName: "AWS SAA" })];
     const html = renderToStaticMarkup(<NextToExpireTable records={records} />);
     expect(html).toContain("Nguyễn Văn An");
     expect(html).toContain("AWS SAA");
@@ -69,7 +69,7 @@ describe("PlannedExamsList", () => {
     const records = [
       makeRecord({
         memberName: "Trần Thị Bình",
-        courseName: "NVIDIA AI",
+        certificateName: "NVIDIA AI",
         plannedExamDate: "2026-11-20",
       }),
     ];
@@ -89,8 +89,8 @@ describe("NeedsAttentionFeed", () => {
 
   it("lists expired certificates only, each linking to /records (upcoming ones live in Next to expire)", () => {
     const records = [
-      doneRecord(-5, { id: "e1", memberName: "Minh", courseName: "PMP" }),
-      doneRecord(10, { id: "u1", memberName: "An", courseName: "AWS" }),
+      doneRecord(-5, { id: "e1", memberName: "Minh", certificateName: "PMP" }),
+      doneRecord(10, { id: "u1", memberName: "An", certificateName: "AWS" }),
     ];
     const html = renderToStaticMarkup(<NeedsAttentionFeed records={records} />);
     expect(html).toContain("Expired certificate");
@@ -150,6 +150,28 @@ describe("ManagerTabStrip & the merged Coming soon card", () => {
   });
 });
 
+const NO_COMPLETIONS = { doneThisMonth: 0, doneThisQuarter: 0, doneTotal: 0, inProgress: 0 };
+
+describe("TopKpiRow: exam certificates and course completions", () => {
+  it("shows two labelled groups with their own figures", () => {
+    const kpis = calculateManagerKpis([doneRecord(20), doneRecord(-5), doneRecord(200)]);
+    const html = renderToStaticMarkup(
+      <TopKpiRow kpis={kpis} completions={{ doneThisMonth: 2, doneThisQuarter: 5, doneTotal: 9, inProgress: 3 }} plannedExams={4} />,
+    );
+    expect(count(html, 'role="group"')).toBe(2);
+    const exam = html.slice(html.indexOf('aria-label="Exam certificates"'), html.indexOf('aria-label="Course completions"'));
+    const completions = html.slice(html.indexOf('aria-label="Course completions"'));
+    const text = (markup: string) => markup.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    expect(text(exam)).toContain("Valid 2");
+    expect(text(exam)).toContain("Planned exams 4");
+    expect(text(completions)).toContain("Completed, all time 9");
+    expect(text(completions)).toContain("Completed this month 2");
+    expect(text(completions)).toContain("Completed this quarter 5");
+    expect(text(completions)).toContain("Completions in progress 3");
+    expect(text(completions)).not.toContain("Expired");
+  });
+});
+
 describe("TeamReadinessDonutCard & TopKpiRow", () => {
   it("renders the donut from certificates only: valid of completed, with no member headcount chip", () => {
     const kpis = calculateManagerKpis([doneRecord(20), doneRecord(-5)]);
@@ -178,7 +200,7 @@ describe("TeamReadinessDonutCard & TopKpiRow", () => {
 
   it("renders TopKpiRow with 3 tiles and only real numbers", () => {
     const kpis = calculateManagerKpis([doneRecord(20), doneRecord(45), doneRecord(-5)]);
-    const html = renderToStaticMarkup(<TopKpiRow kpis={kpis} pastDueText="Minh (PMP)" />);
+    const html = renderToStaticMarkup(<TopKpiRow kpis={kpis} completions={NO_COMPLETIONS} plannedExams={0} pastDueText="Minh (PMP)" />);
     expect(html).toContain("Expiring within 60 days");
     expect(html).toContain("Expired");
     expect(html).toContain("Waiting for approval");
@@ -243,7 +265,7 @@ describe("PeopleWithoutCertsCard, AllocatedScopeCard, QuickActionsCard", () => {
   it("keeps only real navigation in quick actions (export lives once, in the page header)", () => {
     const html = renderToStaticMarkup(<QuickActionsCard />);
     expect(html).toContain("Quick actions");
-    expect(html).toContain("Add certificate");
+    expect(html).toContain("Add learning");
     expect(html).toContain('href="/records"');
     expect(html).toContain("View team data quality");
     expect(html).toContain('href="/data-quality"');

@@ -24,7 +24,7 @@ const snapshot: Snapshot = {
       id: "r1",
       memberId: "a",
       status: "done",
-      courseName: "AWS",
+      certificateName: "AWS",
       issuedDate: "2026-01-01",
       expiryDate: "2026-10-20",
       daysToExpiry: 15,

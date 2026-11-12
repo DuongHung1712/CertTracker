@@ -17,18 +17,33 @@ insert into public.cert_types (id, name) values
   ('5eed0000-0000-0000-0000-00000000c002', 'AI');
 insert into public.providers (id, name) values
   ('5eed0000-0000-0000-0000-00000000c101', 'AWS'),
-  ('5eed0000-0000-0000-0000-00000000c102', 'NVIDIA');
-insert into public.courses (id, name, cert_type_id, provider_id, level, validity_months, refundable, url) values
-  ('5eed0000-0000-0000-0000-00000000e001', 'AWS Solutions Architect Associate',
-   '5eed0000-0000-0000-0000-00000000c001', '5eed0000-0000-0000-0000-00000000c101', 'Associate', 36, true,
+  ('5eed0000-0000-0000-0000-00000000c102', 'NVIDIA'),
+  ('5eed0000-0000-0000-0000-00000000c103', 'DeepLearning.AI');
+-- Certificates and courses share ids for the two exams, as after the catalogue migration.
+insert into public.certificates (id, name, kind, cert_type_id, provider_id, level, validity_months, url) values
+  ('5eed0000-0000-0000-0000-00000000e001', 'AWS Solutions Architect Associate', 'exam',
+   '5eed0000-0000-0000-0000-00000000c001', '5eed0000-0000-0000-0000-00000000c101', 'Associate', 36,
    'https://aws.amazon.com/certification/certified-solutions-architect-associate/'),
+  ('5eed0000-0000-0000-0000-00000000e002', 'NVIDIA Generative AI LLMs', 'exam',
+   '5eed0000-0000-0000-0000-00000000c002', '5eed0000-0000-0000-0000-00000000c102', 'Associate', 24, null);
+insert into public.courses (id, name, provider_id, refundable, cost, cost_currency, est_hours, prepares_for_id) values
+  ('5eed0000-0000-0000-0000-00000000e001', 'AWS Solutions Architect Associate',
+   '5eed0000-0000-0000-0000-00000000c101', true, null, null, null, '5eed0000-0000-0000-0000-00000000e001'),
   ('5eed0000-0000-0000-0000-00000000e002', 'NVIDIA Generative AI LLMs',
-   '5eed0000-0000-0000-0000-00000000c002', '5eed0000-0000-0000-0000-00000000c102', 'Associate', 24, false, null);
+   '5eed0000-0000-0000-0000-00000000c102', false, null, null, null, '5eed0000-0000-0000-0000-00000000e002'),
+  ('5eed0000-0000-0000-0000-00000000e003', 'Machine Learning Specialization',
+   '5eed0000-0000-0000-0000-00000000c103', false, null, null, null, null);
+-- A course completion (no validity) granted by the course above; no records, for the e2e. Same provider as supabase/catalog/courses.sql,
+-- whose page states no total hours and only a monthly subscription, so hours and cost are empty here too.
+insert into public.certificates (id, name, kind, cert_type_id, provider_id, course_id) values
+  ('5eed0000-0000-0000-0000-00000000e103', 'Machine Learning Specialization', 'completion',
+   '5eed0000-0000-0000-0000-00000000c002', '5eed0000-0000-0000-0000-00000000c103',
+   '5eed0000-0000-0000-0000-00000000e003');
 
-insert into public.training_records (member_id, course_id, status, progress, issued_date, planned_exam_date) values
-  ('5eed0000-0000-0000-0000-00000000b001', '5eed0000-0000-0000-0000-00000000e001', 'done', 100, public.vn_today() - 1070, null),
-  ('5eed0000-0000-0000-0000-00000000b002', '5eed0000-0000-0000-0000-00000000e002', 'in_progress', 40, null, public.vn_today() + 20),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000e001', 'not_started', 0, null, null);
+insert into public.training_records (member_id, certificate_id, course_id, status, progress, issued_date, planned_exam_date) values
+  ('5eed0000-0000-0000-0000-00000000b001', '5eed0000-0000-0000-0000-00000000e001', '5eed0000-0000-0000-0000-00000000e001', 'done', 100, public.vn_today() - 1070, null),
+  ('5eed0000-0000-0000-0000-00000000b002', '5eed0000-0000-0000-0000-00000000e002', '5eed0000-0000-0000-0000-00000000e002', 'in_progress', 40, null, public.vn_today() + 20),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000e001', '5eed0000-0000-0000-0000-00000000e001', 'not_started', 0, null, null);
 
 -- Login users (email + password). Members must exist first so the profile trigger links them.
 insert into auth.users (

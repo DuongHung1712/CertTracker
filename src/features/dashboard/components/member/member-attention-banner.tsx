@@ -37,7 +37,7 @@ export function MemberAttentionBanner({
           <span className="font-semibold">
             {isExpired ? "Certificate expired:" : "Expires soon:"}
           </span>
-          <span className="font-medium text-foreground">{record.courseName}</span>
+          <span className="font-medium text-foreground">{record.certificateName}</span>
           <span className="text-caption opacity-80 sm:text-body">
             {isExpired
               ? `Expired on ${formatDate(record.expiryDate!)}`

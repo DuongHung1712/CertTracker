@@ -1,4 +1,6 @@
 import type { RecordStatus } from "@/components/status/labels";
+import { CERTIFICATE_KIND_LABEL, type CertificateKind } from "@/features/certificates/schema";
+import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RefundStatus } from "@/features/records/schema";
 import { toCurrency, type Currency } from "@/lib/money";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
@@ -12,8 +14,12 @@ export type RecordRow = {
   memberEmail: string;
   teamId: string | null;
   teamName: string | null;
-  courseId: string;
-  courseName: string;
+  certificateId: string;
+  certificateName: string;
+  certificateKind: CertificateKind;
+  /** The course studied (the granting course for a completion); null for self-study. */
+  courseId: string | null;
+  courseName: string | null;
   certTypeName: string | null;
   providerName: string | null;
   validityMonths: number | null;
@@ -35,7 +41,13 @@ export type RecordRow = {
 };
 
 const COLUMNS =
-  "id, member_id, member_code, member_name, member_email, team_id, team_name, course_id, course_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
+  "id, member_id, member_code, member_name, member_email, team_id, team_name, certificate_id, certificate_name, certificate_kind, course_id, course_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
+
+/** The view joins `certificates` inner, so a missing kind means a broken join: stop instead of showing a wrong badge. */
+function requireKind(kind: CertificateKind | null): CertificateKind {
+  if (!kind) throw new Error("the certificate has no kind (broken view join)");
+  return kind;
+}
 
 /** RLS decides what comes back: everything for Admin, managed teams (+ own) for Manager, own for Member. */
 export async function listRecords(filter: { memberId?: string } = {}): Promise<RecordRow[]> {
@@ -44,12 +56,12 @@ export async function listRecords(filter: { memberId?: string } = {}): Promise<R
     let query = supabase.from("v_training_records").select(COLUMNS);
     if (filter.memberId) query = query.eq("member_id", filter.memberId);
     // `id` makes the order total, which paging needs.
-    return query.order("member_name").order("course_name").order("id").range(from, to);
+    return query.order("member_name").order("certificate_name").order("id").range(from, to);
   });
 
   // Generated view types are all-nullable; the underlying columns are NOT NULL.
   return rows.flatMap((row) =>
-    row.id && row.member_id && row.course_id && row.status
+    row.id && row.member_id && row.certificate_id && row.status
       ? [
           {
             id: row.id,
@@ -59,8 +71,11 @@ export async function listRecords(filter: { memberId?: string } = {}): Promise<R
             memberEmail: row.member_email ?? "",
             teamId: row.team_id,
             teamName: row.team_name,
+            certificateId: row.certificate_id,
+            certificateName: row.certificate_name ?? "",
+            certificateKind: requireKind(row.certificate_kind),
             courseId: row.course_id,
-            courseName: row.course_name ?? "",
+            courseName: row.course_name,
             certTypeName: row.cert_type_name,
             providerName: row.provider_name,
             validityMonths: row.validity_months,
@@ -95,10 +110,31 @@ export async function listMemberOptions() {
   return rows.map((row) => ({ id: row.id, label: row.full_name, hint: row.code }));
 }
 
-export async function listCourseOptions() {
+/** Every certificate a record can be for, with the kind in the label so "Exam" and "Course completion" are told apart. */
+export async function listCertificateOptions(): Promise<CertificateChoice[]> {
   const supabase = await createClient();
   const rows = await fetchAllRows((from, to) =>
-    supabase.from("courses").select("id, name, providers(name)").order("name").order("id").range(from, to),
+    supabase
+      .from("certificates")
+      .select("id, name, kind, providers(name), granting:courses!certificates_course_id_fkey(id, name)")
+      .order("name")
+      .order("id")
+      .range(from, to),
   );
-  return rows.map((row) => ({ id: row.id, label: row.name, hint: row.providers?.name ?? undefined }));
+  return rows.map((row) => ({
+    id: row.id,
+    label: `${row.name} · ${CERTIFICATE_KIND_LABEL[row.kind]}`,
+    hint: row.providers?.name ?? undefined,
+    kind: row.kind,
+    grantingCourse: row.granting ? { id: row.granting.id, name: row.granting.name } : null,
+  }));
+}
+
+/** Courses that prepare for an exam: the choices for "Course studied". */
+export async function listStudyCourses(): Promise<StudyCourse[]> {
+  const supabase = await createClient();
+  const rows = await fetchAllRows((from, to) =>
+    supabase.from("courses").select("id, name, prepares_for_id").not("prepares_for_id", "is", null).order("name").order("id").range(from, to),
+  );
+  return rows.flatMap((row) => (row.prepares_for_id ? [{ id: row.id, name: row.name, preparesForId: row.prepares_for_id }] : []));
 }

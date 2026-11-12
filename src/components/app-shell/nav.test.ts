@@ -40,8 +40,8 @@ describe("labelForPath", () => {
   it("names the current section", () => {
     expect(labelForPath("/members/42")).toBe("Members");
     expect(labelForPath("/data-quality")).toBe("Data quality");
-    // [copy] The /records route is called "Certificates" in the UI (the route itself does not change).
-    expect(labelForPath("/records")).toBe("Certificates");
+    // [copy] The /records route is called "Learning" in the UI (the route itself does not change).
+    expect(labelForPath("/records")).toBe("Learning");
     expect(labelForPath("/unknown")).toBe("CertTracker");
   });
 });

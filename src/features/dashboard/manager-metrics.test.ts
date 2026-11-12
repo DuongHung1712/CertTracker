@@ -207,11 +207,11 @@ describe("manager-metrics", () => {
 
   describe("getNeedsAttentionItems", () => {
     it("lists only expired certificates, most overdue first (upcoming ones belong to Next to expire)", () => {
-      const exp1 = doneRecord(-5, { id: "e1", memberName: "Minh", courseName: "PMP" });
-      const exp2 = doneRecord(-1, { id: "e2", memberName: "Tuan", courseName: "CKA" });
-      const soon1 = doneRecord(12, { id: "s1", memberName: "Linh", courseName: "AWS SAA" });
-      const today = doneRecord(0, { id: "s0", memberName: "Hoa", courseName: "GCP" });
-      const later = doneRecord(50, { id: "l1", memberName: "An", courseName: "Terraform" });
+      const exp1 = doneRecord(-5, { id: "e1", memberName: "Minh", certificateName: "PMP" });
+      const exp2 = doneRecord(-1, { id: "e2", memberName: "Tuan", certificateName: "CKA" });
+      const soon1 = doneRecord(12, { id: "s1", memberName: "Linh", certificateName: "AWS SAA" });
+      const today = doneRecord(0, { id: "s0", memberName: "Hoa", certificateName: "GCP" });
+      const later = doneRecord(50, { id: "l1", memberName: "An", certificateName: "Terraform" });
 
       const items = getNeedsAttentionItems([later, soon1, today, exp2, exp1]);
       expect(items.map((i) => i.record.id)).toEqual(["e1", "e2"]);
@@ -249,5 +249,53 @@ describe("manager-metrics", () => {
       expect(noCerts).toHaveLength(2);
       expect(noCerts.map((m) => m.fullName)).toEqual(["Lê Minh Châu", "Trần Thị Bình"]);
     });
+  });
+});
+
+describe("manager-metrics: exam certificates only", () => {
+  const completion = (partial: Parameters<typeof makeRecord>[0]) =>
+    makeRecord({ certificateKind: "completion", validityMonths: null, expiryDate: null, daysToExpiry: null, expiryStatus: "No Expiry", ...partial });
+
+  it("leaves course completions out of the exam KPIs", () => {
+    const kpis = calculateManagerKpis([
+      doneRecord(20),
+      doneRecord(-5),
+      completion({ id: "c1", status: "done" }),
+      completion({ id: "c2", status: "in_progress", progress: 30, issuedDate: null }),
+    ]);
+    expect(kpis).toMatchObject({ doneCount: 2, validCount: 1, expiringCount: 1, expiredCount: 1, inProgressCount: 0 });
+    expect(kpis.totalCertificates).toBe(2);
+  });
+
+  it("counts planned exams in the next 60 days and ignores a planned finish date", () => {
+    const now = new Date("2026-11-08T10:00:00Z");
+    const records = [
+      makeRecord({ id: "e", status: "in_progress", plannedExamDate: "2026-11-20" }),
+      completion({ id: "c", status: "in_progress", plannedExamDate: "2026-11-20" }),
+    ];
+    expect(getPlannedExams(records, 60, now).map((p) => p.recordId)).toEqual(["e"]);
+  });
+
+  it("does not count completions in the monthly certificates earned", () => {
+    const now = new Date("2026-11-08T10:00:00Z");
+    const months = getCertificatesEarnedByMonth(
+      [makeRecord({ id: "e", issuedDate: "2026-11-02" }), completion({ id: "c", status: "done", issuedDate: "2026-11-03" })],
+      6,
+      now,
+    );
+    expect(months.at(-1)?.count).toBe(1);
+  });
+});
+
+describe("manager-metrics: a completion with a validity stays out of expiry lists", () => {
+  const completion = (id: string, days: number) =>
+    doneRecord(days, { id, certificateKind: "completion", validityMonths: 12 });
+
+  it("is neither expiring nor expired, and is in neither list", () => {
+    const records = [completion("c-exp", -5), completion("c-soon", 20)];
+    expect(records.some(isExpired)).toBe(false);
+    expect(records.some(isExpiring60)).toBe(false);
+    expect(getNextToExpire(records)).toEqual([]);
+    expect(getNeedsAttentionItems(records)).toEqual([]);
   });
 });

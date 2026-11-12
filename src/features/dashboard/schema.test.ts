@@ -4,6 +4,7 @@ import { parseBreakdown, parseKpis, parseRanking } from "@/features/dashboard/sc
 const kpiRow = {
   total_members: 5, total_records: 8, done_records: 5, in_progress_records: 2, not_started_records: 1,
   active_certs: 2, expiring_60_certs: 0, expiring_soon_certs: 1, expired_certs: 1, no_expiry_certs: 1,
+  completion_done_records: 2, completion_in_progress_records: 1,
 };
 
 describe("parseKpis", () => {
@@ -11,6 +12,7 @@ describe("parseKpis", () => {
     expect(parseKpis([kpiRow])).toEqual({
       totalMembers: 5, totalRecords: 8, doneRecords: 5, inProgressRecords: 2, notStartedRecords: 1,
       activeCerts: 2, expiring60Certs: 0, expiringSoonCerts: 1, expiredCerts: 1, noExpiryCerts: 1,
+      completionDoneRecords: 2, completionInProgressRecords: 1,
     });
   });
   it("rejects anything but exactly one row, negatives and wrong types", () => {
@@ -18,6 +20,7 @@ describe("parseKpis", () => {
     expect(() => parseKpis([kpiRow, kpiRow])).toThrow();
     expect(() => parseKpis([{ ...kpiRow, total_records: -1 }])).toThrow();
     expect(() => parseKpis([{ ...kpiRow, done_records: "5" }])).toThrow();
+    expect(() => parseKpis([{ ...kpiRow, completion_done_records: -1 }])).toThrow();
     expect(() => parseKpis(null)).toThrow();
   });
 });

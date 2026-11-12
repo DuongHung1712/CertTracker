@@ -1,13 +1,15 @@
 import { PageHeaderSkeleton, TableBlockSkeleton } from "@/components/app-shell/loading-skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Shaped like the page: header, certificate-type and provider sections, courses table.
-export default function CoursesLoading() {
+// Shaped like the page: header, tab strip, the active table, and the admin sections for types and providers.
+export default function CatalogueLoading() {
   return (
-    <div className="flex min-w-0 flex-col gap-6" role="status" aria-busy="true" aria-label="Loading courses">
+    <div className="flex min-w-0 flex-col gap-6" role="status" aria-busy="true" aria-label="Loading catalogue">
       <PageHeaderSkeleton titleWidth="w-32" />
-      <TableBlockSkeleton withHeading rows={3} />
-      <TableBlockSkeleton withHeading rows={3} />
-      <TableBlockSkeleton withHeading />
+      <Skeleton className="h-9 w-48 rounded-lg" />
+      <TableBlockSkeleton />
+      <TableBlockSkeleton withHeading rows={2} />
+      <TableBlockSkeleton withHeading rows={2} />
     </div>
   );
 }

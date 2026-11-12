@@ -4,7 +4,7 @@ App quản lý chứng chỉ cho team, thay thế Excel. Next.js + Supabase (RLS
 
 ## Trạng thái hiện tại
 
-- **Release Cert Core trước** (decision #59, thay #54): phần chứng chỉ, phạm vi manager, role/YoE, chi phí khóa học, UI tiếng Anh **đã chạy trên `main` và production** (2026-11-05), cloud chưa có dữ liệu thật. Theo `docs/process/04-wbs.md`: C0 duyệt phạm vi → C1 tài khoản qua e-mail (decision #60), danh mục khóa học và **pilot DAS giai đoạn 1** (decision #61, tiếp theo: 20 người, gói miễn phí; runbook ở `docs/deploy/`, checklist `docs/deploy/pilot-checklist.md`), **giai đoạn 2** (gửi và duyệt chứng chỉ, lĩnh vực quan tâm, số liệu theo tháng/quý; WBS 15.4–15.6) làm trong lúc pilot chạy → C2 AI phục vụ chứng chỉ (DeepSeek, decision #52, sau mục A) → C3 hosting, G1, production. Spec: `docs/superpowers/specs/2026-11-06-cert-core-das-pilot-design.md`. Sau đó (Later): Skill Matrix, mục tiêu theo quý, lộ trình role, chuyển backend sang Rust. 3 vai trò: Admin (= DC lead), Manager phạm vi team/program, Member (decision #55). Giai đoạn 1 nằm trên nhánh `feat/cert-core-accounts`, **chưa merge**; migration `20261106000001_link_account_to_member.sql` **chưa `db push` lên production**. Tiếp theo: PR vào `dev`, rồi owner làm các bước production (spec §8, thứ tự: backup, `supabase db push`, merge vào `main`). Còn nợ: migration xóa `team_managers` (decision #58).
+- **Release Cert Core trước** (decision #59, thay #54): phần chứng chỉ, phạm vi manager, role/YoE, chi phí khóa học, UI tiếng Anh **đã chạy trên `main` và production** (2026-11-05), cloud chưa có dữ liệu thật. Theo `docs/process/04-wbs.md`: C0 duyệt phạm vi → C1 tài khoản qua e-mail (decision #60), danh mục khóa học và **pilot DAS giai đoạn 1** (decision #61, tiếp theo: 20 người, gói miễn phí; runbook ở `docs/deploy/`, checklist `docs/deploy/pilot-checklist.md`), **giai đoạn 2** (gửi và duyệt chứng chỉ, lĩnh vực quan tâm, số liệu theo tháng/quý; WBS 15.4–15.6) làm trong lúc pilot chạy → C2 AI phục vụ chứng chỉ (DeepSeek, decision #52, sau mục A) → C3 hosting, G1, production. Spec: `docs/superpowers/specs/2026-11-06-cert-core-das-pilot-design.md`. Sau đó (Later): Skill Matrix, mục tiêu theo quý, lộ trình role, chuyển backend sang Rust. 3 vai trò: Admin (= DC lead), Manager phạm vi team/program, Member (decision #55). Giai đoạn 1 (`feat/cert-core-accounts`) đã merge vào `dev`; migration `20261106000001_link_account_to_member.sql` **chưa `db push` lên production**. Tiếp theo: PR Part D vào `dev`, rồi owner làm các bước production (spec §8, thứ tự: backup, `supabase db push`, merge vào `main`). Còn nợ: migration xóa `team_managers` (decision #58). Part D (decision #65) tách danh mục chứng chỉ và khóa học trên nhánh `feat/certificate-catalogue`, **chưa merge**; migration `20261111000001`–`3` **chưa `db push`**, rollout ở `docs/deploy/accounts-and-catalogue.md`.
 - Cập nhật dòng này khi chuyển tuần/giai đoạn.
 
 ## Nguồn sự thật (đọc khi cần, đừng đọc hết mỗi phiên)
@@ -68,3 +68,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- When graphify-out/graph.json exists, run `graphify query "<question>"` before your first grep, search or source-file read for a codebase question, and put this rule in every subagent prompt that explores code. Read raw files only for lines the graph or an earlier read already located. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.

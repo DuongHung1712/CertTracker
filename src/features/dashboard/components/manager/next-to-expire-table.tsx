@@ -30,7 +30,7 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
           <thead className="border-b border-border bg-muted/40 text-label uppercase tracking-wider text-muted-foreground font-mono">
             <tr>
               <th scope="col" className="px-3 py-2 font-medium">Person</th>
-              <th scope="col" className="px-3 py-2 font-medium">Course / certification</th>
+              <th scope="col" className="px-3 py-2 font-medium">Certificate</th>
               <th scope="col" className="px-3 py-2 font-medium">Expiry date</th>
               <th scope="col" className="px-3 py-2 font-medium">Status</th>
               <th scope="col" className="px-3 py-2 font-medium text-right">Action</th>
@@ -57,7 +57,7 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
                 </td>
                 <td className="px-3 py-2.5">
                   <div className="flex flex-col min-w-0">
-                    <span className="font-medium text-foreground truncate max-w-xs">{row.courseName}</span>
+                    <span className="font-medium text-foreground truncate max-w-xs">{row.certificateName}</span>
                     {row.providerName && (
                       <span className="text-caption text-muted-foreground">{row.providerName}</span>
                     )}

@@ -23,6 +23,7 @@ import type { BreakdownRow, DashboardKpis, RankingRow } from "@/features/dashboa
 const kpis: DashboardKpis = {
   totalMembers: 5, totalRecords: 8, doneRecords: 5, inProgressRecords: 2, notStartedRecords: 1,
   activeCerts: 2, expiring60Certs: 3, expiringSoonCerts: 1, expiredCerts: 1, noExpiryCerts: 1,
+  completionDoneRecords: 0, completionInProgressRecords: 0,
 };
 
 describe("ratePercent (decision #31: rounded DOWN, 100 only when everything is done)", () => {
