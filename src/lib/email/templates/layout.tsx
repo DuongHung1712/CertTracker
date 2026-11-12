@@ -103,7 +103,7 @@ export function ExpiryTable({
         {shown.map((item) => (
           <tr key={item.recordId}>
             {withMember ? <td style={styles.td}>{`${item.memberName} (${item.memberCode})`}</td> : null}
-            <td style={styles.td}>{item.courseName}</td>
+            <td style={styles.td}>{item.certificateName}</td>
             <td style={styles.td}>{formatDate(item.expiryDate)}</td>
             <td style={styles.td}>
               <span

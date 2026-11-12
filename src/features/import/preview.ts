@@ -1,3 +1,4 @@
+import { hasCourseDetails } from "@/features/import/plan";
 import type { ImportRowView } from "@/features/import/queries";
 import { pluralize } from "@/lib/plural";
 import { foldText } from "@/lib/text";
@@ -47,6 +48,7 @@ export function describeNewEntities(rows: ImportRowView[]): string | null {
   const members = new Map<string, string>();
   const providers = new Map<string, string>();
   const certTypes = new Map<string, string>();
+  const certificates = new Map<string, string>();
   const courses = new Map<string, string>();
 
   for (const row of rows) {
@@ -58,9 +60,11 @@ export function describeNewEntities(rows: ImportRowView[]): string | null {
     const certTypeName = newName(course.certType);
     if (providerName !== null) addFirst(providers, foldText(providerName), providerName);
     if (certTypeName !== null) addFirst(certTypes, foldText(certTypeName), certTypeName);
-    // A course is unique per (provider, name); an existing provider is keyed by its id.
+    // A certificate is unique per (provider, name); an existing provider is keyed by its id.
     const providerKey = "id" in course.provider ? course.provider.id : `new:${foldText(course.provider.name)}`;
-    addFirst(courses, `${providerKey}|${foldText(course.name)}`, course.name);
+    const key = `${providerKey}|${foldText(course.name)}`;
+    addFirst(certificates, key, course.name);
+    if (hasCourseDetails(course)) addFirst(courses, key, course.name);
   }
 
   const groups: string[] = [];
@@ -72,6 +76,7 @@ export function describeNewEntities(rows: ImportRowView[]): string | null {
   }
   if (providers.size > 0) groups.push(pluralize(providers.size, "provider"));
   if (certTypes.size > 0) groups.push(pluralize(certTypes.size, "certificate type"));
+  if (certificates.size > 0) groups.push(pluralize(certificates.size, "certificate"));
   if (courses.size > 0) groups.push(pluralize(courses.size, "course"));
   return groups.length > 0 ? `Will create: ${groups.join(", ")}` : null;
 }

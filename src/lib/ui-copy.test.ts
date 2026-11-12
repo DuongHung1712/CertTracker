@@ -95,7 +95,11 @@ describe("[copy] plain-English interface", () => {
     // "/" are routes (`/records`, `/api/records/...`). Neither is shown to a user.
     const visible = (p: Piece) => /\s/.test(p.text.trim()) && !p.text.trim().startsWith("/");
     // Server-only text a user never sees: a `console.error` log line and the verb "record" in a cron warning.
+    // The two certificate-catalogue refusals use the wording fixed by spec 2026-11-10 (section 4.2 and 6.1).
     const allowed = (p: Piece) =>
+      (p.file === "src/features/certificates/actions.ts" &&
+        (p.text === " has records with another course. Change them first." ||
+          p.text === "This certificate has records. Delete them first.")) ||
       (p.file === "src/app/api/export/records/route.ts" && p.text === "export: could not load records") ||
       (p.file === "src/features/notifications/deliver.ts" && p.text === ": could not record the failure (");
     expect(offenders((p) => visible(p) && /\brecords?\b/i.test(p.text) && !allowed(p))).toEqual([]);

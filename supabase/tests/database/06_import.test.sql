@@ -27,9 +27,9 @@ update public.profiles set role = 'manager' where user_id = 'a0000000-0000-0000-
 insert into public.manager_scopes (team_id, user_id)
   values ('11111111-1111-1111-1111-111111111111', 'a0000000-0000-0000-0000-00000000000b');
 insert into public.providers (id, name) values ('dddddddd-0000-0000-0000-000000000001', 'Prov One');
-insert into public.courses (id, name, provider_id, validity_months)
-  values ('cccccccc-0000-0000-0000-000000000001', 'Course One', 'dddddddd-0000-0000-0000-000000000001', 12);
-insert into public.training_records (member_id, course_id, status, progress, planned_exam_date, notes)
+insert into public.certificates (id, name, kind, provider_id, validity_months)
+  values ('cccccccc-0000-0000-0000-000000000001', 'Course One', 'exam', 'dddddddd-0000-0000-0000-000000000001', 12);
+insert into public.training_records (member_id, certificate_id, status, progress, planned_exam_date, notes)
   values ('aaaaaaaa-0000-0000-0000-000000000001', 'cccccccc-0000-0000-0000-000000000001',
           'in_progress', 40, '2026-12-01', 'keep me');
 
@@ -108,16 +108,16 @@ select is(
 select is((select status::text from public.import_batches where id = 'b1000000-0000-0000-0000-000000000001'), 'committed', 'batch is committed');
 select is(
   (select progress from public.training_records
-    where member_id = 'aaaaaaaa-0000-0000-0000-000000000001' and course_id = 'cccccccc-0000-0000-0000-000000000001'),
+    where member_id = 'aaaaaaaa-0000-0000-0000-000000000001' and certificate_id = 'cccccccc-0000-0000-0000-000000000001'),
   60, 'update applies the provided progress');
 select is(
   (select notes || '|' || planned_exam_date::text from public.training_records
-    where member_id = 'aaaaaaaa-0000-0000-0000-000000000001' and course_id = 'cccccccc-0000-0000-0000-000000000001'),
+    where member_id = 'aaaaaaaa-0000-0000-0000-000000000001' and certificate_id = 'cccccccc-0000-0000-0000-000000000001'),
   'keep me|2026-12-01', 'null fields keep the existing values');
 select is((select team_id from public.members where email = 'new@test.local'),
   '11111111-1111-1111-1111-111111111111'::uuid, 'new member is created in the resolved team');
 select is(
-  (select count(*) from public.courses c
+  (select count(*) from public.certificates c
      join public.providers p on p.id = c.provider_id
      join public.cert_types t on t.id = c.cert_type_id
     where c.name = 'Course Two' and p.name = 'Prov Two' and t.name = 'Type Two' and c.validity_months = 24),
@@ -141,9 +141,9 @@ select throws_ok($$select public.commit_import('b2000000-0000-0000-0000-00000000
 select throws_ok($$select public.commit_import('b3000000-0000-0000-0000-000000000003')$$, '23514', null, 'a CHECK violation aborts the commit');
 select is(
   (select count(*) from public.training_records
-    where member_id = 'bbbbbbbb-0000-0000-0000-000000000002' and course_id = 'cccccccc-0000-0000-0000-000000000001'),
+    where member_id = 'bbbbbbbb-0000-0000-0000-000000000002' and certificate_id = 'cccccccc-0000-0000-0000-000000000001'),
   0::bigint, 'rows before the failing row are rolled back');
-select is((select count(*) from public.courses where name = 'Course Three'), 0::bigint, 'entities created before the failure are rolled back');
+select is((select count(*) from public.certificates where name = 'Course Three'), 0::bigint, 'entities created before the failure are rolled back');
 select is((select status::text from public.import_batches where id = 'b3000000-0000-0000-0000-000000000003'), 'parsed', 'failed batch stays parsed');
 
 -- Incomplete uploads: refused with their own SQLSTATE (not 55000), and nothing is written
@@ -159,7 +159,7 @@ select is(
   'a member created after the preview is reused, not duplicated');
 select is(
   (select count(*) from public.training_records
-    where member_id = 'bbbbbbbb-0000-0000-0000-000000000002' and course_id = 'cccccccc-0000-0000-0000-000000000001'),
+    where member_id = 'bbbbbbbb-0000-0000-0000-000000000002' and certificate_id = 'cccccccc-0000-0000-0000-000000000001'),
   1::bigint, 'the record lands on the existing member found by case-insensitive email');
 reset role;
 

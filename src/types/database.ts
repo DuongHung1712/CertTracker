@@ -79,61 +79,119 @@ export type Database = {
         }
         Relationships: []
       }
-      courses: {
+      certificates: {
         Row: {
           cert_type_id: string | null
-          cost: number | null
-          cost_currency: string | null
+          course_id: string | null
           created_at: string
-          est_hours: number | null
           id: string
+          kind: Database["public"]["Enums"]["certificate_kind"]
           level: string | null
           name: string
           provider_id: string | null
-          refund_conditions: string | null
-          refundable: boolean
           updated_at: string
           url: string | null
           validity_months: number | null
         }
         Insert: {
           cert_type_id?: string | null
-          cost?: number | null
-          cost_currency?: string | null
+          course_id?: string | null
           created_at?: string
-          est_hours?: number | null
           id?: string
+          kind: Database["public"]["Enums"]["certificate_kind"]
           level?: string | null
           name: string
           provider_id?: string | null
-          refund_conditions?: string | null
-          refundable?: boolean
           updated_at?: string
           url?: string | null
           validity_months?: number | null
         }
         Update: {
           cert_type_id?: string | null
-          cost?: number | null
-          cost_currency?: string | null
+          course_id?: string | null
           created_at?: string
-          est_hours?: number | null
           id?: string
+          kind?: Database["public"]["Enums"]["certificate_kind"]
           level?: string | null
           name?: string
           provider_id?: string | null
-          refund_conditions?: string | null
-          refundable?: boolean
           updated_at?: string
           url?: string | null
           validity_months?: number | null
         }
         Relationships: [
           {
-            foreignKeyName: "courses_cert_type_id_fkey"
+            foreignKeyName: "certificates_cert_type_id_fkey"
             columns: ["cert_type_id"]
             isOneToOne: false
             referencedRelation: "cert_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: true
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          cost: number | null
+          cost_currency: string | null
+          created_at: string
+          est_hours: number | null
+          id: string
+          name: string
+          prepares_for_id: string | null
+          provider_id: string | null
+          refund_conditions: string | null
+          refundable: boolean
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          cost?: number | null
+          cost_currency?: string | null
+          created_at?: string
+          est_hours?: number | null
+          id?: string
+          name: string
+          prepares_for_id?: string | null
+          provider_id?: string | null
+          refund_conditions?: string | null
+          refundable?: boolean
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          cost?: number | null
+          cost_currency?: string | null
+          created_at?: string
+          est_hours?: number | null
+          id?: string
+          name?: string
+          prepares_for_id?: string | null
+          provider_id?: string | null
+          refund_conditions?: string | null
+          refundable?: boolean
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_prepares_for_id_fkey"
+            columns: ["prepares_for_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
             referencedColumns: ["id"]
           },
           {
@@ -533,8 +591,9 @@ export type Database = {
       }
       training_records: {
         Row: {
+          certificate_id: string
           certificate_url: string | null
-          course_id: string
+          course_id: string | null
           created_at: string
           created_by: string | null
           evidence_path: string | null
@@ -551,8 +610,9 @@ export type Database = {
           via_company: boolean
         }
         Insert: {
+          certificate_id: string
           certificate_url?: string | null
-          course_id: string
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           evidence_path?: string | null
@@ -569,8 +629,9 @@ export type Database = {
           via_company?: boolean
         }
         Update: {
+          certificate_id?: string
           certificate_url?: string | null
-          course_id?: string
+          course_id?: string | null
           created_at?: string
           created_by?: string | null
           evidence_path?: string | null
@@ -587,6 +648,13 @@ export type Database = {
           via_company?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "training_records_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "training_records_course_id_fkey"
             columns: ["course_id"]
@@ -614,8 +682,8 @@ export type Database = {
     Views: {
       v_data_quality_issues: {
         Row: {
-          course_id: string | null
-          course_name: string | null
+          certificate_id: string | null
+          certificate_name: string | null
           days: number | null
           issue_type: string | null
           member_code: string | null
@@ -652,6 +720,11 @@ export type Database = {
         Row: {
           cert_type_id: string | null
           cert_type_name: string | null
+          certificate_id: string | null
+          certificate_kind:
+            | Database["public"]["Enums"]["certificate_kind"]
+            | null
+          certificate_name: string | null
           certificate_url: string | null
           cost: number | null
           cost_currency: string | null
@@ -686,14 +759,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "courses_cert_type_id_fkey"
+            foreignKeyName: "certificates_cert_type_id_fkey"
             columns: ["cert_type_id"]
             isOneToOne: false
             referencedRelation: "cert_types"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "courses_provider_id_fkey"
+            foreignKeyName: "certificates_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
@@ -704,6 +777,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_records_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
             referencedColumns: ["id"]
           },
           {
@@ -746,6 +826,7 @@ export type Database = {
         }[]
       }
       commit_import: { Args: { p_batch_id: string }; Returns: Json }
+      copy_courses_to_certificates: { Args: never; Returns: undefined }
       dashboard_breakdown: {
         Args: { p_dimension: string; p_limit?: number }
         Returns: {
@@ -765,6 +846,8 @@ export type Database = {
         Args: never
         Returns: {
           active_certs: number
+          completion_done_records: number
+          completion_in_progress_records: number
           done_records: number
           expired_certs: number
           expiring_60_certs: number
@@ -818,6 +901,7 @@ export type Database = {
       yoe_years: { Args: { p_start: string; p_today: string }; Returns: number }
     }
     Enums: {
+      certificate_kind: "exam" | "completion"
       import_action: "create" | "update" | "skip"
       import_batch_status: "parsed" | "committed" | "discarded"
       record_status: "not_started" | "in_progress" | "done"
@@ -953,6 +1037,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      certificate_kind: ["exam", "completion"],
       import_action: ["create", "update", "skip"],
       import_batch_status: ["parsed", "committed", "discarded"],
       record_status: ["not_started", "in_progress", "done"],

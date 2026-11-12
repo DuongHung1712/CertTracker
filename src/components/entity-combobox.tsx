@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import {
   Combobox,
   ComboboxContent,
@@ -47,7 +48,13 @@ export function EntityCombobox({
 }) {
   // Base UI resolves the displayed text from the selected *item*, so pass the option object
   // rather than the id — otherwise the closed control would show the raw id.
-  const selected = options.find((option) => option.id === value) ?? null;
+  // The object is kept stable by id and label: a refreshed `options` array holds new objects, and a new
+  // selected object would make Base UI replace what the user is typing with the current label.
+  const selectedLabel = options.find((option) => option.id === value)?.label;
+  const selected = useMemo<ComboboxOption | null>(
+    () => (selectedLabel === undefined ? null : { id: value, label: selectedLabel }),
+    [value, selectedLabel],
+  );
 
   return (
     <Combobox<ComboboxOption>
@@ -74,9 +81,10 @@ export function EntityCombobox({
         <ComboboxList>
           {(option: ComboboxOption) => (
             <ComboboxItem key={option.id} value={option}>
-              <span className="truncate">{option.label}</span>
+              {/* Wraps instead of truncating: a long certificate name must not hide the kind at its end. */}
+              <span className="min-w-0 flex-1 break-words">{option.label}</span>
               {option.hint ? (
-                <span className="truncate text-caption text-muted-foreground">{option.hint}</span>
+                <span className="max-w-[40%] shrink-0 truncate text-caption text-muted-foreground">{option.hint}</span>
               ) : null}
             </ComboboxItem>
           )}

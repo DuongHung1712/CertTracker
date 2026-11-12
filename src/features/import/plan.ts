@@ -11,7 +11,7 @@ import { foldText } from "@/lib/text";
 /* ---------------------------------------------------------------- types */
 
 export type ExistingRecord = {
-  id: string; memberId: string; courseId: string; status: RecordStatus; progress: number;
+  id: string; memberId: string; certificateId: string; courseId: string | null; status: RecordStatus; progress: number;
   plannedExamDate: string | null; issuedDate: string | null; certificateUrl: string | null;
   viaCompany: boolean; refundStatus: RefundStatus; notes: string | null;
 };
@@ -21,8 +21,13 @@ export type ImportLookups = {
   teams: { id: string; name: string }[];
   providers: { id: string; name: string }[];
   certTypes: { id: string; name: string }[];
-  courses: {
+  certificates: {
     id: string; name: string; providerId: string | null; certTypeId: string | null; validityMonths: number | null;
+    cost: number | null; costCurrency: Currency | null; estHours: number | null;
+  }[];
+  /** Courses a record can name as the course studied; "grantsId" is the completion a course grants. */
+  studyCourses: {
+    id: string; name: string; preparesForId: string | null; grantsId: string | null;
     cost: number | null; costCurrency: Currency | null; estHours: number | null;
   }[];
   records: ExistingRecord[];
@@ -30,19 +35,23 @@ export type ImportLookups = {
 
 export type Ref = { id: string } | { name: string };
 type MemberRef = { id: string } | { email: string; fullName: string; teamId: string | null };
-type NewCourseRef = {
+type NewCertificateRef = {
   name: string; provider: Ref; certType: Ref | null; validityMonths: number | null;
   cost: number | null; costCurrency: Currency | null; estHours: number | null;
 };
-type CourseRef = { id: string } | NewCourseRef;
+type CertificateRef = { id: string } | NewCertificateRef;
 type NormalizedRecord = {
   status: RecordStatus; progress: number;
   plannedExamDate: string | null; issuedDate: string | null; certificateUrl: string | null;
   viaCompany: boolean | null; refundStatus: RefundStatus | null; notes: string | null;
 };
 
-/** The `normalized` JSON contract that `commit_import` consumes (migration 20261001000001). */
-export type NormalizedRow = { member: MemberRef; course: CourseRef; record: NormalizedRecord };
+/**
+ * The `normalized` JSON contract that `commit_import` consumes (migration 20261111000001). The key stays `course`
+ * because stored batches use it; the value is a certificate. Cost, currency or hours on a new one make the commit
+ * also create the self-preparing course studied; `courseStudied` names an existing course instead.
+ */
+export type NormalizedRow = { member: MemberRef; course: CertificateRef; courseStudied?: { id: string }; record: NormalizedRecord };
 
 export type PlannedRow = {
   rowNumber: number;
@@ -56,7 +65,7 @@ export type PlannedRow = {
 export type ImportPlan = {
   rows: PlannedRow[];
   notes: string[];
-  newEntities: { members: string[]; providers: string[]; certTypes: string[]; courses: string[] };
+  newEntities: { members: string[]; providers: string[]; certTypes: string[]; certificates: string[]; courses: string[] };
 };
 
 type Issues = { errors: string[]; warnings: string[] };
@@ -126,7 +135,7 @@ function alignWithStatus(
 /* -------------------------------------------------------------- context */
 
 type FirstNewMember = { ref: { email: string; fullName: string; teamId: string | null }; rowNumber: number };
-type FirstNewCourse = { ref: NewCourseRef; rowNumber: number };
+type FirstNewCertificate = { ref: NewCertificateRef; rowNumber: number };
 
 /** Lookup indexes plus the "first definition wins" state shared by every row of one plan. */
 type PlanContext = {
@@ -138,12 +147,13 @@ type PlanContext = {
   providersByName: Map<string, { id: string }>;
   certTypesByName: Map<string, { id: string }>;
   certTypeNameById: Map<string, string>;
-  coursesByName: Map<string, ImportLookups["courses"]>;
+  certificatesByName: Map<string, ImportLookups["certificates"]>;
+  studyCoursesByName: Map<string, ImportLookups["studyCourses"]>;
   recordsByKey: Map<string, ExistingRecord>;
   newMembers: Map<string, FirstNewMember>;
   newProviders: Map<string, string>;
   newCertTypes: Map<string, string>;
-  newCourses: Map<string, FirstNewCourse>;
+  newCertificates: Map<string, FirstNewCertificate>;
   seenRecords: Map<string, number>;
 };
 
@@ -173,12 +183,13 @@ function createContext(table: ImportTable, lookups: ImportLookups, today: string
     providersByName: firstByName(lookups.providers),
     certTypesByName: firstByName(lookups.certTypes),
     certTypeNameById: new Map(lookups.certTypes.map((certType) => [certType.id, certType.name])),
-    coursesByName: groupBy(lookups.courses, (course) => foldText(course.name)),
-    recordsByKey: new Map(lookups.records.map((record) => [`${record.memberId}|${record.courseId}`, record])),
+    certificatesByName: groupBy(lookups.certificates, (certificate) => foldText(certificate.name)),
+    studyCoursesByName: groupBy(lookups.studyCourses, (course) => foldText(course.name)),
+    recordsByKey: new Map(lookups.records.map((record) => [`${record.memberId}|${record.certificateId}`, record])),
     newMembers: new Map(),
     newProviders: new Map(),
     newCertTypes: new Map(),
-    newCourses: new Map(),
+    newCertificates: new Map(),
     seenRecords: new Map(),
   };
 }
@@ -254,16 +265,17 @@ function resolveNewMemberTeam(ctx: PlanContext, teamText: string | null, issues:
   return null;
 }
 
-/* --------------------------------------------------------------- course */
+/* ----------------------------------------------------------- certificate */
 
-type CourseResolution = { ref: CourseRef | null; key: string | null };
-const NO_COURSE: CourseResolution = { ref: null, key: null };
+/** `name` is the catalogue name of an existing certificate, else the name written in the file. */
+type CertificateResolution = { ref: CertificateRef | null; key: string | null; name: string | null };
+const NO_CERTIFICATE: CertificateResolution = { ref: null, key: null, name: null };
 
-function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, issues: Issues): CourseResolution {
+function resolveCertificate(ctx: PlanContext, cells: RowCells, rowNumber: number, issues: Issues): CertificateResolution {
   const name = normalizeName(cells.courseName);
   if (name === null) {
-    issues.errors.push("Course name is missing");
-    return NO_COURSE;
+    issues.errors.push("Certificate name is missing");
+    return NO_CERTIFICATE;
   }
   const providerText = normalizeName(cells.provider);
   const certTypeText = normalizeName(cells.certType);
@@ -274,66 +286,95 @@ function resolveCourse(ctx: PlanContext, cells: RowCells, rowNumber: number, iss
   const cost = take(parseCost(cells.cost), issues, null);
   const costCurrency = take(parseCurrency(cells.costCurrency), issues, null);
   const estHours = take(parseStudyHours(cells.estHours), issues, null);
-  const extras: CourseExtras = { cost, costCurrency, estHours };
+  const extras: CourseDetails = { cost, costCurrency, estHours };
 
-  const sameName = ctx.coursesByName.get(foldText(name)) ?? [];
-  let existing: ImportLookups["courses"][number] | undefined;
+  const sameName = ctx.certificatesByName.get(foldText(name)) ?? [];
+  let existing: ImportLookups["certificates"][number] | undefined;
   if (providerText === null) {
     if (sameName.length > 1) {
-      issues.errors.push(`More than one course is named "${name}" — add a Provider column`);
-      return NO_COURSE;
+      issues.errors.push(`More than one certificate is named "${name}" — add a Provider column`);
+      return NO_CERTIFICATE;
     }
     if (sameName.length === 0) {
-      issues.errors.push(`Course "${name}" not found — a provider is needed to create it`);
-      return NO_COURSE;
+      issues.errors.push(`Certificate "${name}" not found — a provider is needed to create it`);
+      return NO_CERTIFICATE;
     }
     existing = sameName[0];
   } else {
     const provider = ctx.providersByName.get(foldText(providerText));
-    existing = provider ? sameName.find((course) => course.providerId === provider.id) : undefined;
+    existing = provider ? sameName.find((certificate) => certificate.providerId === provider.id) : undefined;
   }
 
   if (existing) {
-    warnAboutCatalogDifferences(ctx, existing, { certTypeText, validityMonths, ...extras }, issues);
-    return { ref: { id: existing.id }, key: existing.id };
+    const priced = findStudyCourse(ctx, cells, existing.id) ?? existing;
+    warnAboutCatalogDifferences(ctx, existing, priced, { certTypeText, validityMonths, ...extras }, issues);
+    return { ref: { id: existing.id }, key: existing.id, name: existing.name };
   }
-  if (!validity.ok || providerText === null) return NO_COURSE;
-  // A new course is written to the database, where cost and currency must come as a pair.
+  if (!validity.ok || providerText === null) return NO_CERTIFICATE;
+  // A new certificate is written to the database, where cost and currency must come as a pair.
   if (cost !== null && costCurrency === null) issues.errors.push("Choose a currency for the cost");
   if (cost === null && costCurrency !== null) issues.errors.push("Enter a cost or clear the currency");
-  // Never register an invalid definition: a later row for the same new course would reuse it and fail the commit.
-  if (issues.errors.length > errorsBeforeExtras) return NO_COURSE;
-  return defineNewCourse(ctx, { name, providerText, certTypeText, validityMonths, ...extras }, rowNumber, issues);
+  // Never register an invalid definition: a later row for the same new certificate would reuse it and fail the commit.
+  if (issues.errors.length > errorsBeforeExtras) return NO_CERTIFICATE;
+  return defineNewCertificate(ctx, { name, providerText, certTypeText, validityMonths, ...extras }, rowNumber, issues);
 }
 
-/** Cost, currency and study hours as read from a row; a cost counts only together with its currency. */
-type CourseExtras = { cost: number | null; costCurrency: Currency | null; estHours: number | null };
-const hasCost = (extras: CourseExtras): extras is { cost: number; costCurrency: Currency; estHours: number | null } =>
+/** Cost, currency and study hours (the course studied) as read from a row; a cost counts only together with its currency. */
+type CourseDetails = { cost: number | null; costCurrency: Currency | null; estHours: number | null };
+/** commit_import creates the self-preparing course when the row has a cost, a currency or hours. */
+export const hasCourseDetails = (details: { cost?: number | null; costCurrency?: string | null; estHours?: number | null }): boolean =>
+  details.cost != null || details.costCurrency != null || details.estHours != null;
+const hasCost = (extras: CourseDetails): extras is { cost: number; costCurrency: Currency; estHours: number | null } =>
   extras.cost !== null && extras.costCurrency !== null;
 
 /** The catalog wins; a non-blank value in the file that disagrees with it is only a warning. */
 function warnAboutCatalogDifferences(
   ctx: PlanContext,
-  course: ImportLookups["courses"][number],
-  input: { certTypeText: string | null; validityMonths: number | null } & CourseExtras,
+  certificate: ImportLookups["certificates"][number],
+  priced: CourseDetails,
+  input: { certTypeText: string | null; validityMonths: number | null } & CourseDetails,
   issues: Issues,
 ): void {
   const { certTypeText, validityMonths } = input;
   if (certTypeText !== null) {
-    const catalogName = course.certTypeId === null ? null : ctx.certTypeNameById.get(course.certTypeId) ?? null;
+    const catalogName = certificate.certTypeId === null ? null : ctx.certTypeNameById.get(certificate.certTypeId) ?? null;
     if (catalogName === null || foldText(catalogName) !== foldText(certTypeText)) {
       issues.warnings.push("Certificate type in the file differs from the catalogue — keeping the catalogue");
     }
   }
-  if (validityMonths !== null && validityMonths !== course.validityMonths) {
+  if (validityMonths !== null && validityMonths !== certificate.validityMonths) {
     issues.warnings.push("Validity in the file differs from the catalogue — keeping the catalogue");
   }
-  if (hasCost(input) && (input.cost !== course.cost || input.costCurrency !== course.costCurrency)) {
+  if (hasCost(input) && (input.cost !== priced.cost || input.costCurrency !== priced.costCurrency)) {
     issues.warnings.push("Cost in the file differs from the catalogue — keeping the catalogue");
   }
-  if (input.estHours !== null && input.estHours !== course.estHours) {
+  if (input.estHours !== null && input.estHours !== priced.estHours) {
     issues.warnings.push("Study hours in the file differ from the catalogue — keeping the catalogue");
   }
+}
+
+/** The named course studied, when it prepares for (or is granted by) the certificate; `null` when it is blank or does not fit. */
+function findStudyCourse(ctx: PlanContext, cells: RowCells, certificateId: string): ImportLookups["studyCourses"][number] | null {
+  const name = normalizeName(cells.courseStudied);
+  if (name === null) return null;
+  const sameName = ctx.studyCoursesByName.get(foldText(name)) ?? [];
+  return sameName.find((course) => course.preparesForId === certificateId || course.grantsId === certificateId) ?? null;
+}
+
+/** Spec 6.4: the course studied must prepare for the certificate; a new certificate has no course yet, so it cannot name one. */
+function resolveCourseStudied(ctx: PlanContext, cells: RowCells, certificate: CertificateResolution, issues: Issues): { id: string } | null {
+  const name = normalizeName(cells.courseStudied);
+  if (name === null || certificate.ref === null) return null;
+  if (!ctx.studyCoursesByName.has(foldText(name))) {
+    issues.errors.push(`Course "${name}" not found`);
+    return null;
+  }
+  const course = hasId(certificate.ref) ? findStudyCourse(ctx, cells, certificate.ref.id) : null;
+  if (course === null) {
+    issues.errors.push(`This course does not prepare for ${certificate.name}`);
+    return null;
+  }
+  return { id: course.id };
 }
 
 /** A provider / cert type: the existing one by folded name, else the first spelling seen in this file. */
@@ -345,26 +386,26 @@ function resolveCatalogRef(existing: Map<string, { id: string }>, created: Map<s
   return { name: created.get(key)! };
 }
 
-function defineNewCourse(
+function defineNewCertificate(
   ctx: PlanContext,
-  input: { name: string; providerText: string; certTypeText: string | null; validityMonths: number | null } & CourseExtras,
+  input: { name: string; providerText: string; certTypeText: string | null; validityMonths: number | null } & CourseDetails,
   rowNumber: number,
   issues: Issues,
-): CourseResolution {
-  const courseKey = `${foldText(input.providerText)}|${foldText(input.name)}`;
-  const key = `new:${courseKey}`;
-  const first = ctx.newCourses.get(courseKey);
+): CertificateResolution {
+  const certificateKey = `${foldText(input.providerText)}|${foldText(input.name)}`;
+  const key = `new:${certificateKey}`;
+  const first = ctx.newCertificates.get(certificateKey);
   if (first) {
     if (input.validityMonths !== null && input.validityMonths !== first.ref.validityMonths) {
-      issues.warnings.push(`Validity differs from the new course defined in row ${first.rowNumber} — using the first definition`);
+      issues.warnings.push(`Validity differs from the new certificate defined in row ${first.rowNumber} — using the first definition`);
     }
     if (hasCost(input) && (input.cost !== first.ref.cost || input.costCurrency !== first.ref.costCurrency)) {
-      issues.warnings.push(`Cost differs from the new course defined in row ${first.rowNumber} — using the first definition`);
+      issues.warnings.push(`Cost differs from the new certificate defined in row ${first.rowNumber} — using the first definition`);
     }
     if (input.estHours !== null && input.estHours !== first.ref.estHours) {
-      issues.warnings.push(`Study hours differ from the new course defined in row ${first.rowNumber} — using the first definition`);
+      issues.warnings.push(`Study hours differ from the new certificate defined in row ${first.rowNumber} — using the first definition`);
     }
-    return { ref: first.ref, key };
+    return { ref: first.ref, key, name: first.ref.name };
   }
   const ref = {
     name: input.name,
@@ -375,8 +416,8 @@ function defineNewCourse(
     costCurrency: input.costCurrency,
     estHours: input.estHours,
   };
-  ctx.newCourses.set(courseKey, { ref, rowNumber });
-  return { ref, key };
+  ctx.newCertificates.set(certificateKey, { ref, rowNumber });
+  return { ref, key, name: ref.name };
 }
 
 /* -------------------------------------------------------- record cells */
@@ -411,9 +452,11 @@ function readRecordCells(ctx: PlanContext, cells: RowCells, issues: Issues): Rec
 
 const hasId = <T extends { id: string } | object>(ref: T): ref is Extract<T, { id: string }> => "id" in ref;
 
-function decideAction(record: NormalizedRecord, existing: ExistingRecord | undefined): PlannedRow["action"] {
+function decideAction(record: NormalizedRecord, courseStudied: { id: string } | null, existing: ExistingRecord | undefined): PlannedRow["action"] {
   if (!existing) return "create";
   const unchanged =
+    // no course named = "not provided", which counts as equal to whatever the database holds
+    (courseStudied === null || courseStudied.id === existing.courseId) &&
     record.status === existing.status &&
     record.progress === existing.progress &&
     // null = "not provided", which counts as equal to whatever the database holds
@@ -444,20 +487,21 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
   };
 
   const member = resolveMember(ctx, cells, source.rowNumber, issues);
-  const course = resolveCourse(ctx, cells, source.rowNumber, issues);
+  const certificate = resolveCertificate(ctx, cells, source.rowNumber, issues);
+  const courseStudied = resolveCourseStudied(ctx, cells, certificate, issues);
   const record = readRecordCells(ctx, cells, issues);
 
-  if (member.email !== null && course.key !== null) {
-    const recordKey = `${member.email}|${course.key}`;
+  if (member.email !== null && certificate.key !== null) {
+    const recordKey = `${member.email}|${certificate.key}`;
     const firstRow = ctx.seenRecords.get(recordKey);
     if (firstRow === undefined) ctx.seenRecords.set(recordKey, source.rowNumber);
-    else issues.errors.push(`Duplicate of row ${firstRow} (same email and course)`);
+    else issues.errors.push(`Duplicate of row ${firstRow} (same email and certificate)`);
   }
 
   const skipped = (): PlannedRow => ({ ...base, normalized: null, action: "skip", ...issues });
-  if (issues.errors.length > 0 || member.ref === null || course.ref === null) return skipped();
+  if (issues.errors.length > 0 || member.ref === null || certificate.ref === null) return skipped();
 
-  const existing = hasId(member.ref) && hasId(course.ref) ? ctx.recordsByKey.get(`${member.ref.id}|${course.ref.id}`) : undefined;
+  const existing = hasId(member.ref) && hasId(certificate.ref) ? ctx.recordsByKey.get(`${member.ref.id}|${certificate.ref.id}`) : undefined;
   const reconciled = reconcileRecord(record, existing ?? null, ctx.today);
   issues.errors.push(...reconciled.errors);
   issues.warnings.push(...reconciled.warnings);
@@ -470,8 +514,8 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
   const normalizedRecord: NormalizedRecord = { ...record, status: reconciled.status, progress: reconciled.progress, issuedDate };
   return {
     ...base,
-    normalized: { member: member.ref, course: course.ref, record: normalizedRecord },
-    action: decideAction(normalizedRecord, existing),
+    normalized: { member: member.ref, course: certificate.ref, ...(courseStudied && { courseStudied }), record: normalizedRecord },
+    action: decideAction(normalizedRecord, courseStudied, existing),
     ...issues,
   };
 }
@@ -483,18 +527,24 @@ function collectNewEntities(rows: PlannedRow[]): ImportPlan["newEntities"] {
   const members = new Map<string, string>();
   const providers = new Map<string, string>();
   const certTypes = new Map<string, string>();
+  const certificates = new Map<string, string>();
   const courses = new Map<string, string>();
   for (const row of rows) {
     if (row.action !== "create" || row.normalized === null) continue;
-    const { member, course } = row.normalized;
+    const { member, course: certificate } = row.normalized;
     if (!hasId(member)) members.set(member.email, member.fullName);
-    if (hasId(course)) continue;
-    const providerKey = hasId(course.provider) ? course.provider.id : `new:${foldText(course.provider.name)}`;
-    courses.set(`${providerKey}|${foldText(course.name)}`, course.name);
-    if (!hasId(course.provider)) providers.set(foldText(course.provider.name), course.provider.name);
-    if (course.certType && !hasId(course.certType)) certTypes.set(foldText(course.certType.name), course.certType.name);
+    if (hasId(certificate)) continue;
+    const providerKey = hasId(certificate.provider) ? certificate.provider.id : `new:${foldText(certificate.provider.name)}`;
+    const key = `${providerKey}|${foldText(certificate.name)}`;
+    certificates.set(key, certificate.name);
+    if (hasCourseDetails(certificate)) courses.set(key, certificate.name);
+    if (!hasId(certificate.provider)) providers.set(foldText(certificate.provider.name), certificate.provider.name);
+    if (certificate.certType && !hasId(certificate.certType)) certTypes.set(foldText(certificate.certType.name), certificate.certType.name);
   }
-  return { members: [...members.values()], providers: [...providers.values()], certTypes: [...certTypes.values()], courses: [...courses.values()] };
+  return {
+    members: [...members.values()], providers: [...providers.values()], certTypes: [...certTypes.values()],
+    certificates: [...certificates.values()], courses: [...courses.values()],
+  };
 }
 
 export function buildImportPlan(table: ImportTable, lookups: ImportLookups, today: string): ImportPlan {

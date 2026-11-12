@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const ISSUE_TYPES = ["overdue_exam", "done_no_evidence", "member_no_team", "course_no_validity"] as const;
+export const ISSUE_TYPES = ["overdue_exam", "done_no_evidence", "member_no_team", "certificate_no_validity"] as const;
 export type IssueType = (typeof ISSUE_TYPES)[number];
 
 const rowSchema = z.object({
@@ -11,7 +11,7 @@ const rowSchema = z.object({
   member_code: z.string().nullable(),
   member_name: z.string().nullable(),
   team_name: z.string().nullable(),
-  course_name: z.string().nullable(),
+  certificate_name: z.string().nullable(),
   record_id: z.guid().nullable(),
   since: z.string(),
   days: z.number().int(),
@@ -25,7 +25,7 @@ export type IssueRow = {
   memberCode: string | null;
   memberName: string | null;
   teamName: string | null;
-  courseName: string | null;
+  certificateName: string | null;
   recordId: string | null;
   since: string;
   days: number;
@@ -43,7 +43,7 @@ export function parseIssues(rows: unknown[]): IssueRow[] {
       memberCode: r.member_code,
       memberName: r.member_name,
       teamName: r.team_name,
-      courseName: r.course_name,
+      certificateName: r.certificate_name,
       recordId: r.record_id,
       since: r.since,
       days: r.days,

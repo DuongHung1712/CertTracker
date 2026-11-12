@@ -44,7 +44,7 @@ export async function deleteCertType(input: { id: string }): Promise<Result<null
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("cert_types").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "Courses still use this certificate type, so it cannot be deleted." }));
+  if (error) return err(mapPostgresError(error, { restricted: "Certificates still use this certificate type, so it cannot be deleted." }));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");
@@ -79,7 +79,7 @@ export async function deleteProvider(input: { id: string }): Promise<Result<null
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("providers").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "Courses still use this provider, so it cannot be deleted." }));
+  if (error) return err(mapPostgresError(error, { restricted: "Courses or certificates still use this provider, so it cannot be deleted." }));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");
@@ -89,10 +89,8 @@ export async function deleteProvider(input: { id: string }): Promise<Result<null
 function toCourseRow(data: CourseInput) {
   return {
     name: data.name,
-    cert_type_id: data.certTypeId,
     provider_id: data.providerId,
-    level: data.level || null,
-    validity_months: data.validityMonths,
+    prepares_for_id: data.preparesForId,
     refundable: data.refundable,
     cost: data.cost,
     cost_currency: data.costCurrency,
@@ -125,12 +123,24 @@ export async function updateCourse(input: CourseInput & { id: string }): Promise
   return ok(null);
 }
 
+/** A foreign-key refusal on a course means a completion it grants: name it so the admin knows what to change. */
+async function deleteCourseMessage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  courseId: string,
+  error: { code?: string | null; message: string },
+): Promise<string> {
+  if (error.code !== "23503") return mapPostgresError(error);
+  const granted = await supabase.from("certificates").select("name").eq("course_id", courseId).maybeSingle();
+  if (!granted.data) return mapPostgresError(error);
+  return `This course grants the completion ${granted.data.name}. Delete or change that completion first.`;
+}
+
 export async function deleteCourse(input: { id: string }): Promise<Result<null>> {
   const parsed = idSchema.safeParse(input);
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("courses").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "Someone has a certificate for this course, so it cannot be deleted." }));
+  if (error) return err(await deleteCourseMessage(supabase, parsed.data.id, error));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");

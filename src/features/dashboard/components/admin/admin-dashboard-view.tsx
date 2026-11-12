@@ -2,12 +2,14 @@ import Link from "next/link";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { countIssuedThisMonth } from "@/features/dashboard/admin-metrics";
+import { calculateCompletionKpis } from "@/features/dashboard/completion-metrics";
 import { AdminComingSoonCard } from "@/features/dashboard/components/admin/admin-coming-soon-card";
 import { AdminHeader } from "@/features/dashboard/components/admin/admin-header";
 import { AdminKpiCards } from "@/features/dashboard/components/admin/admin-kpi-cards";
 import { AdminNeedsAttention } from "@/features/dashboard/components/admin/admin-needs-attention";
 import { AdminProfileCard } from "@/features/dashboard/components/admin/admin-profile-card";
 import { AdminQuickActionsCard } from "@/features/dashboard/components/admin/admin-quick-actions-card";
+import { getPlannedExams } from "@/features/dashboard/manager-metrics";
 import { DashboardTabStrip } from "@/features/dashboard/components/dashboard-tab-strip";
 import { Explorer } from "@/features/dashboard/components/explorer";
 import { MonthlyEarnedChart } from "@/features/dashboard/components/manager/monthly-earned-chart";
@@ -42,7 +44,7 @@ export function AdminDashboardView({
   profile,
   profileError,
   kpis,
-  courses,
+  certificates,
   teams,
   certTypes,
   providers,
@@ -61,6 +63,8 @@ export function AdminDashboardView({
         <AdminKpiCards
           kpis={kpis.data}
           issuedThisMonth={records.ok ? countIssuedThisMonth(records.data) : undefined}
+          completions={records.ok ? calculateCompletionKpis(records.data) : undefined}
+          plannedExams={records.ok ? getPlannedExams(records.data).length : undefined}
           teams={teams}
         />
       ) : (
@@ -74,7 +78,7 @@ export function AdminDashboardView({
             <NoRecords />
           ) : (
             <Section title="Explorer">
-              <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, courses })} defaultTab="team" />
+              <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, certificates })} defaultTab="team" />
             </Section>
           )}
         </div>

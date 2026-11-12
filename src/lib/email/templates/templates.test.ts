@@ -12,7 +12,7 @@ const item = (n: number, over: Partial<ExpiryItem> = {}): ExpiryItem => ({
   memberId: `m${n}`,
   memberName: `Member ${n}`,
   memberCode: `MC${String(n).padStart(3, "0")}`,
-  courseName: `Course ${n}`,
+  certificateName: `Certificate ${n}`,
   expiryDate: "2026-11-05",
   daysToExpiry: 25,
   bucket: "soon",
@@ -59,7 +59,7 @@ describe("ExpiryAlertEmail", () => {
     const { html, text } = await renderAlert(
       alertOf({
         name: evil,
-        own: [item(1, { courseName: evil })],
+        own: [item(1, { certificateName: evil })],
         teams: [{ teamId: "t", teamName: evil, items: [item(2, { memberName: evil })] }],
       }),
     );
@@ -72,11 +72,11 @@ describe("ExpiryAlertEmail", () => {
     const items = Array.from({ length: 30 }, (_, i) => item(i + 1));
     const { html } = await renderAlert(alertOf({ own: items }));
     expect(html).toContain("and 5 more certificates");
-    // "Course N" appears once per rendered row; the first 25 are shown and the last 5 are not.
-    expect(new Set(html.match(/Course \d+/g)).size).toBe(25);
-    expect(html).toContain("Course 25");
-    expect(html).not.toContain("Course 26");
-    expect(html).not.toContain("Course 30");
+    // "Certificate N" appears once per rendered row; the first 25 are shown and the last 5 are not.
+    expect(new Set(html.match(/Certificate \d+/g)).size).toBe(25);
+    expect(html).toContain("Certificate 25");
+    expect(html).not.toContain("Certificate 26");
+    expect(html).not.toContain("Certificate 30");
   });
 
   it("shows no overflow line for exactly 25 rows", async () => {
@@ -176,7 +176,7 @@ describe("ExpiryAlertEmail", () => {
   });
 
   it("renders a plain-text alternative without HTML tags", async () => {
-    const { text } = await renderAlert(alertOf({ own: [item(1, { courseName: "Chứng chỉ An toàn" })] }), "https://x.test");
+    const { text } = await renderAlert(alertOf({ own: [item(1, { certificateName: "Chứng chỉ An toàn" })] }), "https://x.test");
     expect(text).not.toMatch(/<[a-z][\s\S]*>/i);
     expect(text).toContain("Chứng chỉ An toàn");
   });
@@ -233,7 +233,7 @@ describe("MonthlyReportEmail", () => {
     const full = await renderReport(reportOf());
     expect(full.html).toContain("Team Alpha");
     expect(full.html).toContain("Expiring in the next 60 days");
-    expect(full.html).toContain("Course 1");
+    expect(full.html).toContain("Certificate 1");
 
     const empty = await renderReport(reportOf({ teams: [], upcoming: [] }));
     expect(empty.html).not.toContain("By team");

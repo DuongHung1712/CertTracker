@@ -14,7 +14,7 @@ export const MAX_IMPORT_ROWS = 2000;
 export const MAX_IMPORT_BYTES = 4 * 1024 * 1024;
 
 export const IMPORT_FIELDS = [
-  "memberName", "email", "team", "courseName", "provider", "certType", "validityMonths", "cost", "costCurrency", "estHours", "status", "progress",
+  "memberName", "email", "team", "courseName", "provider", "certType", "validityMonths", "cost", "costCurrency", "estHours", "courseStudied", "status", "progress",
   "plannedExamDate", "issuedDate", "certificateUrl", "viaCompany", "refundStatus", "notes",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
@@ -32,6 +32,7 @@ export const HEADER_ALIASES: Record<ImportField, string[]> = {
   cost: ["cost", "chi phi"],
   costCurrency: ["currency", "loai tien", "tien te"],
   estHours: ["study hours", "duration", "duration (hours)", "so gio", "gio hoc"],
+  courseStudied: ["course studied", "khoa hoc da hoc"],
   status: ["trang thai", "status", "tinh trang"],
   progress: ["tien do", "tien do (%)", "progress", "progress (%)", "%"],
   plannedExamDate: ["ngay thi du kien", "ngay thi", "planned exam date", "exam date", "du kien thi"],

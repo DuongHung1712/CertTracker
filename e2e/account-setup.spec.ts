@@ -52,7 +52,7 @@ test("an invited member sets a password, signs in as Member and sees their own p
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
   await page.goto("/me");
-  await expect(page.getByRole("heading", { name: "My certificates" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My learning" })).toBeVisible();
   await expect(page.getByText("Your account is not linked to a member")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Settings" })).toHaveCount(0);
 });

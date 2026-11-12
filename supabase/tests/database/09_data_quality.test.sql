@@ -31,18 +31,18 @@ update public.profiles set role = 'manager' where user_id = 'd9000000-0000-0000-
 insert into public.manager_scopes (team_id, user_id)
   values ('d9000000-0000-0000-0000-00000000a001', 'd9000000-0000-0000-0000-00000000f00b');
 
-insert into public.courses (id, name, validity_months) values
-  ('d9000000-0000-0000-0000-00000000e001', 'DQ with validity', 12),
-  ('d9000000-0000-0000-0000-00000000e002', 'DQ no validity (has records)', null),
-  ('d9000000-0000-0000-0000-00000000e003', 'DQ no validity (no records)', null),
-  ('d9000000-0000-0000-0000-00000000e004', 'DQ second with validity', 6);
+insert into public.certificates (id, name, kind, validity_months) values
+  ('d9000000-0000-0000-0000-00000000e001', 'DQ with validity', 'exam', 12),
+  ('d9000000-0000-0000-0000-00000000e002', 'DQ no validity (has records)', 'exam', null),
+  ('d9000000-0000-0000-0000-00000000e003', 'DQ no validity (no records)', 'exam', null),
+  ('d9000000-0000-0000-0000-00000000e004', 'DQ second with validity', 'exam', 6);
 
 -- r1: overdue 3 days (A1)            r2: planned today -> NOT overdue (A1)
 -- r3: overdue 1 day (B1)             r4: overdue but member inactive
 -- r5: done, no evidence, no link (No Team)          r6: done with link only (B1)  -> fine
 -- r7: done with evidence file (No Team)             r8: done with whitespace-only link (A1) -> flagged
 -- r9: done + overdue planned date (A1)              -> NOT overdue (done)
-insert into public.training_records (id, member_id, course_id, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path) values
+insert into public.training_records (id, member_id, certificate_id, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path) values
   ('d9000000-0000-0000-0000-0000000000e1', 'd9000000-0000-0000-0000-00000000b001', 'd9000000-0000-0000-0000-00000000e001', 'in_progress', 50, public.vn_today() - 3, null, null, null),
   ('d9000000-0000-0000-0000-0000000000e2', 'd9000000-0000-0000-0000-00000000b001', 'd9000000-0000-0000-0000-00000000e002', 'not_started', 0, public.vn_today(), null, null, null),
   ('d9000000-0000-0000-0000-0000000000e3', 'd9000000-0000-0000-0000-00000000b002', 'd9000000-0000-0000-0000-00000000e001', 'not_started', 0, public.vn_today() - 1, null, null, null),
@@ -81,12 +81,12 @@ select results_eq(
   'admin: only the ACTIVE member without a team');
 select results_eq(
   $$select subject_id from public.v_data_quality_issues
-    where issue_type = 'course_no_validity' and subject_id::text like 'd9000000-%'$$,
+    where issue_type = 'certificate_no_validity' and subject_id::text like 'd9000000-%'$$,
   array['d9000000-0000-0000-0000-00000000e002'::uuid],
   'admin: course without validity that has records (not the unused one)');
 select is(
-  (select severity from public.v_data_quality_issues where issue_type = 'course_no_validity' and subject_id = 'd9000000-0000-0000-0000-00000000e002'),
-  'info', 'course_no_validity is info severity');
+  (select severity from public.v_data_quality_issues where issue_type = 'certificate_no_validity' and subject_id = 'd9000000-0000-0000-0000-00000000e002'),
+  'info', 'certificate_no_validity is info severity');
 select is(
   (select count(*) from public.v_data_quality_issues where member_id = 'd9000000-0000-0000-0000-00000000b004'),
   0::bigint, 'inactive member has no issues at all');
@@ -105,7 +105,7 @@ select results_eq(
   array['d9000000-0000-0000-0000-0000000000e8'::uuid],
   'manager: done-without-evidence only for Team A (r8), not the no-team member');
 select is(
-  (select count(*) from public.v_data_quality_issues where issue_type in ('member_no_team', 'course_no_validity')),
+  (select count(*) from public.v_data_quality_issues where issue_type in ('member_no_team', 'certificate_no_validity')),
   0::bigint, 'manager does not see member-level or course-level issues');
 reset role;
 
@@ -116,7 +116,7 @@ select results_eq(
   array['d9000000-0000-0000-0000-0000000000e1'::uuid, 'd9000000-0000-0000-0000-0000000000e8'::uuid],
   'member: sees only own issues (r1, r8)');
 select is(
-  (select count(*) from public.v_data_quality_issues where issue_type in ('member_no_team', 'course_no_validity')),
+  (select count(*) from public.v_data_quality_issues where issue_type in ('member_no_team', 'certificate_no_validity')),
   0::bigint, 'member does not see member-level or course-level issues');
 reset role;
 
@@ -131,7 +131,7 @@ select is(
   (select array_agg(column_name::text order by ordinal_position) from information_schema.columns
     where table_schema = 'public' and table_name = 'v_data_quality_issues'),
   array['issue_type','severity','subject_id','member_id','member_code','member_name','team_id','team_name',
-        'course_id','course_name','record_id','since','days'],
+        'certificate_id','certificate_name','record_id','since','days'],
   'columns are the documented contract');
 select is(
   (select reloptions::text from pg_class where oid = 'public.v_data_quality_issues'::regclass),

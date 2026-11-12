@@ -59,7 +59,9 @@ export function recordRuleIssues(
 export const recordSchema = z
   .object({
     memberId: z.guid("Choose a member"),
-    courseId: z.guid("Choose a course"),
+    certificateId: z.guid("Choose a certificate"),
+    /** The course studied: optional for an exam; for a completion the database sets the granting course. */
+    courseId: blankToNull(z.guid("Invalid data")),
     status: z.enum(RECORD_STATUSES, "Choose a status"),
     progress: z.coerce
       .number("Progress must be a number")

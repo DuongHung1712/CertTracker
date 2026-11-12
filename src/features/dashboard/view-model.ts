@@ -1,5 +1,5 @@
 import type { MemberCareer } from "@/features/career/queries";
-import type { TabConfig, TabResult } from "@/features/dashboard/components/explorer/types";
+import { CERTIFICATE_GROUP_LABEL, type TabConfig, type TabResult } from "@/features/dashboard/components/explorer/types";
 
 export type MemberProfile = {
   fullName: string;
@@ -33,12 +33,12 @@ export function buildExplorerTabs(results: {
   teams: TabResult;
   certTypes: TabResult;
   providers: TabResult;
-  courses: TabResult;
+  certificates: TabResult;
 }): TabConfig[] {
   return [
     { id: "team", label: "By team", groupLabel: "Team", result: results.teams },
     { id: "cert_type", label: "By certificate type", groupLabel: "Certificate type", result: results.certTypes },
     { id: "provider", label: "By provider", groupLabel: "Provider", result: results.providers },
-    { id: "course", label: "Popular courses", groupLabel: "Course", result: results.courses },
+    { id: "certificate", label: "Popular certificates", groupLabel: CERTIFICATE_GROUP_LABEL, result: results.certificates },
   ];
 }

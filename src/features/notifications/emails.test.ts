@@ -8,7 +8,7 @@ const item = (n: number, memberName = `Member ${n}`): ExpiryItem => ({
   memberId: `m${n}`,
   memberName,
   memberCode: `MC${n}`,
-  courseName: `Course ${n}`,
+  certificateName: `Course ${n}`,
   expiryDate: "2026-11-05",
   daysToExpiry: 25,
   bucket: "soon",

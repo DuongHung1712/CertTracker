@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
-import type { ComboboxOption } from "@/components/entity-combobox";
+import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { Button } from "@/components/ui/button";
 import { AuditVerificationCard } from "@/features/dashboard/components/member/audit-verification-card";
 import { ComplianceCopilotCard } from "@/features/dashboard/components/member/compliance-copilot-card";
@@ -31,7 +31,8 @@ export function MemberDashboardView({
   memberId,
   records,
   recordsError,
-  courseOptions,
+  certificateOptions,
+  studyCourses,
   subtitle,
 }: {
   fullName: string;
@@ -41,7 +42,8 @@ export function MemberDashboardView({
   memberId: string;
   records: RecordRow[];
   recordsError?: string;
-  courseOptions: ComboboxOption[];
+  certificateOptions: CertificateChoice[];
+  studyCourses: StudyCourse[];
   /** Greeting and "figures as of" time, worked out on the server so the first render matches on the client. */
   subtitle: string;
 }) {
@@ -71,7 +73,7 @@ export function MemberDashboardView({
             <ExportLinks />
             <Button size="sm" onClick={handleAddCertificate} className="gap-1.5">
               <Plus className="size-4" aria-hidden="true" />
-              <span>Add certificate</span>
+              <span>Add certificate or course completion</span>
             </Button>
           </div>
         }
@@ -108,12 +110,13 @@ export function MemberDashboardView({
           <MemberAttentionBanner attention={attention} onUploadProof={handleUploadProof} />
 
           {recordsError ? (
-            <SectionError title="My certificates" />
+            <SectionError title="My learning" />
           ) : (
             <MemberCertificatesList
               fullName={fullName}
               records={records}
-              courseOptions={courseOptions}
+              certificateOptions={certificateOptions}
+              studyCourses={studyCourses}
               memberId={memberId}
               sheetOpen={sheetOpen}
               onSheetOpenChange={setSheetOpen}

@@ -15,7 +15,7 @@ export type SnapshotRecord = {
   id: string;
   memberId: string;
   status: "not_started" | "in_progress" | "done";
-  courseName: string;
+  certificateName: string;
   issuedDate: string | null;
   expiryDate: string | null;
   daysToExpiry: number | null;

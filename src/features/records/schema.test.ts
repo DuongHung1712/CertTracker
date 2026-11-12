@@ -3,7 +3,7 @@ import { recordRuleIssues, recordSchema } from "@/features/records/schema";
 
 const base = {
   memberId: "00000000-0000-0000-0000-000000000000",
-  courseId: "00000000-0000-0000-0000-000000000000",
+  certificateId: "00000000-0000-0000-0000-000000000000",
   status: "in_progress",
   progress: 40,
   plannedExamDate: "",
@@ -13,6 +13,19 @@ const base = {
 };
 
 describe("recordSchema", () => {
+  it("requires a certificate and names the problem", () => {
+    const result = recordSchema.safeParse({ ...base, certificateId: "" });
+    expect(result.error?.issues[0]?.message).toBe("Choose a certificate");
+  });
+
+  it("treats the course studied as optional: blank or missing becomes null", () => {
+    expect(recordSchema.parse(base).courseId).toBeNull();
+    expect(recordSchema.parse({ ...base, courseId: "" }).courseId).toBeNull();
+    const courseId = "11111111-1111-1111-1111-111111111111";
+    expect(recordSchema.parse({ ...base, courseId }).courseId).toBe(courseId);
+    expect(recordSchema.safeParse({ ...base, courseId: "nope" }).success).toBe(false);
+  });
+
   it("parses typed dd/mm/yyyy dates into ISO and blank fields into null", () => {
     const result = recordSchema.safeParse({ ...base, plannedExamDate: "15/03/2027" });
     expect(result.success).toBe(true);
