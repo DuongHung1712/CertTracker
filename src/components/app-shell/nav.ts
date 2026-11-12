@@ -24,11 +24,11 @@ const ALL: Role[] = ["admin", "manager", "member"];
 
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ALL },
-  { href: "/me", label: "My certificates", icon: Award, roles: ALL, requiresMember: true },
+  { href: "/me", label: "My learning", icon: Award, roles: ALL, requiresMember: true },
   { href: "/members", label: "Members", icon: Users, roles: ["admin", "manager"] },
-  { href: "/records", label: "Certificates", icon: ListChecks, roles: ["admin", "manager"] },
+  { href: "/records", label: "Learning", icon: ListChecks, roles: ["admin", "manager"] },
   { href: "/data-quality", label: "Data quality", icon: ShieldCheck, roles: ["admin", "manager"] },
-  { href: "/courses", label: "Courses", icon: BookOpen, roles: ALL },
+  { href: "/courses", label: "Catalogue", icon: BookOpen, roles: ALL },
   { href: "/org", label: "Organisation", icon: Building2, roles: ["admin"] },
   { href: "/import", label: "Import / Export", icon: FileSpreadsheet, roles: ["admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },

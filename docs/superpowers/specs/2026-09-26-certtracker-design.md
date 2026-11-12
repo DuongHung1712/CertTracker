@@ -79,11 +79,21 @@ members         (id uuid PK, code text UNIQUE  -- 'M001', sinh từ sequence
 
 cert_types      (id uuid PK, name UNIQUE)          -- AI, Cloud, Security...
 providers       (id uuid PK, name UNIQUE)          -- AWS, Google, Microsoft, NVIDIA...
-courses         (id uuid PK, name, cert_type_id → cert_types, provider_id → providers,
-                 level, validity_months int NULL   -- NULL = không hết hạn
-                 refundable bool, cost numeric NULL, est_hours int NULL, url)
+-- Từ 2026-11-11 (decision #65): certificate (cái member nắm giữ) tách khỏi course (cách học).
+certificates    (id uuid PK, name, kind: 'exam'|'completion',   -- completion hiện trên UI là "course completion"
+                 cert_type_id → cert_types, provider_id → providers, level,
+                 validity_months int NULL,          -- NULL = không hết hạn
+                 url, course_id → courses UNIQUE,   -- completion: course cấp nó; exam: NULL
+                 UNIQUE(provider_id, name))
+courses         (id uuid PK, name, provider_id → providers,
+                 prepares_for_id → certificates NULL,   -- phải là exam; một course chuẩn bị tối đa một exam
+                 refundable bool, refund_conditions text, cost numeric NULL, cost_currency,
+                 est_hours int NULL, url, UNIQUE(provider_id, name))
 
-training_records(id uuid PK, member_id → members, course_id → courses,
+training_records(id uuid PK, member_id → members,
+                 certificate_id → certificates,          -- UNIQUE(member_id, certificate_id)
+                 course_id → courses NULL,               -- course đã học: trigger buộc nó chuẩn bị cho exam
+                                                         -- (hoặc là course cấp completion); chỉ kiểm khi hai cột này đổi
                  status: 'not_started'|'in_progress'|'done',
                  progress int 0..100,
                  planned_exam_date date, issued_date date,
@@ -110,7 +120,7 @@ Quy ước:
 Không lưu cứng vì `days_to_expiry` thay đổi mỗi ngày. View tạo với `security_invoker = true` để RLS vẫn áp dụng.
 
 - `today = (now() AT TIME ZONE 'Asia/Ho_Chi_Minh')::date`
-- `expiry_date = issued_date + validity_months * interval '1 month'` (NULL nếu thiếu `issued_date` hoặc `validity_months`)
+- `validity_months` lấy từ `certificates` (không còn ở `courses`); `expiry_date = issued_date + validity_months * interval '1 month'` (NULL nếu thiếu `issued_date` hoặc `validity_months`)
 - `days_to_expiry = expiry_date - today`
 - `expiry_status`:
   - `No Expiry` — `validity_months` NULL
@@ -139,7 +149,7 @@ Helper functions (`SECURITY DEFINER`, `STABLE`, `search_path` cố định):
 | dcs, programs, teams | toàn quyền | xem | xem |
 | team_managers, profiles | toàn quyền | xem của mình | xem của mình |
 | members | toàn quyền | xem/sửa khi `team_id ∈ managed_team_ids()` | xem chính mình |
-| cert_types, providers, courses | toàn quyền | xem | xem |
+| cert_types, providers, certificates, courses | toàn quyền | xem | xem |
 | training_records | toàn quyền | CRUD khi member thuộc team mình quản lý | xem/thêm/sửa khi `member_id = my_member_id()` |
 | import_batches / import_rows | toàn quyền | không | không |
 | Storage `certificates/{member_id}/{record_id}/{file}` | toàn quyền | xem/ghi file của member trong team mình | xem/ghi file của mình |
@@ -194,7 +204,7 @@ Pipeline làm sạch (hàm TS thuần, mỗi quy tắc có unit test):
 Export: CSV có **UTF-8 BOM** và `.xlsx`; dữ liệu lấy qua client của người dùng (tuân RLS).
 
 ### 6.4 Chất lượng dữ liệu (nhóm 5)
-Constraint (FK, CHECK) chặn tham chiếu sai và status/progress lệch ngay trong DB; lỗi đầu vào được bắt ở staging import. View `v_data_quality_issues` bắt phần còn lại: quá `planned_exam_date` mà chưa Done, member chưa có team, course thiếu `validity_months`, record Done thiếu minh chứng.
+Constraint (FK, CHECK) chặn tham chiếu sai và status/progress lệch ngay trong DB; lỗi đầu vào được bắt ở staging import. View `v_data_quality_issues` bắt phần còn lại: quá `planned_exam_date` mà chưa Done, member chưa có team, certificate loại exam thiếu `validity_months` (`certificate_no_validity`), record Done thiếu minh chứng.
 
 ### 6.5 Cron & email (nhóm 5, 7)
 

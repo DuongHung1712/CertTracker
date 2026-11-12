@@ -5,7 +5,9 @@ import { getCurrentUser } from "@/features/auth/queries";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
-import { listCourseOptions, listRecords } from "@/features/records/queries";
+import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
+
+const MY_LEARNING_DESCRIPTION = "Exam certificates you hold, courses you have studied and course completions.";
 
 export default async function MePage() {
   const user = await getCurrentUser();
@@ -14,25 +16,26 @@ export default async function MePage() {
   if (!user.memberId) {
     return (
       <div className="flex flex-col gap-6">
-        <PageHeader title="My certificates" description="Certificates you hold and courses you are studying." />
+        <PageHeader title="My learning" description={MY_LEARNING_DESCRIPTION} />
         <EmptyState
           title="Your account is not linked to a member"
-          description="Ask your admin to link your account to a member so your certificates show here."
+          description="Ask your admin to link your account to a member so your learning shows here."
         />
       </div>
     );
   }
 
-  const [records, courseOptions] = await Promise.all([
+  const [records, certificateOptions, studyCourses] = await Promise.all([
     listRecords({ memberId: user.memberId }),
-    listCourseOptions(),
+    listCertificateOptions(),
+    listStudyCourses(),
   ]);
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="My certificates"
-        description="Certificates you hold and courses you are studying."
+        title="My learning"
+        description={MY_LEARNING_DESCRIPTION}
         // The export is everything the caller's RLS shows; only for a Member is that exactly "my records".
         actions={user.role === "member" ? <ExportLinks /> : undefined}
       />
@@ -40,7 +43,8 @@ export default async function MePage() {
       <RecordsTable
         records={records}
         memberOptions={[]}
-        courseOptions={courseOptions}
+        certificateOptions={certificateOptions}
+        studyCourses={studyCourses}
         mode="self"
         fixedMemberId={user.memberId}
         canDelete={user.role !== "member"}

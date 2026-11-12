@@ -295,7 +295,7 @@ export function readImportTable(bytes: Uint8Array): Cleaned<ImportTable> {
   return {
     ok: false,
     error:
-      "No header row with an Email column and a Course column was found in the first 10 rows of the sheets." +
+      "No header row with an Email column and a Certificate column was found in the first 10 rows of the sheets." +
       (skippedWide ? ` Sheet "${skippedWide}" was skipped because it has too many columns (more than ${MAX_IMPORT_COLUMNS}).` : ""),
   };
 }

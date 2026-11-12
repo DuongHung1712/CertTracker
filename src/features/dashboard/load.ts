@@ -10,7 +10,7 @@ import { settle } from "@/features/dashboard/settle";
 import { resolveMemberProfile } from "@/features/dashboard/view-model";
 import { listDataQualityIssues } from "@/features/data-quality/queries";
 import { listMembers, listTeamOptionsForCurrentUser } from "@/features/members/queries";
-import { listCourseOptions, listRecords } from "@/features/records/queries";
+import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
 import { formatDateTimeVn } from "@/lib/format";
 
 type SignedInUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
@@ -20,7 +20,7 @@ export async function loadAdminDashboard(user: SignedInUser) {
   const { memberId } = user;
   const [
     kpis,
-    courses,
+    certificates,
     teams,
     certTypes,
     providers,
@@ -31,7 +31,7 @@ export async function loadAdminDashboard(user: SignedInUser) {
     membersResult,
   ] = await Promise.all([
     settle(getDashboardKpis()),
-    settle(getBreakdown("course", 10)),
+    settle(getBreakdown("certificate", 10)),
     settle(getBreakdown("team")),
     settle(getBreakdown("cert_type")),
     settle(getBreakdown("provider")),
@@ -62,7 +62,7 @@ export async function loadAdminDashboard(user: SignedInUser) {
     profile,
     profileError: profileFailure && !profileFailure.ok ? profileFailure.error : undefined,
     kpis,
-    courses,
+    certificates,
     teams,
     certTypes,
     providers,
@@ -78,9 +78,10 @@ export async function loadMemberDashboard(
   user: SignedInUser,
   memberId: string,
 ): Promise<ComponentProps<typeof MemberDashboardView>> {
-  const [recordsResult, courseOptionsResult, careerResult, membersResult] = await Promise.all([
+  const [recordsResult, certificateOptionsResult, studyCoursesResult, careerResult, membersResult] = await Promise.all([
     settle(listRecords({ memberId })),
-    settle(listCourseOptions()),
+    settle(listCertificateOptions()),
+    settle(listStudyCourses()),
     settle(getMemberCareer(memberId)),
     settle(listMembers()),
   ]);
@@ -98,7 +99,8 @@ export async function loadMemberDashboard(
     memberId,
     records: recordsResult.ok ? recordsResult.data : [],
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
-    courseOptions: courseOptionsResult.ok ? courseOptionsResult.data : [],
+    certificateOptions: certificateOptionsResult.ok ? certificateOptionsResult.data : [],
+    studyCourses: studyCoursesResult.ok ? studyCoursesResult.data : [],
     subtitle: `${getGreeting(profile.fullName, now)} · Figures as of ${formatDateTimeVn(now.toISOString())}.`,
   };
 }

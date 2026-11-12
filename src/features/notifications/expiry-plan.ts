@@ -6,7 +6,7 @@ export type ExpiryItem = {
   memberId: string;
   memberName: string;
   memberCode: string;
-  courseName: string;
+  certificateName: string;
   expiryDate: string;
   daysToExpiry: number;
   bucket: ExpiryBucket;
@@ -40,7 +40,7 @@ const viCollator = new Intl.Collator("vi", { numeric: true, sensitivity: "base" 
 export const byUrgency = (a: ExpiryItem, b: ExpiryItem): number =>
   a.daysToExpiry - b.daysToExpiry ||
   viCollator.compare(a.memberName, b.memberName) ||
-  viCollator.compare(a.courseName, b.courseName) ||
+  viCollator.compare(a.certificateName, b.certificateName) ||
   (a.memberCode < b.memberCode ? -1 : a.memberCode > b.memberCode ? 1 : 0); // code-point order: fully deterministic
 
 export function buildExpiryItems(records: SnapshotRecord[], membersById: Map<string, SnapshotMember>): ExpiryItem[] {
@@ -54,7 +54,7 @@ export function buildExpiryItems(records: SnapshotRecord[], membersById: Map<str
         memberId: m.id,
         memberName: m.fullName,
         memberCode: m.code,
-        courseName: r.courseName,
+        certificateName: r.certificateName,
         expiryDate: r.expiryDate,
         daysToExpiry: r.daysToExpiry,
         bucket,

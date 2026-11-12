@@ -11,10 +11,8 @@ describe("certTypeSchema / providerSchema", () => {
 describe("courseSchema", () => {
   const base = {
     name: "AWS Solutions Architect Associate",
-    certTypeId: "00000000-0000-0000-0000-000000000000",
     providerId: "00000000-0000-0000-0000-000000000000",
-    level: "Associate",
-    validityMonths: 36,
+    preparesForId: "00000000-0000-0000-0000-000000000001",
     refundable: true,
     cost: 150,
     costCurrency: "USD" as const,
@@ -26,11 +24,10 @@ describe("courseSchema", () => {
     expect(courseSchema.safeParse(base).success).toBe(true);
   });
 
-  it("allows validityMonths, cost, estHours, url and level to be empty (No Expiry course, no known cost)", () => {
+  it("allows preparesForId, cost, estHours and url to be empty (self-study course, no known cost)", () => {
     const result = courseSchema.safeParse({
       ...base,
-      level: "",
-      validityMonths: null,
+      preparesForId: null,
       cost: null,
       costCurrency: null,
       estHours: null,
@@ -66,8 +63,16 @@ describe("courseSchema", () => {
     expect(courseSchema.safeParse({ ...base, costCurrency: "EUR" }).success).toBe(false);
   });
 
-  it("rejects a non-positive validityMonths", () => {
-    expect(courseSchema.safeParse({ ...base, validityMonths: 0 }).success).toBe(false);
+  it("treats an empty Prepares for as none and rejects a malformed id", () => {
+    expect(courseSchema.parse({ ...base, preparesForId: "" }).preparesForId).toBeNull();
+    expect(courseSchema.safeParse({ ...base, preparesForId: "nope" }).success).toBe(false);
+  });
+
+  it("no longer carries the certificate fields", () => {
+    const parsed = courseSchema.parse({ ...base, certTypeId: "x", level: "Pro", validityMonths: 0 });
+    expect(parsed).not.toHaveProperty("certTypeId");
+    expect(parsed).not.toHaveProperty("level");
+    expect(parsed).not.toHaveProperty("validityMonths");
   });
 
   it("rejects an invalid url", () => {

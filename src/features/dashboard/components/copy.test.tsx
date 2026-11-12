@@ -77,15 +77,15 @@ describe("[copy] member KPI cards", () => {
     const html = render(records);
     expect(html).toContain("1 expiring");
     expect(html).toContain("1 in progress");
-    expect(html).toContain("Courses in progress");
+    expect(html).toContain("Certificates in progress");
     expect(html).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|Expiring soon|≤|active study goals| exp |\d+ study\b/i);
-    expect(render([])).toContain("No courses in progress");
+    expect(render([])).toContain("No certificates in progress");
   });
 
   it("says the total covers courses not started or in progress, not only in progress", () => {
     const html = render([doneRecord(120)]);
-    expect(html).toContain("Including courses not started or in progress");
-    expect(html).not.toContain("Including courses in progress");
+    expect(html).toContain("Including certificates not started or in progress");
+    expect(html).not.toContain("Including certificates in progress");
   });
 });
 
@@ -110,7 +110,8 @@ describe("[copy] member certificate list", () => {
       <MemberCertificatesList
         fullName="Lê Minh Châu"
         records={records}
-        courseOptions={[]}
+        certificateOptions={[]}
+        studyCourses={[]}
         memberId="m1"
         sheetOpen={false}
         onSheetOpenChange={() => {}}
@@ -124,10 +125,10 @@ describe("[copy] member certificate list", () => {
     issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A",
   });
 
-  it("counts one certificate in the singular and drops Registered Records", () => {
+  it("counts one exam certificate in the singular, apart from course completions, and drops Registered Records", () => {
     const html = render([studying]);
-    expect(html).toContain("My certificates");
-    expect(html).toContain("1 certificate");
+    expect(html).toContain("My learning");
+    expect(html).toContain("1 exam certificate, 0 course completions");
     expect(html).not.toMatch(PLURAL_BUGS);
     expect(html).not.toMatch(/Registered Records|certifications registered/);
   });
@@ -137,6 +138,12 @@ describe("[copy] member certificate list", () => {
     expect(html).toContain("Study progress");
     expect(html).toContain("Planned exam date");
     expect(html).not.toMatch(/Curriculum coverage|Target exam date/);
+  });
+
+  it("calls the planned date of a course completion a planned finish date", () => {
+    const html = render([{ ...studying, certificateKind: "completion", certificateName: "Intro to Terraform" }]);
+    expect(html).toContain("Planned finish date");
+    expect(html).not.toContain("Planned exam date");
   });
 
   it("names the expiring tab with the aggregate wording", () => {
@@ -166,9 +173,9 @@ describe("[copy] explorer master list", () => {
     expect(render([row({ headcount: null, people: 4, records: 7 })], "Course")).toContain("4 members");
   });
 
-  it("calls the column Certificates and never says records", () => {
+  it("calls the count column Total and never says records", () => {
     const html = render([row({ records: 2 })]);
-    expect(html).toContain("Certificates");
+    expect(html).toContain("Total");
     expect(html).toContain("2 certificates");
     expect(html).not.toMatch(/\brecords?\b/i);
   });
@@ -186,16 +193,28 @@ describe("[copy] explorer detail panel", () => {
     const html = render(row({ records: 1 }));
     expect(html).toContain("Total: 1 certificate");
     expect(html).not.toMatch(PLURAL_BUGS);
-    expect(html).toContain("View certificates");
+    expect(html).toContain("View learning");
     expect(html).not.toMatch(/\brecords?\b/i);
     expect(render(row({ records: 3, done: 2 }))).toContain("Total: 3 certificates");
   });
 
+  it("words a certificate group by its members in the header, the footer and the copied text", () => {
+    const certificate = row({ label: "AWS SAA", people: 3, records: 3, done: 1, inProgress: 1, valid: 1, expired: 0, headcount: null });
+    const html = text(renderToStaticMarkup(<DetailPanel selectedRow={certificate} groupLabel="Certificate" peopleLabel="Members" />));
+    expect(html).toContain("Members: 3");
+    expect(html).not.toContain("Certificates: 3");
+    expect(html).toContain("Total: 3 members");
+    expect(html).not.toMatch(/records?/i);
+    expect(copySummaryText(certificate, "Certificate")).toBe(
+      "AWS SAA: 3 members, 33% completed (1 completed, 1 in progress, 1 valid, 0 expired).",
+    );
+  });
+
   it("copies a summary in plain terms", () => {
-    expect(copySummaryText(row({ label: "AWS", records: 1, done: 1, inProgress: 0, valid: 1, expired: 0 }))).toBe(
+    expect(copySummaryText(row({ label: "AWS", records: 1, done: 1, inProgress: 0, valid: 1, expired: 0 }), "Provider")).toBe(
       "AWS: 1 certificate, 100% completed (1 completed, 0 in progress, 1 valid, 0 expired).",
     );
-    expect(copySummaryText(row({ label: "AWS", records: 4, done: 2, inProgress: 1, valid: 1, expired: 1 }))).toBe(
+    expect(copySummaryText(row({ label: "AWS", records: 4, done: 2, inProgress: 1, valid: 1, expired: 1 }), "Provider")).toBe(
       "AWS: 4 certificates, 50% completed (2 completed, 1 in progress, 1 valid, 1 expired).",
     );
   });

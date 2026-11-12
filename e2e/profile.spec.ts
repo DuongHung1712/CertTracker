@@ -156,7 +156,7 @@ test("the career card lives on the profile page", async ({ page }) => {
   await page.goto("/profile");
   await expect(page.getByRole("region", { name: "My career" })).toBeVisible();
   await page.goto("/me");
-  await expect(page.getByRole("heading", { level: 1, name: "My certificates" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "My learning" })).toBeVisible();
   await expect(page.getByTestId("career-yoe")).toHaveCount(0);
 });
 

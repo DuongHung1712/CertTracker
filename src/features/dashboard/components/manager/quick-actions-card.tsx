@@ -21,7 +21,7 @@ export function QuickActionsCard() {
           )}
         >
           <PlusCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-          <span>Add certificate</span>
+          <span>Add learning</span>
         </Link>
 
         <Link

@@ -1,3 +1,4 @@
+import { preparingCourseByCertificate } from "@/features/import/preparing-course";
 import type { ImportLookups, PlannedRow } from "@/features/import/plan";
 import {
   importActionSchema,
@@ -47,7 +48,7 @@ export type ImportRowView = {
  */
 export async function loadImportLookups(): Promise<ImportLookups> {
   const supabase = await createClient();
-  const [members, teams, providers, certTypes, courses, records] = await Promise.all([
+  const [members, teams, providers, certTypes, certificates, courses, records] = await Promise.all([
     fetchAllRows((from, to) =>
       supabase.from("members").select("id, email, full_name, team_id, is_active").order("email").order("id").range(from, to),
     ),
@@ -56,25 +57,31 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     fetchAllRows((from, to) => supabase.from("cert_types").select("id, name").order("name").order("id").range(from, to)),
     fetchAllRows((from, to) =>
       supabase
-        .from("courses")
-        .select("id, name, provider_id, cert_type_id, validity_months, cost, cost_currency, est_hours")
+        .from("certificates")
+        .select("id, name, provider_id, cert_type_id, validity_months, course_id")
         .order("name")
         .order("id")
         .range(from, to),
+    ),
+    // Cost and hours live on the course; a record names the course studied.
+    fetchAllRows((from, to) =>
+      supabase.from("courses").select("id, name, prepares_for_id, cost, cost_currency, est_hours").order("id").range(from, to),
     ),
     fetchAllRows((from, to) =>
       supabase
         .from("training_records")
         .select(
-          "id, member_id, course_id, status, progress, planned_exam_date, issued_date, certificate_url, via_company, refund_status, notes",
+          "id, member_id, certificate_id, course_id, status, progress, planned_exam_date, issued_date, certificate_url, via_company, refund_status, notes",
         )
         .order("member_id")
-        .order("course_id")
+        .order("certificate_id")
         .order("id")
         .range(from, to),
     ),
   ]);
 
+  const courseByCertificate = preparingCourseByCertificate(courses, new Map(certificates.map((c) => [c.id, c.name])));
+  const grantedByCourse = new Map(certificates.filter((c) => c.course_id).map((c) => [c.course_id, c.id]));
   return {
     members: members.map((m) => ({
       id: m.id,
@@ -86,12 +93,24 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     teams,
     providers,
     certTypes,
-    courses: courses.map((c) => ({
+    certificates: certificates.map((c) => {
+      const course = courseByCertificate.get(c.id);
+      return {
+        id: c.id,
+        name: c.name,
+        providerId: c.provider_id,
+        certTypeId: c.cert_type_id,
+        validityMonths: c.validity_months,
+        cost: course?.cost ?? null,
+        costCurrency: toCurrency(course?.cost_currency ?? null),
+        estHours: course?.est_hours ?? null,
+      };
+    }),
+    studyCourses: courses.map((c) => ({
       id: c.id,
       name: c.name,
-      providerId: c.provider_id,
-      certTypeId: c.cert_type_id,
-      validityMonths: c.validity_months,
+      preparesForId: c.prepares_for_id,
+      grantsId: grantedByCourse.get(c.id) ?? null,
       cost: c.cost,
       costCurrency: toCurrency(c.cost_currency),
       estHours: c.est_hours,
@@ -99,6 +118,7 @@ export async function loadImportLookups(): Promise<ImportLookups> {
     records: records.map((r) => ({
       id: r.id,
       memberId: r.member_id,
+      certificateId: r.certificate_id,
       courseId: r.course_id,
       status: r.status,
       progress: r.progress,

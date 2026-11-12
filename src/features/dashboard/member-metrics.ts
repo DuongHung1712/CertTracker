@@ -1,3 +1,4 @@
+import { isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { VN_TIME_ZONE } from "@/lib/dates";
 
@@ -83,12 +84,12 @@ export function expiryWindow(daysToExpiry: number | null): ExpiryWindow {
 }
 
 const isDone = (r: RecordRow): boolean => r.status === "done";
-const isExpired = (r: RecordRow): boolean => isDone(r) && expiryWindow(r.daysToExpiry) === "expired";
-/** Done and not expired; a certificate without an expiry date counts as valid. */
-const isValid = (r: RecordRow): boolean => isDone(r) && expiryWindow(r.daysToExpiry) !== "expired";
+const isExpired = (r: RecordRow): boolean => isExam(r) && isDone(r) && expiryWindow(r.daysToExpiry) === "expired";
+/** Done exam and not expired; an exam certificate without an expiry date counts as valid. A completion never expires and is not "valid". */
+const isValid = (r: RecordRow): boolean => isExam(r) && isDone(r) && expiryWindow(r.daysToExpiry) !== "expired";
 const isExpiring = (r: RecordRow): boolean => {
   const window = expiryWindow(r.daysToExpiry);
-  return isDone(r) && (window === "urgent" || window === "expiring");
+  return isExam(r) && isDone(r) && (window === "urgent" || window === "expiring");
 };
 const isInProgress = (r: RecordRow): boolean => r.status === "in_progress";
 
@@ -139,7 +140,7 @@ export function calculateMemberKpis(records: RecordRow[]): MemberKpis {
 }
 
 /**
- * Tab counts for "My certificates" filter tabs.
+ * Tab counts for the filter tabs of the member dashboard list.
  */
 export function getMemberTabCounts(records: RecordRow[]): Record<MemberTab, number> {
   return {
@@ -164,7 +165,7 @@ export function filterMemberRecords(
 
   return [...filtered].sort((a, b) => {
     if (sort === "name") {
-      return collatorVi.compare(a.courseName, b.courseName);
+      return collatorVi.compare(a.certificateName, b.certificateName);
     }
 
     // Default: sort by expiry
@@ -174,11 +175,11 @@ export function filterMemberRecords(
 
     if (daysA !== null && daysB !== null) {
       if (daysA !== daysB) return daysA - daysB;
-      return collatorVi.compare(a.courseName, b.courseName);
+      return collatorVi.compare(a.certificateName, b.certificateName);
     }
     if (daysA !== null && daysB === null) return -1;
     if (daysA === null && daysB !== null) return 1;
 
-    return collatorVi.compare(a.courseName, b.courseName);
+    return collatorVi.compare(a.certificateName, b.certificateName);
   });
 }

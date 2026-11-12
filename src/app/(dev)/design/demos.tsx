@@ -280,6 +280,8 @@ export function DashboardRedesignDemo() {
     expiringSoonCerts: 3,
     expiredCerts: 2,
     noExpiryCerts: 8,
+    completionDoneRecords: 0,
+    completionInProgressRecords: 0,
   };
   const sampleBuckets: ExpiryBucket[] = expiryBuckets(sampleKpis);
   const validSegments = validBuckets(sampleKpis);
@@ -304,9 +306,9 @@ export function DashboardRedesignDemo() {
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(2, 6) },
     },
     {
-      id: "course",
-      label: "Popular courses",
-      groupLabel: "Course",
+      id: "certificate",
+      label: "Popular certificates",
+      groupLabel: "Certificate",
       result: { ok: true as const, data: BREAKDOWN_ROWS.slice(0, 5) },
     },
   ];

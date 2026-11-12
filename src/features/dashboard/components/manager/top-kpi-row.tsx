@@ -1,4 +1,7 @@
 import { AlertCircle, Clock } from "lucide-react";
+import { KpiGroup } from "@/features/dashboard/components/kpi-group";
+import { StatStrip } from "@/features/dashboard/components/stat-strip";
+import type { CompletionKpis } from "@/features/dashboard/completion-metrics";
 import type { ManagerKpis } from "@/features/dashboard/manager-metrics";
 import { cn } from "@/lib/utils";
 
@@ -6,11 +9,45 @@ const KPI_TILE_MIN_HEIGHT = "min-h-[140px]";
 
 export function TopKpiRow({
   kpis,
+  completions,
+  plannedExams,
   pastDueText,
 }: {
+  /** Exam certificates only (see `calculateManagerKpis`). */
   kpis: ManagerKpis;
+  completions: CompletionKpis;
+  /** Planned exams in the next 60 days: the length of the Planned exams list. */
+  plannedExams: number;
   pastDueText?: string;
 }) {
+  return (
+    <div className="flex flex-col gap-6">
+      <KpiGroup title="Exam certificates">
+        <ExamTiles kpis={kpis} pastDueText={pastDueText} />
+        <StatStrip
+          stats={[
+            ["Valid", kpis.validCount],
+            ["Completed", kpis.doneCount],
+            ["In progress", kpis.inProgressCount],
+            ["Planned exams", plannedExams],
+          ]}
+        />
+      </KpiGroup>
+      <KpiGroup title="Course completions">
+        <StatStrip
+          stats={[
+            ["Completed, all time", completions.doneTotal],
+            ["Completed this month", completions.doneThisMonth],
+            ["Completed this quarter", completions.doneThisQuarter],
+            ["Completions in progress", completions.inProgress],
+          ]}
+        />
+      </KpiGroup>
+    </div>
+  );
+}
+
+function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: string }) {
   return (
     <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
       {/* 1. Expiring in 60 days */}

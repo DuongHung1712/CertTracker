@@ -20,17 +20,16 @@ export type ProviderInput = z.infer<typeof providerSchema>;
  */
 export const idSchema = z.object({ id: z.guid("Invalid data") });
 
-const emptyToNull = <T extends z.ZodTypeAny>(schema: T) =>
+export const emptyToNull = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((value) => (value === "" || value === undefined ? null : value), schema.nullable());
 
 /** The course fields without the cross-field rule, so a caller can `.extend()` them (e.g. with an id) and re-apply the rule. */
 export const courseFields = z.object({
   name: z.string().trim().min(1, "Enter the course name"),
   // z.guid(), not .uuid(): see the comment on `idSchema` above.
-  certTypeId: z.guid("Choose a certificate type"),
   providerId: z.guid("Choose a provider"),
-  level: z.string().trim().optional().default(""),
-  validityMonths: emptyToNull(z.coerce.number().int().positive("Validity must be greater than 0")),
+  /** The exam certificate this course prepares for; the database refuses a completion. */
+  preparesForId: emptyToNull(z.guid("Invalid data")),
   refundable: z.boolean().default(false),
   cost: emptyToNull(z.coerce.number().nonnegative("Cost cannot be negative")),
   costCurrency: emptyToNull(z.enum(CURRENCIES)),

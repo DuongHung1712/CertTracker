@@ -15,11 +15,16 @@ import { NO_TEAM_LABEL, RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { MemberCode } from "@/components/status/member-code";
 import { ProgressInline } from "@/components/status/progress-inline";
 import { RecordStatusLabel } from "@/components/status/record-status";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { deleteRecord } from "@/features/records/actions";
 import { RecordSheet } from "@/features/records/components/record-sheet";
+import { filterByKind, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, plannedDateHeader, type KindFilter } from "@/features/records/kind";
+import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { RECORD_STATUSES } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
@@ -27,6 +32,7 @@ import { foldText } from "@/lib/text";
 
 /** A Base UI `Select` value must be a non-empty string, so "no filter" is a sentinel, not "". */
 const ALL = "all";
+const ADD_HINT = "Studying for an exam? Choose the exam, then the course you used.";
 /** Team filter value for rows without a team (`teamId === null`). */
 const NO_TEAM = "__no_team__";
 
@@ -47,7 +53,8 @@ function byDaysToExpiry(
 export function RecordsTable({
   records,
   memberOptions,
-  courseOptions,
+  certificateOptions,
+  studyCourses,
   mode,
   canDelete,
   showCompanyFields,
@@ -56,7 +63,8 @@ export function RecordsTable({
 }: {
   records: RecordRow[];
   memberOptions: ComboboxOption[];
-  courseOptions: ComboboxOption[];
+  certificateOptions: CertificateChoice[];
+  studyCourses: StudyCourse[];
   /** "self" hides the member/team columns and the team filter. */
   mode: "team" | "self";
   canDelete: boolean;
@@ -70,6 +78,7 @@ export function RecordsTable({
   const [teamFilter, setTeamFilter] = useState(ALL);
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [expiryFilter, setExpiryFilter] = useState(ALL);
+  const [kindFilter, setKindFilter] = useState<KindFilter>(ALL);
   const [sheetOpen, setSheetOpen] = useState(false);
   // Keep the id, not the row: the sheet must see the refreshed row (e.g. `hasEvidence`) after a server action revalidates.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -83,15 +92,17 @@ export function RecordsTable({
   );
   const hasTeamless = useMemo(() => records.some((record) => record.teamId === null), [records]);
 
+  const counts = useMemo(() => kindCounts(records), [records]);
+
   const hasActiveFilters =
-    search.length > 0 || teamFilter !== ALL || statusFilter !== ALL || expiryFilter !== ALL;
+    search.length > 0 || teamFilter !== ALL || statusFilter !== ALL || expiryFilter !== ALL || kindFilter !== ALL;
 
   const rows = useMemo(() => {
     const query = foldText(search);
-    return records.filter((record) => {
+    return filterByKind(records, kindFilter).filter((record) => {
       if (query) {
         const haystack = foldText(
-          `${record.memberName} ${record.memberCode} ${record.courseName} ${record.providerName ?? ""}`,
+          `${record.memberName} ${record.memberCode} ${record.certificateName} ${record.courseName ?? ""} ${record.providerName ?? ""}`,
         );
         if (!haystack.includes(query)) return false;
       }
@@ -102,7 +113,7 @@ export function RecordsTable({
       if (expiryFilter !== ALL && record.expiryStatus !== expiryFilter) return false;
       return true;
     });
-  }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter]);
+  }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter, kindFilter]);
 
   // Memoised: react-table renders each `cell` function as a component, so a fresh `columns` array on every render
   // gives every cell a new component type and remounts it. That closed an open row menu on each Realtime refresh.
@@ -117,16 +128,33 @@ export function RecordsTable({
           ] satisfies ColumnDef<RecordRow, unknown>[])
         : []),
       {
-        accessorKey: "courseName",
-        header: "Course",
+        accessorKey: "certificateName",
+        header: "Certificate",
         cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span>{row.original.courseName}</span>
+          <div className="flex max-w-60 flex-col">
+            <span className="flex items-center gap-1.5">
+              <span className="truncate" title={row.original.certificateName}>
+                {row.original.certificateName}
+              </span>
+              <Badge variant="secondary" className="shrink-0 rounded-sm">
+                {CERTIFICATE_KIND_LABEL[row.original.certificateKind]}
+              </Badge>
+            </span>
             {row.original.providerName && (
               <span className="text-caption text-muted-foreground">{row.original.providerName}</span>
             )}
           </div>
         ),
+      },
+      {
+        accessorKey: "courseName",
+        header: "Course studied",
+        cell: ({ row }) => (
+          <span className="block max-w-40 truncate" title={row.original.courseName ?? undefined}>
+            {row.original.courseName ?? "—"}
+          </span>
+        ),
+        meta: { className: "hidden xl:table-cell" },
       },
       { accessorKey: "status", header: "Status", cell: ({ row }) => <RecordStatusLabel status={row.original.status} /> },
       { accessorKey: "progress", header: "Progress", cell: ({ row }) => <ProgressInline value={row.original.progress} /> },
@@ -147,7 +175,7 @@ export function RecordsTable({
       },
       {
         accessorKey: "plannedExamDate",
-        header: "Planned exam date",
+        header: plannedDateHeader(kindFilter),
         cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
       },
       {
@@ -163,7 +191,7 @@ export function RecordsTable({
                   <Button
                     variant="ghost"
                     size="icon-xs"
-                    aria-label={`Actions for ${record.memberName} · ${record.courseName}`}
+                    aria-label={`Actions for ${record.memberName} · ${record.certificateName}`}
                   />
                 }
               >
@@ -196,7 +224,7 @@ export function RecordsTable({
         },
       },
     ],
-    [isTeam, canDelete],
+    [isTeam, canDelete, kindFilter],
   );
 
   async function handleDelete() {
@@ -209,22 +237,34 @@ export function RecordsTable({
       setConfirming(null);
       return;
     }
-    toast.success("Deleted certificate");
+    toast.success(`Deleted ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]}`);
     setConfirming(null);
   }
 
   return (
     <div className="flex flex-col gap-3">
+      {!isTeam && records.length > 0 && (
+        <Tabs value={kindFilter} onValueChange={(value) => setKindFilter(value as KindFilter)}>
+          <TabsList className="flex w-full flex-wrap gap-1 group-data-horizontal/tabs:h-auto">
+            {KIND_FILTERS.map((kind) => (
+              <TabsTrigger key={kind} value={kind}>
+                {`${KIND_FILTER_LABEL[kind]} (${counts[kind]})`}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+      )}
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={isTeam ? "Search by name, code or course…" : "Search by course…"}
+        searchPlaceholder={isTeam ? "Search by name, code or certificate…" : "Search by certificate…"}
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
           setTeamFilter(ALL);
           setStatusFilter(ALL);
           setExpiryFilter(ALL);
+          setKindFilter(ALL);
         }}
       >
         {isTeam && (
@@ -242,6 +282,21 @@ export function RecordsTable({
                 </SelectItem>
               ))}
               {hasTeamless && <SelectItem value={NO_TEAM}>{NO_TEAM_LABEL}</SelectItem>}
+            </SelectContent>
+          </Select>
+        )}
+        {isTeam && (
+          <Select value={kindFilter} onValueChange={(value) => setKindFilter((value as KindFilter | null) ?? ALL)}>
+            <SelectTrigger aria-label="Kind">
+              <SelectValue>{(value: KindFilter) => (value === ALL ? "All kinds" : KIND_FILTER_LABEL[value])}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All kinds</SelectItem>
+              {KIND_FILTERS.filter((kind) => kind !== ALL).map((kind) => (
+                <SelectItem key={kind} value={kind}>
+                  {KIND_FILTER_LABEL[kind]}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         )}
@@ -286,25 +341,29 @@ export function RecordsTable({
         <Button
           size="sm"
           className="ml-auto"
-          disabled={courseOptions.length === 0 || (isTeam && memberOptions.length === 0)}
+          disabled={certificateOptions.length === 0 || (isTeam && memberOptions.length === 0)}
           onClick={() => {
             setEditingId(null);
             setSheetOpen(true);
           }}
         >
           <Plus aria-hidden className="size-4" />
-          Add certificate
+          Add certificate or course completion
         </Button>
       </FilterBar>
+      {!isTeam && <p className="text-caption text-muted-foreground">{ADD_HINT}</p>}
       <DataTable
         columns={columns}
         data={rows}
         getRowId={(row) => row.id}
         empty={
           records.length === 0 ? (
-            <EmptyState title="No certificates yet" description="Add the first certificate to start tracking." />
+            <EmptyState
+              title="Nothing added yet"
+              description="Add a certificate you hold, a course you are studying or a course completion."
+            />
           ) : (
-            <EmptyState title="No certificates found" description="Try a different search or clear the filters." />
+            <EmptyState title="Nothing found" description="Try a different search or clear the filters." />
           )
         }
       />
@@ -313,7 +372,8 @@ export function RecordsTable({
         onOpenChange={setSheetOpen}
         editing={editing}
         memberOptions={memberOptions}
-        courseOptions={courseOptions}
+        certificateOptions={certificateOptions}
+        studyCourses={studyCourses}
         showCompanyFields={showCompanyFields}
         fixedMemberId={fixedMemberId}
       />
@@ -321,9 +381,9 @@ export function RecordsTable({
         <ConfirmDialog
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
-          title={`Delete the ${confirming?.courseName} certificate of ${confirming?.memberName}?`}
-          description="The certificate and its evidence file will be deleted. This cannot be undone."
-          confirmLabel="Delete certificate"
+          title={confirming ? `Delete the ${confirming.certificateName} ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]} of ${confirming.memberName}?` : ""}
+          description={`The ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"} and its evidence file will be deleted. This cannot be undone.`}
+          confirmLabel={`Delete ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"}`}
           pendingLabel="Deleting…"
           pending={pending}
           onConfirm={handleDelete}

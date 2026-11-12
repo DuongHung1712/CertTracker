@@ -91,6 +91,68 @@ test("re-importing the same file changes nothing", async ({ page }) => {
   await expect(committed.getByRole("link", { name: /^View/ })).toBeVisible();
 });
 
+test("a new certificate with a cost brings its own course, shown in the preview and created on import", async ({ page }) => {
+  test.setTimeout(60_000);
+  const sheet = XLSX.utils.aoa_to_sheet([
+    ["Email", "Certificate", "Provider", "Cost", "Currency", "Duration (hours)", "Status"],
+    ["an@certtracker.test", `Microsoft Priced Exam ${RUN}`, "Microsoft", 165, "USD", 20, "Not started"],
+  ]);
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, sheet, "Sheet1");
+  await signIn(page, "admin@certtracker.test");
+  await upload(page, `priced-${RUN}.xlsx`, Buffer.from(XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer));
+  await expect(page).toHaveURL(BATCH_URL);
+  await expect(page.getByText(/^Will create: .*1 certificate, 1 course$/)).toBeVisible();
+
+  await page.getByRole("button", { name: "Import 1 row" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Import 1 row" }).click();
+  await expect(page.getByText("Imported: created 1, updated 0")).toBeVisible();
+  const { data: course } = await admin.from("courses").select("id, prepares_for_id, cost, cost_currency, est_hours").like("name", `Microsoft Priced Exam ${RUN}`).single();
+  expect(course).toMatchObject({ cost: 165, cost_currency: "USD", est_hours: 20 });
+  // Spec 4.4: the new course is the course studied of the imported record.
+  const AN = "5eed0000-0000-0000-0000-00000000b001";
+  const { data: record } = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", course!.prepares_for_id!).single();
+  expect(record?.course_id).toBe(course?.id);
+});
+
+test("a course studied is saved on the record, and a course that does not prepare for the certificate is a row error", async ({ page }) => {
+  test.setTimeout(90_000);
+  const SAA = "5eed0000-0000-0000-0000-00000000e001";
+  const AWS_PROVIDER = "5eed0000-0000-0000-0000-00000000c101";
+  const CHAU = "5eed0000-0000-0000-0000-00000000b003";
+  const courseName = `Studied E2E ${RUN}`;
+  const unrelatedName = `Unrelated E2E ${RUN}`;
+  const { data: course } = await admin.from("courses").insert({ name: courseName, provider_id: AWS_PROVIDER, prepares_for_id: SAA }).select("id").single();
+  const { data: unrelated } = await admin.from("courses").insert({ name: unrelatedName, provider_id: AWS_PROVIDER }).select("id").single();
+  try {
+    const sheet = XLSX.utils.aoa_to_sheet([
+      ["Email", "Certificate", "Provider", "Course studied", "Status", "Progress (%)"],
+      ["member@certtracker.test", "AWS Solutions Architect Associate", "AWS", courseName, "Not started", 0],
+      ["binh@certtracker.test", "NVIDIA Generative AI LLMs", "NVIDIA", unrelatedName, "In progress", 40],
+    ]);
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, sheet, "Sheet1");
+    await signIn(page, "admin@certtracker.test");
+    await upload(page, `studied-${RUN}.xlsx`, Buffer.from(XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer));
+    await expect(page).toHaveURL(BATCH_URL);
+    await expect(page.getByText("Create 0 · Update 1 · Unchanged 0 · Error 1")).toBeVisible();
+    await expect(previewRow(page, 3)).toContainText("This course does not prepare for NVIDIA Generative AI LLMs");
+
+    await page.getByRole("button", { name: "Import 1 row" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Import 1 row" }).click();
+    await expect(page.getByText("Imported: created 0, updated 1")).toBeVisible();
+    const { data: record } = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", SAA).single();
+    expect(record?.course_id).toBe(course?.id);
+  } finally {
+    // The seed restore in afterAll gives Châu's record its own course back; here only the courses go, errors included.
+    for (const created of [course, unrelated]) {
+      if (!created) continue;
+      const { error } = await admin.from("courses").delete().eq("id", created.id);
+      if (error) throw new Error(`delete e2e course: ${error.message}`);
+    }
+  }
+});
+
 test("a file without the required columns is rejected", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   const sheet = XLSX.utils.aoa_to_sheet([

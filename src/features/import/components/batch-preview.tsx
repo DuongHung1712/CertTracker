@@ -99,8 +99,8 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
       },
       { id: "email", header: "Email", accessorFn: (row) => row.raw.email ?? "", cell: ({ row }) => row.original.raw.email ?? "—" },
       {
-        id: "course",
-        header: "Course",
+        id: "certificate",
+        header: "Certificate",
         accessorFn: (row) => row.raw.course ?? "",
         cell: ({ row }) => <span className="whitespace-normal">{row.original.raw.course ?? "—"}</span>,
       },
@@ -183,7 +183,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
           <AlertDescription className="text-foreground">
             {committedMessage(batch)}{" "}
             <Link href="/records" className="font-medium">
-              View certificates
+              View learning
             </Link>
           </AlertDescription>
         </Alert>
@@ -223,7 +223,7 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by email, course or row number…"
+        searchPlaceholder="Search by email, certificate or row number…"
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");

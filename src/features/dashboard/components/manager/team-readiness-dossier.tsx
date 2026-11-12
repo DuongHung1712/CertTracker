@@ -235,7 +235,7 @@ export function TeamReadinessDossier({
             {/* Registered Certificates List */}
             <div className="flex flex-col gap-2 pt-1">
               <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-                Registered certificates
+                Registered learning
               </span>
 
               {selectedRecords.length === 0 ? (
@@ -251,7 +251,7 @@ export function TeamReadinessDossier({
                     >
                       <div className="flex flex-col min-w-0">
                         <span className="font-semibold text-foreground truncate">
-                          {r.courseName}
+                          {r.certificateName}
                         </span>
                         <span className="text-caption text-muted-foreground font-mono truncate">
                           ID: {r.id.slice(0, 8).toUpperCase()}

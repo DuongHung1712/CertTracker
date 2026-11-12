@@ -2,15 +2,16 @@
 
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus } from "lucide-react";
-import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { AddButton } from "@/components/data/add-button";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
+import { ExternalLinkCell } from "@/components/data/external-link-cell";
 import { FilterBar } from "@/components/data/filter-bar";
+import { rowActionsColumn } from "@/components/data/row-actions-column";
+import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
+import type { SelectOption } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { deleteCourse } from "@/features/courses/actions";
 import { CourseSheet } from "@/features/courses/components/course-sheet";
@@ -19,15 +20,12 @@ import { formatMoney, type Currency } from "@/lib/money";
 type Course = {
   id: string;
   name: string;
-  // `courses.cert_type_id`/`provider_id` are nullable FKs at the DB level (on delete restrict,
-  // no `not null`); the app's courseSchema always requires picking one on create/update, but
-  // existing rows are typed to match the real (nullable) column.
-  certTypeId: string | null;
-  certTypeName: string;
+  // `courses.provider_id` is a nullable FK at the DB level (no `not null`); the form always requires one.
   providerId: string | null;
   providerName: string;
-  level: string | null;
-  validityMonths: number | null;
+  preparesForId: string | null;
+  preparesForName: string | null;
+  grantsCertificateName: string | null;
   refundable: boolean;
   cost: number | null;
   costCurrency: Currency | null;
@@ -35,43 +33,47 @@ type Course = {
   url: string | null;
   refundConditions: string | null;
 };
-type Option = { id: string; name: string };
 
 export function CoursesTable({
   courses,
-  certTypes,
+  certificates,
   providers,
   canManage,
 }: {
   courses: Course[];
-  certTypes: Option[];
-  providers: Option[];
+  /** Exam certificates a course can prepare for. */
+  certificates: SelectOption[];
+  providers: SelectOption[];
   canManage: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Course | null>(null);
-  const [confirming, setConfirming] = useState<Course | null>(null);
-  const [pending, setPending] = useState(false);
+  const removal = useConfirmedDelete<Course>({
+    remove: (course) => deleteCourse({ id: course.id }),
+    successMessage: (course) => `Deleted course ${course.name}`,
+  });
 
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return courses;
-    return courses.filter((c) => `${c.name} ${c.certTypeName} ${c.providerName}`.toLowerCase().includes(q));
+    return courses.filter((c) => `${c.name} ${c.providerName} ${c.preparesForName ?? ""} ${c.grantsCertificateName ?? ""}`.toLowerCase().includes(q));
   }, [courses, search]);
 
   const columns: ColumnDef<Course, unknown>[] = [
-    { accessorKey: "name", header: "Course name" },
-    { accessorKey: "certTypeName", header: "Type" },
+    { accessorKey: "name", header: "Name" },
     { accessorKey: "providerName", header: "Provider" },
-    { accessorKey: "level", header: "Level", cell: ({ row }) => row.original.level || "—" },
     {
-      accessorKey: "validityMonths",
-      header: "Validity",
+      accessorKey: "estHours",
+      header: "Duration (hours)",
+      cell: ({ row }) => row.original.estHours ?? "—",
+      meta: { align: "right" },
+    },
+    {
+      accessorKey: "cost",
+      header: "Cost",
       cell: ({ row }) =>
-        row.original.validityMonths
-          ? `${row.original.validityMonths} ${row.original.validityMonths === 1 ? "month" : "months"}`
-          : "No expiry",
+        row.original.cost != null && row.original.costCurrency ? formatMoney(row.original.cost, row.original.costCurrency) : "—",
       meta: { align: "right" },
     },
     {
@@ -97,87 +99,49 @@ export function CoursesTable({
         ),
     },
     {
-      accessorKey: "cost",
-      header: "Cost",
-      cell: ({ row }) =>
-        row.original.cost != null && row.original.costCurrency ? formatMoney(row.original.cost, row.original.costCurrency) : "—",
-      meta: { align: "right" },
+      accessorKey: "url",
+      header: "Link",
+      enableSorting: false,
+      cell: ({ row }) => <ExternalLinkCell url={row.original.url} label={`Open link for ${row.original.name}`} />,
     },
+    { accessorKey: "preparesForName", header: "Prepares for", cell: ({ row }) => row.original.preparesForName ?? "—" },
     {
-      accessorKey: "estHours",
-      header: "Duration (hours)",
-      cell: ({ row }) => row.original.estHours ?? "—",
-      meta: { align: "right" },
+      accessorKey: "grantsCertificateName",
+      header: "Grants",
+      cell: ({ row }) => (row.original.grantsCertificateName ? `Completion: ${row.original.grantsCertificateName}` : "—"),
     },
     ...(canManage
-      ? ([
-          {
-            id: "actions",
-            header: "",
-            enableSorting: false,
-            cell: ({ row }) => (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  render={<Button variant="ghost" size="icon-xs" aria-label={`Actions for ${row.original.name}`} />}
-                >
-                  <MoreHorizontal aria-hidden />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      setEditing(row.original);
-                      setSheetOpen(true);
-                    }}
-                  >
-                    Edit
-                  </DropdownMenuItem>
-                  <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ),
-          },
-        ] satisfies ColumnDef<Course, unknown>[])
+      ? [
+          rowActionsColumn<Course>({
+            rowLabel: (row) => row.name,
+            onEdit: (row) => {
+              setEditing(row);
+              setSheetOpen(true);
+            },
+            onDelete: removal.request,
+          }),
+        ]
       : []),
   ];
-
-  async function handleDelete() {
-    if (!confirming) return;
-    setPending(true);
-    const result = await deleteCourse({ id: confirming.id });
-    setPending(false);
-    if (!result.ok) {
-      toast.error(result.error);
-      setConfirming(null);
-      return;
-    }
-    toast.success(`Deleted course ${confirming.name}`);
-    setConfirming(null);
-  }
 
   return (
     <div className="flex flex-col gap-3">
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by name, type or provider…"
+        searchPlaceholder="Search courses…"
         hasActiveFilters={search.length > 0}
         onClear={() => setSearch("")}
       >
         {canManage && (
-          <Button
-            size="sm"
-            className="ml-auto"
-            disabled={certTypes.length === 0 || providers.length === 0}
+          <AddButton
+            label="Add course"
+            blockedReason={providers.length === 0 ? "Add a provider first." : undefined}
             onClick={() => {
               setEditing(null);
               setSheetOpen(true);
             }}
-          >
-            <Plus aria-hidden className="size-4" />
-            Add course
-          </Button>
+          />
         )}
       </FilterBar>
       <DataTable
@@ -190,7 +154,7 @@ export function CoursesTable({
               title="No courses yet"
               description={
                 canManage
-                  ? "Add the first course to make it available for certificates."
+                  ? "Add the first course to make it available as a way to study."
                   : "No courses are available yet."
               }
             />
@@ -209,10 +173,8 @@ export function CoursesTable({
                 ? {
                     id: editing.id,
                     name: editing.name,
-                    certTypeId: editing.certTypeId ?? "",
                     providerId: editing.providerId ?? "",
-                    level: editing.level ?? "",
-                    validityMonths: editing.validityMonths,
+                    preparesForId: editing.preparesForId,
                     refundable: editing.refundable,
                     cost: editing.cost,
                     costCurrency: editing.costCurrency,
@@ -222,18 +184,18 @@ export function CoursesTable({
                   }
                 : null
             }
-            certTypes={certTypes}
+            certificates={certificates}
             providers={providers}
           />
           <ConfirmDialog
-            open={!!confirming}
-            onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Delete course ${confirming?.name}?`}
-            description="A course can only be deleted when nobody has a certificate for it. This cannot be undone."
+            open={!!removal.target}
+            onOpenChange={(open) => !open && removal.cancel()}
+            title={`Delete course ${removal.target?.name}?`}
+            description="A course that grants a completion cannot be deleted. Where members used it as their course studied, it is cleared. This cannot be undone."
             confirmLabel="Delete course"
             pendingLabel="Deleting…"
-            pending={pending}
-            onConfirm={handleDelete}
+            pending={removal.pending}
+            onConfirm={removal.confirm}
           />
         </>
       )}

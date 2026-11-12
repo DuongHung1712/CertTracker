@@ -73,15 +73,15 @@ export async function acceptInvitation(page: Page, email: string, hash: string) 
   await signInWithPilotPassword(page, email);
 }
 
-/** Opens a member's own "Add certificate" form at `/me` with a course picked (AWS unless named). */
-export async function openOwnCertificateForm(page: Page, query = "aws", courseName = AWS): Promise<Locator> {
+/** Opens a member's own "Add certificate" form at `/me` with a certificate picked (AWS unless named). */
+export async function openOwnCertificateForm(page: Page, query = "aws", certificateName = AWS): Promise<Locator> {
   await page.goto("/records");
   await expect(page).toHaveURL(/\/me$/);
   await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
-  await dialog.getByLabel(fieldLabel("Course")).fill(query);
+  await dialog.getByLabel(fieldLabel("Certificate")).fill(query);
   // The popup is portalled outside the dialog.
-  await page.getByRole("option", { name: courseName }).click();
+  await page.getByRole("option", { name: certificateName }).click();
   return dialog;
 }
 

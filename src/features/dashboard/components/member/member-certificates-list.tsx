@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert, type LucideIcon } from "lucide-react";
 import { EmptyState } from "@/components/data/empty-state";
-import type { ComboboxOption } from "@/components/entity-combobox";
+import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { clampPercent } from "@/components/status/labels";
@@ -19,6 +19,7 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
+import { kindCounts, plannedDateLabel } from "@/features/records/kind";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
@@ -39,6 +40,12 @@ const TILE: Record<TileTone, { icon: LucideIcon; className: string }> = {
   neutral: { icon: BookOpen, className: "border-border bg-muted text-muted-foreground" },
 };
 
+/** "2 exam certificates, 1 course completion": the two kinds are counted apart, never as one "certificates". */
+function learningSummary(records: RecordRow[]): string {
+  const { exam, completion } = kindCounts(records);
+  return `${pluralize(exam, "exam certificate")}, ${pluralize(completion, "course completion")}`;
+}
+
 function tileTone(record: RecordRow): TileTone {
   if (record.status === "done") return expiryMeta(toExpiryStatus(record.expiryStatus)).tone;
   return record.status === "in_progress" ? "in-progress" : "neutral";
@@ -47,7 +54,8 @@ function tileTone(record: RecordRow): TileTone {
 export function MemberCertificatesList({
   fullName,
   records,
-  courseOptions,
+  certificateOptions,
+  studyCourses,
   memberId,
   sheetOpen,
   onSheetOpenChange,
@@ -56,7 +64,8 @@ export function MemberCertificatesList({
 }: {
   fullName: string;
   records: RecordRow[];
-  courseOptions: ComboboxOption[];
+  certificateOptions: CertificateChoice[];
+  studyCourses: StudyCourse[];
   memberId: string;
   sheetOpen: boolean;
   onSheetOpenChange: (open: boolean) => void;
@@ -83,16 +92,16 @@ export function MemberCertificatesList({
 
   return (
     <section
-      aria-label="My certificates"
+      aria-label="My learning"
       className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
     >
       {/* Header and Filter strip */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-foreground">My certificates</h3>
+            <h3 className="text-sm font-semibold text-foreground">My learning</h3>
             <p className="text-xs text-muted-foreground">
-              {`${pluralize(records.length, "certificate")} for ${fullName}`}
+              {`${learningSummary(records)} for ${fullName}`}
             </p>
           </div>
 
@@ -134,19 +143,19 @@ export function MemberCertificatesList({
 
       {records.length === 0 ? (
         <EmptyState
-          title="No certificates yet"
-          description="Add your first certificate to start tracking your progress."
+          title="Nothing added yet"
+          description="Studying for an exam? Choose the exam, then the course you used."
           action={
             <Button onClick={handleAdd} size="sm">
               <Plus className="size-4" aria-hidden="true" />
-              Add your first certificate
+              Add your first certificate or course completion
             </Button>
           }
         />
       ) : visibleRecords.length === 0 ? (
         <EmptyState
-          title="No certificates in this filter"
-          description="Select another filter tab to view your certificates."
+          title="Nothing in this filter"
+          description="Select another filter tab to see the rest."
         />
       ) : (
         <div className="flex flex-col gap-3">
@@ -173,12 +182,15 @@ export function MemberCertificatesList({
 
                     <div className="flex flex-col min-w-0">
                       <h4 className="text-sm font-semibold text-foreground leading-snug truncate">
-                        {record.courseName}
+                        {record.certificateName}
                       </h4>
                       <p className="text-xs font-mono text-muted-foreground truncate">
                         {record.providerName ?? "Provider not set"}
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
                       </p>
+                      {record.courseName && (
+                        <p className="text-caption text-muted-foreground truncate">Course studied: {record.courseName}</p>
+                      )}
                     </div>
                   </div>
 
@@ -210,7 +222,7 @@ export function MemberCertificatesList({
                                     rel="noopener noreferrer"
                                   />
                                 }
-                                aria-label={`View evidence for ${record.courseName}`}
+                                aria-label={`View evidence for ${record.certificateName}`}
                               >
                                 <FileText className="size-3.5" aria-hidden="true" />
                               </Button>
@@ -227,13 +239,13 @@ export function MemberCertificatesList({
                               variant="ghost"
                               size="icon-xs"
                               onClick={() => handleEdit(record)}
-                              aria-label={`Edit ${record.courseName}`}
+                              aria-label={`Edit ${record.certificateName}`}
                             >
                               <Pencil className="size-3.5" aria-hidden="true" />
                             </Button>
                           }
                         />
-                        <TooltipContent side="top">Edit certificate</TooltipContent>
+                        <TooltipContent side="top">Edit</TooltipContent>
                       </Tooltip>
                     </div>
                   </div>
@@ -259,7 +271,7 @@ export function MemberCertificatesList({
 
                     {record.plannedExamDate && (
                       <div className="flex flex-col items-start sm:items-end text-caption text-muted-foreground shrink-0 sm:pl-4">
-                        <span className="text-caption">Planned exam date</span>
+                        <span className="text-caption">{plannedDateLabel(record.certificateKind)}</span>
                         <span className="font-mono text-xs font-medium text-foreground">
                           {formatDate(record.plannedExamDate)}
                         </span>
@@ -279,7 +291,7 @@ export function MemberCertificatesList({
             href="/me"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
-            View all certificates ({filteredRecords.length})
+            View all ({filteredRecords.length})
           </Link>
         </div>
       )}
@@ -289,7 +301,8 @@ export function MemberCertificatesList({
         onOpenChange={onSheetOpenChange}
         editing={editingRecord}
         memberOptions={[]}
-        courseOptions={courseOptions}
+        certificateOptions={certificateOptions}
+        studyCourses={studyCourses}
         showCompanyFields={false}
         fixedMemberId={memberId}
       />

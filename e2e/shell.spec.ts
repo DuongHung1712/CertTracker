@@ -37,7 +37,7 @@ test.describe("app shell", () => {
     const drawer = page.locator('[data-mobile="true"]');
     await expect(drawer).toBeVisible();
 
-    await drawer.getByRole("link", { name: "Courses" }).click();
+    await drawer.getByRole("link", { name: "Catalogue" }).click();
     await expect(page).toHaveURL(/\/courses$/);
     await expect(drawer).toHaveCount(0);
   });
