@@ -1,4 +1,4 @@
-// Usage: pnpm make:import-file <people.json> <out.xlsx>   |   pnpm make:import-file --rehearsal <out.xlsx>
+// Usage: pnpm make:import-file <people.json> <out.xlsx>   |   pnpm make:import-file --rehearsal <out.xlsx>   |   pnpm make:import-file --template <out.xlsx>
 // Real files go under private/ (git-ignored). Prints team names only, never people's names or e-mails.
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { register } from "node:module";
@@ -7,11 +7,12 @@ import { z } from "zod";
 
 // Node cannot resolve the app's "@/" imports by itself; register the alias hook before loading the app code.
 register("./alias-hooks.mjs", import.meta.url);
-const { buildSampleWorkbook, readCatalogueSql, rehearsalPeople } = await import("../src/features/import/sample-workbook");
+const { buildSampleWorkbook, buildTemplateWorkbook, readCatalogueSql, rehearsalPeople } = await import("../src/features/import/sample-workbook");
 const { todayVn } = await import("../src/lib/dates");
 
 const CATALOGUE_PATH = "supabase/catalog/courses.sql";
 const REHEARSAL_FLAG = "--rehearsal";
+const TEMPLATE_FLAG = "--template";
 
 const peopleSchema = z.array(
   z.object({
@@ -42,10 +43,19 @@ function readPeopleJson(path: string): unknown {
 
 const args = process.argv.slice(2);
 const isRehearsal = args[0] === REHEARSAL_FLAG;
-const [inputPath, outputPath] = isRehearsal ? [null, args[1]] : args;
-if (!outputPath || (!isRehearsal && !inputPath)) {
-  console.error(`Usage: make-import-file <people.json> <out.xlsx> | ${REHEARSAL_FLAG} <out.xlsx>`);
+const isTemplate = args[0] === TEMPLATE_FLAG;
+const isFixed = isRehearsal || isTemplate;
+const [inputPath, outputPath] = isFixed ? [null, args[1]] : args;
+if (!outputPath || (!isFixed && !inputPath)) {
+  console.error(`Usage: make-import-file <people.json> <out.xlsx> | ${REHEARSAL_FLAG} <out.xlsx> | ${TEMPLATE_FLAG} <out.xlsx>`);
   process.exit(1);
+}
+
+if (isTemplate) {
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, buildTemplateWorkbook());
+  console.log(`Wrote ${outputPath}: the import template.`);
+  process.exit(0);
 }
 
 const today = todayVn();

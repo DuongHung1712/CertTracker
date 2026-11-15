@@ -27,7 +27,7 @@ export const emptyToNull = <T extends z.ZodTypeAny>(schema: T) =>
 export const courseFields = z.object({
   name: z.string().trim().min(1, "Enter the course name"),
   // z.guid(), not .uuid(): see the comment on `idSchema` above.
-  providerId: z.guid("Choose a provider"),
+  providerId: z.guid("Provider is required"),
   /** The exam certificate this course prepares for; the database refuses a completion. */
   preparesForId: emptyToNull(z.guid("Invalid data")),
   refundable: z.boolean().default(false),
@@ -54,7 +54,7 @@ export function requireCostWithCurrency(
 }
 
 /** Conditions only make sense for a refundable course, so they are dropped otherwise. */
-function dropConditionsUnlessRefundable<T extends { refundable: boolean; refundConditions: string | null }>(value: T): T {
+export function dropConditionsUnlessRefundable<T extends { refundable: boolean; refundConditions: string | null }>(value: T): T {
   return value.refundable ? value : { ...value, refundConditions: null };
 }
 
@@ -64,3 +64,9 @@ export const courseWithIdSchema = courseFields
   .superRefine(requireCostWithCurrency)
   .transform(dropConditionsUnlessRefundable);
 export type CourseInput = z.infer<typeof courseSchema>;
+
+/** Body of the delete dialog: a course that grants a completion cannot be deleted, so the dialog says which one. */
+export const courseDeleteDescription = (grantsCompletionName: string | null): string =>
+  grantsCompletionName
+    ? `This course grants the completion ${grantsCompletionName}. Delete or change that completion first.`
+    : "Where members used it as their course studied, it is cleared. This cannot be undone.";

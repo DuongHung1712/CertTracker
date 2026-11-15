@@ -1,5 +1,5 @@
 import type { RecordStatus } from "@/components/status/labels";
-import { CERTIFICATE_KIND_LABEL, type CertificateKind } from "@/features/certificates/schema";
+import { type CertificateKind } from "@/features/certificates/schema";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RefundStatus } from "@/features/records/schema";
 import { toCurrency, type Currency } from "@/lib/money";
@@ -110,7 +110,7 @@ export async function listMemberOptions() {
   return rows.map((row) => ({ id: row.id, label: row.full_name, hint: row.code }));
 }
 
-/** Every certificate a record can be for, with the kind in the label so "Exam" and "Course completion" are told apart. */
+/** Every certificate a record can be for. The sheet lists one kind at a time, so the label is just the name. */
 export async function listCertificateOptions(): Promise<CertificateChoice[]> {
   const supabase = await createClient();
   const rows = await fetchAllRows((from, to) =>
@@ -123,7 +123,7 @@ export async function listCertificateOptions(): Promise<CertificateChoice[]> {
   );
   return rows.map((row) => ({
     id: row.id,
-    label: `${row.name} · ${CERTIFICATE_KIND_LABEL[row.kind]}`,
+    label: row.name,
     hint: row.providers?.name ?? undefined,
     kind: row.kind,
     grantingCourse: row.granting ? { id: row.granting.id, name: row.granting.name } : null,

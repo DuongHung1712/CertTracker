@@ -35,7 +35,7 @@ export function DetailPanel({
   }
 
   return (
-    <div className="flex flex-col bg-card/40 p-5 lg:col-span-7">
+    <div className="flex flex-col @container bg-card/40 p-5 @2xl:col-span-7">
       {selectedRow ? (
         <section
           role="region"
@@ -54,7 +54,7 @@ export function DetailPanel({
                   className="size-1.5 rounded-full bg-[var(--chart-1)]"
                   aria-hidden
                 />
-                {formatRate(rateOf(selectedRow))} completed
+                {formatRate(rateOf(selectedRow))} done
               </span>
             </div>
             <h3
@@ -74,7 +74,7 @@ export function DetailPanel({
                 <>
                   <span>•</span>
                   <span>
-                    Certificates:{" "}
+                    Items:{" "}
                     <strong className="font-semibold text-foreground tabular-nums">
                       {formatNumber(selectedRow.records)}
                     </strong>
@@ -85,11 +85,11 @@ export function DetailPanel({
           </div>
 
           {/* Middle: 4 Sub-Metric Cards Grid */}
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 @[31rem]:grid-cols-4">
             {/* Card 1: Valid */}
-            <div className="flex flex-col justify-between gap-2 rounded-lg border border-border/80 bg-background/80 p-3">
+            <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
-                <span>Valid</span>
+                <span className="min-w-0 truncate" title="Valid">Valid</span>
                 <span className="size-2 rounded-full bg-[var(--status-active-fg)]" aria-hidden />
               </div>
               <div className="flex items-baseline justify-between">
@@ -102,9 +102,9 @@ export function DetailPanel({
             </div>
 
             {/* Card 2: Completed */}
-            <div className="flex flex-col justify-between gap-2 rounded-lg border border-border/80 bg-background/80 p-3">
+            <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
-                <span>Completed</span>
+                <span className="min-w-0 truncate" title="Completed">Completed</span>
                 <span className="size-2 rounded-full bg-[var(--chart-1)]" aria-hidden />
               </div>
               <div className="flex items-baseline justify-between">
@@ -117,9 +117,9 @@ export function DetailPanel({
             </div>
 
             {/* Card 3: In progress */}
-            <div className="flex flex-col justify-between gap-2 rounded-lg border border-border/80 bg-background/80 p-3">
+            <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
-                <span>In progress</span>
+                <span className="min-w-0 truncate" title="In progress">In progress</span>
                 <span className="size-2 rounded-full bg-[var(--chart-2)]" aria-hidden />
               </div>
               <div className="flex items-baseline justify-between">
@@ -132,9 +132,9 @@ export function DetailPanel({
             </div>
 
             {/* Card 4: Expired */}
-            <div className="flex flex-col justify-between gap-2 rounded-lg border border-border/80 bg-background/80 p-3">
+            <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
-                <span>Expired</span>
+                <span className="min-w-0 truncate" title="Expired">Expired</span>
                 <span className="size-2 rounded-full bg-[var(--status-expired-fg)]" aria-hidden />
               </div>
               <div className="flex items-baseline justify-between">
@@ -159,7 +159,7 @@ export function DetailPanel({
               <span className="text-caption font-medium text-foreground">Study status split</span>
               <div
                 role="img"
-                aria-label={`Study completion: ${formatRate(rateOf(selectedRow))} completed. Completed: ${selectedRow.done}, In progress: ${selectedRow.inProgress}, Not started: ${selectedRow.notStarted}`}
+                aria-label={`Done rate: ${formatRate(rateOf(selectedRow))}. Completed: ${selectedRow.done}, In progress: ${selectedRow.inProgress}, Not started: ${selectedRow.notStarted}`}
               >
                 <StatusBar
                   segments={studyStatusSplit({
@@ -202,7 +202,7 @@ export function DetailPanel({
               </span>
               <span>•</span>
               <span>
-                Completion:{" "}
+                Done rate:{" "}
                 <strong className="font-semibold text-foreground tabular-nums">
                   {formatRate(rateOf(selectedRow))}
                 </strong>

@@ -1,4 +1,4 @@
-import { isExam } from "@/features/records/kind";
+import { isCompletion, isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { VN_TIME_ZONE } from "@/lib/dates";
 
@@ -17,6 +17,10 @@ export type DatedRecord = RecordRow & { daysToExpiry: number };
 
 export type MemberKpis = {
   total: number;
+  /** Exam certificates held or planned, and done ones: the denominator of the validity rate. */
+  examCount: number;
+  examDoneCount: number;
+  completionCount: number;
   validCount: number;
   expiringCount: number;
   leastDaysRecord: DatedRecord | null;
@@ -130,6 +134,9 @@ export function calculateMemberKpis(records: RecordRow[]): MemberKpis {
 
   return {
     total: records.length,
+    examCount: records.filter(isExam).length,
+    examDoneCount: records.filter((r) => isExam(r) && isDone(r)).length,
+    completionCount: records.filter(isCompletion).length,
     validCount: records.filter(isValid).length,
     expiringCount: expiringRows.length,
     leastDaysRecord: expiringRows.sort((a, b) => a.daysToExpiry - b.daysToExpiry)[0] ?? null,

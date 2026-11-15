@@ -17,6 +17,16 @@ export const REFUND_STATUS_LABEL: Record<RefundStatus, string> = {
 /** `z.guid()`, not `.uuid()`: seed ids are not RFC 4122 (see src/features/members/schema.ts). */
 export const idSchema = z.object({ id: z.guid("Invalid data") });
 
+/** Bulk actions: 1 to MAX_BULK_DELETE distinct ids, so one request cannot become an unbounded delete. */
+export const MAX_BULK_DELETE = 100;
+export const recordIdsSchema = z.object({
+  ids: z
+    .array(z.guid("Invalid data"))
+    .min(1, "Invalid data")
+    .max(MAX_BULK_DELETE, "Invalid data")
+    .refine((ids) => new Set(ids).size === ids.length, "Invalid data"),
+});
+
 const blankToNull = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess(
     (value) => (value === undefined || (typeof value === "string" && value.trim() === "") ? null : value),
@@ -41,7 +51,7 @@ export function recordRuleIssues(
     issues.push({ path: "progress", message: "A completed course must have progress 100%" });
   }
   if (value.status === "done" && !value.issuedDate) {
-    issues.push({ path: "issuedDate", message: "A completed course needs an issue date" });
+    issues.push({ path: "issuedDate", message: "A completed item needs a date" });
   }
   if (value.status === "not_started" && value.progress !== 0) {
     issues.push({ path: "progress", message: "A course that has not started must have progress 0%" });
@@ -51,7 +61,7 @@ export function recordRuleIssues(
   }
   // ISO dates compare correctly as strings.
   if (value.issuedDate && value.issuedDate > today) {
-    issues.push({ path: "issuedDate", message: "The issue date cannot be in the future" });
+    issues.push({ path: "issuedDate", message: "The date cannot be in the future" });
   }
   return issues;
 }
@@ -69,7 +79,7 @@ export const recordSchema = z
       .min(0, "Progress must be between 0 and 100")
       .max(100, "Progress must be between 0 and 100"),
     plannedExamDate: optionalDate("Enter a valid planned exam date (dd/mm/yyyy)"),
-    issuedDate: optionalDate("Enter a valid issue date (dd/mm/yyyy)"),
+    issuedDate: optionalDate("Enter a valid date (dd/mm/yyyy)"),
     certificateUrl: blankToNull(
       z
         .string()

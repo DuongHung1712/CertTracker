@@ -2,7 +2,11 @@
 import type { RecordStatus } from "@/components/status/labels";
 import type { ExpiryStatus } from "@/components/status/expiry";
 import { recordsToXlsx, type ExportRow } from "@/features/export/records-export";
-import { isoToExcelSerial } from "@/features/import/clean";
+import * as XLSX from "xlsx";
+import { RECORD_STATUS_LABEL } from "@/components/status/labels";
+import { isoToExcelSerial, type ImportField } from "@/features/import/clean";
+import { GUIDE_COLUMNS } from "@/features/import/columns-guide";
+import { REFUND_STATUS_LABEL } from "@/features/records/schema";
 
 export type CatalogueCourse = { name: string; validityMonths: number | null; provider: string; certType: string };
 
@@ -170,4 +174,29 @@ export function rehearsalPeople(today: string, catalogue: CatalogueCourse[]): Sa
     });
     return { fullName: `Rehearsal Person ${number}`, email: `person${number}@example.com`, team: REHEARSAL_TEAMS[i % REHEARSAL_TEAMS.length]!, certificates };
   });
+}
+
+/** Invented names and fixed past dates, so the template imports into any database; no team (it must already exist) and no Course studied (it must already be in the Catalogue). */
+const TEMPLATE_EXAMPLES: Partial<Record<ImportField, string | number>>[] = [
+  {
+    memberName: "Jane Example", email: "jane.example@example.com", courseName: "Example Cloud Architect", provider: "Example Provider", certType: "Cloud",
+    validityMonths: 36, cost: 150, costCurrency: "USD", estHours: 40, status: RECORD_STATUS_LABEL.not_started, progress: 0, viaCompany: "Yes", refundStatus: REFUND_STATUS_LABEL.pending,
+  },
+  {
+    memberName: "Jane Example", email: "jane.example@example.com", courseName: "Example Cloud Practitioner", provider: "Example Provider", certType: "Cloud",
+    status: RECORD_STATUS_LABEL.done, progress: 100, issuedDate: "15/03/2026", certificateUrl: "https://example.com/badges/123",
+  },
+  {
+    memberName: "John Example", email: "john.example@example.com", courseName: "Example Cloud Practitioner", provider: "Example Provider", certType: "Cloud",
+    status: RECORD_STATUS_LABEL.in_progress, progress: 40, plannedExamDate: "30/06/2027", notes: "Booked for June",
+  },
+];
+
+/** The downloadable template: exactly the columns of the columns guide, in guide order. Progress is written as percent numbers. */
+export function buildTemplateWorkbook(): Uint8Array {
+  const headers = GUIDE_COLUMNS.map((column) => column.header);
+  const rows = TEMPLATE_EXAMPLES.map((example) => GUIDE_COLUMNS.map((column) => example[column.field] ?? ""));
+  const book = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([headers, ...rows]), "Import");
+  return new Uint8Array(XLSX.write(book, { type: "array", bookType: "xlsx" }) as ArrayBuffer);
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   CERTIFICATE_KIND_NOUN,
+  certificateDuplicateMessage,
   certificateSchema,
   certificateWithIdSchema,
   type CertificateInput,
@@ -31,8 +32,7 @@ function toRow(data: CertificateInput) {
   };
 }
 
-const duplicate = (data: CertificateInput) =>
-  `A ${CERTIFICATE_KIND_NOUN[data.kind]} named "${data.name}" already exists for this provider, or this course already grants a completion.`;
+const duplicate = (data: CertificateInput) => certificateDuplicateMessage(data.kind, data.name);
 
 export async function createCertificate(input: CertificateInput): Promise<Result<null>> {
   const parsed = certificateSchema.safeParse(input);
@@ -56,9 +56,16 @@ async function grantingCourseFitsRecords(
   data: CertificateInput,
 ): Promise<boolean | null> {
   if (data.kind !== "completion") return true;
-  const records = await supabase.from("training_records").select("course_id").eq("certificate_id", id).not("course_id", "is", null);
-  if (records.error) return null;
-  return records.data.every((record) => record.course_id === data.courseId);
+  // Ask for one conflicting record instead of reading them all: PostgREST caps a plain select at 1000 rows.
+  const conflicting = await supabase
+    .from("training_records")
+    .select("id")
+    .eq("certificate_id", id)
+    .not("course_id", "is", null)
+    .neq("course_id", data.courseId)
+    .limit(1);
+  if (conflicting.error) return null;
+  return conflicting.data.length === 0;
 }
 
 export async function updateCertificate(input: CertificateInput & { id: string }): Promise<Result<null>> {
@@ -83,7 +90,7 @@ export async function deleteCertificate(input: { id: string }): Promise<Result<n
   if (!parsed.success) return err("Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase.from("certificates").delete().eq("id", parsed.data.id).select("id");
-  if (error) return err(mapPostgresError(error, { restricted: "This certificate has records. Delete them first." }));
+  if (error) return err(mapPostgresError(error, { restricted: "Members already hold this. Delete their entries first." }));
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");

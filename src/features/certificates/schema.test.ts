@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { certificateDeleteHint, certificateSheetTitle, certificateSchema } from "@/features/certificates/schema";
+import { certificateDeleteHint, certificateWithIdSchema, certificateSheetTitle, certificateSchema, courseWithCompletionSchema } from "@/features/certificates/schema";
 
 const ID = "00000000-0000-0000-0000-000000000000";
 const COURSE = "00000000-0000-0000-0000-000000000009";
@@ -31,9 +31,9 @@ describe("certificateSchema", () => {
 
   it("asks for a name, a type and a provider", () => {
     expect(messages({ ...exam, name: "  ", certTypeId: "", providerId: "" })).toEqual([
-      ["name", "Enter the certificate name"],
-      ["certTypeId", "Choose a certificate type"],
-      ["providerId", "Choose a provider"],
+      ["name", "Enter the name"],
+      ["certTypeId", "Type is required"],
+      ["providerId", "Provider is required"],
     ]);
   });
 
@@ -54,6 +54,14 @@ describe("certificateSchema", () => {
     expect(certificateSchema.safeParse({ ...exam, kind: "completion", courseId: COURSE }).success).toBe(true);
   });
 
+  it("never saves a validity for a completion, and keeps it for an exam", () => {
+    const completion = { ...exam, kind: "completion" as const, courseId: COURSE };
+    expect(certificateSchema.parse({ ...completion, validityMonths: 36 }).validityMonths).toBeNull();
+    expect(certificateSchema.parse({ ...completion, validityMonths: "12" }).validityMonths).toBeNull();
+    expect(certificateWithIdSchema.parse({ ...completion, id: ID, validityMonths: 36 }).validityMonths).toBeNull();
+    expect(certificateSchema.parse(exam).validityMonths).toBe(36);
+  });
+
   it("words the sheet title and the delete hint after the kind", () => {
     expect(certificateSheetTitle(false, "exam")).toBe("Add certificate");
     expect(certificateSheetTitle(false, "completion")).toBe("Add course completion");
@@ -64,5 +72,21 @@ describe("certificateSchema", () => {
 
   it("an exam never keeps a course", () => {
     expect(certificateSchema.parse({ ...exam, courseId: COURSE }).courseId).toBeNull();
+  });
+});
+
+describe("courseWithCompletionSchema", () => {
+  const course = { name: "Intro", providerId: ID };
+
+  it("needs a certificate type when the switch is on", () => {
+    const result = courseWithCompletionSchema.safeParse({ ...course, grantsCompletion: true });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]).toMatchObject({ path: ["completionCertTypeId"], message: "Type is required" });
+    expect(courseWithCompletionSchema.safeParse({ ...course, grantsCompletion: true, completionCertTypeId: COURSE }).success).toBe(true);
+  });
+
+  it("ignores the type and link when the switch is off", () => {
+    const result = courseWithCompletionSchema.safeParse({ ...course, grantsCompletion: false, completionCertTypeId: COURSE, completionUrl: "https://x.test" });
+    expect(result.data).toMatchObject({ completionCertTypeId: "", completionUrl: null });
   });
 });

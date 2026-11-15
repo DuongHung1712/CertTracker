@@ -7,6 +7,8 @@ import {
   useReactTable,
   flexRender,
   type ColumnDef,
+  type OnChangeFn,
+  type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react";
@@ -27,6 +29,11 @@ export type DataTableProps<TData, TValue> = {
   empty?: React.ReactNode;
   pageSize?: number;
   getRowId?: (row: TData, index: number) => string;
+  /** Controlled row selection (keyed by `getRowId`); columns read it through `table`/`row` in their header/cell. */
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  /** Mouse shortcut for a row's main action; clicks on buttons, links and inputs inside the row are ignored. */
+  onRowClick?: (row: TData) => void;
 };
 
 declare module "@tanstack/react-table" {
@@ -35,6 +42,8 @@ declare module "@tanstack/react-table" {
     align?: "left" | "right" | "center";
     /** Extra classes for the header and body cells, e.g. `hidden xl:table-cell` for a column that narrow screens drop. */
     className?: string;
+    /** Extra classes for body cells only, e.g. a background that must not repaint the header. */
+    cellClassName?: string;
   }
 }
 
@@ -60,13 +69,17 @@ export function DataTable<TData, TValue>({
   empty,
   pageSize = 25,
   getRowId,
+  rowSelection,
+  onRowSelectionChange,
+  onRowClick,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const table = useReactTable({
     data,
     columns,
     getRowId,
-    state: { sorting },
+    state: { sorting, ...(rowSelection ? { rowSelection } : {}) },
+    onRowSelectionChange,
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -120,7 +133,7 @@ export function DataTable<TData, TValue>({
                           type="button"
                           onClick={header.column.getToggleSortingHandler()}
                           className={cn(
-                            "inline-flex items-center gap-1 uppercase transition-colors hover:text-foreground",
+                            "inline-flex min-h-8 items-center gap-1 uppercase transition-colors hover:text-foreground",
                             meta?.align === "right" && "justify-end w-full",
                           )}
                         >
@@ -168,7 +181,24 @@ export function DataTable<TData, TValue>({
               </TableRow>
             ) : (
               rows.map((row) => (
-                <TableRow key={row.id} className="group h-8 hover:bg-accent">
+                <TableRow
+                  key={row.id}
+                  className={cn("group h-8 hover:bg-accent", onRowClick && "cursor-pointer")}
+                  onClick={
+                    onRowClick
+                      ? (event) => {
+                          // Menus and their backdrop render in a portal but still bubble here through the React tree;
+                          // a target outside this row's DOM is never a click on the row.
+                          if (!event.currentTarget.contains(event.target as Node)) return;
+                          const target = event.target as HTMLElement;
+                          if (target.closest("button,a,input,label,[role=menuitem],[role=checkbox],[data-select-cell]")) return;
+                          // A drag that ends a text selection is not a click on the row.
+                          if (window.getSelection()?.toString()) return;
+                          onRowClick(row.original);
+                        }
+                      : undefined
+                  }
+                >
                   {row.getVisibleCells().map((cell) => {
                     const meta = cell.column.columnDef.meta;
                     const alignClass =
@@ -180,10 +210,12 @@ export function DataTable<TData, TValue>({
                     return (
                       <TableCell
                         key={cell.id}
+                        data-select-cell={cell.column.id === "select" ? "" : undefined}
                         className={cn(
                           "px-2.5 py-1 transition-colors first:sticky first:left-0 first:z-[1] first:bg-card group-hover:first:bg-accent",
                           alignClass,
                           meta?.className,
+                          meta?.cellClassName,
                         )}
                       >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}

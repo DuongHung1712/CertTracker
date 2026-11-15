@@ -66,7 +66,7 @@ describe("planMemberImport", () => {
     ]);
     expect(rows.map((r) => r.action)).toEqual(["error", "error", "error", "error"]);
     expect(rows[0]?.messages).toContain("Full name is missing");
-    expect(rows[1]?.messages[0]).toContain("not valid");
+    expect(rows[1]?.messages[0]).toContain("not a valid email address");
     expect(rows[2]?.messages).toContain('Team "X" does not exist');
     expect(rows[3]?.messages).toContain('Career role "Y" does not exist');
   });

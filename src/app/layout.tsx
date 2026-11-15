@@ -38,7 +38,9 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <TooltipProvider delay={200}>{children}</TooltipProvider>
           <Toaster
-            position="bottom-right"
+            position="top-center"
+            offset={{ top: 56 }}
+            mobileOffset={{ top: 56, left: 16, right: 16 }}
             closeButton
             toastOptions={{ closeButtonAriaLabel: "Close notification" }}
           />

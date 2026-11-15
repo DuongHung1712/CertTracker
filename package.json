@@ -12,6 +12,7 @@
     "test:db": "supabase test db",
     "test:e2e": "playwright test",
     "make:import-file": "node scripts/make-import-file.ts",
+    "make:import-template": "node scripts/make-import-file.ts --template public/templates/certificates-import.xlsx",
     "db:types": "supabase gen types typescript --local > src/types/database.ts"
   },
   "dependencies": {

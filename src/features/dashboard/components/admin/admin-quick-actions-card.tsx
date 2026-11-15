@@ -18,7 +18,7 @@ export function AdminQuickActionsCard() {
           <Link
             key={href}
             href={href}
-            className={cn(buttonVariants({ variant: "outline" }), "justify-start gap-2 text-caption font-medium")}
+            className={cn(buttonVariants({ variant: "outline" }), "h-auto min-h-8 justify-start gap-2 whitespace-normal py-1.5 text-left text-caption font-medium")}
           >
             <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
             <span>{label}</span>

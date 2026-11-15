@@ -27,8 +27,8 @@ export function MonthlyEarnedChart({ records }: { records: RecordRow[] }) {
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <span className="text-label uppercase tracking-wider font-mono text-muted-foreground truncate">
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 text-label uppercase tracking-wider font-mono text-muted-foreground [overflow-wrap:anywhere]">
           Certificates earned ({firstMonth} - {lastMonth})
         </span>
         <Award className="size-3.5 text-muted-foreground shrink-0" aria-hidden="true" />

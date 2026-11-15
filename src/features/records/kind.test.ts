@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeRecord } from "@/features/records/__fixtures__/record-row";
-import { filterByKind, kindCounts, plannedDateHeader, plannedDateLabel, recordSavedMessage, recordSheetTitle } from "@/features/records/kind";
+import { filterByKind, issuedDateHint, issuedDateLabel, kindCounts, plannedDateHeader, plannedDateLabel, recordSavedMessage, recordSheetTitle } from "@/features/records/kind";
 
 const exam = makeRecord({ id: "e1", certificateKind: "exam" });
 const completion = makeRecord({ id: "c1", certificateKind: "completion" });
@@ -32,5 +32,14 @@ describe("kind filter", () => {
     expect(plannedDateLabel("completion")).toBe("Planned finish date");
     expect(plannedDateHeader("all")).toBe("Planned date");
     expect(plannedDateHeader("exam")).toBe("Planned exam date");
+  });
+});
+
+describe("issued date wording", () => {
+  it("calls the date of an exam the day it was passed and keeps Issue date for a completion", () => {
+    expect(issuedDateLabel("exam")).toBe("Date passed");
+    expect(issuedDateLabel("completion")).toBe("Issue date");
+    expect(issuedDateHint("exam")).toMatch(/passed/);
+    expect(issuedDateHint("completion")).toMatch(/issued/);
   });
 });

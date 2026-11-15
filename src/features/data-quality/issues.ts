@@ -11,6 +11,14 @@ export const ISSUE_META: Record<IssueType, { label: string; href: string }> = {
   certificate_no_validity: { label: "Exam validity not set", href: "/courses" },
 };
 
+/** Where "Open" goes: the list page, already searched for the person (or exam certificate) the finding is about. */
+export function issueHref(row: IssueRow): string {
+  const { href } = ISSUE_META[row.type];
+  const subject = row.type === "certificate_no_validity" ? row.certificateName : row.memberName;
+  if (!subject) return href;
+  return `${href}?${row.type === "certificate_no_validity" ? "tab=certificates&" : ""}search=${encodeURIComponent(subject)}`;
+}
+
 export function describeIssue(row: IssueRow): string {
   switch (row.type) {
     case "overdue_exam":

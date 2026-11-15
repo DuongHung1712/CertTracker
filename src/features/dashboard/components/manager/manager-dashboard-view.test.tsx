@@ -204,3 +204,24 @@ describe("ManagerDashboardView: failures are not shown as empty", () => {
     expect(count(html, 'aria-pressed="false"')).toBe(1);
   });
 });
+
+describe("ManagerDashboardView: layout structure", () => {
+  it("keeps Team readiness outside the three columns, in a grid with the breakpoint classes", () => {
+    const html = render();
+    const tagAt = (marker: string) => {
+      const at = html.indexOf(marker);
+      expect(at, marker).toBeGreaterThanOrEqual(0);
+      const start = html.lastIndexOf("<", at);
+      return html.slice(start, html.indexOf(">", at));
+    };
+    const rowAt = html.indexOf('data-testid="mgr-readiness-row"');
+    expect(rowAt).toBeGreaterThan(html.indexOf('data-testid="mgr-col-left"'));
+    // The readiness row opens after the columns' grid has closed: no column marker follows it.
+    for (const id of ["mgr-col-center", "mgr-col-right", "mgr-col-left"]) {
+      expect(html.lastIndexOf(`data-testid="${id}"`)).toBeLessThan(rowAt);
+    }
+    const grid = tagAt('class="grid min-w-0');
+    expect(grid).toContain("md:grid-cols-2");
+    expect(grid).toContain("xl:grid-cols-12");
+  });
+});

@@ -64,7 +64,8 @@ export async function importWorkbook(page: Page, fileName: string, bytes: Uint8A
   }).toPass({ timeout: 30_000 });
   await submit.click();
   await expect(page).toHaveURL(BATCH_URL, { timeout: 30_000 });
-  await expect(page.getByText(/· Error 0$/)).toBeVisible();
+  // The result counters are filter pills now; an "Error 0" pill means the preview found no row error.
+  await expect(page.getByRole("button", { name: "Error 0" })).toBeVisible();
   await page.getByRole("button", { name: /^Import \d+ rows?$/ }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: /^Import \d+ rows?$/ }).click();
   await expect(page.getByText(/^Imported: created \d+, updated 0$/)).toBeVisible({ timeout: 30_000 });

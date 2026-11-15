@@ -2,23 +2,19 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CircleAlert, FileSpreadsheet } from "lucide-react";
+import { CircleAlert, Download } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { FileDropzone } from "@/components/file-dropzone";
 import { MAX_IMPORT_BYTES } from "@/features/import/clean";
 
 const GENERIC_ERROR = "Something went wrong. Try again.";
-const EXCEL_EXTENSION = /\.(xlsx|xls)$/i;
 
 /** Fast feedback only, with the same wording as the route; the route re-checks by file content. */
-function precheck(file: File): string | null {
-  if (file.size === 0) return "The file is empty.";
-  if (file.size > MAX_IMPORT_BYTES) return "The file is larger than 4 MB. Split it and import it in parts.";
-  if (!EXCEL_EXTENSION.test(file.name)) return "Only Excel files (.xlsx or .xls) are accepted.";
-  return null;
-}
+const EMPTY_FILE = "The file is empty.";
+const TOO_LARGE = "The file is larger than 4 MB. Split it and import it in parts.";
+const NOT_EXCEL = "Only Excel files (.xlsx or .xls) are accepted.";
 
 /** Reads `{ batchId }` / `{ error }` from the parse route; a non-JSON body (proxy error page, 413 from the platform) yields `null`. */
 async function readBody(response: Response): Promise<{ batchId?: unknown; error?: unknown } | null> {
@@ -42,11 +38,6 @@ export function ImportUploadForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!file || pending) return;
-    const problem = precheck(file);
-    if (problem) {
-      setError(problem);
-      return;
-    }
     setError(null);
     setUploading(true);
     try {
@@ -70,29 +61,38 @@ export function ImportUploadForm() {
     <form onSubmit={handleSubmit} className="flex max-w-xl flex-col gap-3" noValidate>
       <Field>
         <FieldLabel htmlFor="import-file">Excel file</FieldLabel>
-        <Input
+        <FileDropzone
           id="import-file"
-          name="file"
-          type="file"
-          accept=".xlsx,.xls"
-          disabled={pending}
-          aria-describedby="import-file-hint"
-          onChange={(event) => {
-            setFile(event.target.files?.[0] ?? null);
+          describedBy="import-file-hint"
+          file={file}
+          onChange={(next) => {
+            setFile(next);
             setError(null);
           }}
+          accept=".xlsx,.xls"
+          maxBytes={MAX_IMPORT_BYTES}
+          onReject={(message) => {
+            setFile(null);
+            setError(message);
+          }}
+          disabled={pending}
+          hint="Drop an Excel file here or choose one: .xlsx or .xls, up to 4 MB"
+          wrongTypeMessage={NOT_EXCEL}
+          tooLargeMessage={TOO_LARGE}
+          emptyMessage={EMPTY_FILE}
         />
         <FieldDescription id="import-file-hint" className="text-caption">
-          Up to 4 MB and 2000 rows. The header row needs an Email column and a Certificate column.
+          Up to 4 MB and 2000 rows. The header row needs an Email column and a Certificate column; the column guide below lists the rest.
         </FieldDescription>
       </Field>
-      {file && (
-        <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-caption">
-          <FileSpreadsheet aria-hidden className="size-4 text-primary shrink-0" />
-          <span className="font-medium truncate">{file.name}</span>
-          <span className="text-muted-foreground shrink-0">({(file.size / 1024).toFixed(1)} KB)</span>
-        </div>
-      )}
+      <a
+        href="/templates/certificates-import.xlsx"
+        download
+        className="inline-flex w-fit items-center gap-1 text-body text-primary underline underline-offset-2"
+      >
+        <Download aria-hidden className="size-4" />
+        Download template
+      </a>
       {error && (
         <Alert variant="destructive">
           <CircleAlert aria-hidden />

@@ -9,7 +9,7 @@ export function ExternalLinkCell({ url, label }: { url: string | null; label: st
       target="_blank"
       rel="noopener noreferrer"
       aria-label={label}
-      className="inline-flex text-muted-foreground hover:text-foreground"
+      className="relative inline-flex text-muted-foreground hover:text-foreground after:absolute after:-inset-[4px]"
     >
       <ExternalLink aria-hidden className="size-4" />
     </a>

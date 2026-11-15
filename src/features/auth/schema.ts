@@ -31,3 +31,17 @@ export const changePasswordSchema = z
     ...passwordFields,
   })
   .refine(passwordsMatch.check, passwordsMatch.params);
+
+export type ChangePasswordField = "currentPassword" | "password" | "confirmPassword";
+
+const CHANGE_PASSWORD_FIELDS: readonly string[] = ["currentPassword", "password", "confirmPassword"] satisfies ChangePasswordField[];
+
+/** The first problem in a rejected change-password form and the one field it belongs to (undefined: not a field). */
+export function firstChangePasswordIssue(error: z.ZodError): { message: string; field?: ChangePasswordField } {
+  const issue = error.issues[0];
+  const key = issue?.path[0];
+  return {
+    message: issue?.message ?? "Check the form and try again.",
+    field: typeof key === "string" && CHANGE_PASSWORD_FIELDS.includes(key) ? (key as ChangePasswordField) : undefined,
+  };
+}

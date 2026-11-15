@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -8,10 +9,11 @@ import { FormSheet } from "@/components/form-sheet";
 import { EntityCombobox } from "@/components/entity-combobox";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
 import { RequiredMark } from "@/components/required-mark";
-import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { createCertificate, updateCertificate } from "@/features/certificates/actions";
 import {
+  CERTIFICATE_KIND_HELP,
   CERTIFICATE_KIND_LABEL,
   CERTIFICATE_KIND_NOUN,
   certificateSheetTitle,
@@ -83,6 +85,7 @@ export function CertificateSheet({
       rootError={errors.root?.message}
       submitting={isSubmitting}
     >
+      <p className="text-caption text-muted-foreground">* Required</p>
       <Field>
         <FieldLabel htmlFor="certificate-kind">
           Kind <RequiredMark />
@@ -94,13 +97,21 @@ export function CertificateSheet({
             <OptionSelect
               id="certificate-kind"
               value={field.value}
-              onChange={field.onChange}
+              onChange={(next) => {
+                field.onChange(next);
+                // A completion never expires: a validity typed for an exam must not block Save unseen.
+                if (next === "completion") {
+                  form.setValue("validityMonths", null);
+                  form.clearErrors("validityMonths");
+                }
+              }}
               options={KIND_OPTIONS}
               placeholder="Choose a kind"
               invalid={!!errors.kind}
             />
           )}
         />
+        <FieldDescription>{CERTIFICATE_KIND_HELP}</FieldDescription>
         <FieldError errors={[errors.kind]} />
       </Field>
       <Field>
@@ -112,7 +123,7 @@ export function CertificateSheet({
       </Field>
       <Field>
         <FieldLabel htmlFor="certificate-type">
-          Certificate type <RequiredMark />
+          Type <RequiredMark />
         </FieldLabel>
         <Controller
           control={form.control}
@@ -123,7 +134,7 @@ export function CertificateSheet({
               value={field.value}
               onChange={field.onChange}
               options={certTypes}
-              placeholder="Choose a certificate type"
+              placeholder="Choose a type"
               invalid={!!errors.certTypeId}
             />
           )}
@@ -171,6 +182,13 @@ export function CertificateSheet({
               />
             )}
           />
+          <FieldDescription>
+            A completion needs its granting course first.{" "}
+            <Link href="/courses?tab=courses" onClick={() => onOpenChange(false)} className="underline">
+              {hasCourses ? "Open the Courses tab" : "Add one in the Courses tab"}
+            </Link>
+            .
+          </FieldDescription>
           <FieldError errors={[errors.courseId]} />
         </Field>
       )}
@@ -179,6 +197,7 @@ export function CertificateSheet({
         <Input id="certificate-level" className="h-9" {...form.register("level")} aria-invalid={!!errors.level} />
         <FieldError errors={[errors.level]} />
       </Field>
+      {kind === "exam" && (
       <Field>
         <FieldLabel htmlFor="certificate-validity">Validity (months)</FieldLabel>
         <Input
@@ -191,8 +210,9 @@ export function CertificateSheet({
         />
         <FieldError errors={[errors.validityMonths]} />
       </Field>
+      )}
       <Field>
-        <FieldLabel htmlFor="certificate-url">Certificate link</FieldLabel>
+        <FieldLabel htmlFor="certificate-url">Link</FieldLabel>
         <Input id="certificate-url" type="url" className="h-9" {...form.register("url")} aria-invalid={!!errors.url} />
         <FieldError errors={[errors.url]} />
       </Field>

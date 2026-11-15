@@ -290,13 +290,13 @@ export function getNeedsAttentionItems(records: RecordRow[]): NeedsAttentionItem
     }));
 }
 
-/** Returns members who have no completed certificates yet. */
+/** Returns members who have no completed exam certificates yet (course completions do not count). */
 export function getMembersWithoutCerts(
   members: { id: string; fullName: string; teamName: string | null }[],
   records: RecordRow[],
 ): { id: string; fullName: string; teamName: string | null }[] {
   const membersWithCompleted = new Set(
-    records.filter((r) => r.status === "done").map((r) => r.memberId),
+    records.filter((r) => r.status === "done" && isExam(r)).map((r) => r.memberId),
   );
   return members.filter((m) => !membersWithCompleted.has(m.id));
 }

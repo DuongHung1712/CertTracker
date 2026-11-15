@@ -4,14 +4,25 @@ import { useMemo } from "react";
 import {
   Combobox,
   ComboboxContent,
+  ComboboxCollection,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
 } from "@/components/ui/combobox";
 import { foldText } from "@/lib/text";
 
-export type ComboboxOption = { id: string; label: string; hint?: string };
+/** `group`, when set on the options, lists them under that heading; groups appear in order of first use. */
+export type ComboboxOption = { id: string; label: string; hint?: string; group?: string };
+type OptionGroup = { value: string; items: ComboboxOption[] };
+
+function groupOptions(options: ComboboxOption[]): OptionGroup[] {
+  const groups = new Map<string, ComboboxOption[]>();
+  for (const option of options) groups.set(option.group ?? "", [...(groups.get(option.group ?? "") ?? []), option]);
+  return [...groups].map(([value, items]) => ({ value, items }));
+}
 
 /** Diacritic-insensitive match on label + hint, so a search for `nguyen` finds a name with accents. */
 function matches(option: ComboboxOption, query: string): boolean {
@@ -56,9 +67,22 @@ export function EntityCombobox({
     [value, selectedLabel],
   );
 
+  const grouped = options.some((option) => option.group);
+  const groups = useMemo(() => (grouped ? groupOptions(options) : []), [grouped, options]);
+
+  const renderItem = (option: ComboboxOption) => (
+    <ComboboxItem key={option.id} value={option}>
+      {/* Wraps instead of truncating: a long certificate name must not hide the kind at its end. */}
+      <span className="min-w-0 flex-1 break-words">{option.label}</span>
+      {option.hint ? (
+        <span className="max-w-[40%] shrink-0 truncate text-caption text-muted-foreground">{option.hint}</span>
+      ) : null}
+    </ComboboxItem>
+  );
+
   return (
     <Combobox<ComboboxOption>
-      items={options}
+      items={grouped ? groups : options}
       value={selected}
       onValueChange={(option) => onChange(option?.id ?? "")}
       itemToStringLabel={(option) => option.label}
@@ -79,15 +103,14 @@ export function EntityCombobox({
       <ComboboxContent>
         <ComboboxEmpty>{emptyText}</ComboboxEmpty>
         <ComboboxList>
-          {(option: ComboboxOption) => (
-            <ComboboxItem key={option.id} value={option}>
-              {/* Wraps instead of truncating: a long certificate name must not hide the kind at its end. */}
-              <span className="min-w-0 flex-1 break-words">{option.label}</span>
-              {option.hint ? (
-                <span className="max-w-[40%] shrink-0 truncate text-caption text-muted-foreground">{option.hint}</span>
-              ) : null}
-            </ComboboxItem>
-          )}
+          {grouped
+            ? (group: OptionGroup) => (
+                <ComboboxGroup key={group.value} items={group.items}>
+                  <ComboboxLabel>{group.value}</ComboboxLabel>
+                  <ComboboxCollection>{renderItem}</ComboboxCollection>
+                </ComboboxGroup>
+              )
+            : renderItem}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

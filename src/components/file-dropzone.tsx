@@ -21,6 +21,9 @@ export function FileDropzone({
   disabled = false,
   hint = "Drop a file here or choose one: PDF, JPG, PNG or WebP, up to 4 MB",
   wrongTypeMessage = EVIDENCE_WRONG_TYPE_MESSAGE,
+  tooLargeMessage = EVIDENCE_TOO_LARGE_MESSAGE,
+  emptyMessage = EVIDENCE_EMPTY_MESSAGE,
+  describedBy,
 }: {
   id: string;
   file: File | null;
@@ -32,6 +35,10 @@ export function FileDropzone({
   disabled?: boolean;
   hint?: string;
   wrongTypeMessage?: string;
+  tooLargeMessage?: string;
+  emptyMessage?: string;
+  /** Id of an element that describes the file input (e.g. a hint rendered outside the dropzone). */
+  describedBy?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -39,8 +46,8 @@ export function FileDropzone({
   function pick(candidate: File | undefined) {
     if (!candidate) return;
     const allowed = accept.split(",").map((type) => type.trim());
-    if (candidate.size === 0) return onReject(EVIDENCE_EMPTY_MESSAGE);
-    if (candidate.size > maxBytes) return onReject(EVIDENCE_TOO_LARGE_MESSAGE);
+    if (candidate.size === 0) return onReject(emptyMessage);
+    if (candidate.size > maxBytes) return onReject(tooLargeMessage);
     const lowerName = candidate.name.toLowerCase();
     if (!allowed.some((type) => (type.startsWith(".") ? lowerName.endsWith(type) : type === candidate.type))) return onReject(wrongTypeMessage);
     onChange(candidate);
@@ -77,6 +84,7 @@ export function FileDropzone({
         type="file"
         accept={accept}
         disabled={disabled}
+        aria-describedby={describedBy}
         className="sr-only"
         onChange={(event) => {
           pick(event.target.files?.[0]);

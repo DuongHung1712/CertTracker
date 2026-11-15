@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { getCurrentUser } from "@/features/auth/queries";
 import { ExportLinks } from "@/features/export/components/export-links";
+import { ColumnsGuide } from "@/features/import/components/columns-guide";
 import { BatchHistory } from "@/features/import/components/batch-history";
 import { ImportUploadForm } from "@/features/import/components/import-upload-form";
 import { listImportBatches } from "@/features/import/queries";
@@ -18,6 +19,7 @@ export default async function ImportPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-section-title">Import from Excel</h2>
         <ImportUploadForm />
+        <ColumnsGuide />
       </section>
       <section className="flex flex-col gap-3">
         <h2 className="text-section-title">Export data</h2>

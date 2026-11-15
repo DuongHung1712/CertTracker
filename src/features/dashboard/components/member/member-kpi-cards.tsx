@@ -8,16 +8,16 @@ import { cn } from "@/lib/utils";
 const KPI_TILE_MIN_HEIGHT = "min-h-[175px]";
 
 export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
-  const compliance = formatRate(ratePercent(kpis.validCount, kpis.total));
+  const compliance = formatRate(ratePercent(kpis.validCount, kpis.examDoneCount));
 
   return (
     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
-      {/* 1. All certificates, in solid primary */}
+      {/* 1. All learning items, in solid primary */}
       <div className={cn("flex flex-col justify-between rounded-lg border border-transparent bg-primary p-3.5 text-primary-foreground", KPI_TILE_MIN_HEIGHT)}>
         <div className="flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <dt className="text-label uppercase tracking-wider text-primary-foreground/80 font-mono">
-              Certificates
+              Learning items
             </dt>
             <Award className="size-3.5 text-primary-foreground/80 shrink-0" aria-hidden="true" />
           </div>
@@ -25,13 +25,13 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.total}
           </dd>
           <dd className="text-caption text-primary-foreground/80 leading-tight">
-            Including certificates not started or in progress
+            {`${pluralize(kpis.examCount, "exam certificate")} · ${pluralize(kpis.completionCount, "course completion")}`}
           </dd>
         </div>
 
         <div className="border-t border-primary-foreground/20 pt-2 flex flex-col gap-1.5">
           <div className="inline-flex items-center self-start rounded border border-primary-foreground/30 px-1.5 py-0.5 text-caption font-medium text-primary-foreground">
-            {`${compliance} valid (${kpis.validCount} of ${kpis.total})`}
+            {`${compliance} valid (${kpis.validCount} of ${pluralize(kpis.examDoneCount, "completed exam")})`}
           </div>
           <div className="flex flex-wrap items-center gap-1 text-caption font-mono text-primary-foreground/90">
             <span className="rounded border border-primary-foreground/30 px-1 py-0.5">{kpis.expiringCount} expiring</span>
@@ -116,7 +116,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             {kpis.inProgressCount}
           </dd>
           <dd className="text-caption text-muted-foreground leading-tight">
-            Certificates in progress
+            Learning items in progress
           </dd>
         </div>
 
@@ -134,7 +134,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
               </div>
             ))
           ) : (
-            <span className="text-muted-foreground text-caption">No certificates in progress</span>
+            <span className="text-muted-foreground text-caption">Nothing in progress</span>
           )}
         </div>
       </div>

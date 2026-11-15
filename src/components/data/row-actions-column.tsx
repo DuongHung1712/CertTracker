@@ -19,9 +19,10 @@ export function rowActionsColumn<T>({
     id: "actions",
     header: "",
     enableSorting: false,
+    meta: { className: "sticky right-0 z-[1] w-10", cellClassName: "bg-card group-hover:bg-accent" },
     cell: ({ row }) => (
       <DropdownMenu>
-        <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" aria-label={`Actions for ${rowLabel(row.original)}`} />}>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="-my-1" aria-label={`Actions for ${rowLabel(row.original)}`} />}>
           <MoreHorizontal aria-hidden />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

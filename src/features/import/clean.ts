@@ -1,4 +1,4 @@
-import type { RecordStatus } from "@/components/status/labels";
+import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
 import { REFUND_STATUS_LABEL, type RefundStatus } from "@/features/records/schema";
 import { toIsoDate } from "@/lib/dates";
 import type { Currency } from "@/lib/money";
@@ -6,6 +6,9 @@ import { foldText } from "@/lib/text";
 
 export type Cell = string | number | boolean | null;
 export type Cleaned<T> = { ok: true; value: T } | { ok: false; error: string };
+
+/** "A, B or C". */
+const orList = (items: string[]): string => (items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items.at(-1)}`);
 
 const ok = <T>(value: T): Cleaned<T> => ({ ok: true, value });
 const fail = <T>(error: string): Cleaned<T> => ({ ok: false, error });
@@ -19,6 +22,14 @@ export const IMPORT_FIELDS = [
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 export type HeaderMap = Partial<Record<ImportField, number>>;
+
+/** The column name shown in messages and the columns guide; a message uses the file's own header when the column exists. */
+export const IMPORT_FIELD_LABEL: Record<ImportField, string> = {
+  memberName: "Full name", email: "Email", team: "Team", courseName: "Certificate", provider: "Provider", certType: "Certificate type",
+  validityMonths: "Validity (months)", cost: "Cost", costCurrency: "Currency", estHours: "Study hours", courseStudied: "Course studied",
+  status: "Status", progress: "Progress (%)", plannedExamDate: "Planned exam date", issuedDate: "Issued date", certificateUrl: "Certificate link",
+  viaCompany: "Registered through the company", refundStatus: "Refund status", notes: "Notes",
+};
 
 /** Folded header text → field. Exact match only, so "Expiry status" does not become "Status". Vietnamese aliases stay so legacy files import (decision #26). */
 export const HEADER_ALIASES: Record<ImportField, string[]> = {
@@ -92,10 +103,10 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL_LENGTH = 254;
 export function normalizeEmail(cell: Cell | undefined): Cleaned<string> {
   const text = cellText(cell)?.replace(/^mailto:/i, "");
-  if (!text) return fail("Email is missing");
-  if (text.length > MAX_EMAIL_LENGTH) return fail(`Email is too long (${MAX_EMAIL_LENGTH} characters at most)`);
+  if (!text) return fail("a value is required.");
+  if (text.length > MAX_EMAIL_LENGTH) return fail(`too long (${MAX_EMAIL_LENGTH} characters at most).`);
   const email = text.toLowerCase();
-  return EMAIL.test(email) ? ok(email) : fail(`Email "${text}" is not valid`);
+  return EMAIL.test(email) ? ok(email) : fail(`"${text}" is not a valid email address.`);
 }
 
 const STATUS_ALIASES: Record<RecordStatus, string[]> = {
@@ -116,7 +127,9 @@ export function normalizeStatus(cell: Cell | undefined): Cleaned<RecordStatus | 
   const text = cellText(cell);
   if (text === null) return ok(null);
   const status = STATUS_LOOKUP.get(foldText(text.replace(/[_-]+/g, " ")));
-  return status ? ok(status) : fail(`Unknown status "${text}"`);
+  return status
+    ? ok(status)
+    : fail(`"${text}" is not a known status. Use ${orList(Object.values(RECORD_STATUS_LABEL))}.`);
 }
 
 export function parseNumber(cell: Cell | undefined): number | null {
@@ -145,11 +158,11 @@ export function progressToPercent(cell: Cell | undefined, mode: ProgressMode): C
   if (text === null) return ok(null);
   const isPercentText = text.endsWith("%");
   const value = parseNumber(isPercentText ? text.slice(0, -1) : (cell ?? null));
-  if (value === null) return fail(`Progress "${text}" is not a number`);
+  if (value === null) return fail(`"${text}" is not a number.`);
   const scaled = isPercentText || mode === "percent" ? value : value * 100;
   // toFixed first: 0.285 * 100 is 28.499999999999996 in floating point and would round down.
   const percent = Math.round(Number(scaled.toFixed(6)));
-  return percent < 0 || percent > 100 ? fail(`Progress "${text}" is outside 0–100%`) : ok(percent);
+  return percent < 0 || percent > 100 ? fail(`"${text}" is outside 0–100%.`) : ok(percent);
 }
 
 const DAY_MS = 86_400_000;
@@ -171,33 +184,33 @@ export function isoToExcelSerial(iso: string): number {
 export function parseImportDate(cell: Cell | undefined, date1904: boolean): Cleaned<string | null> {
   if (typeof cell === "number") {
     const iso = excelSerialToDate(cell, date1904);
-    return iso ? ok(iso) : fail(`Date "${cell}" is not valid`);
+    return iso ? ok(iso) : fail(`"${cell}" is not a valid date (dd/mm/yyyy).`);
   }
   const text = cellText(cell);
   if (text === null) return ok(null);
   if (/^\d{5}(\.\d+)?$/.test(text)) {
     const iso = excelSerialToDate(Number(text), date1904);
-    return iso ? ok(iso) : fail(`Date "${text}" is not valid`);
+    return iso ? ok(iso) : fail(`"${text}" is not a valid date (dd/mm/yyyy).`);
   }
   const datePart = text.split(" ")[0]!;
   const isoLike = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(datePart);
   const iso = isoLike
     ? toIsoDate(`${isoLike[1]}-${isoLike[2]!.padStart(2, "0")}-${isoLike[3]!.padStart(2, "0")}`)
     : toIsoDate(datePart.replace(/[.-]/g, "/"));
-  return iso ? ok(iso) : fail(`Date "${text}" is not valid (use dd/mm/yyyy)`);
+  return iso ? ok(iso) : fail(`"${text}" is not a valid date (dd/mm/yyyy).`);
 }
 
 const TRUE_WORDS = new Set(["x", "v", "yes", "y", "true", "1", "co", "dung"]);
 const FALSE_WORDS = new Set(["no", "n", "false", "0", "khong", "sai"]);
 
-export function normalizeBoolean(cell: Cell | undefined, label: string): Cleaned<boolean | null> {
+export function normalizeBoolean(cell: Cell | undefined): Cleaned<boolean | null> {
   if (typeof cell === "boolean") return ok(cell);
   const text = cellText(cell);
   if (text === null) return ok(null);
   const key = foldText(text);
   if (TRUE_WORDS.has(key)) return ok(true);
   if (FALSE_WORDS.has(key)) return ok(false);
-  return fail(`${label}: unknown value "${text}"`);
+  return fail(`"${text}" is not yes or no.`);
 }
 
 const REFUND_LOOKUP = new Map<string, RefundStatus>([
@@ -213,7 +226,7 @@ export function normalizeRefund(cell: Cell | undefined): Cleaned<RefundStatus | 
   const text = cellText(cell);
   if (text === null) return ok(null);
   const status = REFUND_LOOKUP.get(foldText(text));
-  return status ? ok(status) : fail(`Unknown refund status "${text}"`);
+  return status ? ok(status) : fail(`"${text}" is not a known refund status. Use ${orList(Object.values(REFUND_STATUS_LABEL))}.`);
 }
 
 export function normalizeUrl(cell: Cell | undefined): Cleaned<string | null> {
@@ -221,7 +234,7 @@ export function normalizeUrl(cell: Cell | undefined): Cleaned<string | null> {
   if (text === null) return ok(null);
   return /^https?:\/\//i.test(text) && URL.canParse(text)
     ? ok(text)
-    : fail("Certificate link must start with http:// or https://");
+    : fail(`"${text}" must start with http:// or https://.`);
 }
 
 const NO_EXPIRY_WORDS = new Set(["khong het han", "khong thoi han", "vinh vien", "no expiry", "lifetime", "none", "khong"]);
@@ -235,7 +248,7 @@ export function parseValidityMonths(cell: Cell | undefined): Cleaned<number | nu
   const months = /^(\d+)\s*(thang|months?|m)?$/.exec(key);
   const years = /^(\d+)\s*(nam|years?|y)$/.exec(key);
   const value = months ? Number(months[1]) : years ? Number(years[1]) * 12 : NaN;
-  return Number.isInteger(value) && value > 0 && value <= 600 ? ok(value) : fail(`Validity "${text}" is not valid`);
+  return Number.isInteger(value) && value > 0 && value <= 600 ? ok(value) : fail(`"${text}" is not a valid number of months (a whole number up to 600, or "no expiry").`);
 }
 
 const MAX_COST = 9_999_999_999.99; // numeric(12,2)
@@ -251,7 +264,7 @@ export function parseCost(cell: Cell | undefined): Cleaned<number | null> {
       ? bare.replace(/\./g, "").replace(",", ".")
       : bare;
   const value = typeof cell === "number" ? cell : parseNumber(normalized);
-  return value !== null && value >= 0 && value <= MAX_COST ? ok(value) : fail(`Cost "${text}" is not a valid amount.`);
+  return value !== null && value >= 0 && value <= MAX_COST ? ok(value) : fail(`"${text}" is not a valid amount.`);
 }
 
 const CURRENCY_ALIASES: Record<Currency, string[]> = {
@@ -269,7 +282,7 @@ export function parseCurrency(cell: Cell | undefined): Cleaned<Currency | null> 
   const text = cellText(cell);
   if (text === null) return ok(null);
   const currency = CURRENCY_LOOKUP.get(foldText(text));
-  return currency ? ok(currency) : fail(`Unknown currency "${text}". Use VND or USD.`);
+  return currency ? ok(currency) : fail(`"${text}" is not a known currency. Use VND or USD.`);
 }
 
 /** A positive whole number of hours, optionally followed by `h` / `hours` (or the Vietnamese `gio`, accents ignored); `null` = blank. */
@@ -280,7 +293,7 @@ export function parseStudyHours(cell: Cell | undefined): Cleaned<number | null> 
   const value = match ? Number(match[1]) : NaN;
   return Number.isInteger(value) && value > 0 && value <= MAX_HOURS
     ? ok(value)
-    : fail(`Study hours "${text}" must be a whole number above 0.`);
+    : fail(`"${text}" must be a whole number above 0.`);
 }
 const MAX_HOURS = 10_000;
 

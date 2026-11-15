@@ -49,7 +49,8 @@ export function TopKpiRow({
 
 function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: string }) {
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+    <div className="@container">
+    <div className="grid grid-cols-1 gap-3.5 @md:grid-cols-3">
       {/* 1. Expiring in 60 days */}
       <dl className="m-0 p-0 contents">
         <div
@@ -62,7 +63,7 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
           )}
         >
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               <dt
                 className={cn(
                   "text-label uppercase tracking-wider font-mono",
@@ -105,7 +106,7 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
           )}
         >
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               <dt
                 className={cn(
                   "text-label uppercase tracking-wider font-mono",
@@ -148,8 +149,8 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
             </span>
           </div>
 
-          <div className="border-t border-border/60 pt-2 flex items-center justify-between text-caption text-muted-foreground truncate">
-            <span className="truncate">
+          <div className="border-t border-border/60 pt-2 flex items-center justify-between text-caption text-muted-foreground">
+            <span className="min-w-0 [overflow-wrap:anywhere]">
               {kpis.expiredCount > 0 && pastDueText
                 ? `Past due: ${pastDueText}`
                 : "No expired certificates"}
@@ -165,11 +166,11 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
           )}
         >
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               <dt className="text-label uppercase tracking-wider font-mono text-muted-foreground">
                 Waiting for approval
               </dt>
-              <span className="rounded border border-border px-1.5 py-0.5 text-caption font-mono text-muted-foreground">
+              <span className="shrink-0 rounded border border-border px-1.5 py-0.5 text-caption font-mono text-muted-foreground">
                 Soon
               </span>
             </div>
@@ -178,11 +179,12 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
             </dd>
           </div>
 
-          <div className="border-t border-dashed border-border/60 pt-2 text-caption text-muted-foreground truncate">
+          <div className="border-t border-dashed border-border/60 pt-2 text-caption text-muted-foreground">
             <span>Approvals queue · Coming soon</span>
           </div>
         </div>
       </dl>
+    </div>
     </div>
   );
 }
