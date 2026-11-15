@@ -46,7 +46,7 @@ function AttentionRow({ item }: { item: AdminAttentionItem }) {
       <div className="flex min-w-0 items-start gap-2">
         <Icon className={cn("mt-0.5 size-4 shrink-0", tone.iconColor)} aria-hidden="true" />
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-semibold text-foreground">{item.label}</span>
+          <span className="truncate text-xs font-semibold text-foreground" title={item.label}>{item.label}</span>
           <span className={cn("text-caption tabular-nums", tone.detail)}>{item.detail}</span>
         </div>
       </div>
@@ -85,7 +85,7 @@ export function AdminNeedsAttention({
 
   return (
     <section aria-label="Needs attention" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-label tracking-wider text-muted-foreground">Needs attention</span>
         {!isEmpty && <span className="inline-flex size-2 rounded-full bg-destructive" aria-hidden="true" />}
       </div>

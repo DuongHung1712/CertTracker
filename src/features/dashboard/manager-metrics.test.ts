@@ -249,6 +249,12 @@ describe("manager-metrics", () => {
       expect(noCerts).toHaveLength(2);
       expect(noCerts.map((m) => m.fullName)).toEqual(["Lê Minh Châu", "Trần Thị Bình"]);
     });
+
+    it("does not count a done course completion as having a certificate", () => {
+      const members = [{ id: "m1", fullName: "An", teamName: "Cloud" }];
+      const records = [makeRecord({ memberId: "m1", status: "done", certificateKind: "completion" })];
+      expect(getMembersWithoutCerts(members, records)).toHaveLength(1);
+    });
   });
 });
 

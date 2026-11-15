@@ -22,6 +22,7 @@ import {
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import type { RecordRow } from "@/features/records/queries";
+import type { RecordStatus } from "@/components/status/labels";
 
 export function MemberDashboardView({
   fullName,
@@ -49,17 +50,21 @@ export function MemberDashboardView({
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<RecordRow | null>(null);
+  // Set by "Mark completed" only; every other way of opening the sheet clears it.
+  const [presetStatus, setPresetStatus] = useState<RecordStatus | undefined>(undefined);
 
   const memberKpis = calculateMemberKpis(records);
   const attention = getAttentionRecord(records);
 
   function handleUploadProof(record: RecordRow) {
     setEditingRecord(record);
+    setPresetStatus(undefined);
     setSheetOpen(true);
   }
 
   function handleAddCertificate() {
     setEditingRecord(null);
+    setPresetStatus(undefined);
     setSheetOpen(true);
   }
 
@@ -121,7 +126,11 @@ export function MemberDashboardView({
               sheetOpen={sheetOpen}
               onSheetOpenChange={setSheetOpen}
               editingRecord={editingRecord}
-              onEditRecord={setEditingRecord}
+              presetStatus={presetStatus}
+              onEditRecord={(record, preset) => {
+                setEditingRecord(record);
+                setPresetStatus(preset);
+              }}
             />
           )}
         </div>

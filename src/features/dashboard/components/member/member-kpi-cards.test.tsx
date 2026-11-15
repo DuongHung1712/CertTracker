@@ -5,7 +5,7 @@ import { doneRecord, makeRecord } from "@/features/records/__fixtures__/record-r
 import { MemberKpiCards } from "./member-kpi-cards";
 
 // Copy WP6: the figure reads "{rate} valid ({valid} of {total})" ("Compliant" is not a term the app uses).
-const compliance = (html: string) => /([^>\s]*) valid \(\d+ of \d+\)/.exec(html)?.[1];
+const compliance = (html: string) => /([^>\s]*) valid \(\d+ of \d+ completed exams?\)/.exec(html)?.[1];
 
 // Review #5: the compliance figure must follow `ratePercent` (decision #31): rounded down,
 // 100 only when everything counts, and "—" (formatRate(null)) when there is nothing to divide.
@@ -31,5 +31,20 @@ describe("MemberKpiCards compliance figure", () => {
   it("all valid shows 100%", () => {
     const kpis = calculateMemberKpis([doneRecord(120, { id: "a" }), doneRecord(0, { id: "b" })]);
     expect(compliance(renderToStaticMarkup(<MemberKpiCards kpis={kpis} />))).toBe("100%");
+  });
+});
+
+describe("MemberKpiCards kinds", () => {
+  it("counts exam certificates and course completions apart", () => {
+    const html = renderToStaticMarkup(
+      <MemberKpiCards
+        kpis={calculateMemberKpis([
+          doneRecord(120, { id: "a" }),
+          makeRecord({ id: "b", certificateKind: "completion", expiryStatus: "No Expiry", daysToExpiry: null }),
+        ])}
+      />,
+    );
+    expect(html).toContain("1 exam certificate · 1 course completion");
+    expect(html).toContain("100% valid (1 of 1 completed exam)");
   });
 });

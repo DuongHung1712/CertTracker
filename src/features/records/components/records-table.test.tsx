@@ -3,11 +3,14 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeRecord } from "@/features/records/__fixtures__/record-row";
+import { toast } from "sonner";
+import { deleteRecords } from "@/features/records/actions";
 import { RecordsTable } from "@/features/records/components/records-table";
 
 // The sheet and the delete action pull in server actions; neither is part of what these tests look at.
 vi.mock("@/features/records/components/record-sheet", () => ({ RecordSheet: () => null }));
-vi.mock("@/features/records/actions", () => ({ deleteRecord: vi.fn() }));
+vi.mock("@/features/records/actions", () => ({ deleteRecord: vi.fn(), deleteRecords: vi.fn() }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 
 const RECORDS = [
   makeRecord({ id: "e1", certificateName: "AWS Solutions Architect", certificateKind: "exam" }),
@@ -69,5 +72,34 @@ describe("RecordsTable kind filter", () => {
     await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(rowNames()).toHaveLength(3);
     expect(screen.getByRole("tab", { name: "All (3)" }).getAttribute("aria-selected")).toBe("true");
+  });
+});
+
+describe("RecordsTable bulk delete", () => {
+  const bulk = (count: number) => {
+    vi.mocked(deleteRecords).mockResolvedValue({ ok: true, data: { count } });
+    render(<RecordsTable records={RECORDS} memberOptions={[]} certificateOptions={[]} studyCourses={[]} mode="self" canDelete showCompanyFields={false} />);
+  };
+  const deleteSelected = async (confirmLabel: string) => {
+    await userEvent.click(screen.getByRole("checkbox", { name: "Select all on this page" }));
+    await userEvent.click(within(screen.getByRole("region", { name: "Bulk actions" })).getByRole("button", { name: "Delete" }));
+    await userEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: confirmLabel }));
+  };
+
+  it("warns when fewer rows went than were selected, and clears the selection", async () => {
+    vi.clearAllMocks();
+    bulk(2);
+    await deleteSelected("Delete 3 items");
+    expect(toast.warning).toHaveBeenCalledWith("Deleted 2 of 3 items. The rest were already gone or you can't delete them.");
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.queryByRole("region", { name: "Bulk actions" })).toBeNull();
+  });
+
+  it("reports plain success when every selected row went", async () => {
+    vi.clearAllMocks();
+    bulk(3);
+    await deleteSelected("Delete 3 items");
+    expect(toast.success).toHaveBeenCalledWith("Deleted 3 items");
+    expect(toast.warning).not.toHaveBeenCalled();
   });
 });

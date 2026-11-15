@@ -30,7 +30,7 @@ export function MasterList({
   );
 
   return (
-    <div className="flex flex-col gap-2.5 border-b border-border p-4 lg:col-span-5 lg:border-b-0 lg:border-r">
+    <div className="flex flex-col gap-2.5 border-b border-border p-4 @2xl:col-span-5 @2xl:border-b-0 @2xl:border-r">
       {/* Header row for list */}
       <div className="flex items-center justify-between px-1 text-label font-medium uppercase text-muted-foreground">
         <span>{groupLabel}</span>
@@ -48,7 +48,7 @@ export function MasterList({
         <div
           role="listbox"
           aria-label={tabLabel}
-          className="flex flex-col gap-2 overflow-y-auto max-h-[560px] pr-0.5"
+          className="flex flex-col gap-2 overflow-y-auto max-h-72 pr-0.5 @2xl:max-h-[560px]"
         >
           {rows.map((row, index) => {
             const isSelected = row.key === activeKey;
@@ -71,7 +71,7 @@ export function MasterList({
                 onClick={() => onSelectKey(row.key)}
                 onKeyDown={(e) => onKeyDown(e, index)}
                 className={cn(
-                  "group relative flex items-center justify-between gap-3 rounded-lg border p-3 cursor-pointer transition-all outline-none",
+                  "group relative flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border p-3 cursor-pointer transition-all outline-none",
                   "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card",
                   isSelected
                     ? "border-primary bg-primary text-primary-foreground"
@@ -79,7 +79,7 @@ export function MasterList({
                 )}
               >
                 {/* Left: Monogram + Title + Subtitle */}
-                <div className="flex min-w-0 items-center gap-3">
+                <div className="flex min-w-0 flex-1 basis-40 items-center gap-3">
                   <div
                     aria-hidden
                     className={cn(
@@ -106,9 +106,14 @@ export function MasterList({
                         "truncate text-caption",
                         isSelected ? "text-primary-foreground-muted" : "text-muted-foreground",
                       )}
+                      title={
+                        row.headcount !== null
+                          ? `${pluralize(row.headcount, "member")} · ${row.people} with learning items`
+                          : undefined
+                      }
                     >
                       {row.headcount !== null
-                        ? `${pluralize(row.headcount, "member")} · ${row.people} with certificates`
+                        ? `${pluralize(row.headcount, "member")} · ${row.people} with learning items`
                         : groupLabel === CERTIFICATE_GROUP_LABEL
                           ? `${row.done} completed`
                           : pluralize(row.people, "member")}
@@ -117,7 +122,7 @@ export function MasterList({
                 </div>
 
                 {/* Right: certificate count chip + Completion % */}
-                <div className="flex shrink-0 flex-col items-end gap-1">
+                <div className="ml-auto flex shrink-0 flex-col items-end gap-1">
                   <span
                     className={cn(
                       "text-xs font-semibold tabular-nums",

@@ -9,7 +9,7 @@ export function AdminProfileCard({ profile }: { profile: MemberProfile }) {
 
   return (
     <section aria-label="Your profile" className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-label tracking-wider text-muted-foreground">Your profile</span>
         <Badge variant="secondary" className="font-mono text-caption">
           Admin
@@ -24,10 +24,10 @@ export function AdminProfileCard({ profile }: { profile: MemberProfile }) {
           {getInitials(profile.fullName)}
         </div>
         <div className="flex min-w-0 flex-col">
-          <h2 className="truncate text-sm font-semibold text-foreground">{profile.fullName}</h2>
+          <h2 className="truncate text-sm font-semibold text-foreground" title={profile.fullName}>{profile.fullName}</h2>
           {hasMemberDetails ? (
             <>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground [overflow-wrap:anywhere]">
                 {profile.careerRoleName ?? "Role not set"}
                 {profile.teamName ? ` · ${profile.teamName}` : ""}
               </p>

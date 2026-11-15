@@ -10,8 +10,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-/** Destructive confirmation. The title names the object; the button names the action. */
+/** Confirmation. The title names the object; the button names the action; it is destructive (red) unless `variant` says otherwise. */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -21,6 +22,9 @@ export function ConfirmDialog({
   pendingLabel,
   onConfirm,
   pending = false,
+  confirmDisabled = false,
+  variant = "destructive",
+  children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,6 +35,11 @@ export function ConfirmDialog({
   pendingLabel?: string;
   onConfirm: () => void;
   pending?: boolean;
+  /** The action is not possible (the description says why), so only Cancel works. */
+  confirmDisabled?: boolean;
+  variant?: "destructive" | "default";
+  /** Extra content under the description, e.g. a list of what will be created; it scrolls when long. */
+  children?: React.ReactNode;
 }) {
   return (
     <AlertDialog
@@ -42,14 +51,15 @@ export function ConfirmDialog({
         onOpenChange(nextOpen);
       }}
     >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="text-section-title">{title}</AlertDialogTitle>
-          <AlertDialogDescription className="text-body">{description}</AlertDialogDescription>
+      <AlertDialogContent className={cn(children && "data-[size=default]:sm:max-w-lg")}>
+        <AlertDialogHeader className="min-w-0">
+          <AlertDialogTitle className="text-section-title wrap-anywhere">{title}</AlertDialogTitle>
+          <AlertDialogDescription className="text-body wrap-anywhere">{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children && <div className="max-h-[45vh] min-w-0 overflow-y-auto">{children}</div>}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
-          <Button variant="destructive" disabled={pending} onClick={onConfirm}>
+          <Button variant={variant} disabled={pending || confirmDisabled} onClick={onConfirm}>
             {pending ? (pendingLabel ?? "Working…") : confirmLabel}
           </Button>
         </AlertDialogFooter>

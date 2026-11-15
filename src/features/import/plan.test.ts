@@ -96,9 +96,9 @@ describe("buildImportPlan", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.errors.join()).toMatch(/Team "Team Ghost" not found/);
-    expect(rows[1]!.errors.join()).toMatch(/More than one team is named "Team X"/);
-    expect(rows[2]!.errors.join()).toMatch(/Full name is missing/);
+    expect(rows[0]!.errors.join()).toMatch(/^Team: "Team Ghost" not found\.$/);
+    expect(rows[1]!.errors.join()).toMatch(/^Team: more than one team is named "Team X"\./);
+    expect(rows[2]!.errors.join()).toMatch(/^Họ tên: a value is required to create the new member\.$/);
   });
 
   it("never moves or renames an existing member, but warns", () => {
@@ -120,8 +120,8 @@ describe("buildImportPlan", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(rows[0]!.errors.join()).toMatch(/More than one certificate is named/);
-    expect(rows[1]!.errors.join()).toMatch(/a provider is needed/);
+    expect(rows[0]!.errors.join()).toMatch(/^Khóa học: "Shared Name" matches more than one certificate\./);
+    expect(rows[1]!.errors.join()).toMatch(/^Khóa học: "Brand New" is not in the catalogue\. Fill in the Provider column/);
     expect(rows[2]!.normalized!.course).toEqual({ id: "c-saa" });
   });
 
@@ -129,6 +129,38 @@ describe("buildImportPlan", () => {
     const [planned] = buildImportPlan(table([row({ "Trạng thái": "Failed", "Ngày thi": "31/02/2026", "Tiến độ": 150 })]), LOOKUPS, TODAY).rows;
     expect(planned!.action).toBe("skip");
     expect(planned!.errors).toHaveLength(3);
+  });
+
+  it("starts every cell error with the column header and quotes the value", () => {
+    const [planned] = buildImportPlan(table([row({ "Trạng thái": "Failed", "Ngày thi": "not a date", "Tiến độ": 150 })]), LOOKUPS, TODAY).rows;
+    expect(planned!.errors).toEqual([
+      'Trạng thái: "Failed" is not a known status. Use Completed, In progress or Not started.',
+      'Tiến độ: "150" is outside 0–100%.',
+      'Ngày thi: "not a date" is not a valid date (dd/mm/yyyy).',
+    ]);
+  });
+
+  it("falls back to the standard column name when the file has no such column", () => {
+    const headers = ["Email", "Certificate", "Provider", "Status"];
+    const [planned] = buildImportPlan(
+      { ...table([["an@x.vn", "AWS SAA", "AWS", "Failed"]], headers), map: { email: 0, courseName: 1, provider: 2, status: 3 } },
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(planned!.errors).toEqual(['Status: "Failed" is not a known status. Use Completed, In progress or Not started.']);
+  });
+
+  it("still reports an unknown Course studied when the certificate itself failed", () => {
+    const [planned] = buildImportPlan(
+      table([row({ "Khóa học": "Shared Name", "Nhà cung cấp": null, "Course studied": "No Such Course", "Trạng thái": "Failed" })]),
+      LOOKUPS,
+      TODAY,
+    ).rows;
+    expect(planned!.errors).toEqual([
+      'Khóa học: "Shared Name" matches more than one certificate. Fill in the Provider column to pick one.',
+      'Course studied: "No Such Course" not found.',
+      'Trạng thái: "Failed" is not a known status. Use Completed, In progress or Not started.',
+    ]);
   });
 
   it("uses fraction mode for the whole column and says so in the notes", () => {
@@ -242,16 +274,16 @@ describe("buildImportPlan edge cases", () => {
     it("refuses a course that does not prepare for the certificate, with the spec message", () => {
       const planned = planOne("Other Bootcamp");
       expect(planned).toMatchObject({ action: "skip", normalized: null });
-      expect(planned.errors).toContain("This course does not prepare for AWS SAA");
+      expect(planned.errors).toContain('Course studied: "Other Bootcamp" does not prepare for "AWS SAA".');
     });
 
     it("names the certificate as the catalogue spells it, not as the file does", () => {
-      expect(planOne("Other Bootcamp", { "Khóa học": "aws saa" }).errors).toContain("This course does not prepare for AWS SAA");
+      expect(planOne("Other Bootcamp", { "Khóa học": "aws saa" }).errors).toContain('Course studied: "Other Bootcamp" does not prepare for "AWS SAA".');
     });
 
     it("refuses an unknown course and any course for a new certificate", () => {
-      expect(planOne("No Such Course").errors).toContain('Course "No Such Course" not found');
-      expect(planOne("SAA Bootcamp", { "Khóa học": "Brand New" }).errors).toContain("This course does not prepare for Brand New");
+      expect(planOne("No Such Course").errors).toContain('Course studied: "No Such Course" not found.');
+      expect(planOne("SAA Bootcamp", { "Khóa học": "Brand New" }).errors).toContain('Course studied: "SAA Bootcamp" does not prepare for "Brand New".');
     });
 
     it("accepts the course that grants a completion certificate", () => {
@@ -281,7 +313,7 @@ describe("buildImportPlan edge cases", () => {
       TODAY,
     ).rows;
     expect(planned).toMatchObject({ action: "skip", normalized: null });
-    expect(planned!.errors).toContain('Unknown currency "EUR". Use VND or USD.');
+    expect(planned!.errors).toContain('Currency: "EUR" is not a known currency. Use VND or USD.');
   });
 
   it("rejects a cost without a currency, or a currency without a cost, on a new course", () => {
@@ -293,8 +325,8 @@ describe("buildImportPlan edge cases", () => {
       LOOKUPS,
       TODAY,
     ).rows;
-    expect(noCurrency!.errors).toContain("Choose a currency for the cost");
-    expect(noCost!.errors).toContain("Enter a cost or clear the currency");
+    expect(noCurrency!.errors).toContain('Currency: choose VND or USD for the cost "150".');
+    expect(noCost!.errors).toContain('Cost: enter a cost for the currency "VND", or clear the currency.');
   });
 
   it.each([
@@ -476,8 +508,16 @@ describe("reconcileRecord (decision #22)", () => {
   });
   it("errors when nothing can be derived, when done lacks an issue date, or when it is in the future", () => {
     expect(reconcileRecord({ status: null, progress: null, issuedDate: null }, none, TODAY).errors).toEqual(["Status and progress are missing"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed course needs an issue date"]);
-    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The issue date cannot be in the future"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY).errors).toEqual(["A completed item needs a date"]);
+    expect(reconcileRecord({ status: "done", progress: 100, issuedDate: "2027-01-01" }, none, TODAY).errors).toEqual(["The date cannot be in the future"]);
+  });
+  it("puts the column in front of each record-rule error, all problems of the row at once", () => {
+    const [missing] = buildImportPlan(table([row({ "Trạng thái": "Hoàn thành", "Tiến độ": 100, "Ngày cấp": null })]), LOOKUPS, TODAY).rows;
+    expect(missing!.errors).toEqual(["Ngày cấp: A completed item needs a date"]);
+    const [future] = buildImportPlan(table([row({ "Trạng thái": "Hoàn thành", "Tiến độ": 100, "Ngày cấp": "01/01/2027" })]), LOOKUPS, TODAY).rows;
+    expect(future!.errors).toEqual(["Ngày cấp: The date cannot be in the future"]);
+    const both = reconcileRecord({ status: "done", progress: 100, issuedDate: null }, none, TODAY, (field, message) => `[${field}] ${message}`);
+    expect(both.errors).toEqual(["[issuedDate] A completed item needs a date"]);
   });
   it("accepts a done record whose issue date already exists in the database", () => {
     const existing = { id: "r", memberId: "m", certificateId: "c", courseId: null, status: "done" as const, progress: 100, plannedExamDate: null, issuedDate: "2024-05-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a" as const, notes: null };

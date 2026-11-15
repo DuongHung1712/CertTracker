@@ -192,6 +192,9 @@ describe("calculateMemberKpis", () => {
   it("handles empty records", () => {
     expect(calculateMemberKpis([])).toEqual({
       total: 0,
+      examCount: 0,
+      examDoneCount: 0,
+      completionCount: 0,
       validCount: 0,
       expiringCount: 0,
       leastDaysRecord: null,

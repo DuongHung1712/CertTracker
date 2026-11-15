@@ -11,6 +11,7 @@ import {
   type CourseInput,
   type ProviderInput,
 } from "@/features/courses/schema";
+import { courseWithCompletionSchema, type CourseWithCompletionInput } from "@/features/certificates/schema";
 import { assertAffected } from "@/lib/assert-affected";
 import { err, ok, type Result } from "@/lib/result";
 import { mapPostgresError } from "@/lib/postgres-error";
@@ -107,6 +108,52 @@ export async function createCourse(input: CourseInput): Promise<Result<null>> {
   const { error } = await supabase.from("courses").insert(toCourseRow(parsed.data));
   if (error) return err(mapPostgresError(error, { duplicate: `A course named "${parsed.data.name}" already exists for this provider.` }));
   revalidatePath("/courses");
+  return ok(null);
+}
+
+/**
+ * A course and the completion it grants in one step. Two statements, not a transaction: if the completion fails the
+ * course just created is deleted again, and if that also fails the message names the course left behind.
+ */
+export async function createCourseWithCompletion(input: CourseWithCompletionInput): Promise<Result<null>> {
+  const parsed = courseWithCompletionSchema.safeParse(input);
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
+  const data = parsed.data;
+  const supabase = await createClient();
+  const course = await supabase.from("courses").insert(toCourseRow(data)).select("id").single();
+  if (course.error) {
+    return err(
+      mapPostgresError(course.error, {
+        duplicate: `A course named "${data.name}" already exists for this provider.`,
+        restricted: "The chosen provider or exam no longer exists. Reload the page and choose again.",
+      }),
+    );
+  }
+  const completionName = data.completionName ?? data.name;
+  const completion = await supabase.from("certificates").insert({
+    kind: "completion",
+    name: completionName,
+    cert_type_id: data.completionCertTypeId,
+    provider_id: data.providerId,
+    level: null,
+    validity_months: null,
+    url: data.completionUrl ?? data.url,
+    course_id: course.data.id,
+  });
+  if (completion.error) {
+    const message = mapPostgresError(completion.error, {
+      duplicate: `A certificate or course completion named "${completionName}" already exists for this provider. Rename the course or give the completion a different name.`,
+      restricted: "The chosen type or provider no longer exists. Reload the page and choose again.",
+    });
+    const cleanup = await supabase.from("courses").delete().eq("id", course.data.id);
+    if (cleanup.error) {
+      revalidatePath("/courses");
+      return err(`The course "${data.name}" was added but its course completion was not, and the course could not be removed. Delete it from the Courses tab, then try again. (${message})`);
+    }
+    return err(message);
+  }
+  revalidatePath("/courses");
+  revalidatePath("/records");
   return ok(null);
 }
 

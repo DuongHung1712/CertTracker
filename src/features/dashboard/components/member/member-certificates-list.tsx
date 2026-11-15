@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert, type LucideIcon } from "lucide-react";
+import { Award, BookOpen, CircleCheck, Clock, FileText, Pencil, Plus, ShieldAlert, type LucideIcon } from "lucide-react";
 import { EmptyState } from "@/components/data/empty-state";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
-import { clampPercent } from "@/components/status/labels";
+import { clampPercent, type RecordStatus } from "@/components/status/labels";
 import { RecordStatusLabel } from "@/components/status/record-status";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -60,6 +60,7 @@ export function MemberCertificatesList({
   sheetOpen,
   onSheetOpenChange,
   editingRecord,
+  presetStatus,
   onEditRecord,
 }: {
   fullName: string;
@@ -70,7 +71,9 @@ export function MemberCertificatesList({
   sheetOpen: boolean;
   onSheetOpenChange: (open: boolean) => void;
   editingRecord: RecordRow | null;
-  onEditRecord: (record: RecordRow | null) => void;
+  /** Status the sheet opens with ("Mark completed"); owned by the parent with `editingRecord`. */
+  presetStatus?: RecordStatus;
+  onEditRecord: (record: RecordRow | null, presetStatus?: RecordStatus) => void;
 }) {
   const [tab, setTab] = useState<MemberTab>("all");
   const [sort, setSort] = useState<MemberSort>("expiry");
@@ -85,8 +88,8 @@ export function MemberCertificatesList({
     onSheetOpenChange(true);
   }
 
-  function handleEdit(record: RecordRow) {
-    onEditRecord(record);
+  function handleEdit(record: RecordRow, preset?: RecordStatus) {
+    onEditRecord(record, preset);
     onSheetOpenChange(true);
   }
 
@@ -200,6 +203,7 @@ export function MemberCertificatesList({
                         status={record.expiryStatus}
                         daysToExpiry={record.daysToExpiry}
                         expiryDate={record.expiryDate}
+                        kind={record.certificateKind}
                       />
                     ) : record.status === "in_progress" ? (
                       <RecordStatusLabel status={record.status} />
@@ -214,7 +218,7 @@ export function MemberCertificatesList({
                             render={
                               <Button
                                 variant="ghost"
-                                size="icon-xs"
+                                size="icon"
                                 render={
                                   <a
                                     href={`/api/records/${record.id}/evidence`}
@@ -224,11 +228,29 @@ export function MemberCertificatesList({
                                 }
                                 aria-label={`View evidence for ${record.certificateName}`}
                               >
-                                <FileText className="size-3.5" aria-hidden="true" />
+                                <FileText className="size-4" aria-hidden="true" />
                               </Button>
                             }
                           />
                           <TooltipContent side="top">View evidence</TooltipContent>
+                        </Tooltip>
+                      )}
+
+                      {record.status !== "done" && (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEdit(record, "done")}
+                                aria-label={`Mark ${record.certificateName} completed`}
+                              >
+                                <CircleCheck className="size-4" aria-hidden="true" />
+                              </Button>
+                            }
+                          />
+                          <TooltipContent side="top">Mark completed</TooltipContent>
                         </Tooltip>
                       )}
 
@@ -237,11 +259,11 @@ export function MemberCertificatesList({
                           render={
                             <Button
                               variant="ghost"
-                              size="icon-xs"
+                              size="icon"
                               onClick={() => handleEdit(record)}
                               aria-label={`Edit ${record.certificateName}`}
                             >
-                              <Pencil className="size-3.5" aria-hidden="true" />
+                              <Pencil className="size-4" aria-hidden="true" />
                             </Button>
                           }
                         />
@@ -300,11 +322,14 @@ export function MemberCertificatesList({
         open={sheetOpen}
         onOpenChange={onSheetOpenChange}
         editing={editingRecord}
+        presetStatus={presetStatus}
         memberOptions={[]}
         certificateOptions={certificateOptions}
         studyCourses={studyCourses}
         showCompanyFields={false}
         fixedMemberId={memberId}
+        records={records}
+        onEditExisting={handleEdit}
       />
     </section>
   );

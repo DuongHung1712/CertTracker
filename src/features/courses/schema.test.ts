@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { certTypeSchema, courseSchema, providerSchema } from "@/features/courses/schema";
+import { certTypeSchema, courseDeleteDescription, courseSchema, providerSchema } from "@/features/courses/schema";
 
 describe("certTypeSchema / providerSchema", () => {
   it("both require a non-empty trimmed name", () => {
@@ -95,5 +95,21 @@ describe("courseSchema", () => {
     const result = courseSchema.safeParse({ ...base, refundConditions: "x".repeat(1001) });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toBe("Refund conditions can have at most 1000 characters");
+  });
+});
+
+describe("courseSchema messages", () => {
+  it("says what is missing instead of repeating the placeholder", () => {
+    const result = courseSchema.safeParse({ name: "X", providerId: "" });
+    expect(result.success ? [] : result.error.issues.map((issue) => issue.message)).toEqual(["Provider is required"]);
+  });
+});
+
+describe("courseDeleteDescription", () => {
+  it("names the completion a granting course blocks, and is a plain warning otherwise", () => {
+    expect(courseDeleteDescription("ML Specialization")).toBe(
+      "This course grants the completion ML Specialization. Delete or change that completion first.",
+    );
+    expect(courseDeleteDescription(null)).toContain("This cannot be undone.");
   });
 });

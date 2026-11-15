@@ -71,6 +71,7 @@ export function NextToExpireTable({ records }: { records: RecordRow[] }) {
                     status={row.expiryStatus}
                     daysToExpiry={row.daysToExpiry}
                     expiryDate={row.expiryDate}
+                    kind={row.certificateKind}
                   />
                 </td>
                 <td className="px-3 py-2.5 text-right whitespace-nowrap">

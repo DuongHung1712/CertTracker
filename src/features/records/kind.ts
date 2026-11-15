@@ -38,3 +38,17 @@ export const recordSheetTitle = (editing: boolean, kind: CertificateKind | undef
 
 export const recordSavedMessage = (editing: boolean, kind: CertificateKind | undefined): string =>
   `${editing ? "Saved" : "Added"} ${CERTIFICATE_KIND_NOUN[kind ?? "exam"]}`;
+
+/** For an exam the date on the record is the day it was passed; a completion has an issue date. */
+export const issuedDateLabel = (kind: CertificateKind): string => (kind === "exam" ? "Date passed" : "Issue date");
+
+export const issuedDateHint = (kind: CertificateKind): string =>
+  kind === "exam"
+    ? "The day you passed the exam. The expiry date is worked out from its validity period."
+    : "The day it was issued. A course completion does not expire.";
+
+/** The "What are you adding?" choice at the top of the record sheet. */
+export const ADD_KIND_CHOICES: { kind: CertificateKind; label: string; hint: string }[] = [
+  { kind: "exam", label: "Exam certificate", hint: "You passed an exam." },
+  { kind: "completion", label: "Course completion", hint: "You finished a course." },
+];

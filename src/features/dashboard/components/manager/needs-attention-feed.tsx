@@ -44,8 +44,8 @@ export function NeedsAttentionFeed({ records }: { records: RecordRow[] }) {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1 border-t border-border/40">
-              <span className="font-mono text-caption text-muted-foreground">
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40">
+              <span className="min-w-0 font-mono text-caption text-muted-foreground [overflow-wrap:anywhere]">
                 {record.teamName ?? "No team"}
               </span>
               <Link

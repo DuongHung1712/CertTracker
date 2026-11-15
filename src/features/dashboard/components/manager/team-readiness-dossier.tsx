@@ -42,14 +42,14 @@ export function TeamReadinessDossier({
   const compliantPercent = selectedRow?.readinessRate ?? 0;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="@container flex flex-col gap-4">
       <p className="text-caption text-muted-foreground">
         Ranked by valid certificates, then certificates in progress. Select a member to see their certificates.
       </p>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 @2xl:grid-cols-12">
         {/* Left Subpanel: Master List (5 cols on lg) */}
-        <div className="flex flex-col gap-2 lg:col-span-5 max-h-[520px] overflow-y-auto pr-1">
+        <div className="flex flex-col gap-2 @2xl:col-span-5 max-h-[520px] overflow-y-auto pr-1">
           {rows.map((row, idx) => {
             const isSelected = row.memberId === selectedRow?.memberId;
             const initials = getInitials(row.memberName);
@@ -104,7 +104,7 @@ export function TeamReadinessDossier({
                 </div>
 
                 {/* Subtitle: Team Name, Valid & In Progress counts */}
-                <div className="flex items-center justify-between text-caption">
+                <div className="flex flex-wrap items-center justify-between gap-x-2 text-caption">
                   <span
                     className={cn(
                       "truncate",
@@ -163,9 +163,9 @@ export function TeamReadinessDossier({
 
         {/* Right Subpanel: member details (7 cols on lg) */}
         {selectedRow && (
-          <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4 lg:col-span-7">
+          <div className="flex flex-col gap-4 rounded-lg border border-border bg-card @container p-4 @2xl:col-span-7 min-w-0">
             {/* Details banner */}
-            <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border pb-3">
               <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
                 Member details
               </span>
@@ -198,27 +198,27 @@ export function TeamReadinessDossier({
             </div>
 
             {/* 4 Mini Stat Figure Cards */}
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2 @lg:grid-cols-4">
               <div className="flex flex-col items-center justify-center rounded border border-border bg-muted/30 p-2 text-center">
-                <span className="text-label uppercase font-mono text-muted-foreground">Valid</span>
+                <span className="max-w-full truncate text-label uppercase font-mono text-muted-foreground">Valid</span>
                 <span className="text-lg font-bold font-mono tabular-nums text-foreground">
                   {selectedRow.validCount}
                 </span>
               </div>
               <div className="flex flex-col items-center justify-center rounded border border-border bg-muted/30 p-2 text-center">
-                <span className="text-label uppercase font-mono text-muted-foreground">Completed</span>
+                <span className="max-w-full truncate text-label uppercase font-mono text-muted-foreground">Completed</span>
                 <span className="text-lg font-bold font-mono tabular-nums text-foreground">
                   {selectedRow.validCount + selectedRow.expiredCount}
                 </span>
               </div>
               <div className="flex flex-col items-center justify-center rounded border border-border bg-muted/30 p-2 text-center">
-                <span className="text-label uppercase font-mono text-muted-foreground">In progress</span>
+                <span className="max-w-full truncate text-label uppercase font-mono text-muted-foreground">In progress</span>
                 <span className="text-lg font-bold font-mono tabular-nums text-foreground">
                   {selectedRow.inProgressCount}
                 </span>
               </div>
               <div className="flex flex-col items-center justify-center rounded border border-border bg-muted/30 p-2 text-center">
-                <span className="text-label uppercase font-mono text-muted-foreground">Expired</span>
+                <span className="max-w-full truncate text-label uppercase font-mono text-muted-foreground">Expired</span>
                 <span
                   className={cn(
                     "text-lg font-bold font-mono tabular-nums",
@@ -247,10 +247,10 @@ export function TeamReadinessDossier({
                   {selectedRecords.map((r) => (
                     <div
                       key={r.id}
-                      className="flex items-center justify-between gap-3 p-3 text-caption"
+                      className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 p-3 text-caption"
                     >
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-semibold text-foreground truncate">
+                      <div className="flex min-w-0 flex-1 basis-32 flex-col">
+                        <span className="font-semibold text-foreground truncate" title={r.certificateName}>
                           {r.certificateName}
                         </span>
                         <span className="text-caption text-muted-foreground font-mono truncate">
@@ -262,6 +262,7 @@ export function TeamReadinessDossier({
                           status={r.expiryStatus}
                           daysToExpiry={r.daysToExpiry}
                           expiryDate={r.expiryDate}
+                          kind={r.certificateKind}
                         />
                       </div>
                     </div>

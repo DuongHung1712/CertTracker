@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { getCurrentUser } from "@/features/auth/queries";
 import { DcSection } from "@/features/organizations/components/dc-section";
@@ -7,7 +8,8 @@ import { listDcs, listManagerCandidates, listPrograms, listScopeManagerIds, list
 
 export default async function OrgPage() {
   const user = await getCurrentUser();
-  const isAdmin = user?.role === "admin";
+  // UX only: RLS already limits writes to admins; the menu shows this page to admins only.
+  if (user?.role !== "admin") redirect("/dashboard");
   const [dcs, programRows, teamRows, candidates] = await Promise.all([
     listDcs(),
     listPrograms(),
@@ -32,9 +34,9 @@ export default async function OrgPage() {
   return (
     <div className="flex flex-col gap-8">
       <PageHeader title="Organisation" description="Centres, programs and teams." />
-      <DcSection dcs={dcs} canManage={isAdmin} />
-      <ProgramSection programs={programs} dcs={dcs} candidates={candidates} canManage={isAdmin} />
-      <TeamSection teams={teams} programs={programs} candidates={candidates} canManage={isAdmin} />
+      <DcSection dcs={dcs} canManage />
+      <ProgramSection programs={programs} dcs={dcs} candidates={candidates} canManage />
+      <TeamSection teams={teams} programs={programs} candidates={candidates} canManage />
     </div>
   );
 }

@@ -73,7 +73,7 @@ describe("updateRecord and the course studied", () => {
     updateError = { code: "23505", message: "duplicate key" };
     expect(await updateRecord(edit)).toEqual({
       ok: false,
-      error: "This member already has this certificate. Edit the existing one instead of creating a new one.",
+      error: "This member already has this one. Edit the existing entry instead of creating a new one.",
     });
   });
 
@@ -83,6 +83,6 @@ describe("updateRecord and the course studied", () => {
     updateError = { code: "23514", message: 'new row violates check constraint "training_records_done_needs_issue"' };
     const status = await updateRecord(edit);
     expect(mismatch).toEqual({ ok: false, error: "That course does not prepare for this certificate. Choose another course or None (self-study)." });
-    expect(status).toEqual({ ok: false, error: "Status, progress and issue date do not match." });
+    expect(status).toEqual({ ok: false, error: "Status, progress and date do not match." });
   });
 });

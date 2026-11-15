@@ -17,7 +17,7 @@ export function QuickActionsCard() {
           href="/records"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "justify-start gap-2 text-caption font-medium",
+            "h-auto min-h-7 justify-start gap-2 whitespace-normal py-1.5 text-left text-caption font-medium",
           )}
         >
           <PlusCircle className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -28,7 +28,7 @@ export function QuickActionsCard() {
           href="/data-quality"
           className={cn(
             buttonVariants({ variant: "outline", size: "sm" }),
-            "justify-start gap-2 text-caption font-medium",
+            "h-auto min-h-7 justify-start gap-2 whitespace-normal py-1.5 text-left text-caption font-medium",
           )}
         >
           <CheckCircle2 className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />

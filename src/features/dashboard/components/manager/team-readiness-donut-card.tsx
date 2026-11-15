@@ -57,7 +57,7 @@ export function TeamReadinessDonutCard({
             <span className="text-2xl font-bold tracking-tight text-foreground font-mono">
               {hasCompleted ? kpis.teamReadinessFormatted : "—"}
             </span>
-            <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground -mt-0.5">
+            <span className="text-caption font-mono uppercase tracking-widest text-muted-foreground">
               Ready
             </span>
           </div>
