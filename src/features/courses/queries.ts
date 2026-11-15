@@ -1,4 +1,5 @@
 import { toCurrency } from "@/lib/money";
+import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import { createClient } from "@/lib/supabase/server";
 
 export async function listCertTypes() {
@@ -17,13 +18,16 @@ export async function listProviders() {
 
 export async function listCourses() {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("courses")
-    .select(
-      "id, name, provider_id, refundable, cost, cost_currency, est_hours, url, refund_conditions, prepares_for_id, providers(name), prepares_for:certificates!courses_prepares_for_id_fkey(name), grants:certificates!certificates_course_id_fkey(name)",
-    )
-    .order("name");
-  if (error) throw new Error(error.message);
+  const data = await fetchAllRows((from, to) =>
+    supabase
+      .from("courses")
+      .select(
+        "id, name, provider_id, refundable, cost, cost_currency, est_hours, url, refund_conditions, prepares_for_id, providers(name), prepares_for:certificates!courses_prepares_for_id_fkey(name), grants:certificates!certificates_course_id_fkey(name)",
+      )
+      .order("name")
+      .order("id")
+      .range(from, to),
+  );
   return data.map((row) => ({
     id: row.id,
     name: row.name,

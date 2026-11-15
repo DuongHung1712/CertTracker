@@ -43,6 +43,7 @@ export default async function RecordsPage({
         mode="team"
         canDelete
         showCompanyFields
+        canAddToCatalogue={user?.role === "admin"}
       />
     </div>
   );

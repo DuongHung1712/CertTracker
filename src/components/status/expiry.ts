@@ -28,12 +28,14 @@ export function expiryDetail({
   status,
   daysToExpiry,
   expiryDate,
+  kind = "exam",
 }: {
   status: ExpiryStatus;
   daysToExpiry: number | null;
   expiryDate: string | null;
+  kind?: "exam" | "completion";
 }): string {
-  if (status === "No Expiry") return "This certificate does not expire";
+  if (status === "No Expiry") return kind === "completion" ? "Doesn't expire" : "This certificate does not expire";
   if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "Not issued yet";
   const date = formatDate(expiryDate);
   if (daysToExpiry < 0) return `Expired ${pluralize(-daysToExpiry, "day")} ago · ${date}`;

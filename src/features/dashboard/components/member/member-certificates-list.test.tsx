@@ -109,3 +109,16 @@ describe("study progress bar", () => {
     expect(html).not.toContain("width:140%");
   });
 });
+
+describe("Mark completed action", () => {
+  it("is offered for items that are not completed and not for completed ones", () => {
+    const html = render([
+      makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
+      makeRecord({ id: "n", certificateName: "Course Planned", status: "not_started", progress: 0, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
+      doneRecord(120, { id: "d", certificateName: "Course Done" }),
+    ]);
+    expect(html).toContain('aria-label="Mark Course Studying completed"');
+    expect(html).toContain('aria-label="Mark Course Planned completed"');
+    expect(html).not.toContain("Mark Course Done completed");
+  });
+});

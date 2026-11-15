@@ -15,7 +15,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatYoe } from "@/features/career/format";
 import { removeManagerScopes } from "@/features/organizations/actions";
 import { deleteMember } from "@/features/members/actions";
-import { ROLE_LABEL, type Role } from "@/components/status/labels";
+import { type Role } from "@/components/status/labels";
+import { RoleBadge } from "@/components/status/role-badge";
 import { MemberDialog } from "@/features/members/components/member-dialog";
 
 type Member = {
@@ -46,6 +47,7 @@ export function MembersTable({
   canCreate,
   canDelete,
   canEditCareer,
+  initialSearch = "",
 }: {
   members: Member[];
   teams: TeamOption[];
@@ -57,8 +59,10 @@ export function MembersTable({
   canDelete: boolean;
   /** Admin only: sets the career role and start in the member form. */
   canEditCareer: boolean;
+  /** Starting value of the search box (Data Quality links here with ?search=<name>). */
+  initialSearch?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [confirming, setConfirming] = useState<Member | null>(null);
@@ -73,10 +77,18 @@ export function MembersTable({
 
   const columns: ColumnDef<Member, unknown>[] = [
     { accessorKey: "code", header: "Code", cell: ({ row }) => <MemberCode code={row.original.code} /> },
-    { accessorKey: "fullName", header: "Full name" },
+    {
+      accessorKey: "fullName",
+      header: "Full name",
+      cell: ({ row }) => (
+        <span className="block max-w-[20rem] truncate" title={row.original.fullName}>
+          {row.original.fullName}
+        </span>
+      ),
+    },
     { accessorKey: "email", header: "Email" },
     { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
-    { accessorKey: "careerRoleName", header: "Role", cell: ({ row }) => row.original.careerRoleName ?? "Not set" },
+    { accessorKey: "careerRoleName", header: "Career title", cell: ({ row }) => row.original.careerRoleName ?? "Not set" },
     {
       accessorKey: "yoeYears",
       header: "Experience",
@@ -90,7 +102,8 @@ export function MembersTable({
           {
             accessorKey: "accessRole",
             header: "Access",
-            cell: ({ row }) => (row.original.accessRole ? ROLE_LABEL[row.original.accessRole] : "No account"),
+            cell: ({ row }) =>
+              row.original.accessRole ? <RoleBadge role={row.original.accessRole} /> : <span className="text-muted-foreground">No account</span>,
           },
           {
             id: "scopes",
@@ -123,7 +136,7 @@ export function MembersTable({
       enableSorting: false,
       cell: ({ row }) => (
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon-xs" aria-label={`Actions for ${row.original.fullName}`} />}>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="-my-1" aria-label={`Actions for ${row.original.fullName}`} />}>
             <MoreHorizontal aria-hidden />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

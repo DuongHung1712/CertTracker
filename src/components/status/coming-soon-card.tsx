@@ -32,7 +32,7 @@ export function ComingSoonCard({
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           {icon && <span aria-hidden className="text-muted-foreground">{icon}</span>}
           <h3 className="text-body font-semibold text-foreground">{title}</h3>

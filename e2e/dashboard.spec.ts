@@ -101,10 +101,10 @@ test("admin sees org-wide KPIs, hero mini charts, expiry chart and personal rank
 
   // Filter selects display human-readable labels, not raw values ("all", "0")
   await expect(page.getByRole("combobox", { name: "Filter by certificate status" })).toContainText("Any status");
-  await expect(page.getByRole("combobox", { name: "Filter by number of certificates" })).toContainText("Any number of certificates");
+  await expect(page.getByRole("combobox", { name: "Filter by number of learning items" })).toContainText("Any number of learning items");
 
   // Study completion split in Explorer detail panel exposes accessible image
-  const completionSplit = page.getByRole("img", { name: /^Study completion:/ });
+  const completionSplit = page.getByRole("img", { name: /^Done rate:/ });
   await expect(completionSplit).toBeVisible();
 
   // Explorer detail panel is visible for selected row
@@ -233,7 +233,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
   // Personal KPI cards match the seed member's records (Lê Minh Châu has 1 not_started record)
-  await expect(tileValue(page, "Certificates")).toHaveText("1");
+  await expect(tileValue(page, "Learning items")).toHaveText("1");
   await expect(tileValue(page, "Expiring within 60 days")).toHaveText("0");
   await expect(tileValue(page, "In progress")).toHaveText("0");
   await expect(tileValue(page, "Expired")).toHaveText("0");
@@ -489,3 +489,34 @@ for (const [role, email] of [
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
   });
 }
+
+for (const who of ["manager", "admin"]) {
+  test(`${who} dashboard has no page-level horizontal scroll at 1024 px`, async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await signIn(page, `${who}@certtracker.test`);
+    await page.waitForLoadState("networkidle");
+    const [scroll, client] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+    expect(scroll).toBeLessThanOrEqual(client);
+  });
+}
+
+test("member: Mark completed on a dashboard item opens the sheet as Completed, and Cancel changes nothing", async ({ page }) => {
+  await signIn(page, "member@certtracker.test");
+  const learning = section(page, "My learning");
+  await expect(learning.getByRole("button", { name: `Mark ${AWS} completed` })).toBeVisible();
+  await learning.getByRole("button", { name: `Mark ${AWS} completed` }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByLabel(fieldLabel("Status"))).toContainText("Completed");
+  await expect(dialog.getByLabel(fieldLabel("Date passed"))).toBeVisible();
+  await dialog.getByRole("button", { name: "Cancel" }).click();
+  await expect(dialog).toBeHidden();
+
+  // Same item, plain Edit: the saved status, not the preset.
+  await learning.getByRole("button", { name: `Edit ${AWS}` }).click();
+  await expect(page.getByRole("dialog").getByLabel(fieldLabel("Status"))).toContainText("Not started");
+  await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+
+  const admin = await signInAsSeedAdmin();
+  const { data } = await admin.from("training_records").select("status").eq("member_id", "5eed0000-0000-0000-0000-00000000b003").eq("certificate_id", "5eed0000-0000-0000-0000-00000000e001").single();
+  expect(data?.status).toBe("not_started");
+});

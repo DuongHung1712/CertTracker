@@ -37,20 +37,12 @@ test("admin manages the org tree end to end", async ({ page }) => {
   await expect(page.getByText("This centre still has programs")).toBeVisible();
 });
 
-test("member has no write access to the org tree", async ({ page }) => {
+test("a member who types /org is sent to the dashboard", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   await expect(page.getByRole("link", { name: "Organisation" })).toHaveCount(0);
-
-  // The nav link is hidden, but /org has no route guard — a Member who types the URL directly
-  // must still land on a read-only page with no write controls (server-gated via canManage, not
-  // just a client-side hide).
   await page.goto("/org");
-  await expect(page.getByRole("heading", { name: "Organisation" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add centre" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add program" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add team" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Organisation" })).toHaveCount(0);
 });
 
 test("admin assigns a manager to a program and the manager sees every team of that program", async ({ page, browser }) => {

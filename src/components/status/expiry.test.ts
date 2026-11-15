@@ -57,4 +57,10 @@ describe("expiryDetail", () => {
     );
     expect(expiryDetail({ status: "N/A", daysToExpiry: null, expiryDate: null })).toBe("Not issued yet");
   });
+
+  it("words a completion that never expires without 'certificate'", () => {
+    expect(expiryDetail({ status: "No Expiry", daysToExpiry: null, expiryDate: null, kind: "completion" })).toBe(
+      "Doesn't expire",
+    );
+  });
 });

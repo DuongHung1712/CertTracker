@@ -81,7 +81,7 @@ function planRow(cells: Cell[], line: number, columns: Columns, context: RowCont
 
   const messages: string[] = [];
   if (fullName === null) messages.push("Full name is missing");
-  if (!email.ok) messages.push(email.error);
+  if (!email.ok) messages.push(`Email: ${email.error}`);
   if (teamName === null) messages.push("Team is missing");
   const team = teamName === null ? null : resolveName(context.teams, teamName);
   const role = careerRoleName === null ? null : resolveName(context.careerRoles, careerRoleName);

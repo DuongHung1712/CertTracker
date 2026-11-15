@@ -30,7 +30,7 @@ export function AdminComingSoonCard() {
       aria-label="Planned features (Coming soon)"
       className="flex flex-col gap-3 rounded-lg border border-dashed border-border bg-card p-4"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-label tracking-wider text-muted-foreground">Planned features</span>
         <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-caption font-medium text-muted-foreground">
           Coming soon

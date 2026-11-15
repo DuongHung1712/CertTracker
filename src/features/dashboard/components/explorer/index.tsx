@@ -111,14 +111,14 @@ export function Explorer({
 
             {/* Tab Contents */}
             {tabs.map((tab) => (
-              <TabsContent key={tab.id} value={tab.id} className="m-0 focus-visible:outline-none">
-                <section aria-label={tab.label} className="grid grid-cols-1 lg:grid-cols-12 min-w-0">
+              <TabsContent key={tab.id} value={tab.id} className="@container m-0 focus-visible:outline-none">
+                <section aria-label={tab.label} className="grid min-w-0 grid-cols-1 @2xl:grid-cols-12">
                   {!tab.result.ok ? (
-                    <div className="p-8 lg:col-span-12">
+                    <div className="p-8 @2xl:col-span-12">
                       <SectionError title={tab.label} />
                     </div>
                   ) : tab.result.data.length === 0 ? (
-                    <div className="p-8 lg:col-span-12">
+                    <div className="p-8 @2xl:col-span-12">
                       <EmptyState
                         title="No data yet"
                         description="Add certificates to see this breakdown."

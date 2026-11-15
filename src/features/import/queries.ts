@@ -1,5 +1,6 @@
 import { preparingCourseByCertificate } from "@/features/import/preparing-course";
 import type { ImportLookups, PlannedRow } from "@/features/import/plan";
+import type { ExistingNames } from "@/features/import/preview";
 import {
   importActionSchema,
   importStatusSchema,
@@ -129,6 +130,22 @@ export async function loadImportLookups(): Promise<ImportLookups> {
       refundStatus: r.refund_status,
       notes: r.notes,
     })),
+  };
+}
+
+/** Catalogue names for the preview's near-duplicate check; names only, so it stays cheap next to `loadImportLookups`. */
+export async function loadExistingNames(): Promise<ExistingNames> {
+  const supabase = await createClient();
+  const [providers, certTypes, certificates] = await Promise.all([
+    fetchAllRows((from, to) => supabase.from("providers").select("id, name").order("id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("cert_types").select("id, name").order("id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("certificates").select("id, name, provider_id").order("id").range(from, to)),
+  ]);
+  const providerName = new Map(providers.map((provider) => [provider.id, provider.name]));
+  return {
+    providers,
+    certTypes: certTypes.map((row) => row.name),
+    certificates: certificates.map((row) => ({ name: row.name, provider: (row.provider_id ? providerName.get(row.provider_id) : undefined) ?? "" })),
   };
 }
 

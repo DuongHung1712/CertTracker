@@ -7,9 +7,11 @@ import {
   buildSampleWorkbook,
   readCatalogueSql,
   rehearsalPeople,
+  buildTemplateWorkbook,
   type CatalogueCourse,
   type SamplePerson,
 } from "@/features/import/sample-workbook";
+import { GUIDE_COLUMNS } from "@/features/import/columns-guide";
 import { readImportTable } from "@/features/import/workbook";
 import { excelSerialToDate, type ImportTable } from "@/features/import/clean";
 
@@ -235,5 +237,38 @@ join public.providers p on p.name = v.provider;
     it("reads the 53 exam certificates and no course or completion", () => {
       expect(exams).toHaveLength(53);
     });
+  });
+});
+
+describe("the downloadable import template", () => {
+  const EMPTY_LOOKUPS: ImportLookups = { members: [], teams: [], providers: [], certTypes: [], certificates: [], studyCourses: [], records: [] };
+  const plan = (bytes: Uint8Array) => buildImportPlan(readTable(bytes), EMPTY_LOOKUPS, TODAY);
+  const committed = new Uint8Array(readFileSync("public/templates/certificates-import.xlsx"));
+
+  it("imports without a single row error, creating each example", () => {
+    const { rows, notes } = plan(buildTemplateWorkbook());
+    expect(rows).toHaveLength(3);
+    expect(rows.flatMap((row) => row.errors)).toEqual([]);
+    expect(rows.map((row) => row.action)).toEqual(["create", "create", "create"]);
+    expect(notes.join(" ")).not.toMatch(/fraction|Ignored columns/);
+  });
+
+  it("has exactly the guide's headers in guide order and no ignored column", () => {
+    for (const bytes of [buildTemplateWorkbook(), committed]) {
+      const table = readTable(bytes);
+      expect(table.headers).toEqual(GUIDE_COLUMNS.map((column) => column.header));
+      expect(table.unknownColumns).toEqual([]);
+    }
+  });
+
+  it("reads progress as percent: 0, 100 and 40", () => {
+    const { rows } = plan(committed);
+    expect(rows.map((row) => row.normalized!.record.progress)).toEqual([0, 100, 40]);
+  });
+
+  it("is what public/templates/certificates-import.xlsx holds (run pnpm make:import-template after changing the examples)", () => {
+    const { rows } = plan(committed);
+    expect(rows.flatMap((row) => row.errors)).toEqual([]);
+    expect(rows.map((row) => row.raw.email)).toEqual(plan(buildTemplateWorkbook()).rows.map((row) => row.raw.email));
   });
 });

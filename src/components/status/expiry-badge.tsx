@@ -37,17 +37,19 @@ export function ExpiryBadge({
   status,
   daysToExpiry,
   expiryDate,
+  kind,
   className,
 }: {
   status: string | null;
   daysToExpiry: number | null;
   expiryDate: string | null;
+  kind?: "exam" | "completion";
   className?: string;
 }) {
   const expiryStatus = toExpiryStatus(status);
   const { tone, label } = expiryMeta(expiryStatus);
   const Icon = TONE_ICON[tone];
-  const detail = expiryDetail({ status: expiryStatus, daysToExpiry, expiryDate });
+  const detail = expiryDetail({ status: expiryStatus, daysToExpiry, expiryDate, kind });
 
   return (
     <Tooltip>
@@ -73,7 +75,7 @@ export function ExpiryBadge({
       >
         <Icon aria-hidden className="size-3.5" />
         {label}
-        <span className="sr-only">, {detail}</span>
+        {detail !== label && <span className="sr-only">, {detail}</span>}
       </TooltipTrigger>
       <TooltipContent>{detail}</TooltipContent>
     </Tooltip>

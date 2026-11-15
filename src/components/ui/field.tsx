@@ -1,11 +1,23 @@
 "use client"
 
-import { useMemo } from "react"
+import { createContext, useContext, useId, useMemo } from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
+
+const FieldErrorIdContext = createContext<string | undefined>(undefined)
+
+/**
+ * `aria-describedby` for a control inside a `Field`: its own value (e.g. a hint id) plus the id of the
+ * field's `FieldError`, but only while the control is invalid, so a screen reader reads the error on focus.
+ */
+function useFieldDescribedBy(describedBy: string | undefined, invalid: boolean | "true" | "false" | "grammar" | "spelling" | undefined) {
+  const errorId = useContext(FieldErrorIdContext)
+  const showing = invalid === true || invalid === "true"
+  return [describedBy, showing ? errorId : undefined].filter(Boolean).join(" ") || undefined
+}
 
 function FieldSet({ className, ...props }: React.ComponentProps<"fieldset">) {
   return (
@@ -74,14 +86,17 @@ function Field({
   orientation = "vertical",
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
+  const errorId = useId()
   return (
-    <div
-      role="group"
-      data-slot="field"
-      data-orientation={orientation}
-      className={cn(fieldVariants({ orientation }), className)}
-      {...props}
-    />
+    <FieldErrorIdContext.Provider value={errorId}>
+      <div
+        role="group"
+        data-slot="field"
+        data-orientation={orientation}
+        className={cn(fieldVariants({ orientation }), className)}
+        {...props}
+      />
+    </FieldErrorIdContext.Provider>
   )
 }
 
@@ -177,10 +192,12 @@ function FieldError({
   className,
   children,
   errors,
+  id,
   ...props
 }: React.ComponentProps<"div"> & {
   errors?: Array<{ message?: string } | undefined>
 }) {
+  const fieldErrorId = useContext(FieldErrorIdContext)
   const content = useMemo(() => {
     if (children) {
       return children
@@ -215,6 +232,7 @@ function FieldError({
   return (
     <div
       role="alert"
+      id={id ?? fieldErrorId}
       data-slot="field-error"
       className={cn("text-sm font-normal text-destructive", className)}
       {...props}
@@ -235,4 +253,5 @@ export {
   FieldSet,
   FieldContent,
   FieldTitle,
+  useFieldDescribedBy,
 }

@@ -11,13 +11,13 @@ export function PeopleWithoutCertsCard({
 
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
             People without certificates yet ({members.length})
           </span>
         </div>
-        <span className="rounded border border-[var(--status-expiring-soon-border)] bg-[var(--status-expiring-soon-bg)] px-2 py-0.5 text-caption font-medium text-[var(--status-expiring-soon-fg)]">
+        <span className="shrink-0 rounded border border-[var(--status-expiring-soon-border)] bg-[var(--status-expiring-soon-bg)] px-2 py-0.5 text-caption font-medium text-[var(--status-expiring-soon-fg)]">
           Attention needed
         </span>
       </div>

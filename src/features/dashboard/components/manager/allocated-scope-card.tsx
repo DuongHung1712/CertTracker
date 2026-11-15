@@ -15,9 +15,9 @@ export function AllocatedScopeCard({
 
       <div className="flex flex-col divide-y divide-border text-caption">
         {teams.map((t) => (
-          <div key={t.name} className="flex items-center justify-between py-2 first:pt-0 last:pb-0">
-            <span className="font-medium text-foreground">{t.name}</span>
-            <span className="font-mono text-muted-foreground">
+          <div key={t.name} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 py-2 first:pt-0 last:pb-0">
+            <span className="min-w-0 font-medium text-foreground [overflow-wrap:anywhere]">{t.name}</span>
+            <span className="shrink-0 font-mono text-muted-foreground">
               {pluralize(t.memberCount, "member")}
             </span>
           </div>

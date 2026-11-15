@@ -33,4 +33,11 @@ describe("loading skeletons", () => {
     expect(source).toContain('aria-busy="true"');
     expect(source).toMatch(/aria-label="Loading [a-z ]+"/);
   });
+
+  it("the dashboard skeleton is role-neutral: no hero cards, and it never sets its own width", () => {
+    const source = readFileSync(join(APP_DIR, "dashboard", "loading.tsx"), "utf8");
+    expect(source).not.toContain("HERO_CARD_MIN_HEIGHT");
+    expect(source).toContain("@/components/ui/skeleton");
+    expect(source).not.toMatch(/w-\[|min-w-\[|max-w-(?:screen|\dxl|[a-z]+-\d)/);
+  });
 });

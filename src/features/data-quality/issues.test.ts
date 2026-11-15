@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countByType, describeIssue, ISSUE_META } from "@/features/data-quality/issues";
+import { countByType, describeIssue, ISSUE_META, issueHref } from "@/features/data-quality/issues";
 import { ISSUE_TYPES, type IssueRow } from "@/features/data-quality/schema";
 
 const row = (over: Partial<IssueRow>): IssueRow => ({
@@ -45,5 +45,18 @@ describe("ISSUE_META", () => {
       expect(ISSUE_META[type].label.length).toBeGreaterThan(0);
       expect(ISSUE_META[type].href).toMatch(/^\//);
     }
+  });
+});
+
+describe("issueHref", () => {
+  it("opens records, members and the certificates tab searched for the subject", () => {
+    expect(issueHref(row({ type: "overdue_exam", memberName: "An Binh" }))).toBe("/records?search=An%20Binh");
+    expect(issueHref(row({ type: "member_no_team", memberName: "An Binh" }))).toBe("/members?search=An%20Binh");
+    expect(issueHref(row({ type: "certificate_no_validity", certificateName: "AWS SAA & more" }))).toBe(
+      "/courses?tab=certificates&search=AWS%20SAA%20%26%20more",
+    );
+  });
+  it("falls back to the bare list when there is no subject name", () => {
+    expect(issueHref(row({ type: "member_no_team", memberName: null }))).toBe("/members");
   });
 });

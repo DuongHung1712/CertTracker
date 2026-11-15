@@ -47,7 +47,7 @@ test("an invited member sets a password, signs in as Member and sees their own p
   await expect(page.getByText("Password saved. Sign in with your new password.")).toBeVisible();
 
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
@@ -72,7 +72,7 @@ test("a recovery link works while another user is signed in", async ({ page }) =
   const { hash } = await inviteLink(email, "recovery");
   await page.goto("/login");
   await page.getByLabel("Email").fill("admin@certtracker.test");
-  await page.getByLabel("Password").fill("Password123!");
+  await page.getByLabel("Password", { exact: true }).fill("Password123!");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 

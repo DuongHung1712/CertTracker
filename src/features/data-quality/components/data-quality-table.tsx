@@ -9,7 +9,7 @@ import { FilterBar } from "@/components/data/filter-bar";
 import { MemberCode } from "@/components/status/member-code";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { countByType, describeIssue, ISSUE_META } from "@/features/data-quality/issues";
+import { countByType, describeIssue, ISSUE_META, issueHref } from "@/features/data-quality/issues";
 import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-quality/schema";
 
 /** Who or what the finding is about: a person for record/member issues, a certificate for catalogue issues. */
@@ -87,11 +87,11 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         header: () => <span className="sr-only">Actions</span>,
         enableSorting: false,
         cell: ({ row }) => {
-          const { label, href } = ISSUE_META[row.original.type];
+          const { label } = ISSUE_META[row.original.type];
           return (
             <div className="flex justify-end">
               <Link
-                href={href}
+                href={issueHref(row.original)}
                 aria-label={`Open ${label} for ${subjectName(row.original) ?? "—"}`}
                 className={buttonVariants({ variant: "ghost", size: "sm" })}
               >

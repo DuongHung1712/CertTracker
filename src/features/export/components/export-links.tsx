@@ -11,13 +11,15 @@ const LINK = cn(
 export function ExportLinks({
   label,
   format = "csv",
+  endpoint = "/api/export/records",
 }: {
   label?: string;
   format?: "csv" | "xlsx";
+  endpoint?: string;
 } = {}) {
   if (label) {
     return (
-      <a href={`/api/export/records?format=${format}`} download className={LINK}>
+      <a href={`${endpoint}?format=${format}`} download className={LINK}>
         <Download aria-hidden className="size-4" />
         {label}
       </a>
@@ -25,11 +27,11 @@ export function ExportLinks({
   }
   return (
     <>
-      <a href="/api/export/records?format=csv" download className={LINK}>
+      <a href={`${endpoint}?format=csv`} download className={LINK}>
         <Download aria-hidden className="size-4" />
         Export CSV
       </a>
-      <a href="/api/export/records?format=xlsx" download className={LINK}>
+      <a href={`${endpoint}?format=xlsx`} download className={LINK}>
         <Download aria-hidden className="size-4" />
         Export Excel
       </a>

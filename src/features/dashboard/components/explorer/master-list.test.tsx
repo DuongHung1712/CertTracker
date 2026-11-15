@@ -57,9 +57,9 @@ describe("explorer master list: count chip", () => {
         <MasterList rows={[{ ...row("a", "AWS SAA"), headcount: null, people: 5 }]} activeKey="a" onSelectKey={() => {}} groupLabel={groupLabel} tabLabel="t" onClearFilters={() => {}} />,
       );
     expect(render("Certificate")).toContain("5 members");
-    expect(render("Certificate")).not.toContain("5 certificates");
+    expect(render("Certificate")).not.toContain("5 learning items");
     expect(render("Certificate")).toContain("3 completed");
-    expect(render("Provider")).toContain("5 certificates");
+    expect(render("Provider")).toContain("5 learning items");
   });
 });
 
@@ -99,7 +99,7 @@ describe("explorer master list: selected row", () => {
   });
 
   it("outlines the count chip on the selected row without a fill", () => {
-    const chip = classesOf(selected.html, "5 certificates");
+    const chip = classesOf(selected.html, "5 learning items");
     expect(chip).toContain("border");
     expect(chip.filter((c) => FILL.test(c))).toEqual([]);
   });

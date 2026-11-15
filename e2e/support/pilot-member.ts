@@ -58,7 +58,7 @@ export async function addPilotMember(fullName: string, email: string, teamId = T
 export async function signInWithPilotPassword(page: Page, email: string) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PILOT_PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PILOT_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 }
@@ -90,7 +90,7 @@ export async function chooseCompleted(page: Page, dialog: Locator, issueDate = "
   await dialog.getByLabel(fieldLabel("Status")).click();
   // The listbox is portalled outside the dialog.
   await page.getByRole("option", { name: "Completed", exact: true }).click();
-  await dialog.getByLabel(fieldLabel("Issue date")).fill(issueDate);
+  await dialog.getByLabel(fieldLabel("Date passed")).fill(issueDate);
 }
 
 /** A member adds the AWS certificate, Completed, on their own page with a PDF proof. */

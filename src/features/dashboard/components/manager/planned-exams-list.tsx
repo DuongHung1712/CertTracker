@@ -27,9 +27,9 @@ export function PlannedExamsList({ records }: { records: RecordRow[] }) {
       {exams.map((exam) => (
         <div
           key={exam.recordId}
-          className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-accent/30"
+          className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-border bg-card p-3 transition-colors hover:bg-accent/30"
         >
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex min-w-0 flex-1 basis-40 items-center gap-2.5">
             <span
               aria-hidden="true"
               className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground font-mono text-caption font-semibold"
@@ -37,8 +37,8 @@ export function PlannedExamsList({ records }: { records: RecordRow[] }) {
               {getInitials(exam.memberName)}
             </span>
             <div className="flex flex-col min-w-0">
-              <span className="text-body font-medium text-foreground truncate">{exam.memberName}</span>
-              <span className="text-caption text-muted-foreground truncate">{exam.certificateName}</span>
+              <span className="text-body font-medium text-foreground truncate" title={exam.memberName}>{exam.memberName}</span>
+              <span className="text-caption text-muted-foreground truncate" title={exam.certificateName}>{exam.certificateName}</span>
             </div>
           </div>
 

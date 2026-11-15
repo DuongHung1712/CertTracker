@@ -1,9 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/app-shell/logo";
+import { safeNextPath } from "@/lib/safe-next-path";
 import { LoginForm } from "@/features/auth/components/login-form";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordSet?: string }> }) {
-  const { passwordSet } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordSet?: string; next?: string }> }) {
+  const { passwordSet, next } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
@@ -18,7 +19,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <LoginForm />
+          <LoginForm next={safeNextPath(next)} />
         </CardContent>
       </Card>
     </main>
