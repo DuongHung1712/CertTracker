@@ -540,9 +540,14 @@ test("member updates own progress and cannot see company fields", async ({ page 
 
   const row = recordRow(page, AWS);
   try {
-    await openRowMenu(row);
-    // Anchor on a visible item first: a count of 0 before the menu has rendered would pass vacuously.
-    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
+    // A Realtime refresh can re-render the list and drop an open menu under the click (see clickMenuItem), which
+    // happened in CI after earlier tests changed data: reopen until the item is really there.
+    await expect(async () => {
+      await page.keyboard.press("Escape");
+      await openRowMenu(row);
+      // Anchor on a visible item first: a count of 0 before the menu has rendered would pass vacuously.
+      await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 20_000 });
     await expect(page.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
     await page.getByRole("menuitem", { name: "Edit" }).click();
 
