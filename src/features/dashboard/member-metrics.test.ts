@@ -326,7 +326,7 @@ describe("member metrics: only Approved items count, lists keep every item", () 
       validCount: 1, expiredCount: 0, expiringCount: 0, examDoneCount: 1, completionDoneCount: 0, waitingCount: 2, total: 4,
     });
   });
-  it("the Held view stays consistent with the Held number; needs-action ignores them", () => {
+  it("the Valid view stays consistent with the Valid number; needs-action ignores them", () => {
     expect(records.filter((r) => inMemberView(r, "held")).map((r) => r.id)).toEqual(["ok"]);
     // The waiting view is what the Held summary's "waiting for approval" link opens.
     expect(records.filter((r) => inMemberView(r, "waiting")).map((r) => r.id)).toEqual(["w-expired", "w-completion"]);

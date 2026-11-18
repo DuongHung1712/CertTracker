@@ -121,12 +121,13 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
     ? [pluralize(kpis.expiredCount, "expired exam"), hasExpiring ? `${kpis.expiringCount} expiring` : null].filter(Boolean).join(" · ")
     : hasExpiring
       ? `Next: ${kpis.leastDaysRecord?.certificateName ?? "an exam certificate"}`
-      : "Nothing to renew";
+      : "Nothing due in 60 days";
 
   return (
     <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* "Valid": what the member holds today, approved and not expired (the /me list calls it Valid too). */}
       <Tile
-        label="Held"
+        label="Valid"
         view="held"
         tone="primary"
         icon={<Award className="size-3.5" aria-hidden="true" />}
@@ -134,13 +135,16 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         summary={[
           held > 0
             ? `${pluralize(kpis.validCount, "exam certificate")} · ${pluralize(kpis.completionDoneCount, "course completion")}`
-            : "None yet",
+            : kpis.waitingCount > 0
+              ? null
+              : "None yet",
           kpis.waitingCount > 0 ? `${kpis.waitingCount} waiting for approval` : null,
         ]
           .filter(Boolean)
           .join(" · ")}
       >
-        <Footer>View all</Footer>
+        {/* With nothing valid the list would be empty, so offer only the waiting items. */}
+        {(held > 0 || kpis.waitingCount === 0) && <Footer>View all</Footer>}
         {kpis.waitingCount > 0 && (
           // `relative` lifts it above the tile's stretched label link.
           <Link href="/me?view=waiting" className="relative w-fit text-caption hover:underline">
@@ -184,7 +188,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         tone="neutral"
         icon={<PlayCircle className="size-3.5 text-primary" aria-hidden="true" />}
         value={kpis.inProgressCount}
-        summary={kpis.inProgressCount > 0 ? "Learning items in progress" : "Nothing in progress"}
+        summary={kpis.inProgressCount > 0 ? "Update as you go" : "Nothing in progress"}
       >
         {kpis.activeInProgress ? (
           <div className="flex flex-col gap-1">
@@ -209,18 +213,12 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         tone="neutral"
         icon={<CalendarClock className="size-3.5 text-primary" aria-hidden="true" />}
         value={kpis.notStartedCount}
-        summary={
-          kpis.nextPlanned
-            ? kpis.nextPlanned.certificateName
-            : kpis.notStartedCount > 0
-              ? "No exam date set"
-              : "Nothing planned"
-        }
+        summary={kpis.nextPlanned?.certificateName ?? "Nothing planned"}
       >
-        <Footer strong={kpis.nextPlanned !== null}>
+        <Footer strong={Boolean(kpis.nextPlanned?.plannedExamDate)}>
           {kpis.nextPlanned?.plannedExamDate
             ? formatDate(kpis.nextPlanned.plannedExamDate)
-            : kpis.notStartedCount > 0
+            : kpis.nextPlanned
               ? "Set a date"
               : "Plan one"}
         </Footer>

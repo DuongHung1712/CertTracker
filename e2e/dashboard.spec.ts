@@ -233,7 +233,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
   // Personal KPI cards match the seed member's records (Lê Minh Châu has 1 not_started record)
-  await expect(tileValue(page, "Held")).toHaveText("0");
+  await expect(tileValue(page, "Valid")).toHaveText("0");
   await expect(tileValue(page, "Needs action")).toHaveText("0");
   await expect(tileValue(page, "In progress")).toHaveText("0");
   await expect(tileValue(page, "Up next")).toHaveText("1");
@@ -297,11 +297,11 @@ test("a member's tiles open My learning narrowed to their items", async ({ page 
   await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(1);
 
   await page.goto("/me?view=held");
-  await expect(page.getByText("Showing Held only")).toBeVisible();
+  await expect(page.getByText("Showing Valid only")).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Show all" }).click();
-  await expect(page.getByText("Showing Held only")).toHaveCount(0);
+  await expect(page.getByText("Showing Valid only")).toHaveCount(0);
   await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(1);
 
   // An unknown view is ignored.

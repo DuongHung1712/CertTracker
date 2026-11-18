@@ -50,7 +50,7 @@ describe("[copy] member KPI cards", () => {
   it("uses the agreed tile labels", () => {
     const raw = renderToStaticMarkup(<MemberKpiCards kpis={calculateMemberKpis([doneRecord(45, { id: "a" })])} />);
     // The e2e tile lookup matches the `dt` text exactly (the label is the tile's link).
-    for (const label of ["Held", "Needs action", "In progress", "Up next"]) {
+    for (const label of ["Valid", "Needs action", "In progress", "Up next"]) {
       expect(raw, label).toMatch(new RegExp(`<dt[^>]*>.*?>\\s*${label}\\s*</a></dt>`, "s"));
     }
     expect(text(raw)).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|≤|active study goals| exp |\d+ study\b/i);
@@ -58,7 +58,7 @@ describe("[copy] member KPI cards", () => {
 
   it("says plainly that nothing needs renewing", () => {
     const html = render([doneRecord(120)]);
-    expect(html).toContain("Nothing to renew");
+    expect(html).toContain("Nothing due in 60 days");
     expect(html).toContain("All up to date");
     expect(html).not.toMatch(/Audit compliance|registry violations/i);
   });
