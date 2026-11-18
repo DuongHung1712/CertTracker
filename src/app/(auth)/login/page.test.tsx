@@ -34,4 +34,15 @@ describe("LoginPage", () => {
     const emailInput = screen.getByLabelText("Email") as HTMLInputElement;
     expect(emailInput.value).toBe("engineer@example.com");
   });
+
+  it("mounts StyleToggle for instant theme switching on the login screen", async () => {
+    const page = await LoginPage({ searchParams: Promise.resolve({}) });
+    render(page);
+
+    const toggle = screen.getByRole("button", {
+      name: /Switch visual style/i,
+    });
+    expect(toggle).toBeDefined();
+    expect(toggle.textContent).toContain("Classic");
+  });
 });

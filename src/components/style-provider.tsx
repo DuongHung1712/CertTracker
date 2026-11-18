@@ -135,6 +135,19 @@ export function StyleProvider({
     });
   }, []);
 
+  // Same-window synchronization (dispatched by setStoredThemeStyle)
+  React.useEffect(() => {
+    const handleCustomChange = (e: Event) => {
+      const customEvent = e as CustomEvent<ThemeStyle>;
+      const next = customEvent.detail;
+      if (next === "classic" || next === "vault") {
+        setStyleState(next);
+      }
+    };
+    window.addEventListener("certtracker-style-change", handleCustomChange);
+    return () => window.removeEventListener("certtracker-style-change", handleCustomChange);
+  }, []);
+
   // Multi-tab synchronization
   React.useEffect(() => {
     const handleStorage = (e: StorageEvent) => {

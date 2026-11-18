@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { StyleProvider } from "@/components/style-provider";
@@ -101,5 +101,23 @@ describe("StyleToggle", () => {
     await user.click(button);
     expect(document.documentElement.getAttribute("data-style")).toBe("vault");
     expect(button.textContent).toContain("Vault");
+  });
+
+  it("updates fallbackStyle in fallback mode when an external style change event occurs", async () => {
+    render(<StyleToggle />);
+    const button = screen.getByRole("button");
+    expect(button.textContent).toContain("Classic");
+
+    // Dispatch external change to vault
+    act(() => {
+      window.dispatchEvent(new CustomEvent("certtracker-style-change", { detail: "vault" }));
+    });
+    expect(button.textContent).toContain("Vault");
+
+    // Dispatch external change back to classic
+    act(() => {
+      window.dispatchEvent(new CustomEvent("certtracker-style-change", { detail: "classic" }));
+    });
+    expect(button.textContent).toContain("Classic");
   });
 });

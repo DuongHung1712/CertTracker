@@ -4,7 +4,7 @@ import { ChevronDown, Layers, Monitor, Moon, Palette, ShieldCheck, Sun, User } f
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useTransition } from "react";
-import { useThemeStyle, type ThemeStyle } from "@/components/style-provider";
+import { useThemeStyleOptional, setStoredThemeStyle, type ThemeStyle } from "@/components/style-provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,7 +27,9 @@ import { signOut } from "@/features/auth/actions";
 export function UserMenu({ email, role }: { email: string; role: Role }) {
   const [pending, startTransition] = useTransition();
   const { theme, setTheme } = useTheme();
-  const { style, setStyle } = useThemeStyle();
+  const styleContext = useThemeStyleOptional();
+  const style = styleContext ? styleContext.style : "classic";
+  const setStyle = styleContext ? styleContext.setStyle : setStoredThemeStyle;
 
   return (
     <DropdownMenu>

@@ -253,6 +253,30 @@ describe("StyleProvider & useThemeStyle", () => {
       window.removeEventListener("certtracker-style-change", listener);
     });
 
+    it("syncs StyleProvider state when setStoredThemeStyle is called externally", () => {
+      render(
+        <StyleProvider>
+          <TestConsumer />
+        </StyleProvider>,
+      );
+
+      expect(screen.getByTestId("current-style").textContent).toBe("classic");
+
+      act(() => {
+        setStoredThemeStyle("vault");
+      });
+
+      expect(screen.getByTestId("current-style").textContent).toBe("vault");
+      expect(document.documentElement.getAttribute("data-style")).toBe("vault");
+
+      act(() => {
+        setStoredThemeStyle("classic");
+      });
+
+      expect(screen.getByTestId("current-style").textContent).toBe("classic");
+      expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+    });
+
     it("toggleStoredThemeStyle toggles between classic and vault programmatically", () => {
       setStoredThemeStyle("classic");
       const next1 = toggleStoredThemeStyle();

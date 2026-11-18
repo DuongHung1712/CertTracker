@@ -6,6 +6,7 @@ import {
   useThemeStyleOptional,
   getStoredThemeStyle,
   toggleStoredThemeStyle,
+  STYLE_STORAGE_KEY,
   type ThemeStyle,
 } from "@/components/style-provider";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,28 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 export function StyleToggle({ className }: { className?: string }) {
   const context = useThemeStyleOptional();
   const [fallbackStyle, setFallbackStyle] = React.useState<ThemeStyle>(() => getStoredThemeStyle());
+
+  // In fallback mode (outside StyleProvider), keep fallbackStyle reactive to events
+  React.useEffect(() => {
+    if (context) return;
+    const handleStyleChange = (e: Event) => {
+      const customEvent = e as CustomEvent<ThemeStyle>;
+      if (customEvent.detail === "classic" || customEvent.detail === "vault") {
+        setFallbackStyle(customEvent.detail);
+      }
+    };
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === STYLE_STORAGE_KEY && (e.newValue === "classic" || e.newValue === "vault")) {
+        setFallbackStyle(e.newValue);
+      }
+    };
+    window.addEventListener("certtracker-style-change", handleStyleChange);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener("certtracker-style-change", handleStyleChange);
+      window.removeEventListener("storage", handleStorage);
+    };
+  }, [context]);
 
   const style = context ? context.style : fallbackStyle;
   const isVault = style === "vault";
