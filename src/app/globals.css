@@ -266,3 +266,469 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--foreground) !important;
   caret-color: var(--foreground);
 }
+
+/* ==========================================================================
+   MULTI-STYLE THEME SYSTEM: Classic Swiss & Credential Vault
+   Dual-axis theme engine: Color Mode (Light / Dark / System) × Visual Style (classic / vault)
+   Anti-slop principles: 100% solid colors, zero gradient colors, zero FOUC.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Digital Credential Vault (`vault`)
+   Authentic security credential aesthetics:
+   - Crisp 1px solid precision borders (architectural teal/emerald)
+   - Solid high-contrast surfaces (no muddy gradients, no radial masks)
+   - Monospace credential tags, checksum hashes, and registry stamps
+   - Solid live pulsing status indicators (emerald, amber, red)
+   - 100% solid opaque table headers and sticky cells (zero bleed-through)
+   -------------------------------------------------------------------------- */
+
+/* Vault design tokens: Light mode (solid architectural titanium paper) */
+html[data-style="vault"] {
+  --background: #F2F5F4;
+  --card: #FFFFFF;
+  --popover: #FFFFFF;
+  --border: #CAD6D3;
+  --input: #7A8783;
+}
+
+/* Vault design tokens: Dark mode (solid cryptographic obsidian vault) */
+html[data-style="vault"].dark {
+  --background: #0A0F13;
+  --card: #10171D;
+  --popover: #10171D;
+  --border: #1E3837;
+  --input: #4F7F7B;
+}
+
+/* Light mode Credential Vault: solid architectural titanium paper (zero gradient) */
+html[data-style="vault"] body {
+  background-color: #F2F5F4;
+  background-image: none !important;
+}
+
+/* Dark mode Credential Vault: solid cryptographic obsidian vault ground (zero gradient) */
+html[data-style="vault"].dark body {
+  background-color: #0A0F13;
+  background-image: none !important;
+}
+
+/* Let the solid body ground show through sidebar inset in Vault mode */
+html[data-style="vault"] [data-slot="sidebar-inset"] {
+  background-color: transparent !important;
+}
+
+/* Vault Cards & Containers: crisp high-precision 1px solid borders */
+html[data-style="vault"] .bg-card,
+html[data-style="vault"] [data-slot="card"],
+html[data-style="vault"] [data-slot="vault-card"],
+html[data-style="vault"] [role="dialog"],
+html[data-style="vault"] [role="menu"],
+html[data-style="vault"] .vault-card {
+  background-color: #FFFFFF;
+  border-color: rgba(14, 92, 88, 0.28);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.15s ease;
+}
+
+html[data-style="vault"].dark .bg-card,
+html[data-style="vault"].dark [data-slot="card"],
+html[data-style="vault"].dark [data-slot="vault-card"],
+html[data-style="vault"].dark [role="dialog"],
+html[data-style="vault"].dark [role="menu"],
+html[data-style="vault"].dark .vault-card {
+  background-color: #10171D;
+  border-color: rgba(36, 156, 144, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.15s ease;
+}
+
+/* Vault Card hover state: subtle precision edge illumination (solid color transition) */
+html[data-style="vault"] .vault-card:hover {
+  border-color: rgba(14, 92, 88, 0.5);
+}
+
+html[data-style="vault"].dark .vault-card:hover {
+  border-color: rgba(36, 156, 144, 0.6);
+}
+
+/* Vault buttons: solid high-precision edge with security credential feel (zero gradient) */
+html[data-style="vault"] [data-slot="button"][data-variant="default"],
+html[data-style="vault"] button.bg-primary {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 1px 2px rgba(14, 92, 88, 0.2);
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+html[data-style="vault"] [data-slot="button"][data-variant="default"]:hover,
+html[data-style="vault"] button.bg-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+html[data-style="vault"].dark [data-slot="button"][data-variant="default"],
+html[data-style="vault"].dark button.bg-primary {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+html[data-style="vault"].dark [data-slot="button"][data-variant="default"]:hover,
+html[data-style="vault"].dark button.bg-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Vault form inputs: precision solid security border */
+html[data-style="vault"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="file"]),
+html[data-style="vault"] textarea,
+html[data-style="vault"] select,
+html[data-style="vault"] [data-slot="input"],
+html[data-style="vault"] [data-slot="input-group"] {
+  /* --input reaches 3:1 against the vault surfaces (WCAG 1.4.11, tokens.test.ts). */
+  border-color: var(--input);
+  transition: border-color 0.12s ease;
+}
+
+html[data-style="vault"].dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="file"]),
+html[data-style="vault"].dark textarea,
+html[data-style="vault"].dark select,
+html[data-style="vault"].dark [data-slot="input"],
+html[data-style="vault"].dark [data-slot="input-group"] {
+  background-color: #0E161C;
+  border-color: var(--input);
+}
+
+html[data-style="vault"] :is(input, textarea, select, [data-slot="input"]):focus-visible,
+html[data-style="vault"] [data-slot="input-group"]:has([data-slot="input-group-control"]:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+  border-color: var(--ring);
+}
+
+/* Vault safe table cells: 100% solid & opaque, zero bleed-through */
+html[data-style="vault"] thead,
+html[data-style="vault"] thead th,
+html[data-style="vault"] thead td,
+html[data-style="vault"] table thead tr,
+html[data-style="vault"] table th,
+html[data-style="vault"] table td[class*="sticky"],
+html[data-style="vault"] table td.sticky,
+html[data-style="vault"] [data-sticky="true"],
+html[data-style="vault"] .sticky-header,
+html[data-style="vault"] .sticky {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Vault light mode solid opaque table cell backgrounds */
+html[data-style="vault"] thead th,
+html[data-style="vault"] thead td,
+html[data-style="vault"] table thead tr,
+html[data-style="vault"] thead {
+  background-color: #EDF0EE !important;
+  border-bottom: 1px solid rgba(14, 92, 88, 0.25);
+}
+
+html[data-style="vault"] table td[class*="sticky"],
+html[data-style="vault"] table td.sticky,
+html[data-style="vault"] [data-sticky="true"]:not(th) {
+  background-color: #FFFFFF !important;
+}
+
+html[data-style="vault"] tr:hover td[class*="sticky"],
+html[data-style="vault"] tr:hover td.sticky {
+  background-color: #E6EFEF !important;
+}
+
+/* Vault dark mode solid opaque table cell backgrounds */
+html[data-style="vault"].dark thead th,
+html[data-style="vault"].dark thead td,
+html[data-style="vault"].dark table thead tr,
+html[data-style="vault"].dark thead {
+  background-color: #162028 !important;
+  border-bottom: 1px solid rgba(36, 156, 144, 0.35);
+}
+
+html[data-style="vault"].dark table td[class*="sticky"],
+html[data-style="vault"].dark table td.sticky,
+html[data-style="vault"].dark [data-sticky="true"]:not(th) {
+  background-color: #10171D !important;
+}
+
+html[data-style="vault"].dark tr:hover td[class*="sticky"],
+html[data-style="vault"].dark tr:hover td.sticky {
+  background-color: #163332 !important;
+}
+
+/* Vault verified credential border: crisp 1px solid precision outline (zero gradient) */
+html[data-style="vault"] .vault-verified,
+html[data-style="vault"] [data-verified="true"],
+html[data-style="vault"] .vault-pulse-verified {
+  border: 1px solid #10B981;
+  outline: 1px solid rgba(16, 185, 129, 0.3);
+  outline-offset: -1px;
+}
+
+html[data-style="vault"].dark .vault-verified,
+html[data-style="vault"].dark [data-verified="true"],
+html[data-style="vault"].dark .vault-pulse-verified {
+  border: 1px solid #34D399;
+  outline: 1px solid rgba(52, 211, 153, 0.35);
+  outline-offset: -1px;
+}
+
+/* Monospace Security Metadata Tags & Badges */
+html[data-style="vault"] .vault-mono-tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(14, 92, 88, 0.3);
+  background-color: rgba(14, 92, 88, 0.06);
+  color: #0E5C58;
+}
+
+html[data-style="vault"].dark .vault-mono-tag {
+  border-color: rgba(36, 156, 144, 0.4);
+  background-color: rgba(36, 156, 144, 0.12);
+  color: #48D1C1;
+}
+
+html[data-style="vault"] .vault-stamp-valid {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid #10B981;
+  background-color: rgba(16, 185, 129, 0.08);
+  color: #047857;
+}
+
+html[data-style="vault"].dark .vault-stamp-valid {
+  border-color: #34D399;
+  background-color: rgba(16, 185, 129, 0.16);
+  color: #6EE7B7;
+}
+
+/* Vault Security Seal (Authentic physical security stamp mark, zero gradient) */
+html[data-style="vault"] .vault-seal {
+  background-color: #0E5C58;
+  color: #FFFFFF;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+}
+
+html[data-style="vault"].dark .vault-seal {
+  background-color: #163332;
+  color: #48D1C1;
+  border: 1px solid rgba(52, 211, 153, 0.5);
+}
+
+/* Vault status stamps: every learning-item status (record status, approval, catalogue proposal) reads as one
+   kind of mono stamp, coloured from the status tokens. Components only set data-stamp. */
+html[data-style="vault"] [data-stamp] {
+  height: auto;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--stamp-border, var(--border));
+  border-radius: 3px;
+  background-color: var(--stamp-bg, transparent);
+  color: var(--stamp-fg, var(--foreground));
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[data-style="vault"] [data-stamp] svg {
+  width: 12px;
+  height: 12px;
+  color: currentColor;
+}
+html[data-style="vault"] [data-stamp="not_started"] {
+  --stamp-fg: var(--status-na-fg);
+  --stamp-bg: var(--status-na-bg);
+  --stamp-border: var(--status-na-border);
+}
+html[data-style="vault"] [data-stamp="in_progress"] {
+  --stamp-fg: var(--primary);
+  --stamp-border: var(--primary);
+}
+html[data-style="vault"] [data-stamp="done"] {
+  --stamp-fg: var(--status-active-fg);
+  --stamp-bg: var(--status-active-bg);
+  --stamp-border: var(--status-active-border);
+}
+html[data-style="vault"] [data-stamp="waiting"],
+html[data-style="vault"] [data-stamp="catalogue-pending"] {
+  --stamp-fg: var(--status-expiring-soon-fg);
+  --stamp-bg: var(--status-expiring-soon-bg);
+  --stamp-border: var(--status-expiring-soon-border);
+}
+html[data-style="vault"] [data-stamp="returned"],
+html[data-style="vault"] [data-stamp="catalogue-rejected"] {
+  --stamp-fg: var(--status-expired-fg);
+  --stamp-bg: var(--status-expired-bg);
+  --stamp-border: var(--status-expired-border);
+}
+
+/* Vault credential: a held item (approved, not renewed) carries its record line and a seal. Hidden in Classic. */
+.vault-credential-strip {
+  display: none;
+}
+html[data-style="vault"] .vault-credential-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+}
+html[data-style="vault"] .vault-credential-strip > div {
+  display: flex;
+  gap: 6px;
+}
+html[data-style="vault"] .vault-credential-strip dt {
+  color: var(--muted-foreground);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[data-style="vault"] .vault-credential-strip dd {
+  margin: 0;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+html[data-style="vault"] [data-sealed="true"] {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Vault ledger tables: mono column heads, hairline column rules, aligned numerals. */
+html[data-style="vault"] [data-slot="table-head"] {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+html[data-style="vault"] [data-slot="table-head"] + [data-slot="table-head"],
+html[data-style="vault"] [data-slot="table-cell"] + [data-slot="table-cell"] {
+  border-left: 1px solid var(--border);
+}
+html[data-style="vault"] [data-slot="table-cell"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Live Status Indicators on Status Badges (Pure Solid Colors) */
+.vault-live-dot {
+  display: none;
+}
+
+html[data-style="vault"] .vault-live-dot {
+  display: inline-flex;
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+/* Hide live dot for unissued / NA badges */
+html[data-style="vault"] [data-status-tone="na"] .vault-live-dot {
+  display: none !important;
+}
+
+/* Solid emerald pulse for active / valid */
+html[data-style="vault"] [data-status-tone="active"] .vault-live-dot,
+html[data-style="vault"] [data-status-tone="no-expiry"] .vault-live-dot,
+html[data-style="vault"] .vault-dot-emerald {
+  background-color: #10B981;
+}
+
+html[data-style="vault"] [data-status-tone="active"] .vault-live-dot::before,
+html[data-style="vault"] [data-status-tone="no-expiry"] .vault-live-dot::before,
+html[data-style="vault"] .vault-dot-emerald::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background-color: rgba(16, 185, 129, 0.7);
+  animation: vault-dot-pulse-emerald 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Solid amber pulse for expiring */
+html[data-style="vault"] [data-status-tone="expiring-60"] .vault-live-dot,
+html[data-style="vault"] [data-status-tone="expiring-soon"] .vault-live-dot,
+html[data-style="vault"] .vault-dot-amber {
+  background-color: #F59E0B;
+}
+
+html[data-style="vault"] [data-status-tone="expiring-60"] .vault-live-dot::before,
+html[data-style="vault"] [data-status-tone="expiring-soon"] .vault-live-dot::before,
+html[data-style="vault"] .vault-dot-amber::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background-color: rgba(245, 158, 11, 0.7);
+  animation: vault-dot-pulse-amber 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Solid red dot for expired */
+html[data-style="vault"] [data-status-tone="expired"] .vault-live-dot,
+html[data-style="vault"] .vault-dot-red {
+  background-color: #EF4444;
+}
+
+@keyframes vault-dot-pulse-emerald {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.9;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+    box-shadow: 0 0 0 5px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+@keyframes vault-dot-pulse-amber {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.9;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+    box-shadow: 0 0 0 5px rgba(245, 158, 11, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+/* Accessibility: Respect preferred reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html[data-style="vault"] .vault-live-dot::before,
+  html[data-style="vault"] .vault-dot-emerald::before,
+  html[data-style="vault"] .vault-dot-amber::before {
+    animation: none !important;
+  }
+}

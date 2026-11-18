@@ -29,19 +29,19 @@ describe("MemberKpiCards tiles", () => {
     expect(htmlWithProgress).not.toMatch(/Study hours|Profile health|Active credentials/);
   });
 
-  it("Held counts valid exams and finished course completions, not unfinished ones", () => {
+  it("Valid counts valid exams and finished course completions, not unfinished ones", () => {
     const html = render([
       doneRecord(120, { id: "a" }),
       makeRecord({ id: "b", certificateKind: "completion", expiryStatus: "No Expiry", daysToExpiry: null }),
       makeRecord({ id: "c", certificateKind: "completion", status: "in_progress", expiryStatus: "N/A", daysToExpiry: null }),
     ]);
-    expect(tileValue(html, "Held")).toBe("2");
+    expect(tileValue(html, "Valid")).toBe("2");
     expect(html).toContain("1 exam certificate · 1 course completion");
   });
 
-  it("Held says None yet when nothing is held", () => {
+  it("Valid says None yet when nothing is valid or waiting", () => {
     const html = render([]);
-    expect(tileValue(html, "Held")).toBe("0");
+    expect(tileValue(html, "Valid")).toBe("0");
     expect(html).toContain("None yet");
   });
 
@@ -54,7 +54,7 @@ describe("MemberKpiCards tiles", () => {
     const soon = render([doneRecord(20, { id: "a" })]);
     expect(soon).toContain("Next: AWS Solutions Architect Associate");
     expect(soon).toContain("20 days left");
-    expect(render([doneRecord(300)])).toContain("Nothing to renew");
+    expect(render([doneRecord(300)])).toContain("Nothing due in 60 days");
   });
 
   it("In progress names the item furthest along with its percentage", () => {
@@ -68,7 +68,7 @@ describe("MemberKpiCards tiles", () => {
     expect(render([])).toContain("Nothing in progress");
   });
 
-  it("Up next counts not-started items and shows the nearest planned exam date or asks for one", () => {
+  it("Up next names the nearest planned item, or the first one with no date and asks for a date", () => {
     const planned = render([
       makeRecord({ id: "a", status: "not_started", plannedExamDate: "2026-12-12", certificateName: "Later", expiryStatus: "N/A", daysToExpiry: null }),
       makeRecord({ id: "b", status: "not_started", plannedExamDate: "2026-11-30", certificateName: "Sooner", expiryStatus: "N/A", daysToExpiry: null }),
@@ -76,9 +76,12 @@ describe("MemberKpiCards tiles", () => {
     expect(tileValue(planned, "Up next")).toBe("2");
     expect(planned).toContain("Sooner");
     expect(planned).toContain("30/11/2026");
-    const undated = render([makeRecord({ id: "a", status: "not_started", plannedExamDate: null, expiryStatus: "N/A", daysToExpiry: null })]);
-    expect(undated).toContain("No exam date set");
+    const undated = render([
+      makeRecord({ id: "a", status: "not_started", plannedExamDate: null, certificateName: "Undated", expiryStatus: "N/A", daysToExpiry: null }),
+    ]);
+    expect(undated).toContain("Undated");
     expect(undated).toContain("Set a date");
+    expect(undated).not.toContain("exam date");
     expect(render([])).toContain("Nothing planned");
   });
 });
@@ -86,9 +89,9 @@ describe("MemberKpiCards tiles", () => {
 describe("MemberKpiCards: waiting for approval", () => {
   const waiting = makeRecord({ id: "w", certificateKind: "completion", expiryStatus: "No Expiry", daysToExpiry: null, approval: "waiting" });
 
-  it("Held leaves out the waiting item and its summary says how many wait", () => {
+  it("Valid leaves out the waiting item and its summary says how many wait", () => {
     const html = render([doneRecord(120, { id: "a" }), waiting]);
-    expect(tileValue(html, "Held")).toBe("1");
+    expect(tileValue(html, "Valid")).toBe("1");
     expect(html).toContain("1 exam certificate · 0 course completions · 1 waiting for approval");
   });
 
@@ -97,8 +100,11 @@ describe("MemberKpiCards: waiting for approval", () => {
     expect(render([doneRecord(120, { id: "a" })])).not.toContain("view=waiting");
   });
 
-  it("says None yet and the waiting line when only waiting items exist", () => {
-    expect(render([waiting])).toContain("None yet · 1 waiting for approval");
+  it("with only waiting items, says how many wait and offers only the waiting items (no empty View all)", () => {
+    const html = render([waiting]);
+    expect(html).toContain("1 waiting for approval");
+    expect(html).not.toContain("None yet");
+    expect(html).not.toContain("View all");
   });
 
   it("shows no waiting line when nothing waits", () => {

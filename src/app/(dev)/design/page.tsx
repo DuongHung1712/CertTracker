@@ -22,6 +22,7 @@ import {
   TableDemo,
   ToastDemo,
 } from "./demos";
+import { StyleSwitcherDemo } from "./style-switcher-demo";
 
 const COLOR_TOKENS = [
   "background", "card", "foreground", "muted", "muted-foreground", "primary",
@@ -62,6 +63,10 @@ export default function DesignPage() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-8 sm:px-6">
       <PageHeader title="Design system" description="Showcase of design tokens and components. Available in development only." />
+
+      <Section title="PoC: Multi-Style Theme Switcher (Dual-Axis)">
+        <StyleSwitcherDemo />
+      </Section>
 
       <Section title="Logo & Favicon">
         <div className="flex flex-wrap items-center gap-6 rounded-lg border bg-card p-4">

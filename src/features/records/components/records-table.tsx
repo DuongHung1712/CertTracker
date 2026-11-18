@@ -26,7 +26,7 @@ import { inMemberView, MEMBER_VIEW_LABEL, type MemberView } from "@/features/das
 import { deleteRecord, deleteRecords, reviewRecord } from "@/features/records/actions";
 import { EvidenceCell } from "@/features/records/components/evidence-cell";
 import { RecordSheet } from "@/features/records/components/record-sheet";
-import { filterByKind, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type KindFilter } from "@/features/records/kind";
+import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type KindFilter } from "@/features/records/kind";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { MAX_BULK_DELETE, RECORD_STATUSES, reviewSchema } from "@/features/records/schema";
@@ -223,8 +223,9 @@ export function RecordsTable({
         accessorKey: "certificateName",
         header: "Learning item",
         cell: ({ row }) => (
-          <div className="flex max-w-80 flex-col">
-            <span className="flex items-center gap-1.5">
+          // Name alone on the first line so it gets the width; kind, proposal state and path go underneath.
+          <div className="flex max-w-md flex-col gap-0.5">
+            <span className="flex min-w-0">
               {isTeam ? (
                 <span className="truncate" title={row.original.certificateName}>
                   {row.original.certificateName}
@@ -239,16 +240,18 @@ export function RecordsTable({
                   {row.original.certificateName}
                 </button>
               )}
+            </span>
+            <span className="flex min-w-0 items-center gap-1.5">
               <Badge variant="secondary" className="shrink-0 rounded-sm">
                 {CERTIFICATE_KIND_LABEL[row.original.certificateKind]}
               </Badge>
               <CatalogueStatusBadge status={row.original.certificateCatalogueStatus} />
+              {learningPath(row.original) && (
+                <span className="truncate text-caption text-muted-foreground" title={learningPath(row.original) ?? undefined}>
+                  {learningPath(row.original)}
+                </span>
+              )}
             </span>
-            {learningPath(row.original) && (
-              <span className="truncate text-caption text-muted-foreground" title={learningPath(row.original) ?? undefined}>
-                {learningPath(row.original)}
-              </span>
-            )}
           </div>
         ),
         meta: isTeam ? undefined : stickyName,
@@ -277,6 +280,7 @@ export function RecordsTable({
             daysToExpiry={row.original.daysToExpiry}
             expiryDate={row.original.expiryDate}
             kind={row.original.certificateKind}
+            counted={row.original.status !== "done" || isApprovedDone(row.original)}
           />
         ),
       },

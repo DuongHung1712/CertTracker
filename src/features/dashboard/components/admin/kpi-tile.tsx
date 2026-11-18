@@ -17,6 +17,7 @@ export function KpiTile({
 }) {
   return (
     <div
+      data-slot="kpi-tile"
       className={cn(
         "flex min-w-0 flex-col justify-between gap-3 rounded-lg p-4",
         solid ? "bg-primary text-primary-foreground" : "border border-border bg-card",
@@ -55,7 +56,7 @@ export function KpiFigure({
   return (
     <div className="flex flex-col gap-0.5">
       <dt className={cn("text-xs text-muted-foreground", hideTerm && "sr-only")}>{term}</dt>
-      <dd className={cn("font-mono text-2xl font-bold tracking-tight", tone)}>{value}</dd>
+      <dd className={cn("text-2xl font-bold tabular-nums tracking-tight", tone)}>{value}</dd>
     </div>
   );
 }

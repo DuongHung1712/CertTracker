@@ -160,3 +160,18 @@ describe("Delete draft action", () => {
     expect(html).toContain("Pending Approval");
   });
 });
+
+describe("Credential Vault record line", () => {
+  it("prints issued, valid-to and holder only on a held credential", () => {
+    const held = render([doneRecord(200, { id: "held", issuedDate: "2025-03-12", expiryDate: "2028-03-12", memberCode: "M003" })]);
+    expect(held).toContain("vault-credential-strip");
+    expect(held).toContain("12/03/2025");
+    expect(held).toContain("12/03/2028");
+    expect(held).toContain("M003");
+    expect(held).toContain('data-sealed="true"');
+
+    const waiting = render([doneRecord(200, { id: "waiting", approval: "waiting" })]);
+    expect(waiting).not.toContain("vault-credential-strip");
+    expect(waiting).not.toContain("data-sealed");
+  });
+});

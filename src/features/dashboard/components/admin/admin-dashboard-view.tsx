@@ -93,7 +93,7 @@ export function AdminDashboardView({
       </div>
 
       <div data-testid="explorer-row" className="flex min-w-0 flex-col gap-6">
-        <DashboardTabStrip label="Admin dashboard views" soon={["Approvals", "Goals", "Skills"]} />
+        <DashboardTabStrip label="Admin dashboard views" soon={["Goals", "Skills"]} />
         {noRecords ? (
           <NoRecords />
         ) : (

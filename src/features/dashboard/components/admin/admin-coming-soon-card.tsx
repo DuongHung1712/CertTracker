@@ -1,9 +1,8 @@
-import { AlertTriangle, Bot, Calendar, CheckSquare, Compass, Layers, Target } from "lucide-react";
+import { AlertTriangle, Bot, Calendar, Compass, Layers, Target } from "lucide-react";
 
 const NOT_AVAILABLE = "Not available yet.";
 
 const FEATURES = [
-  { title: "Approvals", icon: CheckSquare, text: "Review and approve the certificates that members submit." },
   { title: "Goals", icon: Target, text: "Set certificate goals for a quarter and follow the progress." },
   { title: "Skills", icon: Layers, text: "See which skills your members have, based on their certificates." },
   { title: "Focus area", icon: Compass, text: "Choose the area you want to grow in, such as cloud or security." },
