@@ -2,11 +2,13 @@ import {
   Award,
   BookOpen,
   Building2,
+  Compass,
   FileSpreadsheet,
   LayoutDashboard,
   ListChecks,
   Settings,
   ShieldCheck,
+  Target,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -25,6 +27,8 @@ const ALL: Role[] = ["admin", "manager", "member"];
 export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard, roles: ALL },
   { href: "/me", label: "My learning", icon: Award, roles: ALL, requiresMember: true },
+  { href: "/skills", label: "My skills", icon: Compass, roles: ALL, requiresMember: true },
+  { href: "/goals", label: "Quarterly goals", icon: Target, roles: ALL, requiresMember: true },
   { href: "/members", label: "Members", icon: Users, roles: ["admin", "manager"] },
   { href: "/records", label: "Learning", icon: ListChecks, roles: ["admin", "manager"] },
   { href: "/data-quality", label: "Data quality", icon: ShieldCheck, roles: ["admin", "manager"] },

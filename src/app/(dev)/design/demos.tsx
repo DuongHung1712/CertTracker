@@ -282,6 +282,7 @@ export function DashboardRedesignDemo() {
     noExpiryCerts: 8,
     completionDoneRecords: 0,
     completionInProgressRecords: 0,
+    waitingRecords: 0,
   };
   const sampleBuckets: ExpiryBucket[] = expiryBuckets(sampleKpis);
   const validSegments = validBuckets(sampleKpis);

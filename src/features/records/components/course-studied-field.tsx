@@ -35,7 +35,7 @@ export function CourseStudiedField({
 }) {
   const label = (
     <FieldLabel id={LABEL_ID} htmlFor={kind === "completion" && certificate ? undefined : FIELD_ID}>
-      Course studied
+      {kind === "exam" ? "Preparation course" : "Granting course"}
       {kind === "exam" && <span className="font-normal text-muted-foreground"> (optional)</span>}
     </FieldLabel>
   );
@@ -83,7 +83,7 @@ export function CourseStudiedField({
         </SelectContent>
       </Select>
       <FieldDescription id={HINT_ID}>
-        {none ? "No course is listed for this exam. That's fine." : "Optional. Pick the course you used, if any."}
+        {none ? "No course is listed for this exam. That's fine." : "Leave empty if you studied on your own."}
       </FieldDescription>
     </Field>
   );

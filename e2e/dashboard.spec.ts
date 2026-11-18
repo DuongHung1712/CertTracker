@@ -117,11 +117,11 @@ test("manager sees team-scoped numbers and no separate ranking", async ({ page }
   await signIn(page, "manager@certtracker.test");
 
   // Scoped team KPI numbers: Team Cloud has 1 completed valid cert (expires in ~25 days) and 1 not_started cert.
-  // Valid share of completed = 100%, Expiring = 1, Expired = 0. Approvals do not exist yet, so no number.
+  // Valid share of completed = 100%, Expiring = 1, Expired = 0. Nothing waits for approval at seed.
   await expect(tileValue(page, "Team readiness", "Readiness summary")).toHaveText("100%");
   await expect(tileValue(page, "Expiring within 60 days")).toHaveText("1");
   await expect(tileValue(page, "Expired")).toHaveText("0");
-  await expect(tileValue(page, "Waiting for approval")).toHaveText("—");
+  await expect(page.getByRole("link", { name: /Waiting for approval/ })).toContainText("0");
 
   // No department-wide totals for a manager: the "Across the department" card was removed.
   await expect(page.getByText("Across the department")).toHaveCount(0);
@@ -233,10 +233,10 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
   // Personal KPI cards match the seed member's records (Lê Minh Châu has 1 not_started record)
-  await expect(tileValue(page, "Learning items")).toHaveText("1");
-  await expect(tileValue(page, "Expiring within 60 days")).toHaveText("0");
+  await expect(tileValue(page, "Held")).toHaveText("0");
+  await expect(tileValue(page, "Needs action")).toHaveText("0");
   await expect(tileValue(page, "In progress")).toHaveText("0");
-  await expect(tileValue(page, "Expired")).toHaveText("0");
+  await expect(tileValue(page, "Up next")).toHaveText("1");
 
   // No department-wide totals for a member: the "Across the department" card was removed.
   await expect(page.getByText("Across the department")).toHaveCount(0);
@@ -260,27 +260,53 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   // Attention banner is hidden when nothing expires within 60 days
   await expect(page.getByRole("complementary", { name: "Certificate attention required" })).toHaveCount(0);
 
-  // Coming soon cards are visible and non-interactive. Each card lists the controls it must show; each one
-  // must exist and be disabled, and the card must have at least that many controls, so removing one fails.
-  const comingSoon: { title: string; controls: { role: "textbox" | "button"; name: string }[] }[] = [
-    { title: "Ask about certificates", controls: [{ role: "textbox", name: "Your question" }] },
-    { title: "My skills", controls: [] },
-    { title: "Quarterly goals", controls: [] },
-    { title: "Next career role", controls: [] },
-    { title: "Certificate review", controls: [] },
-  ];
-  for (const { title, controls } of comingSoon) {
-    const card = page.getByRole("region", { name: `${title} (Coming soon)` });
-    await expect(card).toBeVisible();
-    for (const { role, name } of controls) {
-      await expect(card.getByRole(role, { name, exact: true })).toBeDisabled();
-    }
-    const all = card.getByRole("textbox").or(card.getByRole("button"));
-    expect(await all.count(), `${title}: number of controls`).toBeGreaterThanOrEqual(controls.length);
-    for (const control of await all.all()) {
-      await expect(control).toBeDisabled();
-    }
-  }
+  // Focus area (with integrated next career role) is visible and non-interactive
+  const focusCard = page.getByRole("region", { name: "Focus area (Coming soon)" });
+  await expect(focusCard).toBeVisible();
+  await expect(focusCard).toContainText("next role needs");
+
+  // Sidebar navigation has My skills and Quarterly goals
+  await expect(page.getByRole("link", { name: "My skills" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Quarterly goals" })).toBeVisible();
+
+  // Topbar notification contains Certificate review
+  const notifyBtn = page.getByRole("button", { name: "Notifications" });
+  await expect(notifyBtn).toBeVisible();
+  await notifyBtn.click();
+  const certReviewCard = page.getByRole("region", { name: "Certificate review (Coming soon)" });
+  await expect(certReviewCard).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  // Floating chatbot widget for Ask about certificates
+  const chatFab = page.getByRole("button", { name: "Ask about certificates" });
+  await expect(chatFab).toBeVisible();
+  await chatFab.click();
+  const chatWidget = page.getByRole("region", { name: "Ask about certificates (Coming soon)" });
+  await expect(chatWidget).toBeVisible();
+  await expect(chatWidget.getByRole("textbox", { name: "Your question" })).toBeDisabled();
+});
+
+test("a member's tiles open My learning narrowed to their items", async ({ page }) => {
+  await signIn(page, "member@certtracker.test");
+  const overview = section(page, "Overview");
+
+  // The seed member has one not-started exam and nothing else.
+  await overview.getByRole("link", { name: "Up next", exact: true }).click();
+  await expect(page).toHaveURL(/\/me\?view=up-next$/);
+  await expect(page.getByText("Showing Up next only")).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(1);
+
+  await page.goto("/me?view=held");
+  await expect(page.getByText("Showing Held only")).toBeVisible();
+  await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Show all" }).click();
+  await expect(page.getByText("Showing Held only")).toHaveCount(0);
+  await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(1);
+
+  // An unknown view is ignored.
+  await page.goto("/me?view=nonsense");
+  await expect(page.getByText(/^Showing .* only$/)).toHaveCount(0);
 });
 
 test("unlinked member account shows guidance empty state on dashboard", async ({ page }) => {
@@ -431,7 +457,6 @@ test("admin merged Coming soon card has no interactive controls", async ({ page 
   // Every planned feature ends with "Not available yet."; nothing else on the page says it.
   await expect(card.getByText(/Not available yet\.$/)).toHaveCount(planned.length);
   await expect(page.getByRole("main").getByText(/Not available yet\./)).toHaveCount(planned.length);
-  await expect(page.getByText("Waiting for approval")).toHaveCount(0);
 
   // No buttons or textboxes
   await expect(card.getByRole("button")).toHaveCount(0);

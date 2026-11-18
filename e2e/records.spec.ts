@@ -166,46 +166,47 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   }
 });
 
-test("a second record for the same member and certificate is stopped in the form, with a way to open the existing one", async ({ page }) => {
+// A member may renew a Completed certificate, but holds one active attempt per certificate: Châu's AWS is Not started.
+test("a second active attempt for the same member and certificate is stopped in the form, with a way to open the existing one", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
 
   await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
-  await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
+  await pickOption(page, dialog, "Member", "chau", "Lê Minh Châu");
   await pickOption(page, dialog, "Certificate", "aws", AWS);
 
   await expect(dialog.getByText(`${AWS} is already on this list. Edit it instead.`)).toBeVisible();
   await expect(dialog.getByRole("button", { name: "Save" })).toBeDisabled();
   await dialog.getByRole("button", { name: "Open it" }).click();
   await expect(dialog.getByRole("heading", { name: "Edit certificate" })).toBeVisible();
-  await expect(dialog.getByLabel(fieldLabel("Status"))).toContainText("Completed");
+  await expect(dialog.getByLabel(fieldLabel("Status"))).toContainText("Not started");
   await dialog.getByRole("button", { name: "Cancel" }).click();
 });
 
 test("Open it loads only the existing record: a course picked in the Add form is not saved onto it", async ({ page }) => {
   const admin = await signInAsSeedAdmin();
-  const before = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", AWS_ID).single();
-  if (before.error) throw new Error(`read An–AWS: ${before.error.message}`);
-  const cleared = await admin.from("training_records").update({ course_id: null }).eq("member_id", AN).eq("certificate_id", AWS_ID);
-  if (cleared.error) throw new Error(`clear An–AWS course: ${cleared.error.message}`);
+  const before = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
+  if (before.error) throw new Error(`read Châu–AWS: ${before.error.message}`);
+  const cleared = await admin.from("training_records").update({ course_id: null }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
+  if (cleared.error) throw new Error(`clear Châu–AWS course: ${cleared.error.message}`);
   try {
     await signIn(page, "admin@certtracker.test");
     await page.goto("/records");
     await page.getByRole("button", { name: "Add certificate" }).click();
     const dialog = page.getByRole("dialog");
-    await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
+    await pickOption(page, dialog, "Member", "chau", "Lê Minh Châu");
     await pickOption(page, dialog, "Certificate", "aws", AWS);
-    await pickSelect(page, dialog, "Course studied", AWS);
+    await pickSelect(page, dialog, "Preparation course", AWS);
     await dialog.getByRole("button", { name: "Open it" }).click();
     await expect(dialog.getByRole("heading", { name: "Edit certificate" })).toBeVisible();
-    await expect(dialog.getByLabel(fieldLabel("Course studied"))).toContainText("None (self-study)");
+    await expect(dialog.getByLabel(fieldLabel("Preparation course"))).toContainText("None (self-study)");
     await dialog.getByRole("button", { name: "Save" }).click();
     await expect(dialog).toBeHidden();
-    const after = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", AWS_ID).single();
+    const after = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
     expect(after.data?.course_id).toBeNull();
   } finally {
-    await admin.from("training_records").update({ course_id: before.data.course_id }).eq("member_id", AN).eq("certificate_id", AWS_ID);
+    await admin.from("training_records").update({ course_id: before.data.course_id }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
   }
 });
 
@@ -226,7 +227,7 @@ test("the kind choice filters the certificate picker, clears the pick, and a reo
     // Switching the kind clears the certificate and the course.
     await dialog.getByRole("tab", { name: "Course completion" }).click();
     await expect(dialog.getByLabel(fieldLabel("Course completion"))).toHaveValue("");
-    await expect(dialog.getByLabel(fieldLabel("Course studied"))).toBeDisabled();
+    await expect(dialog.getByLabel(fieldLabel("Granting course"))).toBeDisabled();
     await expect(dialog.getByText("Choose the course completion first.")).toBeVisible();
     await pickOption(page, dialog, "Course completion", completion.certificateName, completion.optionName);
     await expect(dialog.getByLabel(fieldLabel("Issue date"))).toHaveCount(0);
@@ -261,8 +262,6 @@ test("a record for a course completion saves the granting course, and the table 
     expect(saved.data?.course_id).toBe(completion.courseId);
     const row = recordRow(page, "Nguyễn Văn An", completion.certificateName);
     await expect(row).toContainText("Course completion");
-    // The Course studied column is shown from the xl breakpoint; Playwright's 1280 px viewport is one.
-    await expect(row.getByText(completion.courseName)).toBeVisible();
   } finally {
     await completion.remove();
   }
@@ -314,7 +313,7 @@ test("an exam record saves the course studied that prepares for it", async ({ pa
   const dialog = page.getByRole("dialog");
   await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
   await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs");
-  await pickSelect(page, dialog, "Course studied", "NVIDIA Generative AI LLMs");
+  await pickSelect(page, dialog, "Preparation course", "NVIDIA Generative AI LLMs");
   await dialog.getByRole("button", { name: "Save" }).click();
   try {
     await expect(page.getByText("Added certificate")).toBeVisible();
@@ -381,14 +380,14 @@ test("a saved course that no longer prepares for the certificate stays visible a
     await page.goto("/records");
     await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
     const dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel(fieldLabel("Course studied"))).toContainText(`${course.name} (no longer linked to this certificate)`);
+    await expect(dialog.getByLabel(fieldLabel("Preparation course"))).toContainText(`${course.name} (no longer linked to this certificate)`);
 
     await dialog.getByRole("button", { name: "Save" }).click();
     await expect(dialog).toHaveCount(0);
     expect(await chauCourseId(AWS_ID)).toBe(course.id);
 
     await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
-    await pickSelect(page, page.getByRole("dialog"), "Course studied", "None (self-study)");
+    await pickSelect(page, page.getByRole("dialog"), "Preparation course", "None (self-study)");
     await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect.poll(() => chauCourseId(AWS_ID)).toBeNull();
@@ -548,7 +547,8 @@ test("member updates own progress and cannot see company fields", async ({ page 
       // Anchor on a visible item first: a count of 0 before the menu has rendered would pass vacuously.
       await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible({ timeout: 2_000 });
     }).toPass({ timeout: 20_000 });
-    await expect(page.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
+    // A member may delete their own draft (Not started here); a Completed one has no Delete (pgTAP 28).
+    await expect(page.getByRole("menuitem", { name: "Delete" })).toBeVisible();
     await page.getByRole("menuitem", { name: "Edit" }).click();
 
     const dialog = page.getByRole("dialog");
@@ -570,8 +570,8 @@ test("member updates own progress and cannot see company fields", async ({ page 
   }
 });
 
-test("the certificate form says what to do when a certificate is missing", async ({ page }) => {
-  const hint = "Can't find yours? Ask your admin to add it.";
+test("the certificate form offers to propose a missing certificate", async ({ page }) => {
+  const hint = "Can't find yours?";
   await signIn(page, "member@certtracker.test");
   await page.goto("/records");
   await expect(page).toHaveURL(/\/me$/);
@@ -583,7 +583,7 @@ test("the certificate form says what to do when a certificate is missing", async
   await dialog.getByLabel(fieldLabel("Certificate")).fill("zzzz-no-such-certificate");
   // The popup is portalled outside the dialog.
   await expect(page.getByText("No certificates found", { exact: true })).toBeVisible();
-  await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Propose a new certificate/ }).first()).toBeVisible();
 });
 
 test("member uploads, opens and removes evidence on their own record", async ({ page }) => {
@@ -693,12 +693,12 @@ test("a member's My learning page offers kind tabs, one add action and the exam-
   await signIn(page, "member@certtracker.test");
   await page.goto("/me");
   await expect(page.getByRole("heading", { name: "My learning", level: 1 })).toBeVisible();
-  await expect(page.getByText("Exam certificates you hold, courses you have studied and course completions.")).toBeVisible();
+  await expect(page.getByText("Your exam certificates and course completions: planned, in progress or done.")).toBeVisible();
   await expect(page.getByRole("tab", { name: "All (1)" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "Exam certificates (1)" })).toBeVisible();
   await page.getByRole("tab", { name: "Course completions (0)" }).click();
   await expect(page.getByText("Nothing found")).toBeVisible();
-  await expect(page.getByText("Studying for an exam? Choose the exam, then the course you used.")).toBeVisible();
+  await expect(page.getByText("Planning an exam or a course? Add it now and update its status as you go.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Add certificate or course completion" })).toBeVisible();
 });
 

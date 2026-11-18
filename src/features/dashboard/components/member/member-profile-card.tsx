@@ -42,7 +42,7 @@ export function MemberProfileCard({
 
       <ComingSoonCard
         title="Focus area"
-        description="Choose the area you want to grow in, such as cloud or security. Not available yet."
+        description="Choose the area you want to grow in, such as cloud or security, and see what your next role needs: certificates, experience and skills. Not available yet."
       />
     </section>
   );

@@ -7,7 +7,7 @@ import { signInAsSeedAdmin } from "./support/restore-seed";
 test.afterEach(sweepCompletionFixtures);
 
 // The form is opened and cancelled only: nothing is saved, so the seed stays untouched. Two exceptions put everything
-// back: R16 edits one seed note, and the Course studied test creates a completion (and its course) and removes it.
+// back: R16 edits one seed note, and the course-field test creates a completion (and its course) and removes it.
 
 /** Picks a value in a Base UI `Select`; its listbox is portalled outside the dialog. */
 async function pickSelect(page: Page, dialog: Locator, label: string, optionName: string) {
@@ -99,20 +99,20 @@ test("the calendar button fills the date field as dd/mm/yyyy", async ({ page }) 
   await expect(dialog.getByLabel(fieldLabel("Date passed"))).toHaveValue("01/08/2026");
 });
 
-test("Course studied is always shown: disabled until a certificate is chosen, optional for an exam, read-only for a completion", async ({ page }) => {
+test("The course field is always shown: disabled until a certificate is chosen, optional for an exam, read-only for a completion", async ({ page }) => {
   const dialog = await openAddForm(page);
   // An admin gets a way to fix it; the member's hint is covered in records.spec.ts.
   await expect(dialog.getByRole("link", { name: "Add it in the Catalogue" })).toHaveAttribute("href", "/courses");
-  await expect(dialog.getByLabel(fieldLabel("Course studied"))).toBeDisabled();
+  await expect(dialog.getByLabel(fieldLabel("Preparation course"))).toBeDisabled();
   await expect(dialog.getByText("Choose the exam first.")).toBeVisible();
 
   await dialog.getByLabel(fieldLabel("Certificate")).fill("aws");
   await page.getByRole("option", { name: "AWS Solutions Architect Associate" }).click();
-  await dialog.getByLabel(fieldLabel("Course studied")).click();
+  await dialog.getByLabel(fieldLabel("Preparation course")).click();
   await expect(page.getByRole("option", { name: "None (self-study)", exact: true })).toBeVisible();
   await expect(page.getByRole("option", { name: "AWS Solutions Architect Associate", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(dialog.getByText("Optional. Pick the course you used, if any.")).toBeVisible();
+  await expect(dialog.getByText("Leave empty if you studied on your own.")).toBeVisible();
 
   const completion = await createCompletionFixture();
   try {
@@ -122,7 +122,7 @@ test("Course studied is always shown: disabled until a certificate is chosen, op
     await dialog.getByLabel(fieldLabel("Course completion")).fill(completion.certificateName);
     await page.getByRole("option", { name: completion.optionName }).click();
     // Plain text, not an input that looks editable.
-    const studied = dialog.getByLabel(fieldLabel("Course studied"));
+    const studied = dialog.getByLabel(fieldLabel("Granting course"));
     await expect(studied).toHaveText(completion.courseName);
     await expect(dialog.locator("input#record-course-studied")).toHaveCount(0);
   } finally {
@@ -210,7 +210,7 @@ test("R11: the evidence upload is offered only for a Completed certificate", asy
 test("R12: required fields carry a red star and aria-required; optional ones carry neither", async ({ page }) => {
   const dialog = await openAddForm(page);
   await expect(dialog.getByText(/^\*\s*Required$/)).toBeVisible();
-  // Only "Course studied" carries the (optional) marker.
+  // Only "Preparation course" carries the (optional) marker.
   await expect(dialog.getByText("(optional)")).toHaveCount(1);
 
   // Not started (the default).
@@ -228,7 +228,7 @@ test("R12: required fields carry a red star and aria-required; optional ones car
   await expectRequired(dialog, "Date passed");
   await expectOptional(dialog, "Certificate link");
   await expectOptional(dialog, "Evidence");
-  // Only "Course studied" carries the (optional) marker.
+  // Only "Preparation course" carries the (optional) marker.
   await expect(dialog.getByText("(optional)")).toHaveCount(1);
 });
 
@@ -291,7 +291,7 @@ test("R16: a live update while the sheet is open does not bring back an issue da
   }
 });
 
-test("a member sees Course studied up front, and an exam without a preparing course says so", async ({ page }) => {
+test("a member sees the preparation course field up front, and an exam without a preparing course says so", async ({ page }) => {
   const admin = await signInAsSeedAdmin();
   const name = `QA Exam ${Date.now()}`;
   const created = await admin
@@ -308,7 +308,7 @@ test("a member sees Course studied up front, and an exam without a preparing cou
   if (created.error) throw new Error(`create QA exam: ${created.error.message}`);
   try {
     const dialog = await openOwnForm(page);
-    const studied = dialog.getByLabel(fieldLabel("Course studied"));
+    const studied = dialog.getByLabel(fieldLabel("Preparation course"));
     await expect(studied).toBeDisabled();
     await expect(dialog.getByText("Choose the exam first.")).toBeVisible();
 
