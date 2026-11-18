@@ -1,4 +1,4 @@
-import { isCompletion } from "@/features/records/kind";
+import { isApprovedDone, isCompletion } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 
@@ -18,12 +18,12 @@ export function calculateCompletionKpis(records: RecordRow[], now: Date = new Da
   const thisMonth = today.slice(0, 7);
   const thisQuarter = quarterKey(today);
   const completions = records.filter(isCompletion);
-  const finished = completions.filter((r) => r.status === "done" && r.issuedDate !== null);
+  const finished = completions.filter((r) => isApprovedDone(r) && r.issuedDate !== null);
 
   return {
     doneThisMonth: finished.filter((r) => r.issuedDate?.slice(0, 7) === thisMonth).length,
     doneThisQuarter: finished.filter((r) => r.issuedDate !== null && quarterKey(r.issuedDate) === thisQuarter).length,
-    doneTotal: completions.filter((r) => r.status === "done").length,
+    doneTotal: completions.filter(isApprovedDone).length,
     inProgress: completions.filter((r) => r.status === "in_progress").length,
   };
 }

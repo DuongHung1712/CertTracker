@@ -9,11 +9,13 @@ import {
   getGreeting,
   getGreetingTimeOfDay,
   getMemberTabCounts,
+  inMemberView,
+  parseMemberView,
 } from "./member-metrics";
 
 const notDated = { issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" } as const;
-const inProgress = (id: string) => makeRecord({ id, status: "in_progress", progress: 40, ...notDated });
-const notStarted = (id: string) => makeRecord({ id, status: "not_started", progress: 0, ...notDated });
+const inProgress = (id: string, partial: Parameters<typeof makeRecord>[0] = {}) => makeRecord({ id, status: "in_progress", progress: 40, ...notDated, ...partial });
+const notStarted = (id: string, partial: Parameters<typeof makeRecord>[0] = {}) => makeRecord({ id, status: "not_started", progress: 0, ...notDated, ...partial });
 
 describe("extractFirstName", () => {
   it("extracts the given name from Vietnamese full names", () => {
@@ -169,6 +171,24 @@ describe("getAttentionRecord ordering", () => {
     ]);
     expect(result).toEqual({ record: expect.objectContaining({ id: "recent" }), urgency: "expired" });
   });
+
+  it("ignores an older expired record the view marks as renewed", () => {
+    const certId = "cert-aws-saa";
+    const result = getAttentionRecord([
+      doneRecord(-20, { id: "old-attempt", certificateId: certId, renewed: true }),
+      doneRecord(365, { id: "renewed-attempt", certificateId: certId }),
+    ]);
+    expect(result).toBeNull();
+  });
+
+  it("ignores an expired record when a renewal attempt is already in progress", () => {
+    const certId = "cert-aws-saa";
+    const result = getAttentionRecord([
+      doneRecord(-20, { id: "old-attempt", certificateId: certId }),
+      inProgress("renewing-attempt", { certificateId: certId }),
+    ]);
+    expect(result).toBeNull();
+  });
 });
 
 describe("calculateMemberKpis", () => {
@@ -192,15 +212,20 @@ describe("calculateMemberKpis", () => {
   it("handles empty records", () => {
     expect(calculateMemberKpis([])).toEqual({
       total: 0,
+      waitingCount: 0,
       examCount: 0,
       examDoneCount: 0,
       completionCount: 0,
+      completionDoneCount: 0,
       validCount: 0,
       expiringCount: 0,
       leastDaysRecord: null,
       inProgressCount: 0,
       inProgressRows: [],
       expiredCount: 0,
+      notStartedCount: 0,
+      nextPlanned: null,
+      activeInProgress: null,
     });
   });
 });
@@ -256,5 +281,59 @@ describe("member attention: a completion with a validity is never flagged", () =
       doneRecord(10, { id: "c2", certificateKind: "completion" }),
     ];
     expect(getAttentionRecord(records)).toBeNull();
+  });
+});
+
+describe("member views (dashboard tiles)", () => {
+  const records = [
+    doneRecord(120, { id: "valid" }),
+    doneRecord(-5, { id: "expired" }),
+    doneRecord(20, { id: "expiring" }),
+    makeRecord({ id: "completion-done", certificateKind: "completion", expiryStatus: "No Expiry", daysToExpiry: null }),
+    makeRecord({ id: "completion-open", certificateKind: "completion", status: "in_progress", expiryStatus: "N/A", daysToExpiry: null }),
+    makeRecord({ id: "todo", status: "not_started", expiryStatus: "N/A", daysToExpiry: null }),
+  ];
+  const ids = (view: Parameters<typeof inMemberView>[1]) => records.filter((r) => inMemberView(r, view)).map((r) => r.id);
+
+  it("held = valid or expiring exams and finished completions", () => {
+    expect(ids("held")).toEqual(["valid", "expiring", "completion-done"]);
+  });
+  it("needs action = expired and expiring exams", () => {
+    expect(ids("needs-action")).toEqual(["expired", "expiring"]);
+  });
+  it("in progress and up next follow the status", () => {
+    expect(ids("in-progress")).toEqual(["completion-open"]);
+    expect(ids("up-next")).toEqual(["todo"]);
+  });
+  it("parses only the four known views", () => {
+    expect(parseMemberView("held")).toBe("held");
+    expect(parseMemberView(["needs-action", "x"])).toBe("needs-action");
+    expect(parseMemberView("nope")).toBeUndefined();
+    expect(parseMemberView(undefined)).toBeUndefined();
+  });
+});
+
+
+describe("member metrics: only Approved items count, lists keep every item", () => {
+  const records = [
+    doneRecord(120, { id: "ok" }),
+    doneRecord(-5, { id: "w-expired", approval: "waiting" }),
+    doneRecord(20, { id: "r-expiring", approval: "returned", approvalNote: "Wrong date" }),
+    makeRecord({ id: "w-completion", certificateKind: "completion", expiryStatus: "No Expiry", daysToExpiry: null, approval: "waiting" }),
+  ];
+  it("counts nothing from Waiting or Returned items and reports the waiting ones", () => {
+    expect(calculateMemberKpis(records)).toMatchObject({
+      validCount: 1, expiredCount: 0, expiringCount: 0, examDoneCount: 1, completionDoneCount: 0, waitingCount: 2, total: 4,
+    });
+  });
+  it("the Held view stays consistent with the Held number; needs-action ignores them", () => {
+    expect(records.filter((r) => inMemberView(r, "held")).map((r) => r.id)).toEqual(["ok"]);
+    // The waiting view is what the Held summary's "waiting for approval" link opens.
+    expect(records.filter((r) => inMemberView(r, "waiting")).map((r) => r.id)).toEqual(["w-expired", "w-completion"]);
+    expect(records.some((r) => inMemberView(r, "needs-action"))).toBe(false);
+  });
+  it("no attention record and the valid/expiring tabs skip them; the All tab keeps them", () => {
+    expect(getAttentionRecord(records)).toBeNull();
+    expect(getMemberTabCounts(records)).toEqual({ all: 4, valid: 1, expiring: 0, in_progress: 0 });
   });
 });

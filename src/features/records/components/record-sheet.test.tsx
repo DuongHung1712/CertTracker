@@ -2,7 +2,11 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { toast } from "sonner";
+import { makeRecord } from "@/features/records/__fixtures__/record-row";
+import { updateRecord } from "@/features/records/actions";
 import type { RecordRow } from "@/features/records/queries";
+import type { CertificateChoice } from "@/features/records/certificate-course";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 
 // jsdom has no ResizeObserver or scrollIntoView, which the Base UI popups call.
@@ -31,7 +35,7 @@ function sheet() {
   );
 }
 
-const studied = () => screen.getByRole<HTMLInputElement>("textbox", { name: /Course studied/ });
+const studied = () => screen.getByRole<HTMLInputElement>("textbox", { name: /Preparation course/ });
 const certificateInput = (name: RegExp) => screen.getByRole<HTMLInputElement>("combobox", { name });
 
 afterEach(cleanup);
@@ -40,11 +44,11 @@ describe("RecordSheet kind choice", () => {
   it("defaults to Exam certificate with the course field disabled until the exam is chosen", () => {
     render(sheet());
     expect(screen.getByRole("tab", { name: "Exam certificate" }).getAttribute("aria-selected")).toBe("true");
-    expect(screen.getByText("You passed an exam.")).toBeTruthy();
+    expect(screen.getByText("Official certifications validated by an exam (AWS, Azure, CKA, PMP...)")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Add certificate" })).toBeTruthy();
     expect(studied().disabled).toBe(true);
     expect(screen.getByText("Choose the exam first.")).toBeTruthy();
-    expect(screen.getByText("Course studied", { exact: false }).textContent).toContain("(optional)");
+    expect(screen.getByText("Preparation course", { exact: false }).textContent).toContain("(optional)");
   });
 
   it("lists only certificates of the chosen kind", async () => {
@@ -63,8 +67,8 @@ describe("RecordSheet kind choice", () => {
     render(sheet());
     await userEvent.click(certificateInput(/^Certificate/));
     await userEvent.click(screen.getByRole("option", { name: "AWS Associate" }));
-    expect(screen.getByText("Optional. Pick the course you used, if any.")).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: /Course studied/ }).hasAttribute("disabled")).toBe(false);
+    expect(screen.getByText("Leave empty if you studied on your own.")).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: /Preparation course/ }).hasAttribute("disabled")).toBe(false);
   });
 
   it("exam without a preparing course: disabled, self-study, explained", async () => {
@@ -72,7 +76,7 @@ describe("RecordSheet kind choice", () => {
     await userEvent.click(certificateInput(/^Certificate/));
     await userEvent.click(screen.getByRole("option", { name: "Lonely Exam" }));
     expect(screen.getByText("No course is listed for this exam. That's fine.")).toBeTruthy();
-    const trigger = screen.getByRole("combobox", { name: /Course studied/ });
+    const trigger = screen.getByRole("combobox", { name: /Preparation course/ });
     expect(trigger.hasAttribute("disabled") || trigger.getAttribute("aria-disabled") === "true").toBe(true);
     expect(trigger.textContent).toContain("None (self-study)");
   });
@@ -84,7 +88,7 @@ describe("RecordSheet kind choice", () => {
     await userEvent.click(certificateInput(/^Course completion/));
     await userEvent.click(screen.getByRole("option", { name: "Intro to LLMs" }));
     // Plain text, still named by its label.
-    const course = screen.getByLabelText(/Course studied/);
+    const course = screen.getByLabelText(/Granting course/);
     expect(course.textContent).toBe("LLM Course");
     expect(course.tagName).toBe("P");
 
@@ -96,7 +100,8 @@ describe("RecordSheet kind choice", () => {
   it("shows the Add-mode hint under Status, and the Catalogue link only when the viewer can add to it", () => {
     const { unmount } = render(sheet());
     expect(screen.getByText("Already passed it? Choose Completed to add the date and your proof.")).toBeTruthy();
-    expect(screen.getByText("Can't find yours? Ask your admin to add it.")).toBeTruthy();
+    expect(screen.getByText("Can't find yours?")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "+ Propose a new certificate" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Add it in the Catalogue" })).toBeNull();
     unmount();
     render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={CERTIFICATES} studyCourses={COURSES} showCompanyFields canAddToCatalogue />);
@@ -180,5 +185,218 @@ describe("RecordSheet remembers values across status changes", () => {
     open(saved({}), "done");
     await pick("In progress");
     expect(progress().value).toBe("75");
+  });
+});
+
+describe("RecordSheet returned note", () => {
+  const row = (partial: Partial<RecordRow>) =>
+    ({
+      id: "r1", memberId: "m1", memberCode: "", memberName: "Jane", memberEmail: "j@x.com", teamId: null, teamName: null, certificateId: "e1", certificateName: "AWS Associate",
+      certificateKind: "exam", courseId: null, courseName: null, certTypeName: null, providerName: null, validityMonths: null, cost: null, costCurrency: null, estHours: null,
+      status: "done", progress: 100, plannedExamDate: null, issuedDate: "2026-01-02", certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null,
+      expiryDate: null, daysToExpiry: null, expiryStatus: "N/A", approval: "returned", approvalNote: "Wrong date.", ...partial,
+    }) as unknown as RecordRow;
+  const open = (editing: RecordRow, showCompanyFields: boolean, viewerMemberId: string | null = "m1") =>
+    render(<RecordSheet open onOpenChange={() => {}} editing={editing} memberOptions={[]} certificateOptions={CERTIFICATES} studyCourses={COURSES} showCompanyFields={showCompanyFields} fixedMemberId="m1" viewerMemberId={viewerMemberId} />);
+
+  it("shows the manager's note to the member", () => {
+    open(row({}), false);
+    expect(screen.getByRole("alert").textContent).toBe("Returned for changes: Wrong date. Fix it and save to send it again.");
+  });
+
+  it("a reviewer on someone else's item sees the reviewer wording", () => {
+    open(row({}), true, "boss");
+    expect(screen.getByRole("alert").textContent).toBe("Returned to the member: Wrong date. The member fixes it and saves to send it again.");
+  });
+
+  it("a manager on their OWN item is treated as the member, and nothing shows when not returned", () => {
+    open(row({}), true, "m1");
+    expect(screen.getByRole("alert").textContent).toContain("Fix it and save");
+    cleanup();
+    cleanup();
+    open(row({ approval: "waiting", approvalNote: null }), false);
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+});
+
+describe("RecordSheet save toast", () => {
+  const GUID_M = "5eed0000-0000-0000-0000-00000000b001";
+  const GUID_E = "5eed0000-0000-0000-0000-00000000d001";
+  const done = {
+    id: "r1", memberId: GUID_M, memberCode: "", memberName: "Jane", memberEmail: "j@x.com", teamId: null, teamName: null, certificateId: GUID_E, certificateName: "AWS Associate",
+    certificateKind: "exam", courseId: null, courseName: null, certTypeName: null, providerName: null, validityMonths: null, cost: null, costCurrency: null, estHours: null,
+    status: "done", progress: 100, plannedExamDate: null, issuedDate: "2026-01-02", certificateUrl: null, hasEvidence: false, viaCompany: false, refundStatus: "n_a", notes: null,
+    expiryDate: null, daysToExpiry: null, expiryStatus: "N/A", approval: "approved", approvalNote: null,
+  } as unknown as RecordRow;
+
+  it.each([
+    ["waiting", "Saved certificate. It is waiting for approval."],
+    ["approved", "Saved certificate"],
+  ] as const)("says what the database decided: %s", async (approval, message) => {
+    vi.mocked(toast.success).mockClear();
+    vi.mocked(updateRecord).mockResolvedValue({ ok: true, data: { approval } });
+    render(<RecordSheet open onOpenChange={() => {}} editing={done} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} studyCourses={COURSES} showCompanyFields={false} fixedMemberId={GUID_M} />);
+    await userEvent.click(screen.getByRole("button", { name: /^Save/ }));
+    await vi.waitFor(() => expect(toast.success).toHaveBeenCalledWith(message));
+  });
+});
+
+describe("RecordSheet renewal duplicate detection", () => {
+  const existingDone = {
+    id: "r1",
+    memberId: "m1",
+    certificateId: "e1",
+    certificateName: "AWS Associate",
+    certificateKind: "exam",
+    status: "done",
+    issuedDate: "2024-01-01",
+    progress: 100,
+  } as unknown as RecordRow;
+
+  const existingInProgress = {
+    id: "r2",
+    memberId: "m1",
+    certificateId: "e1",
+    certificateName: "AWS Associate",
+    certificateKind: "exam",
+    status: "in_progress",
+    issuedDate: null,
+    progress: 30,
+  } as unknown as RecordRow;
+
+  it("allows starting a renewal in_progress attempt when a done record already exists", async () => {
+    render(
+      <RecordSheet
+        open
+        onOpenChange={() => {}}
+        editing={null}
+        memberOptions={[]}
+        certificateOptions={CERTIFICATES}
+        studyCourses={COURSES}
+        showCompanyFields={false}
+        fixedMemberId="m1"
+        records={[existingDone]}
+      />,
+    );
+    await userEvent.click(certificateInput(/^Certificate/));
+    await userEvent.click(screen.getByRole("option", { name: "AWS Associate" }));
+    // Status defaults to not_started; switch to In progress
+    await userEvent.click(screen.getByRole("combobox", { name: /^Status/ }));
+    await userEvent.click(await screen.findByRole("option", { name: "In progress" }));
+
+    // Duplicate message must NOT appear, and Save button must be enabled
+    expect(screen.queryByText(/is already on this list/)).toBeNull();
+    const saveButton = screen.getByRole("button", { name: /^Save/ });
+    expect(saveButton.hasAttribute("disabled")).toBe(false);
+  });
+
+  it("blocks creating a second active record when an in_progress attempt already exists", async () => {
+    render(
+      <RecordSheet
+        open
+        onOpenChange={() => {}}
+        editing={null}
+        memberOptions={[]}
+        certificateOptions={CERTIFICATES}
+        studyCourses={COURSES}
+        showCompanyFields={false}
+        fixedMemberId="m1"
+        records={[existingInProgress]}
+      />,
+    );
+    await userEvent.click(certificateInput(/^Certificate/));
+    await userEvent.click(screen.getByRole("option", { name: "AWS Associate" }));
+
+    expect(screen.getByText("AWS Associate is already on this list. Edit it instead.")).toBeTruthy();
+    const saveButton = screen.getByRole("button", { name: /^Save/ });
+    expect(saveButton.hasAttribute("disabled")).toBe(true);
+  });
+});
+
+describe("RecordSheet proposal and delete", () => {
+  it("renders '+ Propose a new certificate' button and opens proposal dialog", async () => {
+    render(sheet());
+    const proposeBtn = screen.getByRole("button", { name: "+ Propose a new certificate" });
+    expect(proposeBtn).toBeTruthy();
+    await userEvent.click(proposeBtn);
+    expect(await screen.findByRole("heading", { name: /Propose a new certificate/ })).toBeTruthy();
+  });
+
+  it("shows Delete button in footer when editing an in-progress draft record", () => {
+    const draft = makeRecord({ id: "r-draft", status: "in_progress", certificateName: "Draft Cert" });
+    render(
+      <RecordSheet
+        open
+        onOpenChange={() => {}}
+        editing={draft}
+        memberOptions={[]}
+        certificateOptions={CERTIFICATES}
+        studyCourses={COURSES}
+        showCompanyFields={false}
+        fixedMemberId="m1"
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+  });
+
+  it("shows Delete button in footer when editing a returned record even with canDelete=false", () => {
+    const returned = makeRecord({ id: "r-ret", status: "done", approval: "returned", approvalNote: "fix dates", certificateName: "Returned Cert" });
+    render(
+      <RecordSheet
+        open
+        onOpenChange={() => {}}
+        editing={returned}
+        memberOptions={[]}
+        certificateOptions={CERTIFICATES}
+        studyCourses={COURSES}
+        showCompanyFields={false}
+        fixedMemberId="m1"
+        canDelete={false}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Delete" })).toBeTruthy();
+  });
+
+  it("does not show Delete button in footer when editing an approved completed record without delete permission", () => {
+    const approved = makeRecord({ id: "r-appr", status: "done", approval: "approved", certificateName: "Approved Cert" });
+    render(
+      <RecordSheet
+        open
+        onOpenChange={() => {}}
+        editing={approved}
+        memberOptions={[]}
+        certificateOptions={CERTIFICATES}
+        studyCourses={COURSES}
+        showCompanyFields={false}
+        fixedMemberId="m1"
+        canDelete={false}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: "Delete" })).toBeNull();
+  });
+
+  it("renders Pending Approval badge and note when a pending certificate is selected", () => {
+    const pendingCert: CertificateChoice = {
+      id: "c-pending",
+      label: "Pending AWS Specialty",
+      kind: "exam",
+      grantingCourse: null,
+      catalogueStatus: "pending",
+    };
+    render(
+      <RecordSheet
+        open
+        onOpenChange={() => {}}
+        editing={null}
+        memberOptions={[]}
+        certificateOptions={[...CERTIFICATES, pendingCert]}
+        studyCourses={COURSES}
+        showCompanyFields={false}
+        fixedMemberId="m1"
+        presetCertificateId="c-pending"
+      />,
+    );
+    expect(screen.getByText("Pending Approval")).toBeTruthy();
+    expect(screen.getByText(/This item is pending admin approval/)).toBeTruthy();
   });
 });

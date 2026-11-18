@@ -17,6 +17,7 @@ const record = (id: string, memberId: string, over: Partial<SnapshotRecord> = {}
   id,
   memberId,
   status: "done",
+  approval: "approved",
   certificateName: `Course ${id}`,
   issuedDate: "2026-01-01",
   expiryDate: "2026-10-20",

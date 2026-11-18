@@ -1,4 +1,4 @@
-import { isCompletion, isExam } from "@/features/records/kind";
+import { isApprovedDone, isCompletion, isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { VN_TIME_ZONE } from "@/lib/dates";
 
@@ -21,12 +21,22 @@ export type MemberKpis = {
   examCount: number;
   examDoneCount: number;
   completionCount: number;
+  /** Finished course completions: credentials that never expire. */
+  completionDoneCount: number;
   validCount: number;
+  /** Completed items not approved yet: in no count, still listed. */
+  waitingCount: number;
   expiringCount: number;
   leastDaysRecord: DatedRecord | null;
   inProgressCount: number;
   inProgressRows: RecordRow[];
   expiredCount: number;
+  /** Items not started yet: what the member has planned or still has to schedule. */
+  notStartedCount: number;
+  /** Not-started item with the nearest planned exam date, or null when none has a date. */
+  nextPlanned: RecordRow | null;
+  /** Most actively progressed in-progress record */
+  activeInProgress: RecordRow | null;
 };
 
 /**
@@ -87,7 +97,8 @@ export function expiryWindow(daysToExpiry: number | null): ExpiryWindow {
   return "later";
 }
 
-const isDone = (r: RecordRow): boolean => r.status === "done";
+// Counting only: Waiting and Returned items stay in every list.
+const isDone = isApprovedDone;
 const isExpired = (r: RecordRow): boolean => isExam(r) && isDone(r) && expiryWindow(r.daysToExpiry) === "expired";
 /** Done exam and not expired; an exam certificate without an expiry date counts as valid. A completion never expires and is not "valid". */
 const isValid = (r: RecordRow): boolean => isExam(r) && isDone(r) && expiryWindow(r.daysToExpiry) !== "expired";
@@ -96,6 +107,36 @@ const isExpiring = (r: RecordRow): boolean => {
   return isExam(r) && isDone(r) && (window === "urgent" || window === "expiring");
 };
 const isInProgress = (r: RecordRow): boolean => r.status === "in_progress";
+
+const isNotStarted = (r: RecordRow): boolean => r.status === "not_started";
+/** A valid exam certificate or a finished course completion (completions never expire). */
+const isHeld = (r: RecordRow): boolean => isValid(r) || (isCompletion(r) && isDone(r));
+const isNeedsAction = (r: RecordRow): boolean => isExpired(r) || isExpiring(r);
+
+/** The four dashboard tiles (and the waiting part of Held); each one opens /me already narrowed to its items. */
+export const MEMBER_VIEWS = ["held", "needs-action", "in-progress", "up-next", "waiting"] as const;
+export type MemberView = (typeof MEMBER_VIEWS)[number];
+export const MEMBER_VIEW_LABEL: Record<MemberView, string> = {
+  held: "Held",
+  "needs-action": "Needs action",
+  "in-progress": "In progress",
+  "up-next": "Up next",
+  waiting: "Waiting for approval",
+};
+const VIEW_FILTERS: Record<MemberView, (r: RecordRow) => boolean> = {
+  held: isHeld,
+  "needs-action": isNeedsAction,
+  "in-progress": isInProgress,
+  "up-next": isNotStarted,
+  waiting: (r) => r.status === "done" && r.approval === "waiting",
+};
+
+export function parseMemberView(raw: unknown): MemberView | undefined {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return (MEMBER_VIEWS as readonly unknown[]).includes(value) ? (value as MemberView) : undefined;
+}
+
+export const inMemberView = (record: RecordRow, view: MemberView): boolean => VIEW_FILTERS[view](record);
 
 const TAB_FILTERS: Record<MemberTab, (r: RecordRow) => boolean> = {
   all: () => true,
@@ -110,9 +151,19 @@ const hasDays = (r: RecordRow): r is DatedRecord => r.daysToExpiry !== null;
  * Finds the certificate needing member attention.
  * Returns null when nothing expires within 60 days and nothing is expired.
  * Expired certificates take highest priority.
+ * A renewed record no longer counts (isDone), and a certificate with a renewal in progress is skipped.
  */
 export function getAttentionRecord(records: RecordRow[]): AttentionRecord | null {
-  const dated = records.filter((r): r is DatedRecord => isDone(r) && r.expiryDate !== null && hasDays(r));
+  const inProgressCertIds = new Set(
+    records.filter((r) => r.status === "in_progress").map((r) => r.certificateId),
+  );
+  const dated = records.filter(
+    (r): r is DatedRecord =>
+      isDone(r) &&
+      r.expiryDate !== null &&
+      hasDays(r) &&
+      !inProgressCertIds.has(r.certificateId),
+  );
 
   // Pick the most recently expired (closest to 0)
   const expired = dated.filter(isExpired).sort((a, b) => b.daysToExpiry - a.daysToExpiry);
@@ -131,18 +182,35 @@ export function getAttentionRecord(records: RecordRow[]): AttentionRecord | null
 export function calculateMemberKpis(records: RecordRow[]): MemberKpis {
   const expiringRows = records.filter((r): r is DatedRecord => isExpiring(r) && hasDays(r));
   const inProgressRows = records.filter(isInProgress);
+  const validRows = records.filter(isValid);
+  const notStartedRows = records.filter(isNotStarted);
+  const nextPlanned =
+    notStartedRows
+      .filter((r) => r.plannedExamDate !== null)
+      .sort((a, b) => a.plannedExamDate!.localeCompare(b.plannedExamDate!))[0] ?? null;
+
+  const activeInProgress =
+    inProgressRows.slice().sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0))[0] ?? null;
+
+  const expiredCount = records.filter(isExpired).length;
+  const expiringCount = expiringRows.length;
 
   return {
     total: records.length,
     examCount: records.filter(isExam).length,
     examDoneCount: records.filter((r) => isExam(r) && isDone(r)).length,
     completionCount: records.filter(isCompletion).length,
-    validCount: records.filter(isValid).length,
-    expiringCount: expiringRows.length,
+    completionDoneCount: records.filter((r) => isCompletion(r) && isDone(r)).length,
+    validCount: validRows.length,
+    waitingCount: records.filter((r) => r.status === "done" && r.approval === "waiting").length,
+    expiringCount,
     leastDaysRecord: expiringRows.sort((a, b) => a.daysToExpiry - b.daysToExpiry)[0] ?? null,
     inProgressCount: inProgressRows.length,
     inProgressRows,
-    expiredCount: records.filter(isExpired).length,
+    expiredCount,
+    notStartedCount: notStartedRows.length,
+    nextPlanned,
+    activeInProgress,
   };
 }
 

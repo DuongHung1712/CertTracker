@@ -12,27 +12,30 @@ import type { ComboboxOption } from "@/components/entity-combobox";
 import { EXPIRY_STATUSES, expiryMeta } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { NO_TEAM_LABEL, RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
-import { RecordStatusLabel } from "@/components/status/record-status";
+import { ApprovalBadge, CatalogueStatusBadge, RecordStatusLabel } from "@/components/status/record-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
-import { deleteRecord, deleteRecords } from "@/features/records/actions";
+import { inMemberView, MEMBER_VIEW_LABEL, type MemberView } from "@/features/dashboard/member-metrics";
+import { deleteRecord, deleteRecords, reviewRecord } from "@/features/records/actions";
 import { EvidenceCell } from "@/features/records/components/evidence-cell";
 import { RecordSheet } from "@/features/records/components/record-sheet";
-import { filterByKind, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, plannedDateHeader, type KindFilter } from "@/features/records/kind";
+import { filterByKind, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type KindFilter } from "@/features/records/kind";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
-import { MAX_BULK_DELETE, RECORD_STATUSES } from "@/features/records/schema";
+import { MAX_BULK_DELETE, RECORD_STATUSES, reviewSchema } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
 import { foldText } from "@/lib/text";
 
 /** A Base UI `Select` value must be a non-empty string, so "no filter" is a sentinel, not "". */
 const ALL = "all";
-const ADD_HINT = "Studying for an exam? Choose the exam, then the course you used.";
+const ADD_HINT = "Planning an exam or a course? Add it now and update its status as you go.";
 /** Team filter value for rows without a team (`teamId === null`). */
 const NO_TEAM = "__no_team__";
 
@@ -50,6 +53,13 @@ function byDaysToExpiry(
   return x - y;
 }
 
+/** One click, no dialog; the page refreshes itself through the action's revalidation. */
+async function approve(record: RecordRow) {
+  const result = await reviewRecord({ id: record.id, decision: "approve" });
+  if (!result.ok) toast.error(result.error);
+  else toast.success(`Approved ${CERTIFICATE_KIND_NOUN[record.certificateKind]} of ${record.memberName}`);
+}
+
 const STICKY_NAME_META = { className: "sticky left-10 z-[1]", cellClassName: "bg-card group-hover:bg-accent" };
 
 export function RecordsTable({
@@ -63,6 +73,10 @@ export function RecordsTable({
   canAddToCatalogue = false,
   fixedMemberId,
   initialSearch = "",
+  initialView,
+  canReview = false,
+  reviewerMemberId = null,
+  initialApproval = false,
 }: {
   records: RecordRow[];
   memberOptions: ComboboxOption[];
@@ -77,6 +91,14 @@ export function RecordsTable({
   fixedMemberId?: string;
   /** Starting value of the search box (the dashboard links here with ?search=<name>). */
   initialSearch?: string;
+  /** Narrows the list to one dashboard tile's items (/me?view=...). */
+  initialView?: MemberView;
+  /** Admin and manager: Approve / Return in the row menu (RLS still decides; the database trigger refuses a member). */
+  canReview?: boolean;
+  /** The viewer's own member row: a manager never reviews their own item. */
+  reviewerMemberId?: string | null;
+  /** Opens the list narrowed to items waiting for approval (/records?approval=waiting). */
+  initialApproval?: boolean;
 }) {
   const isTeam = mode === "team";
   const [search, setSearch] = useState(initialSearch);
@@ -84,6 +106,11 @@ export function RecordsTable({
   const [statusFilter, setStatusFilter] = useState(ALL);
   const [expiryFilter, setExpiryFilter] = useState(ALL);
   const [kindFilter, setKindFilter] = useState<KindFilter>(ALL);
+  const [waitingOnly, setWaitingOnly] = useState(initialApproval);
+  const [returning, setReturning] = useState<RecordRow | null>(null);
+  const [returnNote, setReturnNote] = useState("");
+  const [returnError, setReturnError] = useState<string | null>(null);
+  const [view, setView] = useState<MemberView | undefined>(initialView);
   const [sheetOpen, setSheetOpen] = useState(false);
   // Keep the id, not the row: the sheet must see the refreshed row (e.g. `hasEvidence`) after a server action revalidates.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -101,13 +128,22 @@ export function RecordsTable({
   const hasTeamless = useMemo(() => records.some((record) => record.teamId === null), [records]);
 
   const counts = useMemo(() => kindCounts(records), [records]);
+  const waitingCount = useMemo(() => records.filter((record) => isReviewable(record, reviewerMemberId)).length, [records, reviewerMemberId]);
 
   const hasActiveFilters =
-    search.length > 0 || teamFilter !== ALL || statusFilter !== ALL || expiryFilter !== ALL || kindFilter !== ALL;
+    search.length > 0 ||
+    teamFilter !== ALL ||
+    statusFilter !== ALL ||
+    expiryFilter !== ALL ||
+    kindFilter !== ALL ||
+    waitingOnly ||
+    view !== undefined;
 
   const rows = useMemo(() => {
     const query = foldText(search);
     return filterByKind(records, kindFilter).filter((record) => {
+      if (view && !inMemberView(record, view)) return false;
+      if (waitingOnly && !isReviewable(record, reviewerMemberId)) return false;
       if (query) {
         const haystack = foldText(
           `${record.memberName} ${record.memberCode} ${record.certificateName} ${record.courseName ?? ""} ${record.providerName ?? ""}`,
@@ -121,7 +157,7 @@ export function RecordsTable({
       if (expiryFilter !== ALL && record.expiryStatus !== expiryFilter) return false;
       return true;
     });
-  }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter, kindFilter]);
+  }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter, kindFilter, view, waitingOnly, reviewerMemberId]);
 
   function openEdit(id: string, preset?: RecordStatus) {
     setEditingId(id);
@@ -185,9 +221,9 @@ export function RecordsTable({
         : []),
       {
         accessorKey: "certificateName",
-        header: "Certificate / completion",
+        header: "Learning item",
         cell: ({ row }) => (
-          <div className="flex max-w-60 flex-col">
+          <div className="flex max-w-80 flex-col">
             <span className="flex items-center gap-1.5">
               {isTeam ? (
                 <span className="truncate" title={row.original.certificateName}>
@@ -206,23 +242,16 @@ export function RecordsTable({
               <Badge variant="secondary" className="shrink-0 rounded-sm">
                 {CERTIFICATE_KIND_LABEL[row.original.certificateKind]}
               </Badge>
+              <CatalogueStatusBadge status={row.original.certificateCatalogueStatus} />
             </span>
-            {row.original.providerName && (
-              <span className="text-caption text-muted-foreground">{row.original.providerName}</span>
+            {learningPath(row.original) && (
+              <span className="truncate text-caption text-muted-foreground" title={learningPath(row.original) ?? undefined}>
+                {learningPath(row.original)}
+              </span>
             )}
           </div>
         ),
         meta: isTeam ? undefined : stickyName,
-      },
-      {
-        accessorKey: "courseName",
-        header: "Course studied",
-        cell: ({ row }) => (
-          <span className="block max-w-40 truncate" title={row.original.courseName ?? undefined}>
-            {row.original.courseName ?? "—"}
-          </span>
-        ),
-        meta: { className: "hidden xl:table-cell" },
       },
       {
         accessorKey: "status",
@@ -230,6 +259,7 @@ export function RecordsTable({
         cell: ({ row }) => (
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
             <RecordStatusLabel status={row.original.status} />
+            {row.original.status === "done" && <ApprovalBadge approval={row.original.approval} />}
             {row.original.status === "in_progress" && <span className="text-muted-foreground">· {row.original.progress}%</span>}
           </span>
         ),
@@ -295,7 +325,26 @@ export function RecordsTable({
                     View evidence
                   </DropdownMenuItem>
                 )}
-                {canDelete && (
+                {canReview && record.status === "done" && record.memberId !== reviewerMemberId && record.approval !== "approved" && (
+                  <DropdownMenuItem onClick={() => void approve(record)}>
+                    Approve{" "}
+                    {!record.hasEvidence && !record.certificateUrl && (
+                      <span className="ml-auto text-caption text-muted-foreground">No proof</span>
+                    )}
+                  </DropdownMenuItem>
+                )}
+                {canReview && isReviewable(record, reviewerMemberId) && (
+                  <DropdownMenuItem
+                    onClick={() => {
+                      setReturnNote("");
+                      setReturnError(null);
+                      setReturning(record);
+                    }}
+                  >
+                    Return
+                  </DropdownMenuItem>
+                )}
+                {(canDelete || isRecordDeletableByMember(record)) && (
                   <DropdownMenuItem variant="destructive" onClick={() => setConfirming(record)}>
                     Delete
                   </DropdownMenuItem>
@@ -306,7 +355,7 @@ export function RecordsTable({
         },
       },
     ],
-    [isTeam, canDelete, kindFilter, stickyName],
+    [isTeam, canDelete, canReview, reviewerMemberId, kindFilter, stickyName, mode, showCompanyFields],
   );
 
   async function handleDelete() {
@@ -321,6 +370,24 @@ export function RecordsTable({
     }
     toast.success(`Deleted ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]}`);
     setConfirming(null);
+  }
+
+  async function handleReturn() {
+    if (!returning) return;
+    const parsed = reviewSchema.safeParse({ id: returning.id, decision: "return", note: returnNote });
+    if (!parsed.success) {
+      setReturnError(parsed.error.issues[0]?.message ?? "Invalid data");
+      return;
+    }
+    setPending(true);
+    const result = await reviewRecord(parsed.data);
+    setPending(false);
+    if (!result.ok) {
+      setReturnError(result.error);
+      return;
+    }
+    toast.success(`Returned ${CERTIFICATE_KIND_NOUN[returning.certificateKind]} to ${returning.memberName}`);
+    setReturning(null);
   }
 
   async function handleBulkDelete() {
@@ -358,7 +425,7 @@ export function RecordsTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={isTeam ? "Search by name, code, certificate or completion…" : "Search by certificate or completion…"}
+        searchPlaceholder={isTeam ? "Search by name, code, certificate or completion…" : "Search by name or course…"}
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -366,6 +433,8 @@ export function RecordsTable({
           setStatusFilter(ALL);
           setExpiryFilter(ALL);
           setKindFilter(ALL);
+          setWaitingOnly(false);
+          setView(undefined);
         }}
       >
         {isTeam && (
@@ -439,6 +508,11 @@ export function RecordsTable({
             ))}
           </SelectContent>
         </Select>
+        {canReview && (
+          <Button size="sm" variant={waitingOnly ? "secondary" : "outline"} aria-pressed={waitingOnly} onClick={() => setWaitingOnly((on) => !on)}>
+            {`Waiting for approval (${waitingCount})`}
+          </Button>
+        )}
         <Button
           size="sm"
           className="ml-auto"
@@ -453,6 +527,16 @@ export function RecordsTable({
           Add certificate or course completion
         </Button>
       </FilterBar>
+      {view && (
+        <p className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
+          <span>
+            Showing <strong className="font-medium text-foreground">{MEMBER_VIEW_LABEL[view]}</strong> only
+          </span>
+          <Button size="sm" variant="ghost" onClick={() => setView(undefined)}>
+            Show all
+          </Button>
+        </p>
+      )}
       {!isTeam && <p className="text-caption text-muted-foreground">{ADD_HINT}</p>}
       {selectedIds.length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border bg-muted px-3 py-1.5 text-table" role="region" aria-label="Bulk actions">
@@ -494,6 +578,8 @@ export function RecordsTable({
         showCompanyFields={showCompanyFields}
         canAddToCatalogue={canAddToCatalogue}
         fixedMemberId={fixedMemberId}
+        viewerMemberId={reviewerMemberId ?? fixedMemberId}
+        canDelete={canDelete}
         presetStatus={presetStatus}
         records={records}
         onEditExisting={(record) => {
@@ -501,6 +587,34 @@ export function RecordsTable({
           setEditingId(record.id);
         }}
       />
+      {canReview && (
+        <ConfirmDialog
+          open={!!returning}
+          onOpenChange={(open) => !open && setReturning(null)}
+          title={returning ? `Return the ${returning.certificateName} ${CERTIFICATE_KIND_NOUN[returning.certificateKind]} of ${returning.memberName}?` : ""}
+          description="It goes back to the member with your note and stays out of the numbers until you approve it."
+          confirmLabel="Return"
+          pendingLabel="Returning…"
+          variant="default"
+          pending={pending}
+          onConfirm={handleReturn}
+        >
+          <Field data-invalid={!!returnError}>
+            <FieldLabel htmlFor="return-note">What should the member fix?</FieldLabel>
+            <Textarea
+              id="return-note"
+              value={returnNote}
+              maxLength={2000}
+              aria-invalid={!!returnError}
+              onChange={(event) => {
+                setReturnNote(event.target.value);
+                setReturnError(null);
+              }}
+            />
+            <FieldError errors={returnError ? [{ message: returnError }] : []} />
+          </Field>
+        </ConfirmDialog>
+      )}
       {canDelete && (
         <ConfirmDialog
           open={bulkConfirming}

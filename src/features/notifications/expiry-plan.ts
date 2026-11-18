@@ -1,3 +1,4 @@
+import { isApprovedDone } from "@/features/records/kind";
 import type { Snapshot, SnapshotMember, SnapshotRecord } from "@/features/notifications/types";
 
 export type ExpiryBucket = "expired" | "soon" | "in60";
@@ -27,9 +28,9 @@ export function capItems<T>(items: T[], max: number = MAX_LINES): { shown: T[]; 
   return { shown: items.slice(0, max), hidden: Math.max(0, items.length - max) };
 }
 
-/** Thresholds come from SQL (`expiry_status`), never recomputed here. Only `done` records hold a certificate. */
-export function expiryBucket(r: Pick<SnapshotRecord, "status" | "daysToExpiry" | "expiryStatus">): ExpiryBucket | null {
-  if (r.status !== "done" || r.daysToExpiry === null) return null;
+/** Thresholds come from SQL (`expiry_status`), never recomputed here. Only Approved `done` records hold a certificate. */
+export function expiryBucket(r: Pick<SnapshotRecord, "status" | "approval" | "daysToExpiry" | "expiryStatus">): ExpiryBucket | null {
+  if (!isApprovedDone(r) || r.daysToExpiry === null) return null;
   if (r.expiryStatus === "Expiring Soon") return "soon";
   if (r.expiryStatus === "Expiring in 60d") return "in60";
   if (r.expiryStatus === "Expired" && r.daysToExpiry >= -RECENTLY_EXPIRED_DAYS) return "expired";

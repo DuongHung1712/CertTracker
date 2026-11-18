@@ -63,6 +63,7 @@ const DEFAULT_DATA: AdminDashboardData = {
       noExpiryCerts: 0,
       completionDoneRecords: 0,
       completionInProgressRecords: 0,
+      waitingRecords: 0,
     },
   },
   certificates: { ok: true, data: [breakdown("c1", "Cloud Architect")] },
@@ -266,9 +267,8 @@ describe("AdminDashboardView: one Planned features card", () => {
     expect(card).not.toContain("<input");
   });
 
-  it("has no other Coming soon content: no approval tile, no profile card, no other Not available yet.", () => {
+  it("has no other Coming soon content: no profile card, no other Not available yet.", () => {
     const html = render();
-    expect(html).not.toContain("Waiting for approval");
     expect(html).not.toContain("Track specialization");
     expect(count(html, "Not available yet.")).toBe(ITEMS.length);
   });
@@ -527,7 +527,9 @@ describe("AdminDashboardView: exam certificates and course completions are separ
 
   it("renders the two groups inside Overview", () => {
     const overview = region(render(), "Overview");
-    expect(count(overview, 'role="group"')).toBe(2);
+    expect(count(overview, 'role="group"')).toBe(3);
+    expect(textOf(group(overview, "Approvals"))).toContain("Waiting for approval");
+    expect(overview).toContain('href="/records?approval=waiting"');
     expect(textOf(group(overview, "Exam certificates"))).toContain("Valid certificates");
     expect(textOf(group(overview, "Course completions"))).not.toContain("Valid certificates");
   });

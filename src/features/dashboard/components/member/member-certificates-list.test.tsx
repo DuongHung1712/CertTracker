@@ -53,7 +53,7 @@ const CASES: { record: RecordRow; tone: ExpiryTone | "in-progress" | "neutral"; 
     // A done row the view cannot date (no issued date). The DB CHECK normally prevents it; the UI must still not lie.
     record: makeRecord({ id: "f", certificateName: "Course Undated", issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
     tone: "na",
-    label: "Not issued yet",
+    label: "Not earned yet",
   },
   {
     record: makeRecord({ id: "g", certificateName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
@@ -93,7 +93,7 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
     const odd: RecordRow = { ...makeRecord({ id: "z", certificateName: "Course Odd" }), expiryStatus: "valid" };
     const row = rowsByCourse(render([odd])).get("Course Odd");
     expect(row?.tone).toBe("na");
-    expect(row?.html).toContain(">Not issued yet<");
+    expect(row?.html).toContain(">Not earned yet<");
   });
 });
 
@@ -108,6 +108,20 @@ describe("study progress bar", () => {
     expect(html).not.toContain("width:47.6%");
     expect(html).not.toContain("width:140%");
   });
+  it("renders quick step buttons +10% and +25% on in-progress items", () => {
+    const studying = makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
+    const html = render([studying]);
+    expect(html).toContain("+10%");
+    expect(html).toContain("+25%");
+    expect(html).toContain('aria-label="Add 10% progress to Course Studying"');
+    expect(html).toContain('aria-label="Add 25% progress to Course Studying"');
+  });
+  it("disables quick step buttons when progress reaches 99%", () => {
+    const studying = makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress", progress: 99, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
+    const html = render([studying]);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*aria-label="Add 10% progress to Course Studying"/);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*aria-label="Add 25% progress to Course Studying"/);
+  });
 });
 
 describe("Mark completed action", () => {
@@ -120,5 +134,29 @@ describe("Mark completed action", () => {
     expect(html).toContain('aria-label="Mark Course Studying completed"');
     expect(html).toContain('aria-label="Mark Course Planned completed"');
     expect(html).not.toContain("Mark Course Done completed");
+  });
+});
+
+describe("Delete draft action", () => {
+  it("shows delete button for not_started, in_progress, and returned records, but not for waiting or approved", () => {
+    const html = render([
+      makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress" }),
+      makeRecord({ id: "n", certificateName: "Course Planned", status: "not_started" }),
+      makeRecord({ id: "r", certificateName: "Course Returned", status: "done", approval: "returned" }),
+      makeRecord({ id: "w", certificateName: "Course Waiting", status: "done", approval: "waiting" }),
+      doneRecord(120, { id: "a", certificateName: "Course Approved" }),
+    ]);
+    expect(html).toContain('aria-label="Delete Course Studying"');
+    expect(html).toContain('aria-label="Delete Course Planned"');
+    expect(html).toContain('aria-label="Delete Course Returned"');
+    expect(html).not.toContain('aria-label="Delete Course Waiting"');
+    expect(html).not.toContain('aria-label="Delete Course Approved"');
+  });
+
+  it("renders Pending Approval badge when a certificate is pending catalogue approval", () => {
+    const html = render([
+      makeRecord({ id: "p1", certificateName: "Proposed Course", certificateCatalogueStatus: "pending" }),
+    ]);
+    expect(html).toContain("Pending Approval");
   });
 });

@@ -5,7 +5,7 @@ import { catalogueToCsv, catalogueToXlsx, certificateExportRows, courseExportRow
 
 const exam: CertificateRow = {
   id: "e1", name: "AWS SAA", kind: "exam", certTypeId: "t", certTypeName: "Cloud", providerId: "p", providerName: "AWS",
-  level: "Associate", validityMonths: 36, url: "https://x.test", courseId: null, courseName: null,
+  level: "Associate", validityMonths: 36, url: "https://x.test", courseId: null, courseName: null, catalogueStatus: "approved",
 };
 const completion: CertificateRow = { ...exam, id: "c1", name: "Intro done", kind: "completion", validityMonths: 12, courseId: "k1", courseName: "Intro" };
 const course = (over: Partial<Parameters<typeof courseExportRows>[0][number]>) => ({

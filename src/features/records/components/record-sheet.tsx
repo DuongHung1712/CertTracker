@@ -11,6 +11,7 @@ import { EntityCombobox, type ComboboxOption } from "@/components/entity-combobo
 import { FileDropzone } from "@/components/file-dropzone";
 import { RequiredMark } from "@/components/required-mark";
 import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -20,11 +21,14 @@ import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/com
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { createRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { CatalogueStatusBadge } from "@/components/status/record-status";
+import { ProposeCertificateDialog } from "@/features/certificates/components/propose-certificate-dialog";
+import { createRecord, deleteRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
 import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
 import { CourseStudiedField } from "@/features/records/components/course-studied-field";
 import { CERTIFICATE_KIND_NOUN, type CertificateKind } from "@/features/certificates/schema";
-import { ADD_KIND_CHOICES, issuedDateHint, issuedDateLabel, plannedDateLabel, recordSavedMessage, recordSheetTitle } from "@/features/records/kind";
+import { ADD_KIND_CHOICES, isRecordDeletableByMember, issuedDateHint, issuedDateLabel, plannedDateLabel, recordSavedMessage, recordSheetTitle, type ApprovalState } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import {
   RECORD_STATUSES,
@@ -56,8 +60,12 @@ export function RecordSheet({
   canAddToCatalogue = false,
   fixedMemberId,
   presetStatus,
+  presetCertificateId,
   records,
   onEditExisting,
+  viewerMemberId = null,
+  canDelete = false,
+  providers,
 }: {
   /** Rows the viewer can see: used to stop a second entry for the same member and certificate. */
   records?: RecordRow[];
@@ -65,6 +73,8 @@ export function RecordSheet({
   onEditExisting?: (record: RecordRow) => void;
   /** Opens an existing row with this status already chosen (the "Mark completed" shortcut); the user still fills the rest. */
   presetStatus?: RecordStatus;
+  /** Pre-selects a certificate (e.g. initiating renewal for an expiring/expired certificate). */
+  presetCertificateId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: Editing;
@@ -77,7 +87,31 @@ export function RecordSheet({
   canAddToCatalogue?: boolean;
   /** /me: the record always belongs to this member, so the picker is not rendered. */
   fixedMemberId?: string;
+  /** The signed-in user's own member row: a reviewer editing their own item is treated as the member (the database does). */
+  viewerMemberId?: string | null;
+  /** Whether delete button is enabled (e.g. for drafts or admin/manager). */
+  canDelete?: boolean;
+  /** Providers for proposal dropdown. */
+  providers?: { id: string; name: string }[];
 }) {
+  // Only a reviewer on someone else's item sees the reviewer wording.
+  const isReviewer = showCompanyFields && !!editing && editing.memberId !== viewerMemberId;
+  const [proposedCertificates, setProposedCertificates] = useState<CertificateChoice[]>([]);
+  const localCertificates = useMemo(
+    () => [...proposedCertificates, ...certificateOptions],
+    [proposedCertificates, certificateOptions],
+  );
+
+  const [proposeOpen, setProposeOpen] = useState(false);
+  const [proposeName, setProposeName] = useState("");
+
+  const handleOpenPropose = (query?: string) => {
+    setProposeName(query ? query.trim() : "");
+    setProposeOpen(true);
+  };
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [removingEvidence, setRemovingEvidence] = useState(false);
@@ -87,8 +121,6 @@ export function RecordSheet({
   const lastRefundRef = useRef<(typeof REFUND_STATUSES)[number]>("n_a");
   /** Progress typed while In progress, restored when the status comes back to it (null: use the saved row's). */
   const lastProgressRef = useRef<number | null>(null);
-  /** Issue date and link typed while Completed, restored when the status comes back to it. */
-  const lastDoneRef = useRef<{ issuedDate: string; certificateUrl: string } | null>(null);
 
   // `listMemberOptions` returns active members only; the member of the row being edited may be
   // inactive, and the (disabled) picker must still show their name.
@@ -115,9 +147,9 @@ export function RecordSheet({
     }
     return {
       memberId: fixedMemberId ?? "",
-      certificateId: "",
+      certificateId: presetCertificateId ?? "",
       courseId: "",
-      status: "not_started",
+      status: presetStatus ?? "not_started",
       progress: 0,
       plannedExamDate: "",
       issuedDate: "",
@@ -125,7 +157,7 @@ export function RecordSheet({
       notes: "",
       ...(showCompanyFields ? { viaCompany: false, refundStatus: "n_a" as const } : {}),
     };
-  }, [editing, fixedMemberId, showCompanyFields, presetStatus]);
+  }, [editing, fixedMemberId, showCompanyFields, presetStatus, presetCertificateId]);
 
   // `recordSchema` coerces/preprocesses several fields, so its input and output types diverge —
   // same three-generic form as course-sheet.tsx.
@@ -163,6 +195,7 @@ export function RecordSheet({
     }
 
     let recordId: string;
+    let approval: ApprovalState | null;
     if (editing) {
       const result = await updateRecord({ id: editing.id, ...input, ...(showCompanyFields ? {} : { notes: undefined }) });
       if (!result.ok) {
@@ -170,6 +203,7 @@ export function RecordSheet({
         return;
       }
       recordId = editing.id;
+      approval = result.data.approval;
     } else {
       const result = await createRecord(input);
       if (!result.ok) {
@@ -177,6 +211,7 @@ export function RecordSheet({
         return;
       }
       recordId = result.data.id;
+      approval = result.data.approval;
     }
 
     let uploadError: string | null = null;
@@ -195,7 +230,9 @@ export function RecordSheet({
         duration: Infinity,
       });
     } else {
-      toast.success(recordSavedMessage(!!editing, certificate?.kind));
+      const saved = recordSavedMessage(!!editing, certificate?.kind);
+      // The database decides (trigger), so say "waiting" only when it says so.
+      toast.success(approval === "waiting" ? `${saved}. It is waiting for approval.` : saved);
     }
   }
 
@@ -221,14 +258,57 @@ export function RecordSheet({
   const refundStatus = useWatch({ control: form.control, name: "refundStatus" });
   // An import can leave a refund value on a row that is not company-registered: keep it editable so it can be cleared.
   const refundLocked = !viaCompany && (refundStatus ?? "n_a") === "n_a";
-  const certificate = certificateOptions.find((option) => option.id === certificateId);
+  const certificate = localCertificates.find((option) => option.id === certificateId);
   // The kind is a UI selector only (not a form field). A pick applies to this open sheet and record; otherwise it follows the record's certificate.
   const scope = `${open}|${editing?.id ?? ""}`;
   const kind: CertificateKind = pickedKind?.scope === scope ? pickedKind.kind : (certificate?.kind ?? editing?.certificateKind ?? "exam");
-  const kindCertificates = certificateOptions.filter((option) => option.kind === kind);
+  const kindCertificates = localCertificates.filter((option) => option.kind === kind);
+
+  const providersList = useMemo(() => {
+    if (providers && providers.length > 0) return providers;
+    const map = new Map<string, string>();
+    for (const opt of localCertificates) {
+      if (opt.hint) map.set(opt.hint, opt.hint);
+    }
+    return [...map.values()].map((name) => ({ id: name, name }));
+  }, [providers, localCertificates]);
+
+  function handleProposeSuccess(choice: CertificateChoice) {
+    setProposedCertificates((prev) => [choice, ...prev]);
+    setPickedKind({ scope, kind: choice.kind });
+    form.setValue("certificateId", choice.id, { shouldValidate: true, shouldDirty: true });
+    handleCertificateChange(choice.id);
+  }
+
+  const canDeleteCurrent = canDelete || (editing ? isRecordDeletableByMember(editing) : false);
+
+  async function handleDeleteRecord() {
+    if (!editing) return;
+    setDeleting(true);
+    const result = await deleteRecord({ id: editing.id });
+    setDeleting(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success(`Deleted ${editing.certificateName}`);
+    setConfirmDelete(false);
+    handleOpenChange(false);
+  }
+  const targetMemberId = fixedMemberId ?? memberId;
+  const activeExisting = records?.find(
+    (record) => record.memberId === targetMemberId && record.certificateId === certificateId && record.status !== "done",
+  );
+  const doneDuplicates = records?.filter(
+    (record) => record.memberId === targetMemberId && record.certificateId === certificateId && record.status === "done",
+  );
+  const formIssuedDate = useWatch({ control: form.control, name: "issuedDate" });
+
   const duplicate = editing || !certificateId
     ? undefined
-    : records?.find((record) => record.memberId === (fixedMemberId ?? memberId) && record.certificateId === certificateId);
+    : status === "done"
+      ? (activeExisting ?? doneDuplicates?.find((r) => r.issuedDate && r.issuedDate === formIssuedDate))
+      : activeExisting;
 
   // A failed save is announced and focused, so a keyboard or screen-reader user lands on the reason.
   const rootError = errors.root?.message;
@@ -274,6 +354,14 @@ export function RecordSheet({
           className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
           onSubmit={form.handleSubmit(onSubmit)}
         >
+          {editing?.approval === "returned" && (
+            <Alert>
+              <AlertDescription>
+                {isReviewer ? "Returned to the member" : "Returned for changes"}: {editing.approvalNote}{/[.!?]$/.test(editing.approvalNote ?? "") ? "" : "."}
+                {isReviewer ? " The member fixes it and saves to send it again." : " Fix it and save to send it again."}
+              </AlertDescription>
+            </Alert>
+          )}
           <p className="text-caption text-muted-foreground">* Required</p>
           <Field>
             <FieldLabel id="record-kind-label">
@@ -327,10 +415,15 @@ export function RecordSheet({
             </Field>
           )}
           <Field>
-            <FieldLabel htmlFor="record-certificate">
-              {kind === "exam" ? "Certificate" : "Course completion"}
-              <RequiredMark />
-            </FieldLabel>
+            <div className="flex items-center justify-between">
+              <FieldLabel htmlFor="record-certificate">
+                {kind === "exam" ? "Certificate" : "Course completion"}
+                <RequiredMark />
+              </FieldLabel>
+              {certificate?.catalogueStatus && certificate.catalogueStatus !== "approved" && (
+                <CatalogueStatusBadge status={certificate.catalogueStatus} />
+              )}
+            </div>
             <EntityCombobox
               id="record-certificate"
               value={certificateId}
@@ -338,10 +431,19 @@ export function RecordSheet({
               options={kindCertificates}
               placeholder={kind === "exam" ? "Choose a certificate" : "Choose a completion"}
               emptyText={kind === "exam" ? "No certificates found" : "No course completions found"}
+              emptyAction={{
+                label: kind === "exam" ? "Propose a new certificate" : "Propose a new course completion",
+                onClick: (query) => handleOpenPropose(query),
+              }}
               aria-invalid={!!errors.certificateId}
               aria-required
               aria-describedby="record-certificate-hint"
             />
+            {certificate?.catalogueStatus === "pending" && (
+              <p className="text-caption text-amber-700 dark:text-amber-400">
+                This item is pending admin approval. You can still save and track your progress.
+              </p>
+            )}
             {duplicate && (
               <div className="flex flex-wrap items-center gap-x-2 text-caption text-destructive">
                 <p role="alert">{duplicate.certificateName} is already on this list. Edit it instead.</p>
@@ -362,7 +464,18 @@ export function RecordSheet({
                   .
                 </>
               ) : (
-                "Can't find yours? Ask your admin to add it."
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <span>Can&apos;t find yours?</span>
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-caption font-medium text-primary underline underline-offset-2"
+                    onClick={() => handleOpenPropose()}
+                  >
+                    + {kind === "exam" ? "Propose a new certificate" : "Propose a new course completion"}
+                  </Button>
+                </span>
               )}
             </FieldDescription>
             <FieldError errors={[errors.certificateId && kind === "completion" ? { ...errors.certificateId, message: "Choose a course completion" } : errors.certificateId]} />
@@ -606,23 +719,58 @@ export function RecordSheet({
               {errors.root.message}
             </p>
           )}
-          <SheetFooter className="flex-row justify-end gap-2 px-0 pt-2 border-t border-border">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting || !!duplicate}
-            >
-              {form.formState.isSubmitting ? "Saving…" : "Save"}
-            </Button>
+          <SheetFooter className="flex-row items-center justify-between gap-2 px-0 pt-2 border-t border-border">
+            {editing && canDeleteCurrent ? (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={deleting}
+                onClick={() => setConfirmDelete(true)}
+              >
+                Delete
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting || !!duplicate}
+              >
+                {form.formState.isSubmitting ? "Saving…" : "Save"}
+              </Button>
+            </div>
           </SheetFooter>
         </form>
       </SheetContent>
+      <ProposeCertificateDialog
+        open={proposeOpen}
+        onOpenChange={setProposeOpen}
+        defaultKind={kind}
+        defaultName={proposeName}
+        providers={providersList}
+        onSuccess={handleProposeSuccess}
+      />
+      {editing && (
+        <ConfirmDialog
+          open={confirmDelete}
+          onOpenChange={setConfirmDelete}
+          title={`Delete ${editing.certificateName}?`}
+          description={`The ${CERTIFICATE_KIND_NOUN[editing.certificateKind]} and its evidence file will be deleted. This cannot be undone.`}
+          confirmLabel={`Delete ${CERTIFICATE_KIND_NOUN[editing.certificateKind]}`}
+          pendingLabel="Deleting…"
+          pending={deleting}
+          onConfirm={handleDeleteRecord}
+        />
+      )}
     </Sheet>
   );
 }

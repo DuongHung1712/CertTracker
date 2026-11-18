@@ -305,3 +305,42 @@ describe("manager-metrics: a completion with a validity stays out of expiry list
     expect(getNeedsAttentionItems(records)).toEqual([]);
   });
 });
+
+describe("manager-metrics: only Approved certificates count", () => {
+  const waiting = { approval: "waiting" } as const;
+  const returned = { approval: "returned", approvalNote: "Wrong date" } as const;
+  const records = [
+    doneRecord(120, { id: "ok", memberId: "m1" }),
+    doneRecord(-5, { id: "w-exp", memberId: "m1", ...waiting }),
+    doneRecord(20, { id: "r-soon", memberId: "m1", ...returned }),
+    makeRecord({ id: "todo", memberId: "m1", status: "not_started", expiryStatus: "N/A", daysToExpiry: null }),
+  ];
+
+  it("calculateManagerKpis ignores Waiting and Returned items everywhere, total included", () => {
+    expect(calculateManagerKpis(records)).toMatchObject({
+      totalCertificates: 2, doneCount: 1, validCount: 1, expiredCount: 0, expiringCount: 0, notStartedCount: 1,
+    });
+  });
+  it("the expiry predicates, next-to-expire and attention lists skip them", () => {
+    expect(isDone(records[1])).toBe(false);
+    expect(isExpired(records[1])).toBe(false);
+    expect(isExpiring60(records[2])).toBe(false);
+    expect(getNextToExpire(records).map((r) => r.id)).toEqual([]);
+    expect(getNeedsAttentionItems(records)).toEqual([]);
+  });
+  it("the league counts only Approved items; the earned-by-month chart and members without certs follow", () => {
+    const league = getTeamReadinessLeague([{ id: "m1", fullName: "An", teamName: "Cloud" }], records);
+    expect(league[0]).toMatchObject({ validCount: 1, expiredCount: 0, totalCount: 2 });
+    const now = new Date("2026-11-08T10:00:00Z");
+    const months = getCertificatesEarnedByMonth(
+      [
+        makeRecord({ id: "a", issuedDate: "2026-11-02" }),
+        makeRecord({ id: "b", issuedDate: "2026-11-03", ...waiting }),
+      ],
+      1,
+      now,
+    );
+    expect(months[0].count).toBe(1);
+    expect(getMembersWithoutCerts([{ id: "m1", fullName: "An", teamName: null }], [records[1]])).toHaveLength(1);
+  });
+});

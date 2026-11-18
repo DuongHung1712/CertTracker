@@ -32,6 +32,7 @@ import {
 } from "@/features/dashboard/manager-metrics";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
+import { isReviewable } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 
 export function ManagerDashboardView({
@@ -43,6 +44,7 @@ export function ManagerDashboardView({
   recordsError,
   members,
   membersError,
+  viewerMemberId = null,
 }: {
   greeting: string;
   subtitle: string;
@@ -52,6 +54,8 @@ export function ManagerDashboardView({
   recordsError?: string;
   members: { id: string; fullName: string; teamName: string | null }[];
   membersError?: string;
+  /** The manager's own member row: their own waiting item is not theirs to review, so it is not counted. */
+  viewerMemberId?: string | null;
 }) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const hasTeams = managedTeamNames.length > 0;
@@ -69,6 +73,8 @@ export function ManagerDashboardView({
 
   const kpis = useMemo(() => calculateManagerKpis(filteredRecords), [filteredRecords]);
   const completions = useMemo(() => calculateCompletionKpis(filteredRecords), [filteredRecords]);
+  // The whole scope, not the selected team: the tile links to the list of the whole scope.
+  const waiting = useMemo(() => records.filter((r) => isReviewable(r, viewerMemberId)).length, [records, viewerMemberId]);
   const plannedExams = useMemo(() => getPlannedExams(filteredRecords).length, [filteredRecords]);
 
   const teamsWithCounts = useMemo(() => {
@@ -138,7 +144,7 @@ export function ManagerDashboardView({
             <div data-testid="mgr-col-center" className="flex min-w-0 flex-col gap-6 md:col-span-2 xl:order-2 xl:col-span-6">
               <section aria-label="Overview" className="flex flex-col gap-3">
                 <h2 className="sr-only">Overview</h2>
-                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} completions={completions} plannedExams={plannedExams} pastDueText={pastDueText} />}
+                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} completions={completions} plannedExams={plannedExams} pastDueText={pastDueText} waiting={waiting} />}
               </section>
 
               <ManagerTabStrip />

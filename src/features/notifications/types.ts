@@ -15,6 +15,10 @@ export type SnapshotRecord = {
   id: string;
   memberId: string;
   status: "not_started" | "in_progress" | "done";
+  /** Only Approved Completed items count (spec 10.1). */
+  approval: "waiting" | "approved" | "returned" | null;
+  /** Replaced by a later approved renewal: history only, counts nowhere. */
+  renewed?: boolean;
   certificateName: string;
   issuedDate: string | null;
   expiryDate: string | null;

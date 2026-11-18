@@ -1,5 +1,7 @@
-import { CircleCheck, CircleDashed, LoaderCircle, type LucideIcon } from "lucide-react";
+import { CircleCheck, CircleDashed, Hourglass, LoaderCircle, Undo2, type LucideIcon } from "lucide-react";
 import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
+import { Badge } from "@/components/ui/badge";
+import type { ApprovalState } from "@/features/records/kind";
 
 const ICON: Record<RecordStatus, LucideIcon> = {
   done: CircleCheck,
@@ -14,5 +16,44 @@ export function RecordStatusLabel({ status }: { status: RecordStatus }) {
       <Icon aria-hidden className="size-4 text-muted-foreground" />
       {RECORD_STATUS_LABEL[status]}
     </span>
+  );
+}
+
+const APPROVAL_BADGE = {
+  waiting: { icon: Hourglass, label: "Waiting for approval", variant: "secondary" },
+  returned: { icon: Undo2, label: "Returned", variant: "destructive" },
+} as const;
+
+/** Next to Completed: nothing for Approved, text plus icon (not colour alone) for the other two. */
+export function ApprovalBadge({ approval }: { approval: ApprovalState | null }) {
+  if (approval !== "waiting" && approval !== "returned") return null;
+  const { icon: Icon, label, variant } = APPROVAL_BADGE[approval];
+  return (
+    <Badge variant={variant} className="rounded-sm whitespace-nowrap">
+      <Icon aria-hidden className="size-4" />
+      {label}
+    </Badge>
+  );
+}
+
+/** Shown on learning items whose certificate was proposed by a member and is waiting for catalogue approval. */
+export function CatalogueStatusBadge({ status }: { status?: "approved" | "pending" | "rejected" | null }) {
+  if (status !== "pending" && status !== "rejected") return null;
+  if (status === "pending") {
+    return (
+      <Badge
+        variant="outline"
+        className="rounded-sm whitespace-nowrap border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1 text-[11px]"
+      >
+        <Hourglass aria-hidden className="size-3" />
+        Pending Approval
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="destructive" className="rounded-sm whitespace-nowrap inline-flex items-center gap-1 text-[11px]">
+      <Undo2 aria-hidden className="size-3" />
+      Rejected
+    </Badge>
   );
 }
