@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ImportTable, Cell } from "@/features/import/clean";
-import { buildImportPlan, reconcileRecord, type ImportLookups } from "@/features/import/plan";
+import { buildImportPlan, preferredRecords, reconcileRecord, type ExistingRecord, type ImportLookups } from "@/features/import/plan";
 import { buildLegacyWorkbook, LEGACY_EXPECTED } from "@/features/import/__fixtures__/legacy-workbook";
 import { readImportTable } from "@/features/import/workbook";
 
@@ -559,5 +559,18 @@ it("produces the documented plan for the legacy fixture against seed-like lookup
     certTypes: LEGACY_EXPECTED.newCertTypes,
     certificates: LEGACY_EXPECTED.newCertificates,
     courses: [],
+  });
+});
+
+describe("preferredRecords", () => {
+  const base: ExistingRecord = {
+    id: "r1", memberId: "m", certificateId: "c", courseId: null, status: "done", progress: 100, plannedExamDate: null,
+    issuedDate: "2024-01-01", certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null,
+  };
+  it("picks the active attempt, else the latest Completed record, like commit_import", () => {
+    const later = { ...base, id: "r2", issuedDate: "2026-01-01" };
+    const active = { ...base, id: "r0", status: "in_progress" as const, progress: 40, issuedDate: null };
+    expect(preferredRecords([later, base]).get("m|c")?.id).toBe("r2");
+    expect(preferredRecords([base, active, later]).get("m|c")?.id).toBe("r0");
   });
 });

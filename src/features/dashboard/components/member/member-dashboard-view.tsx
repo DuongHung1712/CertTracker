@@ -5,15 +5,11 @@ import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { Button } from "@/components/ui/button";
-import { AuditVerificationCard } from "@/features/dashboard/components/member/audit-verification-card";
-import { ComplianceCopilotCard } from "@/features/dashboard/components/member/compliance-copilot-card";
+import { ComplianceCopilotWidget } from "@/features/dashboard/components/member/compliance-copilot-widget";
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
 import { MemberCertificatesList } from "@/features/dashboard/components/member/member-certificates-list";
 import { MemberKpiCards } from "@/features/dashboard/components/member/member-kpi-cards";
 import { MemberProfileCard } from "@/features/dashboard/components/member/member-profile-card";
-import { QuarterlyTargetCard } from "@/features/dashboard/components/member/quarterly-target-card";
-import { SkillsMatrixCard } from "@/features/dashboard/components/member/skills-matrix-card";
-import { TargetRoleCard } from "@/features/dashboard/components/member/target-role-card";
 import { Section, SectionError } from "@/features/dashboard/components/section";
 import {
   calculateMemberKpis,
@@ -52,24 +48,27 @@ export function MemberDashboardView({
   const [editingRecord, setEditingRecord] = useState<RecordRow | null>(null);
   // Set by "Mark completed" only; every other way of opening the sheet clears it.
   const [presetStatus, setPresetStatus] = useState<RecordStatus | undefined>(undefined);
+  const [presetCertificateId, setPresetCertificateId] = useState<string | undefined>(undefined);
 
   const memberKpis = calculateMemberKpis(records);
   const attention = getAttentionRecord(records);
 
-  function handleUploadProof(record: RecordRow) {
-    setEditingRecord(record);
-    setPresetStatus(undefined);
+  function handleRenewCredential(record: RecordRow) {
+    setEditingRecord(null);
+    setPresetCertificateId(record.certificateId);
+    setPresetStatus("in_progress");
     setSheetOpen(true);
   }
 
   function handleAddCertificate() {
     setEditingRecord(null);
+    setPresetCertificateId(undefined);
     setPresetStatus(undefined);
     setSheetOpen(true);
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-6">
+    <div className="flex min-w-0 flex-col gap-6 pb-20">
       <PageHeader
         title="Dashboard"
         description={subtitle}
@@ -86,24 +85,20 @@ export function MemberDashboardView({
 
       <RecordsRealtime />
 
-      {/* Main 3-Zone Workspace Layout (Figma node-id 1:2) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 xl:grid-cols-12">
-        {/* Left Column: Profile, Skills Matrix, Quarterly Objective */}
-        <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-3">
+      {/* Decluttered 2-Column Workspace Layout */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left Column: Profile with integrated Focus Area & Career Growth */}
+        <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-4">
           <MemberProfileCard
             fullName={fullName}
             teamName={teamName}
             careerRoleName={careerRoleName}
             yoeYears={yoeYears}
           />
-
-          <SkillsMatrixCard />
-
-          <QuarterlyTargetCard />
         </div>
 
-        {/* Centre Column: Hero KPIs (Overview), Attention Banner, Registered Records */}
-        <div className="flex flex-col gap-6 lg:col-span-8 xl:col-span-6">
+        {/* Right Column: Hero KPIs (Overview), Attention Banner, Registered Records */}
+        <div className="flex flex-col gap-6 lg:col-span-8 xl:col-span-8">
           <Section title="Overview">
             {recordsError ? (
               <SectionError title="Overview" />
@@ -112,7 +107,7 @@ export function MemberDashboardView({
             )}
           </Section>
 
-          <MemberAttentionBanner attention={attention} onUploadProof={handleUploadProof} />
+          <MemberAttentionBanner attention={attention} onRenew={handleRenewCredential} />
 
           {recordsError ? (
             <SectionError title="My learning" />
@@ -124,26 +119,28 @@ export function MemberDashboardView({
               studyCourses={studyCourses}
               memberId={memberId}
               sheetOpen={sheetOpen}
-              onSheetOpenChange={setSheetOpen}
+              onSheetOpenChange={(open) => {
+                setSheetOpen(open);
+                if (!open) {
+                  setPresetCertificateId(undefined);
+                  setPresetStatus(undefined);
+                }
+              }}
               editingRecord={editingRecord}
               presetStatus={presetStatus}
+              presetCertificateId={presetCertificateId}
               onEditRecord={(record, preset) => {
                 setEditingRecord(record);
+                setPresetCertificateId(undefined);
                 setPresetStatus(preset);
               }}
             />
           )}
         </div>
-
-        {/* Right Column: Audit Verification, Copilot, Target Role */}
-        <div className="flex flex-col gap-6 lg:col-span-12 xl:col-span-3">
-          <AuditVerificationCard />
-
-          <ComplianceCopilotCard />
-
-          <TargetRoleCard />
-        </div>
       </div>
+
+      {/* Floating Copilot Chatbot Widget in Bottom-Right */}
+      <ComplianceCopilotWidget />
     </div>
   );
 }

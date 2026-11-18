@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Award, BookOpen, CircleCheck, Clock, FileText, Pencil, Plus, ShieldAlert, type LucideIcon } from "lucide-react";
+import { Award, BookOpen, CircleCheck, Clock, FileText, Pencil, Plus, ShieldAlert, Trash2, type LucideIcon } from "lucide-react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/data/empty-state";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { clampPercent, type RecordStatus } from "@/components/status/labels";
-import { RecordStatusLabel } from "@/components/status/record-status";
+import { ApprovalBadge, CatalogueStatusBadge, RecordStatusLabel } from "@/components/status/record-status";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,12 +20,15 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
-import { kindCounts, plannedDateLabel } from "@/features/records/kind";
+import { isRecordDeletableByMember, kindCounts, learningPath, plannedDateLabel } from "@/features/records/kind";
+import { CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { RecordSheet } from "@/features/records/components/record-sheet";
+import { deleteRecord, updateRecordProgress } from "@/features/records/actions";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
 import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type TileTone = ExpiryTone | "in-progress" | "neutral";
 
@@ -61,6 +65,7 @@ export function MemberCertificatesList({
   onSheetOpenChange,
   editingRecord,
   presetStatus,
+  presetCertificateId,
   onEditRecord,
 }: {
   fullName: string;
@@ -73,6 +78,8 @@ export function MemberCertificatesList({
   editingRecord: RecordRow | null;
   /** Status the sheet opens with ("Mark completed"); owned by the parent with `editingRecord`. */
   presetStatus?: RecordStatus;
+  /** Certificate to pre-select (e.g. renewal flow). */
+  presetCertificateId?: string;
   onEditRecord: (record: RecordRow | null, presetStatus?: RecordStatus) => void;
 }) {
   const [tab, setTab] = useState<MemberTab>("all");
@@ -82,6 +89,32 @@ export function MemberCertificatesList({
   const filteredRecords = filterMemberRecords(records, tab, sort);
   const visibleRecords = filteredRecords.slice(0, 8);
   const hasMore = filteredRecords.length > 8;
+
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [progressOverrides, setProgressOverrides] = useState<Record<string, number>>({});
+  const [confirmDeleteRecord, setConfirmDeleteRecord] = useState<RecordRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleQuickStep(recordId: string, currentProgress: number, step: number, certName: string) {
+    const nextProgress = Math.min(99, Math.max(0, currentProgress + step));
+    if (nextProgress === currentProgress) return;
+
+    setUpdatingId(recordId);
+    setProgressOverrides((prev) => ({ ...prev, [recordId]: nextProgress }));
+
+    const res = await updateRecordProgress(recordId, nextProgress);
+    setUpdatingId(null);
+    if (!res.ok) {
+      toast.error(res.error);
+      setProgressOverrides((prev) => {
+        const copy = { ...prev };
+        delete copy[recordId];
+        return copy;
+      });
+    } else {
+      toast.success(`Updated ${certName} progress to ${nextProgress}%`);
+    }
+  }
 
   function handleAdd() {
     onEditRecord(null);
@@ -126,7 +159,7 @@ export function MemberCertificatesList({
 
         {records.length > 0 && (
           <Tabs value={tab} onValueChange={(val) => setTab(val as MemberTab)} className="w-full">
-            <TabsList className="flex flex-wrap gap-1 bg-muted/60 p-1 rounded-md">
+            <TabsList className="h-auto flex-wrap gap-1 overflow-visible bg-muted/60 p-1 rounded-md group-data-horizontal/tabs:h-auto">
               <TabsTrigger value="all" className="text-caption">
                 {`All (${tabCounts.all})`}
               </TabsTrigger>
@@ -147,7 +180,7 @@ export function MemberCertificatesList({
       {records.length === 0 ? (
         <EmptyState
           title="Nothing added yet"
-          description="Studying for an exam? Choose the exam, then the course you used."
+          description="Planning an exam or a course? Add it now and update its status as you go."
           action={
             <Button onClick={handleAdd} size="sm">
               <Plus className="size-4" aria-hidden="true" />
@@ -191,8 +224,8 @@ export function MemberCertificatesList({
                         {record.providerName ?? "Provider not set"}
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
                       </p>
-                      {record.courseName && (
-                        <p className="text-caption text-muted-foreground truncate">Course studied: {record.courseName}</p>
+                      {record.certificateKind === "exam" && (
+                        <p className="text-caption text-muted-foreground truncate">{learningPath(record)}</p>
                       )}
                     </div>
                   </div>
@@ -205,11 +238,11 @@ export function MemberCertificatesList({
                         expiryDate={record.expiryDate}
                         kind={record.certificateKind}
                       />
-                    ) : record.status === "in_progress" ? (
-                      <RecordStatusLabel status={record.status} />
                     ) : (
                       <RecordStatusLabel status={record.status} />
                     )}
+                    {record.status === "done" && <ApprovalBadge approval={record.approval} />}
+                    <CatalogueStatusBadge status={record.certificateCatalogueStatus} />
 
                     <div className="flex items-center gap-1">
                       {record.hasEvidence && (
@@ -269,6 +302,24 @@ export function MemberCertificatesList({
                         />
                         <TooltipContent side="top">Edit</TooltipContent>
                       </Tooltip>
+
+                      {isRecordDeletableByMember(record) && (
+                        <Tooltip>
+                          <TooltipTrigger
+                            render={
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setConfirmDeleteRecord(record)}
+                                aria-label={`Delete ${record.certificateName}`}
+                              >
+                                <Trash2 className="size-4 text-muted-foreground hover:text-destructive" aria-hidden="true" />
+                              </Button>
+                            }
+                          />
+                          <TooltipContent side="top">Delete draft</TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -279,14 +330,40 @@ export function MemberCertificatesList({
                     <div className="flex flex-col gap-1 flex-1 min-w-0">
                       <div className="flex items-center justify-between text-caption">
                         <span className="text-muted-foreground">Study progress</span>
-                        <span className="font-mono font-medium text-foreground">
-                          {record.progress}%
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={updatingId === record.id || (progressOverrides[record.id] ?? record.progress) >= 99}
+                              onClick={() => handleQuickStep(record.id, progressOverrides[record.id] ?? record.progress, 10, record.certificateName)}
+                              className="h-5 px-1.5 text-[10px] font-mono leading-none rounded hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                              aria-label={`Add 10% progress to ${record.certificateName}`}
+                            >
+                              +10%
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={updatingId === record.id || (progressOverrides[record.id] ?? record.progress) >= 99}
+                              onClick={() => handleQuickStep(record.id, progressOverrides[record.id] ?? record.progress, 25, record.certificateName)}
+                              className="h-5 px-1.5 text-[10px] font-mono leading-none rounded hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                              aria-label={`Add 25% progress to ${record.certificateName}`}
+                            >
+                              +25%
+                            </Button>
+                          </div>
+                          <span className="font-mono font-medium text-foreground">
+                            {progressOverrides[record.id] ?? record.progress}%
+                          </span>
+                        </div>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-primary"
-                          style={{ width: `${clampPercent(record.progress)}%` }}
+                          className="h-full bg-primary transition-all duration-300"
+                          style={{ width: `${clampPercent(progressOverrides[record.id] ?? record.progress)}%` }}
                         />
                       </div>
                     </div>
@@ -323,13 +400,37 @@ export function MemberCertificatesList({
         onOpenChange={onSheetOpenChange}
         editing={editingRecord}
         presetStatus={presetStatus}
+        presetCertificateId={presetCertificateId}
         memberOptions={[]}
         certificateOptions={certificateOptions}
         studyCourses={studyCourses}
         showCompanyFields={false}
         fixedMemberId={memberId}
+        canDelete={false}
         records={records}
         onEditExisting={handleEdit}
+      />
+
+      <ConfirmDialog
+        open={!!confirmDeleteRecord}
+        onOpenChange={(open) => !open && setConfirmDeleteRecord(null)}
+        title={confirmDeleteRecord ? `Delete ${confirmDeleteRecord.certificateName}?` : ""}
+        description={`The ${confirmDeleteRecord ? CERTIFICATE_KIND_NOUN[confirmDeleteRecord.certificateKind] : "certificate"} and its evidence file will be deleted. This cannot be undone.`}
+        confirmLabel={`Delete ${confirmDeleteRecord ? CERTIFICATE_KIND_NOUN[confirmDeleteRecord.certificateKind] : "certificate"}`}
+        pendingLabel="Deleting…"
+        pending={deleting}
+        onConfirm={async () => {
+          if (!confirmDeleteRecord) return;
+          setDeleting(true);
+          const result = await deleteRecord({ id: confirmDeleteRecord.id });
+          setDeleting(false);
+          if (!result.ok) {
+            toast.error(result.error);
+          } else {
+            toast.success(`Deleted ${confirmDeleteRecord.certificateName}`);
+            setConfirmDeleteRecord(null);
+          }
+        }}
       />
     </section>
   );

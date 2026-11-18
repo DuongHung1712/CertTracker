@@ -19,7 +19,7 @@ describe("expiryMeta", () => {
     expect(expiryMeta("Expiring Soon")).toEqual({ tone: "expiring-soon", label: "Expires within 30 days" });
     expect(expiryMeta("Expired")).toEqual({ tone: "expired", label: "Expired" });
     expect(expiryMeta("No Expiry")).toEqual({ tone: "no-expiry", label: "No expiry" });
-    expect(expiryMeta("N/A")).toEqual({ tone: "na", label: "Not issued yet" });
+    expect(expiryMeta("N/A")).toEqual({ tone: "na", label: "Not earned yet" });
   });
 });
 
@@ -55,7 +55,7 @@ describe("expiryDetail", () => {
     expect(expiryDetail({ status: "No Expiry", daysToExpiry: null, expiryDate: null })).toBe(
       "This certificate does not expire",
     );
-    expect(expiryDetail({ status: "N/A", daysToExpiry: null, expiryDate: null })).toBe("Not issued yet");
+    expect(expiryDetail({ status: "N/A", daysToExpiry: null, expiryDate: null })).toBe("Not earned yet");
   });
 
   it("words a completion that never expires without 'certificate'", () => {

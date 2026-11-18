@@ -47,44 +47,34 @@ function row(partial: Partial<BreakdownRow>): BreakdownRow {
 describe("[copy] member KPI cards", () => {
   const render = (records: RecordRow[]) => text(renderToStaticMarkup(<MemberKpiCards kpis={calculateMemberKpis(records)} />));
 
-  it("counts expired certificates with the right noun and verb", () => {
-    expect(render([doneRecord(-3, { id: "a" })])).toContain("1 certificate needs renewal.");
-    expect(render([doneRecord(-3, { id: "a" }), doneRecord(-9, { id: "b" })])).toContain("2 certificates need renewal.");
+  it("uses the agreed tile labels", () => {
+    const raw = renderToStaticMarkup(<MemberKpiCards kpis={calculateMemberKpis([doneRecord(45, { id: "a" })])} />);
+    // The e2e tile lookup matches the `dt` text exactly (the label is the tile's link).
+    for (const label of ["Held", "Needs action", "In progress", "Up next"]) {
+      expect(raw, label).toMatch(new RegExp(`<dt[^>]*>.*?>\\s*${label}\\s*</a></dt>`, "s"));
+    }
+    expect(text(raw)).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|≤|active study goals| exp |\d+ study\b/i);
   });
 
-  it("says plainly that nothing is expired", () => {
+  it("says plainly that nothing needs renewing", () => {
     const html = render([doneRecord(120)]);
-    expect(html).toContain("No expired certificates.");
+    expect(html).toContain("Nothing to renew");
+    expect(html).toContain("All up to date");
     expect(html).not.toMatch(/Audit compliance|registry violations/i);
   });
 
-  it("names the next certificate to expire and counts its days with daysLeftLabel", () => {
+  it("names the next exam to expire and counts its days with daysLeftLabel", () => {
     const one = render([doneRecord(1)]);
-    expect(one).toContain("Next to expire: AWS Solutions Architect Associate");
+    expect(one).toContain("Next: AWS Solutions Architect Associate");
     expect(one).toContain("1 day left");
-    expect(one).not.toContain("Target:");
     const today = render([doneRecord(0)]);
     expect(today).toContain("Expires today");
     expect(today).not.toContain("0 days left");
   });
 
-  it("uses the agreed tile labels and chips", () => {
-    const records = [doneRecord(45, { id: "a" }), makeRecord({ id: "b", status: "in_progress", progress: 40, expiryStatus: "N/A", daysToExpiry: null, expiryDate: null, issuedDate: null })];
-    const raw = renderToStaticMarkup(<MemberKpiCards kpis={calculateMemberKpis(records)} />);
-    // The e2e tile lookup matches the `dt` text exactly.
-    expect(raw).toMatch(/<dt[^>]*>\s*Learning items\s*<\/dt>/);
-    expect(raw).toMatch(/<dt[^>]*>\s*Expiring within 60 days\s*<\/dt>/);
-    const html = render(records);
-    expect(html).toContain("1 expiring");
-    expect(html).toContain("1 in progress");
-    expect(html).toContain("Learning items in progress");
-    expect(html).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|Expiring soon|≤|active study goals| exp |\d+ study\b/i);
-    expect(render([])).toContain("Nothing in progress");
-  });
-
-  it("says the total covers courses not started or in progress, not only in progress", () => {
-    const html = render([doneRecord(120)]);
-    expect(html).toContain("1 exam certificate · 0 course completions");
+  it("counts expired exams with the right noun", () => {
+    expect(render([doneRecord(-3, { id: "a" })])).toContain("1 expired exam");
+    expect(render([doneRecord(-3, { id: "a" }), doneRecord(-9, { id: "b" })])).toContain("2 expired exams");
   });
 });
 
@@ -276,5 +266,13 @@ describe("[copy] status bar", () => {
   it("names an empty bar in certificates", () => {
     const html = renderToStaticMarkup(<StatusBar segments={[{ key: "a", label: "Valid", count: 0, color: "x" }]} />);
     expect(html).toContain('aria-label="No certificates"');
+  });
+});
+
+describe("[copy] member dashboard subtitle", () => {
+  it("greets warmly and encourages learning instead of audit wording", () => {
+    const source = readFileSync(join(process.cwd(), "src/features/dashboard/load.ts"), "utf8");
+    expect(source).toContain("Ready to plan your next certification milestone?");
+    expect(source).not.toContain("${getGreeting(profile.fullName, now)} · Figures as of");
   });
 });

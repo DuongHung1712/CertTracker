@@ -156,7 +156,7 @@ describe("TopKpiRow: exam certificates and course completions", () => {
   it("shows two labelled groups with their own figures", () => {
     const kpis = calculateManagerKpis([doneRecord(20), doneRecord(-5), doneRecord(200)]);
     const html = renderToStaticMarkup(
-      <TopKpiRow kpis={kpis} completions={{ doneThisMonth: 2, doneThisQuarter: 5, doneTotal: 9, inProgress: 3 }} plannedExams={4} />,
+      <TopKpiRow kpis={kpis} completions={{ doneThisMonth: 2, doneThisQuarter: 5, doneTotal: 9, inProgress: 3 }} plannedExams={4} waiting={0} />,
     );
     expect(count(html, 'role="group"')).toBe(2);
     const exam = html.slice(html.indexOf('aria-label="Exam certificates"'), html.indexOf('aria-label="Course completions"'));
@@ -200,7 +200,7 @@ describe("TeamReadinessDonutCard & TopKpiRow", () => {
 
   it("renders TopKpiRow with 3 tiles and only real numbers", () => {
     const kpis = calculateManagerKpis([doneRecord(20), doneRecord(45), doneRecord(-5)]);
-    const html = renderToStaticMarkup(<TopKpiRow kpis={kpis} completions={NO_COMPLETIONS} plannedExams={0} pastDueText="Minh (PMP)" />);
+    const html = renderToStaticMarkup(<TopKpiRow kpis={kpis} completions={NO_COMPLETIONS} plannedExams={0} pastDueText="Minh (PMP)" waiting={3} />);
     expect(html).toContain("Expiring within 60 days");
     expect(html).toContain("Expired");
     expect(html).toContain("Waiting for approval");
@@ -209,10 +209,9 @@ describe("TeamReadinessDonutCard & TopKpiRow", () => {
     expect(html).toContain("1 with 30 days or less");
     expect(html).not.toContain("≤");
     expect(html).not.toContain("Next 60 days");
-    // Approvals do not exist yet: no number that looks real.
-    expect(html).not.toContain("proofs queued");
     expect(html).not.toContain("All current valid");
-    expect(html).toMatch(/Waiting for approval<\/dt>[\s\S]*?<dd[^>]*>—<\/dd>/);
+    // The waiting tile shows the real count and opens the filtered list.
+    expect(html).toMatch(/href="\/records\?approval=waiting"[\s\S]*Waiting for approval[\s\S]*>3</);
   });
 });
 

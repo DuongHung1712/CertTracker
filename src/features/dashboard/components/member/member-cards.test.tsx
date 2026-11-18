@@ -1,22 +1,13 @@
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { AuditVerificationCard } from "./audit-verification-card";
-import { ComplianceCopilotCard } from "./compliance-copilot-card";
 import { MemberProfileCard } from "./member-profile-card";
 import { QuarterlyTargetCard } from "./quarterly-target-card";
 import { SkillsMatrixCard } from "./skills-matrix-card";
-import { TargetRoleCard } from "./target-role-card";
 
 // Copy WP6 (ux-copy-audit.md §3): every Coming soon card is a `ComingSoonCard` with the chip "Coming soon",
 // a plain title and one line ending "Not available yet.", disabled controls and no fake data.
 const CARDS: { name: string; element: ReactElement; title: string; description: string }[] = [
-  {
-    name: "ComplianceCopilotCard",
-    element: <ComplianceCopilotCard />,
-    title: "Ask about certificates",
-    description: "Ask questions about exam refunds, renewals and approved courses. Not available yet.",
-  },
   {
     name: "SkillsMatrixCard",
     element: <SkillsMatrixCard />,
@@ -30,22 +21,10 @@ const CARDS: { name: string; element: ReactElement; title: string; description: 
     description: "Set a certificate goal for each quarter and follow it with your team. Not available yet.",
   },
   {
-    name: "TargetRoleCard",
-    element: <TargetRoleCard />,
-    title: "Next career role",
-    description: "See what your next role needs: certificates, experience and skills. Not available yet.",
-  },
-  {
-    name: "AuditVerificationCard",
-    element: <AuditVerificationCard />,
-    title: "Certificate review",
-    description: "Your manager will check your evidence and confirm each certificate. Not available yet.",
-  },
-  {
     name: "MemberProfileCard (focus area)",
     element: <MemberProfileCard fullName="Lê Minh Châu" teamName="Team Cloud" careerRoleName="Engineer" yoeYears={3} />,
     title: "Focus area",
-    description: "Choose the area you want to grow in, such as cloud or security. Not available yet.",
+    description: "Choose the area you want to grow in, such as cloud or security, and see what your next role needs: certificates, experience and skills. Not available yet.",
   },
 ];
 
@@ -99,21 +78,13 @@ describe("[copy] Coming soon cards", () => {
     }
   });
 
-  it("the Ask card keeps its disabled question box (the loop above is vacuous without it)", () => {
-    const card = cardHtml(renderToStaticMarkup(CARDS[0].element), CARDS[0].title);
-    const box = /<input\b[^>]*aria-label="Your question"[^>]*>/.exec(card)?.[0];
-    expect(box, "question box").toBeDefined();
-    expect(box).toMatch(/\sdisabled=""/);
-    expect(box).toContain('aria-disabled="true"');
-  });
-
   it.each(CARDS)("$name shows no fake data", ({ element }) => {
     const html = renderToStaticMarkup(element);
     for (const fake of FAKE) expect(html, fake).not.toContain(fake);
   });
 
   it("the profile card states experience in plain words, not tenure", () => {
-    const html = renderToStaticMarkup(CARDS[5].element);
+    const html = renderToStaticMarkup(CARDS.find((card) => card.name.startsWith("MemberProfileCard"))!.element);
     expect(html).toContain("3 years of experience");
     expect(html).not.toContain("tenure");
   });

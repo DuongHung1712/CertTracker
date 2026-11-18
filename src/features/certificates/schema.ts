@@ -93,3 +93,31 @@ export const courseWithCompletionSchema = courseFields
     completionName: value.grantsCompletion ? value.completionName : null,
   }));
 export type CourseWithCompletionInput = z.infer<typeof courseWithCompletionSchema>;
+
+export const proposeCertificateSchema = z
+  .object({
+    name: z.string().trim().min(1, "Enter the certificate or course name").max(200, "Name can have at most 200 characters"),
+    kind: z.enum(CERTIFICATE_KINDS, "Choose a kind"),
+    providerId: z.guid("Choose a provider from the list").nullable().optional(),
+    proposedProvider: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? null : (v ?? null)),
+      z.string().trim().max(100, "Provider can have at most 100 characters").nullable().optional(),
+    ),
+    url: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? null : (v ?? null)),
+      z.string().trim().url("Enter a valid link").nullable().optional(),
+    ),
+    reason: z.preprocess(
+      (v) => (typeof v === "string" && v.trim() === "" ? null : (v ?? null)),
+      z.string().trim().max(1000, "Reason can have at most 1000 characters").nullable().optional(),
+    ),
+  })
+  .refine(
+    (data) => !!data.providerId || !!(data.proposedProvider && data.proposedProvider.trim().length > 0),
+    {
+      path: ["proposedProvider"],
+      message: "Choose an existing provider or enter a provider name",
+    },
+  );
+export type ProposeCertificateInput = z.infer<typeof proposeCertificateSchema>;
+export type ProposeCertificateFormInput = z.input<typeof proposeCertificateSchema>;

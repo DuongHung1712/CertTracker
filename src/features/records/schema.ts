@@ -17,6 +17,15 @@ export const REFUND_STATUS_LABEL: Record<RefundStatus, string> = {
 /** `z.guid()`, not `.uuid()`: seed ids are not RFC 4122 (see src/features/members/schema.ts). */
 export const idSchema = z.object({ id: z.guid("Invalid data") });
 
+/** A manager's verdict on a Completed item; returning it needs a reason the member can act on. */
+export const reviewSchema = z
+  .object({
+    id: z.guid("Invalid data"),
+    decision: z.enum(["approve", "return"]),
+    note: z.string().trim().max(2000, "The note can have at most 2000 characters").optional(),
+  })
+  .refine((value) => value.decision === "approve" || !!value.note, { path: ["note"], message: "Write what the member should fix." });
+
 /** Bulk actions: 1 to MAX_BULK_DELETE distinct ids, so one request cannot become an unbounded delete. */
 export const MAX_BULK_DELETE = 100;
 export const recordIdsSchema = z.object({

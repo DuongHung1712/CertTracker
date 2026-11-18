@@ -4,12 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeRecord } from "@/features/records/__fixtures__/record-row";
 import { toast } from "sonner";
-import { deleteRecords } from "@/features/records/actions";
+import { deleteRecords, reviewRecord } from "@/features/records/actions";
 import { RecordsTable } from "@/features/records/components/records-table";
 
 // The sheet and the delete action pull in server actions; neither is part of what these tests look at.
 vi.mock("@/features/records/components/record-sheet", () => ({ RecordSheet: () => null }));
-vi.mock("@/features/records/actions", () => ({ deleteRecord: vi.fn(), deleteRecords: vi.fn() }));
+vi.mock("@/features/records/actions", () => ({ deleteRecord: vi.fn(), deleteRecords: vi.fn(), reviewRecord: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn() } }));
 
 const RECORDS = [
@@ -54,7 +54,7 @@ describe("RecordsTable kind filter", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Course completions (2)" }));
     expect(screen.getByRole("columnheader", { name: "Planned finish date" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add certificate or course completion" })).toBeTruthy();
-    expect(screen.getByText("Studying for an exam? Choose the exam, then the course you used.")).toBeTruthy();
+    expect(screen.getByText("Planning an exam or a course? Add it now and update its status as you go.")).toBeTruthy();
   });
 
   it("team mode: a Kind select, not tabs", async () => {
@@ -101,5 +101,124 @@ describe("RecordsTable bulk delete", () => {
     await deleteSelected("Delete 3 items");
     expect(toast.success).toHaveBeenCalledWith("Deleted 3 items");
     expect(toast.warning).not.toHaveBeenCalled();
+  });
+});
+
+describe("RecordsTable approval", () => {
+  const W1 = "5eed0000-0000-0000-0000-00000000c001";
+  const WAITING = makeRecord({ id: W1, memberId: "m-other", memberName: "Other Member", approval: "waiting", certificateName: "Waiting Exam" });
+  const OWN = makeRecord({ id: "w2", memberId: "m-boss", memberName: "The Boss", approval: "waiting", certificateName: "Own Exam" });
+  const RETURNED = makeRecord({ id: "w3", memberId: "m-other", memberName: "Other Member", approval: "returned", approvalNote: "x", certificateName: "Returned Exam" });
+  const APPROVED = makeRecord({ id: "w4", memberId: "m-other", memberName: "Other Member", certificateName: "Approved Exam" });
+  const ALL = [WAITING, OWN, RETURNED, APPROVED];
+
+  const view = (props: { canReview?: boolean; initialApproval?: boolean; reviewerMemberId?: string | null } = {}) =>
+    render(
+      <RecordsTable records={ALL} memberOptions={[]} certificateOptions={[]} studyCourses={[]} mode="team" canDelete={false} showCompanyFields reviewerMemberId="m-boss" {...props} />,
+    );
+  const menuOf = async (name: RegExp) => {
+    await userEvent.click(screen.getByRole("button", { name }));
+    return (await screen.findAllByRole("menuitem")).map((item) => item.textContent);
+  };
+
+  it("filters to waiting items with a count, opens from the URL flag, and Clear filters resets it", async () => {
+    view({ canReview: true });
+    const button = screen.getByRole("button", { name: "Waiting for approval (1)" });
+    expect(rowNames()).toHaveLength(4);
+    await userEvent.click(button);
+    expect(rowNames()).toHaveLength(1);
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(rowNames()).toHaveLength(4);
+    cleanup();
+    view({ canReview: true, initialApproval: true });
+    expect(rowNames()).toHaveLength(1);
+  });
+
+  it("offers Approve and Return on another member's waiting item, Approve only on a returned one, nothing on approved", async () => {
+    view({ canReview: true });
+    expect(await menuOf(/Actions for Other Member · Waiting Exam/)).toEqual(expect.arrayContaining(["Approve No proof", "Return"]));
+    await userEvent.keyboard("{Escape}");
+    const returned = await menuOf(/Actions for Other Member · Returned Exam/);
+    expect(returned.join("|")).toContain("Approve");
+    expect(returned).not.toContain("Return");
+    await userEvent.keyboard("{Escape}");
+    expect((await menuOf(/Actions for Other Member · Approved Exam/)).join("|")).not.toContain("Approve");
+  });
+
+  it("a manager never reviews their own item", async () => {
+    view({ canReview: true });
+    const items = await menuOf(/Actions for The Boss · Own Exam/);
+    expect(items.join("|")).not.toContain("Approve");
+    expect(items).not.toContain("Return");
+  });
+
+  it("without canReview (a member) there is no filter and no review action", async () => {
+    view({ canReview: false });
+    expect(screen.queryByRole("button", { name: /Waiting for approval/ })).toBeNull();
+    const items = await menuOf(/Actions for Other Member · Waiting Exam/);
+    expect(items.join("|")).not.toContain("Approve");
+    expect(items).not.toContain("Return");
+  });
+
+  it("Approve is one click with a toast", async () => {
+    vi.mocked(reviewRecord).mockResolvedValue({ ok: true, data: null });
+    view({ canReview: true });
+    await menuOf(/Actions for Other Member · Waiting Exam/);
+    await userEvent.click(screen.getByRole("menuitem", { name: /^Approve/ }));
+    expect(reviewRecord).toHaveBeenCalledWith({ id: W1, decision: "approve" });
+    await vi.waitFor(() => expect(toast.success).toHaveBeenCalled());
+  });
+
+  it("Return needs a note: empty is refused with a message, a note is sent", async () => {
+    vi.mocked(reviewRecord).mockClear();
+    vi.mocked(reviewRecord).mockResolvedValue({ ok: true, data: null });
+    view({ canReview: true });
+    await menuOf(/Actions for Other Member · Waiting Exam/);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Return" }));
+    const dialog = await screen.findByRole("alertdialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Return" }));
+    expect(within(dialog).getByText("Write what the member should fix.")).toBeTruthy();
+    expect(reviewRecord).not.toHaveBeenCalled();
+    await userEvent.type(within(dialog).getByRole("textbox", { name: "What should the member fix?" }), "  Wrong date ");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Return" }));
+    expect(reviewRecord).toHaveBeenCalledWith({ id: W1, decision: "return", note: "Wrong date" });
+  });
+});
+
+describe("RecordsTable member draft delete", () => {
+  const DRAFT = makeRecord({ id: "d1", memberName: "Me", certificateName: "Draft Exam", status: "in_progress" });
+  const RETURNED = makeRecord({ id: "d2", memberName: "Me", certificateName: "Returned Exam", status: "done", approval: "returned", approvalNote: "fix it" });
+  const APPROVED = makeRecord({ id: "d3", memberName: "Me", certificateName: "Approved Exam", status: "done", approval: "approved" });
+
+  const getMenu = async (name: RegExp) => {
+    await userEvent.click(screen.getByRole("button", { name }));
+    return (await screen.findAllByRole("menuitem")).map((item) => item.textContent);
+  };
+
+  it("offers Delete in row menu for draft and returned records, but not for approved completed records, and no bulk checkboxes for members", async () => {
+    render(
+      <RecordsTable
+        records={[DRAFT, RETURNED, APPROVED]}
+        memberOptions={[]}
+        certificateOptions={[]}
+        studyCourses={[]}
+        mode="self"
+        canDelete={false}
+        showCompanyFields={false}
+      />,
+    );
+
+    expect(screen.queryByRole("checkbox", { name: "Select all on this page" })).toBeNull();
+
+    const draftMenu = await getMenu(/Actions for Me · Draft Exam/);
+    expect(draftMenu).toContain("Delete");
+    await userEvent.keyboard("{Escape}");
+
+    const returnedMenu = await getMenu(/Actions for Me · Returned Exam/);
+    expect(returnedMenu).toContain("Delete");
+    await userEvent.keyboard("{Escape}");
+
+    const approvedMenu = await getMenu(/Actions for Me · Approved Exam/);
+    expect(approvedMenu).not.toContain("Delete");
   });
 });

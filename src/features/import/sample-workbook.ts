@@ -120,6 +120,8 @@ export function buildSampleWorkbook(people: SamplePerson[], catalogue: Catalogue
         expiryDate,
         daysToExpiry: expiryDate ? daysBetween(today, expiryDate) : null,
         expiryStatus: expiryStatus(issuedDate, course.validityMonths, today),
+        approval: certificate.status === "done" ? "approved" : null,
+        approvalNote: null,
         careerRoleName: null,
         yoeYears: null,
       };

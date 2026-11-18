@@ -7,6 +7,7 @@ import {
   normalizeEmail,
   type ExpiryItem,
 } from "@/features/notifications/expiry-plan";
+import { isCounted } from "@/features/records/kind";
 import { monthRange } from "@/features/notifications/period";
 import type { Snapshot, SnapshotMember, SnapshotRecord, StaffUser } from "@/features/notifications/types";
 
@@ -41,7 +42,8 @@ const within = (date: string | null, start: string, end: string) => date !== nul
 
 function kpiFor(members: SnapshotMember[], records: SnapshotRecord[], range: { start: string; end: string }): Kpi {
   const ids = new Set(members.map((m) => m.id));
-  const mine = records.filter((r) => ids.has(r.memberId));
+  // Waiting and Returned items are in no number: only Approved Completed items count.
+  const mine = records.filter((r) => ids.has(r.memberId) && isCounted(r));
   const done = mine.filter((r) => r.status === "done");
   return {
     members: members.length,

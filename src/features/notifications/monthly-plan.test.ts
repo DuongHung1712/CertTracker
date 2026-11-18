@@ -17,6 +17,7 @@ const record = (id: string, memberId: string, over: Partial<SnapshotRecord> = {}
   id,
   memberId,
   status: "done",
+  approval: "approved",
   certificateName: `Course ${id}`,
   issuedDate: "2026-01-01",
   expiryDate: "2027-06-01",
@@ -380,5 +381,23 @@ describe("planMonthlyReports delivery", () => {
 
   it("rejects an impossible month instead of silently reporting on nothing", () => {
     expect(() => planMonthlyReports(snap({ ...base, staff: [admin()] }), "2026-13")).toThrow();
+  });
+});
+
+describe("planMonthlyReports: only Approved items count", () => {
+  const unapproved = (approval: "waiting" | "returned") =>
+    ({ approval, expiryStatus: "Expiring Soon", daysToExpiry: 5, expiryDate: "2026-10-10" }) as const;
+
+  it("a Waiting or Returned Completed item is in no number and not in upcoming", () => {
+    const { reports } = planMonthlyReports(
+      snap({
+        members: [member("a")],
+        records: [record("ok", "a"), record("w", "a", unapproved("waiting")), record("r", "a", unapproved("returned"))],
+        staff: [admin()],
+      }),
+      MONTH,
+    );
+    expect(reports[0]!.overall).toMatchObject({ records: 1, done: 1, valid: 1, expiring: 0, expired: 0, completionRate: 100 });
+    expect(reports[0]!.upcoming).toEqual([]);
   });
 });

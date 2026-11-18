@@ -28,7 +28,7 @@ describe("MemberAttentionBanner", () => {
     expect(html).toContain("Expires soon:");
     expect(html).toContain("AWS Solutions Architect Associate");
     expect(html).toContain("12 days left");
-    expect(html).toContain("Upload evidence");
+    expect(html).toContain("Renew credential");
     expect(html).not.toContain("Certificate expired:");
     expect(tone(html)).toBe("expiring-soon");
   });
@@ -36,7 +36,7 @@ describe("MemberAttentionBanner", () => {
   it("uses the expiring tone for a certificate 31 to 60 days from expiry", () => {
     const record = doneRecord(45, { expiryDate: "2026-12-23" });
     const html = renderToStaticMarkup(
-      <MemberAttentionBanner attention={{ record, urgency: "expiring" }} onUploadProof={() => {}} />,
+      <MemberAttentionBanner attention={{ record, urgency: "expiring" }} onRenew={() => {}} />,
     );
     expect(tone(html)).toBe("expiring-soon");
   });
@@ -46,14 +46,14 @@ describe("MemberAttentionBanner", () => {
     const html = renderToStaticMarkup(
       <MemberAttentionBanner
         attention={{ record, urgency: "expired" }}
-        onUploadProof={() => {}}
+        onRenew={() => {}}
       />,
     );
 
     expect(html).toContain('aria-label="Certificate attention required"');
     expect(html).toContain("Certificate expired:");
     expect(html).toContain("Expired on 01/11/2026");
-    expect(html).toContain("Upload evidence");
+    expect(html).toContain("Renew credential");
     expect(html).not.toContain("Expires soon:");
     expect(tone(html)).toBe("expired");
   });

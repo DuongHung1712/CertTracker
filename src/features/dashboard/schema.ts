@@ -6,7 +6,7 @@ const kpisRow = z.object({
   total_members: count, total_records: count, done_records: count, in_progress_records: count,
   not_started_records: count, active_certs: count, expiring_60_certs: count, expiring_soon_certs: count,
   expired_certs: count, no_expiry_certs: count,
-  completion_done_records: count, completion_in_progress_records: count,
+  completion_done_records: count, completion_in_progress_records: count, waiting_records: count,
 });
 
 export type DashboardKpis = {
@@ -15,6 +15,8 @@ export type DashboardKpis = {
   expiredCerts: number; noExpiryCerts: number;
   /** Course completions; the five expiry counts above hold exam certificates only. */
   completionDoneRecords: number; completionInProgressRecords: number;
+  /** Completed items (either kind) waiting for approval; they are in no other count. */
+  waitingRecords: number;
 };
 
 /** `dashboard_kpis()` returns exactly one row; anything else is a contract break. */
@@ -25,7 +27,7 @@ export function parseKpis(data: unknown): DashboardKpis {
     inProgressRecords: r.in_progress_records, notStartedRecords: r.not_started_records,
     activeCerts: r.active_certs, expiring60Certs: r.expiring_60_certs, expiringSoonCerts: r.expiring_soon_certs,
     expiredCerts: r.expired_certs, noExpiryCerts: r.no_expiry_certs,
-    completionDoneRecords: r.completion_done_records, completionInProgressRecords: r.completion_in_progress_records,
+    completionDoneRecords: r.completion_done_records, completionInProgressRecords: r.completion_in_progress_records, waitingRecords: r.waiting_records,
   };
 }
 

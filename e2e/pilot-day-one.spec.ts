@@ -82,6 +82,12 @@ test("E-1: a member's whole first day reaches the manager, the dashboard and the
     expect(href).toMatch(/^\/api\/records\/[0-9a-f-]+\/evidence$/);
     expect((await managerPage.request.get(href, { maxRedirects: 0 })).status()).toBe(307);
 
+    // A member's Completed certificate waits for approval (WBS 15.4) and counts only once the manager approves it.
+    expect(await readCompletedExams(adminPage)).toBe(completedBefore);
+    await row.getByRole("button", { name: /Actions for/ }).click();
+    await managerPage.getByRole("menuitem", { name: "Approve" }).click();
+    await expect(row).not.toContainText("Waiting for approval");
+
     expect(await readCompletedExams(adminPage)).toBe(completedBefore + 1);
     expect((await downloadExport(adminPage, "Export CSV")).toString("utf8")).toContain(VIETNAMESE_NAME);
   } finally {
