@@ -30,7 +30,59 @@ export const THEME_STYLES: StyleOption[] = [
 
 export const STYLE_STORAGE_KEY = "certtracker-style";
 
+/** Inline script injected into <head> to prevent FOUC before React hydration */
 export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(s==='vault'||s==='classic'){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
+
+/**
+ * Pure helper function to get the current stored theme style from the DOM or localStorage.
+ * Safe to call in browser environments outside of React components.
+ */
+export function getStoredThemeStyle(): ThemeStyle {
+  if (typeof document !== "undefined") {
+    const attr = document.documentElement.getAttribute("data-style");
+    if (attr === "classic" || attr === "vault") return attr;
+  }
+  if (typeof localStorage !== "undefined") {
+    try {
+      const stored = localStorage.getItem(STYLE_STORAGE_KEY);
+      if (stored === "classic" || stored === "vault") return stored;
+    } catch {
+      // ignore
+    }
+  }
+  return "classic";
+}
+
+/**
+ * Pure helper function to set the theme style on document.documentElement,
+ * persist to localStorage, and dispatch a custom style change event.
+ */
+export function setStoredThemeStyle(next: ThemeStyle): void {
+  if (next !== "classic" && next !== "vault") return;
+  if (typeof document !== "undefined") {
+    document.documentElement.setAttribute("data-style", next);
+  }
+  if (typeof localStorage !== "undefined") {
+    try {
+      localStorage.setItem(STYLE_STORAGE_KEY, next);
+    } catch {
+      // ignore
+    }
+  }
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("certtracker-style-change", { detail: next }));
+  }
+}
+
+/**
+ * Pure helper function to toggle between 'classic' and 'vault' styles.
+ */
+export function toggleStoredThemeStyle(): ThemeStyle {
+  const current = getStoredThemeStyle();
+  const next: ThemeStyle = current === "classic" ? "vault" : "classic";
+  setStoredThemeStyle(next);
+  return next;
+}
 
 export interface StyleContextType {
   style: ThemeStyle;
@@ -72,19 +124,18 @@ export function StyleProvider({
   const setStyle = React.useCallback((next: ThemeStyle) => {
     if (next !== "classic" && next !== "vault") return;
     setStyleState(next);
-    try {
-      localStorage.setItem(STYLE_STORAGE_KEY, next);
-      document.documentElement.setAttribute("data-style", next);
-      window.dispatchEvent(new CustomEvent("certtracker-style-change", { detail: next }));
-    } catch {
-      // ignore
-    }
+    setStoredThemeStyle(next);
   }, []);
 
   const toggleStyle = React.useCallback(() => {
-    setStyle(style === "classic" ? "vault" : "classic");
-  }, [style, setStyle]);
+    setStyleState((prev) => {
+      const next = prev === "classic" ? "vault" : "classic";
+      setStoredThemeStyle(next);
+      return next;
+    });
+  }, []);
 
+  // Multi-tab synchronization
   React.useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STYLE_STORAGE_KEY) {
@@ -105,23 +156,27 @@ export function StyleProvider({
     return () => window.removeEventListener("storage", handleStorage);
   }, [defaultStyle]);
 
-  // Global mouse-tracking coordinator for elements with .vault-spotlight
+  // Global keyboard shortcut: Alt+V to quickly toggle visual style
   React.useEffect(() => {
-    if (style !== "vault") return;
-
-    const handlePointerMove = (e: PointerEvent) => {
-      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(
-        ".vault-spotlight, [data-spotlight], .vault-card, [data-slot='card'], [data-slot='kpi-tile'], dl > div",
-      );
-      if (!card) return;
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
-      card.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === "v" || e.key === "V")) {
+        const target = e.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+        e.preventDefault();
+        toggleStyle();
+      }
     };
-
-    window.addEventListener("pointermove", handlePointerMove, { passive: true });
-    return () => window.removeEventListener("pointermove", handlePointerMove);
-  }, [style]);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleStyle]);
 
   const value = React.useMemo(
     () => ({
@@ -143,4 +198,3 @@ export function useThemeStyle() {
   }
   return context;
 }
-

@@ -5,9 +5,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   StyleProvider,
   useThemeStyle,
+  getStoredThemeStyle,
+  setStoredThemeStyle,
+  toggleStoredThemeStyle,
   STYLE_STORAGE_KEY,
   THEME_STYLES,
-  type ThemeStyle,
 } from "./style-provider";
 
 function TestConsumer() {
@@ -19,6 +21,7 @@ function TestConsumer() {
       <button onClick={() => setStyle("vault")}>Set Vault</button>
       <button onClick={() => setStyle("classic")}>Set Classic</button>
       <button onClick={toggleStyle}>Toggle Style</button>
+      <input data-testid="test-input" placeholder="type here" />
     </div>
   );
 }
@@ -190,47 +193,75 @@ describe("StyleProvider & useThemeStyle", () => {
     expect(result.current.style).toBe("classic");
   });
 
-  it("coordinates cursor coordinates on vault-spotlight cards when vault style is active", async () => {
+  it("toggles style on Alt+V keyboard shortcut, but ignores keystrokes inside input fields", async () => {
     const user = userEvent.setup();
     render(
       <StyleProvider>
         <TestConsumer />
-        <div data-testid="target-kpi" data-slot="kpi-tile" className="vault-spotlight">
-          KPI Content
-        </div>
       </StyleProvider>,
     );
 
-    const kpi = screen.getByTestId("target-kpi");
-    kpi.getBoundingClientRect = () =>
-      ({
-        left: 100,
-        top: 100,
-        right: 300,
-        bottom: 200,
-        width: 200,
-        height: 100,
-        x: 100,
-        y: 100,
-        toJSON: () => {},
-      }) as DOMRect;
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
 
-    // In classic mode, pointermove does nothing
-    act(() => {
-      window.dispatchEvent(new PointerEvent("pointermove", { clientX: 150, clientY: 130 }));
+    // Alt+V outside input -> toggles to vault
+    await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+
+    // Focus input and press Alt+V -> should NOT toggle
+    const input = screen.getByTestId("test-input");
+    await user.click(input);
+    await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+
+    // Blur input and press Alt+V -> toggles back to classic
+    await user.tab();
+    await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+  });
+
+  describe("standalone theme helper functions", () => {
+    it("getStoredThemeStyle reads from DOM attribute first, then localStorage, defaulting to classic", () => {
+      expect(getStoredThemeStyle()).toBe("classic");
+
+      localStorage.setItem(STYLE_STORAGE_KEY, "vault");
+      expect(getStoredThemeStyle()).toBe("vault");
+
+      document.documentElement.setAttribute("data-style", "classic");
+      expect(getStoredThemeStyle()).toBe("classic");
+
+      document.documentElement.setAttribute("data-style", "vault");
+      expect(getStoredThemeStyle()).toBe("vault");
     });
-    expect(kpi.style.getPropertyValue("--mouse-x")).toBe("");
 
-    // Switch to vault mode
-    await user.click(screen.getByRole("button", { name: "Set Vault" }));
+    it("setStoredThemeStyle updates DOM, localStorage, and dispatches certtracker-style-change event", () => {
+      let eventDetail: string | null = null;
+      const listener = (e: Event) => {
+        eventDetail = (e as CustomEvent).detail;
+      };
+      window.addEventListener("certtracker-style-change", listener);
 
-    // Now pointermove on the kpi card updates CSS variables
-    act(() => {
-      const event = new PointerEvent("pointermove", { clientX: 150, clientY: 130, bubbles: true });
-      kpi.dispatchEvent(event);
+      setStoredThemeStyle("vault");
+      expect(document.documentElement.getAttribute("data-style")).toBe("vault");
+      expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("vault");
+      expect(eventDetail).toBe("vault");
+
+      setStoredThemeStyle("classic");
+      expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+      expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("classic");
+      expect(eventDetail).toBe("classic");
+
+      window.removeEventListener("certtracker-style-change", listener);
     });
 
-    expect(kpi.style.getPropertyValue("--mouse-x")).toBe("50px");
-    expect(kpi.style.getPropertyValue("--mouse-y")).toBe("30px");
+    it("toggleStoredThemeStyle toggles between classic and vault programmatically", () => {
+      setStoredThemeStyle("classic");
+      const next1 = toggleStoredThemeStyle();
+      expect(next1).toBe("vault");
+      expect(document.documentElement.getAttribute("data-style")).toBe("vault");
+
+      const next2 = toggleStoredThemeStyle();
+      expect(next2).toBe("classic");
+      expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+    });
   });
 });

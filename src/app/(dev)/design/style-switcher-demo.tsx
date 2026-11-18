@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useThemeStyle, type ThemeStyle } from "@/components/style-provider";
-import { SpotlightCard } from "@/components/vault/spotlight-card";
+import { VaultCard } from "@/components/vault/vault-card";
 
 export function StyleSwitcherDemo() {
   const { theme, setTheme } = useTheme();
@@ -334,8 +334,7 @@ export function StyleSwitcherDemo() {
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
-            <SpotlightCard
-              hasSpotlight
+            <VaultCard
               isVerified
               className="cursor-pointer"
             >
@@ -368,7 +367,7 @@ export function StyleSwitcherDemo() {
                 </div>
                 <span className="font-mono text-caption text-muted-foreground">Score: 940/1000</span>
               </div>
-            </SpotlightCard>
+            </VaultCard>
 
             <p className="text-[11px] text-muted-foreground">
               {style === "vault"
@@ -391,8 +390,7 @@ export function StyleSwitcherDemo() {
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
-            <SpotlightCard
-              hasSpotlight
+            <VaultCard
               className="group cursor-pointer border-emerald-500/30"
             >
               <div className="flex items-start justify-between">
@@ -407,7 +405,7 @@ export function StyleSwitcherDemo() {
                     REGISTRY: CISSP-90821-VN · SHA-256 VERIFIED
                   </p>
                 </div>
-                <div className="vault-holo-foil flex size-9 items-center justify-center rounded-lg text-primary-foreground shadow-xs">
+                <div className="vault-seal flex size-9 items-center justify-center rounded-lg text-primary-foreground shadow-xs">
                   <ShieldCheck className="size-4" />
                 </div>
               </div>
@@ -432,7 +430,7 @@ export function StyleSwitcherDemo() {
                   </span>
                 </div>
               </div>
-            </SpotlightCard>
+            </VaultCard>
 
             <p className="text-[11px] text-muted-foreground">
               {style === "vault"
