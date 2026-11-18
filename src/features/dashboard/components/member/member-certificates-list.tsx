@@ -197,13 +197,18 @@ export function MemberCertificatesList({
         <div className="flex flex-col gap-3">
           {visibleRecords.map((record) => {
             const isInProgress = record.status === "in_progress";
+            const isVerified =
+              record.status === "done" &&
+              (record.expiryStatus === "Active" || record.expiryStatus === "No Expiry");
             const tone = tileTone(record);
             const { icon: TileIcon, className: tileClassName } = TILE[tone];
 
             return (
               <div
                 key={record.id}
-                className="flex flex-col gap-2.5 rounded-lg border border-border/80 bg-background/50 p-3.5 transition-colors hover:border-border"
+                data-slot="card"
+                data-verified={isVerified ? "true" : undefined}
+                className="vault-card flex flex-col gap-2.5 rounded-lg border border-border/80 bg-background/50 p-3.5 transition-colors hover:border-border"
               >
                 {/* Main Row */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
