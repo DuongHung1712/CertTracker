@@ -81,6 +81,7 @@ export type Database = {
       }
       certificates: {
         Row: {
+          catalogue_status: string
           cert_type_id: string | null
           course_id: string | null
           created_at: string
@@ -88,12 +89,18 @@ export type Database = {
           kind: Database["public"]["Enums"]["certificate_kind"]
           level: string | null
           name: string
+          proposal_reason: string | null
+          proposed_by: string | null
+          proposed_provider: string | null
           provider_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
           updated_at: string
           url: string | null
           validity_months: number | null
         }
         Insert: {
+          catalogue_status?: string
           cert_type_id?: string | null
           course_id?: string | null
           created_at?: string
@@ -101,12 +108,18 @@ export type Database = {
           kind: Database["public"]["Enums"]["certificate_kind"]
           level?: string | null
           name: string
+          proposal_reason?: string | null
+          proposed_by?: string | null
+          proposed_provider?: string | null
           provider_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           updated_at?: string
           url?: string | null
           validity_months?: number | null
         }
         Update: {
+          catalogue_status?: string
           cert_type_id?: string | null
           course_id?: string | null
           created_at?: string
@@ -114,7 +127,12 @@ export type Database = {
           kind?: Database["public"]["Enums"]["certificate_kind"]
           level?: string | null
           name?: string
+          proposal_reason?: string | null
+          proposed_by?: string | null
+          proposed_provider?: string | null
           provider_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           updated_at?: string
           url?: string | null
           validity_months?: number | null
@@ -133,6 +151,20 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "courses"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "certificates_proposed_by_fkey"
+            columns: ["proposed_by"]
+            isOneToOne: false
+            referencedRelation: "v_member_profiles"
+            referencedColumns: ["member_id"]
           },
           {
             foreignKeyName: "certificates_provider_id_fkey"
@@ -591,6 +623,8 @@ export type Database = {
       }
       training_records: {
         Row: {
+          approval: Database["public"]["Enums"]["approval_state"] | null
+          approval_note: string | null
           certificate_id: string
           certificate_url: string | null
           course_id: string | null
@@ -605,11 +639,15 @@ export type Database = {
           progress: number
           progress_updated_at: string
           refund_status: Database["public"]["Enums"]["refund_status"]
+          reviewed_at: string | null
+          reviewed_by: string | null
           status: Database["public"]["Enums"]["record_status"]
           updated_at: string
           via_company: boolean
         }
         Insert: {
+          approval?: Database["public"]["Enums"]["approval_state"] | null
+          approval_note?: string | null
           certificate_id: string
           certificate_url?: string | null
           course_id?: string | null
@@ -624,11 +662,15 @@ export type Database = {
           progress?: number
           progress_updated_at?: string
           refund_status?: Database["public"]["Enums"]["refund_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["record_status"]
           updated_at?: string
           via_company?: boolean
         }
         Update: {
+          approval?: Database["public"]["Enums"]["approval_state"] | null
+          approval_note?: string | null
           certificate_id?: string
           certificate_url?: string | null
           course_id?: string | null
@@ -643,6 +685,8 @@ export type Database = {
           progress?: number
           progress_updated_at?: string
           refund_status?: Database["public"]["Enums"]["refund_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
           status?: Database["public"]["Enums"]["record_status"]
           updated_at?: string
           via_company?: boolean
@@ -718,8 +762,11 @@ export type Database = {
       }
       v_training_records: {
         Row: {
+          approval: Database["public"]["Enums"]["approval_state"] | null
+          approval_note: string | null
           cert_type_id: string | null
           cert_type_name: string | null
+          certificate_catalogue_status: string | null
           certificate_id: string | null
           certificate_kind:
             | Database["public"]["Enums"]["certificate_kind"]
@@ -750,6 +797,7 @@ export type Database = {
           provider_id: string | null
           provider_name: string | null
           refund_status: Database["public"]["Enums"]["refund_status"] | null
+          renewed: boolean | null
           status: Database["public"]["Enums"]["record_status"] | null
           team_id: string | null
           team_name: string | null
@@ -815,6 +863,7 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      approve_certificate: { Args: { p_id: string }; Returns: undefined }
       can_access_evidence: { Args: { object_name: string }; Returns: boolean }
       claim_notification: {
         Args: { p_email: string; p_kind: string; p_period: string }
@@ -827,6 +876,10 @@ export type Database = {
       }
       commit_import: { Args: { p_batch_id: string }; Returns: Json }
       copy_courses_to_certificates: { Args: never; Returns: undefined }
+      counted_approval: {
+        Args: { r: Database["public"]["Tables"]["training_records"]["Row"] }
+        Returns: Database["public"]["Enums"]["approval_state"]
+      }
       dashboard_breakdown: {
         Args: { p_dimension: string; p_limit?: number }
         Returns: {
@@ -857,6 +910,7 @@ export type Database = {
           not_started_records: number
           total_members: number
           total_records: number
+          waiting_records: number
         }[]
       }
       dashboard_ranking: {
@@ -877,6 +931,10 @@ export type Database = {
         Returns: string
       }
       format_member_code: { Args: { n: number }; Returns: string }
+      is_renewed: {
+        Args: { r: Database["public"]["Tables"]["training_records"]["Row"] }
+        Returns: boolean
+      }
       managed_member_ids: { Args: never; Returns: string[] }
       managed_team_ids: { Args: never; Returns: string[] }
       move_career_role: {
@@ -901,6 +959,7 @@ export type Database = {
       yoe_years: { Args: { p_start: string; p_today: string }; Returns: number }
     }
     Enums: {
+      approval_state: "waiting" | "approved" | "returned"
       certificate_kind: "exam" | "completion"
       import_action: "create" | "update" | "skip"
       import_batch_status: "parsed" | "committed" | "discarded"
@@ -1037,6 +1096,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      approval_state: ["waiting", "approved", "returned"],
       certificate_kind: ["exam", "completion"],
       import_action: ["create", "update", "skip"],
       import_batch_status: ["parsed", "committed", "discarded"],
