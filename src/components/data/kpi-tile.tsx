@@ -1,11 +1,21 @@
 import { formatNumber } from "@/lib/format";
 
 /** One KPI. Render inside a `<dl>`; `hint` is a second line of context (e.g. "3 of them expiring soon"). */
-export function KpiTile({ label, value, hint }: { label: string; value: number | string; hint?: string }) {
+export function KpiTile({
+  label,
+  value,
+  hint,
+  verified,
+}: {
+  label: string;
+  value: number | string;
+  hint?: string;
+  verified?: boolean;
+}) {
   const isVerified =
-    label.toLowerCase().includes("valid") ||
-    label.toLowerCase().includes("active") ||
-    label.toLowerCase().includes("completion");
+    verified ??
+    (label.toLowerCase().includes("valid") ||
+      label.toLowerCase().includes("completion"));
   return (
     <div
       data-slot="kpi-tile"

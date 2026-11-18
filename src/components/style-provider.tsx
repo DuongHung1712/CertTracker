@@ -120,7 +120,7 @@ export function StyleProvider({
 
     const handlePointerMove = (e: PointerEvent) => {
       const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(
-        ".vault-spotlight, [data-spotlight], .vault-card, [data-slot='card'], dl > div",
+        ".vault-spotlight, [data-spotlight], .vault-card, [data-slot='card'], [data-slot='kpi-tile'], dl > div",
       );
       if (!card) return;
       const rect = card.getBoundingClientRect();

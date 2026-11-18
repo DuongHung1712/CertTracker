@@ -74,7 +74,7 @@ export function ExpiryBadge({
           />
         }
       >
-        <span className="vault-live-dot" aria-hidden />
+        {tone !== "na" && <span className="vault-live-dot" aria-hidden />}
         <Icon aria-hidden className="size-3.5" />
         {label}
         {detail !== label && <span className="sr-only">, {detail}</span>}

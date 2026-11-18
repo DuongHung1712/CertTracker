@@ -189,7 +189,7 @@ export function StyleSwitcherDemo() {
             <div>
               <h4 className="text-body font-semibold">Interactive Button Behavior</h4>
               <p className="text-caption text-muted-foreground">
-                Notice {style === "tactile" ? "the physical 3D push-down elevation" : style === "aurora" ? "the soft iridescent hover glow" : "the clean flat Swiss click state"}
+                Notice {style === "tactile" ? "the physical 3D push-down elevation" : style === "aurora" ? "the soft iridescent hover glow" : style === "vault" ? "the precision metallic bevel and emerald halo" : "the clean flat Swiss click state"}
               </p>
             </div>
             <span className="rounded bg-muted px-2 py-0.5 font-mono text-caption text-muted-foreground">
@@ -232,6 +232,7 @@ export function StyleSwitcherDemo() {
           <p className="text-[11px] text-muted-foreground">
             {style === "tactile" && "Tactile rule active: active:translate-y-[1.5px] with compressed bottom shadow on action buttons; ghost buttons stay completely flat."}
             {style === "aurora" && "Aurora rule active: soft teal radial glow on hover with frosted edge accents."}
+            {style === "vault" && "Vault rule active: precision metallic bevel with high-intensity emerald hover halo."}
             {style === "classic" && "Classic rule active: crisp flat tokens, strict 6px radius, no drop shadow."}
           </p>
         </div>
@@ -241,7 +242,7 @@ export function StyleSwitcherDemo() {
           <div className="border-b pb-3">
             <h4 className="text-body font-semibold">Concave Input & Form Feel</h4>
             <p className="text-caption text-muted-foreground">
-              Notice {style === "tactile" ? "the recessed inner inset shadow creating tangible depth" : style === "aurora" ? "the translucent frosted background and focus glow" : "the functional flat border"}
+              Notice {style === "tactile" ? "the recessed inner inset shadow creating tangible depth" : style === "aurora" ? "the translucent frosted background and focus glow" : style === "vault" ? "the obsidian container with micro-border highlight" : "the functional flat border"}
             </p>
           </div>
 
@@ -258,6 +259,7 @@ export function StyleSwitcherDemo() {
             <p className="text-[11px] text-muted-foreground">
               {style === "tactile" && "Tactile concave rule active: inset 0 2px 4px rgba(15, 23, 42, 0.07)."}
               {style === "aurora" && "Aurora rule active: translucent background with ring accent glow."}
+              {style === "vault" && "Vault rule active: obsidian container with high-precision micro-border highlight."}
               {style === "classic" && "Classic rule active: standard neutral border-input token."}
             </p>
           </div>

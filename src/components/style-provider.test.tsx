@@ -163,4 +163,48 @@ describe("StyleProvider & useThemeStyle", () => {
 
     expect(result.current.style).toBe("classic");
   });
+
+  it("coordinates cursor coordinates on vault-spotlight cards when vault style is active", async () => {
+    const user = userEvent.setup();
+    render(
+      <StyleProvider>
+        <TestConsumer />
+        <div data-testid="target-kpi" data-slot="kpi-tile" className="vault-spotlight">
+          KPI Content
+        </div>
+      </StyleProvider>,
+    );
+
+    const kpi = screen.getByTestId("target-kpi");
+    kpi.getBoundingClientRect = () =>
+      ({
+        left: 100,
+        top: 100,
+        right: 300,
+        bottom: 200,
+        width: 200,
+        height: 100,
+        x: 100,
+        y: 100,
+        toJSON: () => {},
+      }) as DOMRect;
+
+    // In classic mode, pointermove does nothing
+    act(() => {
+      window.dispatchEvent(new PointerEvent("pointermove", { clientX: 150, clientY: 130 }));
+    });
+    expect(kpi.style.getPropertyValue("--mouse-x")).toBe("");
+
+    // Switch to vault mode
+    await user.click(screen.getByRole("button", { name: "Set Vault" }));
+
+    // Now pointermove on the kpi card updates CSS variables
+    act(() => {
+      const event = new PointerEvent("pointermove", { clientX: 150, clientY: 130, bubbles: true });
+      kpi.dispatchEvent(event);
+    });
+
+    expect(kpi.style.getPropertyValue("--mouse-x")).toBe("50px");
+    expect(kpi.style.getPropertyValue("--mouse-y")).toBe("30px");
+  });
 });

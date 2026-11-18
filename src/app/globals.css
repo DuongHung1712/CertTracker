@@ -584,12 +584,52 @@ html[data-style="vault"] table thead tr,
 html[data-style="vault"] table th,
 html[data-style="vault"] table td[class*="sticky"],
 html[data-style="vault"] table td.sticky,
-html[data-style="vault"] [data-sticky="true"] {
+html[data-style="vault"] [data-sticky="true"],
+html[data-style="vault"] .sticky-header,
+html[data-style="vault"] .sticky {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-/* Feature 1: Mouse-Tracking Spotlight Glow */
+/* Vault light mode solid opaque table cell backgrounds */
+html[data-style="vault"] thead th,
+html[data-style="vault"] thead td,
+html[data-style="vault"] table thead tr,
+html[data-style="vault"] thead {
+  background-color: #EDF0EE !important;
+}
+
+html[data-style="vault"] table td[class*="sticky"],
+html[data-style="vault"] table td.sticky,
+html[data-style="vault"] [data-sticky="true"]:not(th) {
+  background-color: #FFFFFF !important;
+}
+
+html[data-style="vault"] tr:hover td[class*="sticky"],
+html[data-style="vault"] tr:hover td.sticky {
+  background-color: #E6EFEF !important;
+}
+
+/* Vault dark mode solid opaque table cell backgrounds */
+html[data-style="vault"].dark thead th,
+html[data-style="vault"].dark thead td,
+html[data-style="vault"].dark table thead tr,
+html[data-style="vault"].dark thead {
+  background-color: #162028 !important;
+}
+
+html[data-style="vault"].dark table td[class*="sticky"],
+html[data-style="vault"].dark table td.sticky,
+html[data-style="vault"].dark [data-sticky="true"]:not(th) {
+  background-color: #101820 !important;
+}
+
+html[data-style="vault"].dark tr:hover td[class*="sticky"],
+html[data-style="vault"].dark tr:hover td.sticky {
+  background-color: #142E2E !important;
+}
+
+/* Feature 1: Mouse-Tracking Spotlight Glow (scoped strictly to Vault style) */
 .vault-spotlight {
   position: relative;
   overflow: hidden;
@@ -597,6 +637,12 @@ html[data-style="vault"] [data-sticky="true"] {
 
 .vault-spotlight::before {
   content: "";
+  display: none;
+}
+
+html[data-style="vault"] .vault-spotlight::before {
+  content: "";
+  display: block;
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -611,7 +657,7 @@ html[data-style="vault"] [data-sticky="true"] {
   z-index: 1;
 }
 
-.dark .vault-spotlight::before {
+html[data-style="vault"].dark .vault-spotlight::before {
   background: radial-gradient(
     320px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
     rgba(56, 178, 163, 0.18),
@@ -619,12 +665,12 @@ html[data-style="vault"] [data-sticky="true"] {
   );
 }
 
-.vault-spotlight:hover::before {
+html[data-style="vault"] .vault-spotlight:hover::before {
   opacity: 1;
 }
 
 /* Auto-enable spotlight on cards and KPI tiles when Vault style is active */
-html[data-style="vault"] .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead),
+html[data-style="vault"] .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead):not(header):not([role="dialog"]):not([role="menu"]),
 html[data-style="vault"] [data-slot="card"],
 html[data-style="vault"] [data-slot="kpi-tile"],
 html[data-style="vault"] dl > div {
@@ -632,7 +678,7 @@ html[data-style="vault"] dl > div {
   overflow: hidden;
 }
 
-html[data-style="vault"] .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead)::before,
+html[data-style="vault"] .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead):not(header):not([role="dialog"]):not([role="menu"])::before,
 html[data-style="vault"] [data-slot="card"]::before,
 html[data-style="vault"] [data-slot="kpi-tile"]::before,
 html[data-style="vault"] dl > div::before {
@@ -651,7 +697,7 @@ html[data-style="vault"] dl > div::before {
   z-index: 1;
 }
 
-html[data-style="vault"].dark .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead)::before,
+html[data-style="vault"].dark .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead):not(header):not([role="dialog"]):not([role="menu"])::before,
 html[data-style="vault"].dark [data-slot="card"]::before,
 html[data-style="vault"].dark [data-slot="kpi-tile"]::before,
 html[data-style="vault"].dark dl > div::before {
@@ -662,14 +708,14 @@ html[data-style="vault"].dark dl > div::before {
   );
 }
 
-html[data-style="vault"] .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead):hover::before,
+html[data-style="vault"] .bg-card:not(table):not(tr):not(td):not(th):not(tbody):not(thead):not(header):not([role="dialog"]):not([role="menu"]):hover::before,
 html[data-style="vault"] [data-slot="card"]:hover::before,
 html[data-style="vault"] [data-slot="kpi-tile"]:hover::before,
 html[data-style="vault"] dl > div:hover::before {
   opacity: 1;
 }
 
-/* Feature 2: Holographic Security Sheen */
+/* Feature 2: Holographic Security Sheen (scoped strictly to Vault style) */
 .vault-hologram {
   position: relative;
   overflow: hidden;
@@ -677,6 +723,12 @@ html[data-style="vault"] dl > div:hover::before {
 
 .vault-hologram::after {
   content: "";
+  display: none;
+}
+
+html[data-style="vault"] .vault-hologram::after {
+  content: "";
+  display: block;
   position: absolute;
   top: -120%;
   left: -120%;
@@ -699,12 +751,12 @@ html[data-style="vault"] dl > div:hover::before {
   z-index: 5;
 }
 
-.vault-hologram:hover::after {
+html[data-style="vault"] .vault-hologram:hover::after {
   transform: rotate(-25deg) translateY(40%);
   opacity: 1;
 }
 
-.dark .vault-hologram::after {
+html[data-style="vault"].dark .vault-hologram::after {
   background: linear-gradient(
     115deg,
     transparent 34%,
@@ -717,8 +769,8 @@ html[data-style="vault"] dl > div:hover::before {
   );
 }
 
-/* Holographic animated seal foil */
-.vault-holo-foil {
+/* Holographic animated seal foil (scoped strictly to Vault style) */
+html[data-style="vault"] .vault-holo-foil {
   background: linear-gradient(135deg, #10B981, #06B6D4, #A855F7, #F59E0B, #10B981);
   background-size: 300% 300%;
   animation: vault-holo-shimmer 6s ease infinite;
@@ -747,6 +799,11 @@ html[data-style="vault"] dl > div:hover::before {
 }
 
 .vault-border-beam {
+  display: none;
+}
+
+html[data-style="vault"] .vault-border-beam {
+  display: block;
   position: absolute;
   inset: 0;
   border-radius: inherit;
@@ -755,11 +812,12 @@ html[data-style="vault"] dl > div:hover::before {
   overflow: hidden;
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   z-index: 2;
 }
 
-.vault-border-beam::before {
+html[data-style="vault"] .vault-border-beam::before {
   content: "";
   position: absolute;
   top: -100%;
@@ -776,7 +834,7 @@ html[data-style="vault"] dl > div:hover::before {
   animation: vault-border-beam 4s linear infinite;
 }
 
-.dark .vault-border-beam::before {
+html[data-style="vault"].dark .vault-border-beam::before {
   background: conic-gradient(
     from 0deg,
     transparent 0deg 270deg,
@@ -789,6 +847,7 @@ html[data-style="vault"] dl > div:hover::before {
 /* Verification pulse on verified cards and verified KPI tiles */
 html[data-style="vault"] .vault-verified,
 html[data-style="vault"] [data-verified="true"],
+html[data-style="vault"] [data-solid="true"],
 html[data-style="vault"] .vault-pulse-verified {
   border-color: rgba(16, 185, 129, 0.45);
   box-shadow: 0 0 16px -2px rgba(16, 185, 129, 0.2), 0 0 0 1px rgba(16, 185, 129, 0.25);
@@ -808,6 +867,7 @@ html[data-style="vault"] .vault-pulse-verified {
 
 html[data-style="vault"].dark .vault-verified,
 html[data-style="vault"].dark [data-verified="true"],
+html[data-style="vault"].dark [data-solid="true"],
 html[data-style="vault"].dark .vault-pulse-verified {
   border-color: rgba(52, 211, 153, 0.5);
   box-shadow: 0 0 20px -2px rgba(16, 185, 129, 0.25), 0 0 0 1px rgba(52, 211, 153, 0.3);
@@ -838,6 +898,11 @@ html[data-style="vault"] .vault-live-dot {
   border-radius: 9999px;
   margin-right: 3px;
   flex-shrink: 0;
+}
+
+/* Hide live dot for unissued / NA badges */
+html[data-style="vault"] [data-status-tone="na"] .vault-live-dot {
+  display: none !important;
 }
 
 /* Emerald pulse for active / valid */
@@ -915,5 +980,18 @@ html[data-style="vault"] .vault-dot-red {
     transform: scale(0.95);
     opacity: 0;
     box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+/* Accessibility: Respect preferred reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html[data-style="vault"] .vault-border-beam::before,
+  html[data-style="vault"] .vault-holo-foil,
+  html[data-style="vault"] .vault-verified,
+  html[data-style="vault"] [data-verified="true"],
+  html[data-style="vault"] [data-solid="true"],
+  html[data-style="vault"] .vault-pulse-verified,
+  html[data-style="vault"] .vault-live-dot::before {
+    animation: none !important;
   }
 }
