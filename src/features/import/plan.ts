@@ -168,6 +168,26 @@ type PlanContext = {
   seenRecords: Map<string, number>;
 };
 
+/**
+ * A member can hold several records of one certificate (renewals). The sheet has one row per member and
+ * certificate, so it updates one record: the active attempt, else the latest Completed one. commit_import
+ * (migration 20261118000004) orders the same way, so the preview and the commit name the same record.
+ */
+export function preferredRecords(records: ExistingRecord[]): Map<string, ExistingRecord> {
+  const rank = (r: ExistingRecord) => [r.status === "done" ? 0 : 1, r.issuedDate ?? "", r.id] as const;
+  const better = (a: ExistingRecord, b: ExistingRecord) => {
+    const [x, y] = [rank(a), rank(b)];
+    return x[0] !== y[0] ? x[0] > y[0] : x[1] !== y[1] ? x[1] > y[1] : x[2] > y[2];
+  };
+  const byKey = new Map<string, ExistingRecord>();
+  for (const record of records) {
+    const key = `${record.memberId}|${record.certificateId}`;
+    const current = byKey.get(key);
+    if (!current || better(record, current)) byKey.set(key, record);
+  }
+  return byKey;
+}
+
 function groupBy<T>(items: T[], key: (item: T) => string): Map<string, T[]> {
   const groups = new Map<string, T[]>();
   for (const item of items) {
@@ -202,7 +222,7 @@ function createContext(table: ImportTable, lookups: ImportLookups, today: string
     certTypeNameById: new Map(lookups.certTypes.map((certType) => [certType.id, certType.name])),
     certificatesByName: groupBy(lookups.certificates, (certificate) => foldText(certificate.name)),
     studyCoursesByName: groupBy(lookups.studyCourses, (course) => foldText(course.name)),
-    recordsByKey: new Map(lookups.records.map((record) => [`${record.memberId}|${record.certificateId}`, record])),
+    recordsByKey: preferredRecords(lookups.records),
     newMembers: new Map(),
     newProviders: new Map(),
     newCertTypes: new Map(),

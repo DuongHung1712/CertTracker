@@ -1,4 +1,4 @@
-import { AlertCircle, Clock, Upload } from "lucide-react";
+import { AlertCircle, Clock, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { AttentionRecord } from "@/features/dashboard/member-metrics";
 import type { RecordRow } from "@/features/records/queries";
@@ -7,15 +7,18 @@ import { daysLeftLabel } from "@/lib/plural";
 
 export function MemberAttentionBanner({
   attention,
+  onRenew,
   onUploadProof,
 }: {
   attention: AttentionRecord | null;
-  onUploadProof: (record: RecordRow) => void;
+  onRenew?: (record: RecordRow) => void;
+  onUploadProof?: (record: RecordRow) => void;
 }) {
   if (!attention) return null;
 
   const { record, urgency } = attention;
   const isExpired = urgency === "expired";
+  const handleAction = onRenew ?? onUploadProof ?? (() => {});
 
   return (
     <aside
@@ -53,13 +56,13 @@ export function MemberAttentionBanner({
         variant="outline"
         className={
           isExpired
-            ? "border-[var(--status-expired-border)] bg-background text-foreground hover:bg-background/90 shrink-0 self-start sm:self-center"
-            : "border-[var(--status-expiring-soon-border)] bg-background text-foreground hover:bg-background/90 shrink-0 self-start sm:self-center"
+            ? "border-[var(--status-expired-border)] bg-background text-foreground hover:bg-background/90 shrink-0 self-start sm:self-center gap-1.5"
+            : "border-[var(--status-expiring-soon-border)] bg-background text-foreground hover:bg-background/90 shrink-0 self-start sm:self-center gap-1.5"
         }
-        onClick={() => onUploadProof(record)}
+        onClick={() => handleAction(record)}
       >
-        <Upload className="size-4" aria-hidden="true" />
-        Upload evidence
+        <RotateCcw className="size-4" aria-hidden="true" />
+        Renew credential
       </Button>
     </aside>
   );
