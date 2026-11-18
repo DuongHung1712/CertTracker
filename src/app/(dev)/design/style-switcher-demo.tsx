@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Award, Box, Check, Layers, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun } from "lucide-react";
+import { Award, Check, Layers, Monitor, Moon, Palette, RefreshCw, ShieldCheck, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,14 +11,12 @@ import { SpotlightCard } from "@/components/vault/spotlight-card";
 
 export function StyleSwitcherDemo() {
   const { theme, setTheme } = useTheme();
-  const { style, setStyle, styles } = useThemeStyle();
-  const [testInput, setTestInput] = React.useState("Typed sample value");
+  const { style, setStyle, toggleStyle, styles } = useThemeStyle();
+  const [testInput, setTestInput] = React.useState("CERT-2026-AWS-90821");
   const [clickCount, setClickCount] = React.useState(0);
 
   const styleIcons: Record<ThemeStyle, React.ReactNode> = {
     classic: <Layers className="size-5 text-primary" />,
-    aurora: <Sparkles className="size-5 text-primary" />,
-    tactile: <Box className="size-5 text-primary" />,
     vault: <ShieldCheck className="size-5 text-primary" />,
   };
 
@@ -31,18 +29,29 @@ export function StyleSwitcherDemo() {
             <Palette className="size-5 text-primary" />
             <h3 className="text-section-title font-semibold">Dual-Axis Theme Engine</h3>
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-              PoC Active
+              2 Styles &times; 3 Modes
             </span>
           </div>
           <p className="text-caption text-muted-foreground">
-            Current mode: <strong className="text-foreground">{style.toUpperCase()}</strong> style &times;{" "}
+            Current configuration: <strong className="text-foreground">{style.toUpperCase()}</strong> visual style &times;{" "}
             <strong className="text-foreground">{theme?.toUpperCase() || "SYSTEM"}</strong> color mode
           </p>
         </div>
 
-        {/* Color Mode Switcher */}
-        <div className="flex items-center gap-2">
-          <span className="text-caption font-medium text-muted-foreground mr-1">Color:</span>
+        {/* Action Controls: Fast Style Toggle & Color Mode */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={toggleStyle}
+            className="flex items-center gap-1.5 font-medium"
+          >
+            <RefreshCw className="size-3.5" />
+            <span>Switch to {style === "classic" ? "Credential Vault" : "Classic Swiss"}</span>
+          </Button>
+
+          {/* Color Mode Switcher */}
           <div className="inline-flex rounded-lg border bg-muted p-0.5">
             <button
               type="button"
@@ -84,8 +93,8 @@ export function StyleSwitcherDemo() {
         </div>
       </div>
 
-      {/* 4 Visual Style Selection Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 2 Visual Style Selection Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {styles.map((item) => {
           const isSelected = style === item.id;
           return (
@@ -95,12 +104,12 @@ export function StyleSwitcherDemo() {
               onClick={() => setStyle(item.id)}
               className={`group flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all ${
                 isSelected
-                  ? "border-primary bg-accent/40 ring-2 ring-primary/40 shadow-sm"
+                  ? "border-primary bg-accent/40 ring-2 ring-primary/40 shadow-xs"
                   : "border-border bg-card hover:border-primary/50 hover:bg-muted/40"
               }`}
             >
               <div className="flex w-full items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2.5">
                   <div className="flex size-9 items-center justify-center rounded-lg border bg-card shadow-xs">
                     {styleIcons[item.id]}
                   </div>
@@ -116,14 +125,14 @@ export function StyleSwitcherDemo() {
                 )}
               </div>
 
-              <p className="text-caption text-muted-foreground">{item.description}</p>
+              <p className="text-caption text-muted-foreground leading-relaxed">{item.description}</p>
 
               {/* Style Feature Badges */}
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {item.id === "classic" && (
                   <>
                     <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
-                      Flat borders
+                      Flat Swiss 1px borders
                     </span>
                     <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
                       Warm paper white
@@ -131,46 +140,23 @@ export function StyleSwitcherDemo() {
                     <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
                       High data density
                     </span>
-                  </>
-                )}
-                {item.id === "aurora" && (
-                  <>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Backdrop blur (14px)
-                    </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Ambient glow
-                    </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Solid sticky cells
-                    </span>
-                  </>
-                )}
-                {item.id === "tactile" && (
-                  <>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Dual layered shadow
-                    </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Concave inner shadow
-                    </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Push-down button feel
+                    <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                      Strict 6px radius
                     </span>
                   </>
                 )}
                 {item.id === "vault" && (
                   <>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Cursor spotlight
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                      Precision 1px solid borders
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Hologram sheen
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                      Monospace metadata
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
-                      Border beam pulse
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                      Solid obsidian/paper
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
                       Live status dots
                     </span>
                   </>
@@ -181,15 +167,17 @@ export function StyleSwitcherDemo() {
         })}
       </div>
 
-      {/* Live Interactive Feature Comparison Showcase */}
+      {/* Live Interactive Comparison Touchpoints */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Component Touchpoint 1: Tactile Push Buttons & Glow */}
+        {/* Component Touchpoint 1: Buttons & Interactive Feedback */}
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="flex items-center justify-between border-b pb-3">
             <div>
               <h4 className="text-body font-semibold">Interactive Button Behavior</h4>
               <p className="text-caption text-muted-foreground">
-                Notice {style === "tactile" ? "the physical 3D push-down elevation" : style === "aurora" ? "the soft iridescent hover glow" : style === "vault" ? "the precision metallic bevel and emerald halo" : "the clean flat Swiss click state"}
+                {style === "vault"
+                  ? "Vault rule: solid precision border with crisp focus ring and high-contrast hover feedback."
+                  : "Classic rule: clean flat Swiss tokens, standard 6px radius, and zero drop shadow."}
               </p>
             </div>
             <span className="rounded bg-muted px-2 py-0.5 font-mono text-caption text-muted-foreground">
@@ -202,7 +190,7 @@ export function StyleSwitcherDemo() {
               onClick={() => setClickCount((c) => c + 1)}
               className="font-medium"
             >
-              Primary Action (Click me)
+              Primary Action
             </Button>
             <Button
               variant="secondary"
@@ -226,56 +214,59 @@ export function StyleSwitcherDemo() {
               variant="ghost"
               onClick={() => setClickCount((c) => c + 1)}
             >
-              Ghost (Flat)
+              Ghost
             </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            {style === "tactile" && "Tactile rule active: active:translate-y-[1.5px] with compressed bottom shadow on action buttons; ghost buttons stay completely flat."}
-            {style === "aurora" && "Aurora rule active: soft teal radial glow on hover with frosted edge accents."}
-            {style === "vault" && "Vault rule active: precision metallic bevel with high-intensity emerald hover halo."}
-            {style === "classic" && "Classic rule active: crisp flat tokens, strict 6px radius, no drop shadow."}
+            Current style active: <strong className="text-foreground">{style.toUpperCase()}</strong>. Notice the solid border transition and lack of blurry gradient overlays.
           </p>
         </div>
 
-        {/* Component Touchpoint 2: Concave Form Inputs */}
+        {/* Component Touchpoint 2: Form Inputs & Monospace Credential Tags */}
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="border-b pb-3">
-            <h4 className="text-body font-semibold">Concave Input & Form Feel</h4>
+            <h4 className="text-body font-semibold">Form Inputs & Monospace Tags</h4>
             <p className="text-caption text-muted-foreground">
-              Notice {style === "tactile" ? "the recessed inner inset shadow creating tangible depth" : style === "aurora" ? "the translucent frosted background and focus glow" : style === "vault" ? "the obsidian container with micro-border highlight" : "the functional flat border"}
+              {style === "vault"
+                ? "Vault rule: precision 1px solid border with uppercase monospace credential tags."
+                : "Classic rule: standard neutral border-input token with clean typographic labels."}
             </p>
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="poc-interactive-input">Test Text Input</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="poc-interactive-input">Credential Identifier</Label>
+                <span className="font-mono text-[11px] text-muted-foreground">
+                  {style === "vault" ? "[REGISTRY: VAULT-SEC-8829]" : "Format: CERT-YYYY-ORG"}
+                </span>
+              </div>
               <Input
                 id="poc-interactive-input"
                 value={testInput}
                 onChange={(e) => setTestInput(e.target.value)}
-                placeholder="Click and type here to inspect input depth..."
+                placeholder="Enter credential ID..."
+                className="font-mono text-body"
               />
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              {style === "tactile" && "Tactile concave rule active: inset 0 2px 4px rgba(15, 23, 42, 0.07)."}
-              {style === "aurora" && "Aurora rule active: translucent background with ring accent glow."}
-              {style === "vault" && "Vault rule active: obsidian container with high-precision micro-border highlight."}
-              {style === "classic" && "Classic rule active: standard neutral border-input token."}
-            </p>
+            <div className="flex items-center gap-2 pt-1">
+              <span className="vault-mono-tag">SHA-256: 7F83B165...</span>
+              <span className="vault-stamp-valid">SEC-VERIFIED</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Component Touchpoint 3: Solid Sticky Table Cells (Aurora Proof) */}
+      {/* Component Touchpoint 3: Solid Sticky Table Cells (Zero Bleed-Through) */}
       <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
         <div className="flex flex-col gap-1 border-b pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h4 className="text-body font-semibold">Solid Sticky Table Cells & Headers</h4>
             <p className="text-caption text-muted-foreground">
-              Critical Glassmorphism safety: Table headers and sticky columns remain <strong>100% solid & opaque</strong> so scrolled content underneath never bleeds through.
+              Both Classic and Credential Vault maintain <strong>100% solid, opaque table backgrounds</strong> so scrolled rows never bleed through headers or pinned columns.
             </p>
           </div>
-          <span className="rounded bg-primary/10 px-2.5 py-1 text-caption font-medium text-primary">
+          <span className="rounded bg-primary/10 px-2.5 py-1 text-caption font-mono font-medium text-primary">
             Scroll horizontally & vertically
           </span>
         </div>
@@ -328,38 +319,44 @@ export function StyleSwitcherDemo() {
         </div>
       </div>
 
-      {/* Component Touchpoints 4 & 5: Credential Vault Showcase */}
+      {/* Component Touchpoint 4: Authentic Credential Vault Showcase (Anti-Slop, Zero Gradients) */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Touchpoint 4: Interactive Mouse-Tracking Spotlight & Border Beam */}
+        {/* Card 1: Cryptographically Verified Credential */}
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="border-b pb-3">
             <div className="flex items-center gap-2">
               <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <h4 className="text-body font-semibold">Spotlight & Border Beam (Vault)</h4>
+              <h4 className="text-body font-semibold">Verified Credential Card</h4>
             </div>
             <p className="text-caption text-muted-foreground">
-              Move cursor over the certificate card below. Notice the dynamic spotlight following your mouse and the perimeter border beam on verified credentials.
+              Authentic security aesthetic: crisp 1px solid emerald verification border, monospace metadata, and solid live pulsing status dot.
             </p>
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
             <SpotlightCard
               hasSpotlight
-              hasBorderBeam
               isVerified
               className="cursor-pointer"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    CRYPTOGRAPHICALLY VERIFIED
-                  </span>
-                  <h5 className="mt-1.5 text-body font-bold text-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="vault-stamp-valid">
+                      CRYPTOGRAPHICALLY VERIFIED
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      [VAULT-SEC-01]
+                    </span>
+                  </div>
+                  <h5 className="mt-2 text-body font-bold text-foreground">
                     AWS Certified Solutions Architect - Professional
                   </h5>
-                  <p className="text-caption text-muted-foreground">Credential ID: AWS-PSA-90821-VN</p>
+                  <p className="font-mono text-caption text-muted-foreground mt-0.5">
+                    Credential ID: AWS-PSA-90821-VN
+                  </p>
                 </div>
-                <div className="flex size-10 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10">
+                <div className="flex size-10 items-center justify-center rounded-lg border border-emerald-500/40 bg-emerald-500/10">
                   <Award className="size-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
               </div>
@@ -375,45 +372,43 @@ export function StyleSwitcherDemo() {
 
             <p className="text-[11px] text-muted-foreground">
               {style === "vault"
-                ? "Vault mode active: Interactive cursor tracking coordinates (--mouse-x, --mouse-y) with animated 360-degree border beam."
-                : "Switch to 'Credential Vault' style above to activate the mouse-tracking spotlight and border beam."}
+                ? "Vault mode active: 1px solid precision verification border with solid emerald indicator pulse."
+                : "Switch to 'Credential Vault' style above to inspect authentic security styling."}
             </p>
           </div>
         </div>
 
-        {/* Touchpoint 5: Holographic Security Sheen & Live Pulsing Status Dots */}
+        {/* Card 2: Security Credential with Live Pulsing Status Dots */}
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="border-b pb-3">
             <div className="flex items-center gap-2">
-              <Sparkles className="size-4 text-primary" />
-              <h4 className="text-body font-semibold">Holographic Sheen & Live Dots</h4>
+              <ShieldCheck className="size-4 text-primary" />
+              <h4 className="text-body font-semibold">Security Credential & Live Dots</h4>
             </div>
             <p className="text-caption text-muted-foreground">
-              Hover over the credential below to reveal the prismatic holographic reflection. Observe the live emerald (valid) and amber (expiring) pulsing status dots.
+              Zero gradient colors: 100% solid surfaces with live pulsing indicators (emerald for valid, amber for expiring, red for expired).
             </p>
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
             <SpotlightCard
               hasSpotlight
-              hasHologram
               className="group cursor-pointer border-emerald-500/30"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5">
-                    <span className="vault-holo-foil size-2 rounded-full" />
-                    <span className="text-[10px] font-semibold tracking-wider uppercase text-primary">
-                      Hologram Security Seal
-                    </span>
+                  <div className="inline-flex items-center gap-1.5 rounded border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-primary">
+                    Official Security Credential · (ISC)&sup2;
                   </div>
                   <h5 className="mt-2 text-body font-bold text-foreground">
                     Certified Information Systems Security Professional (CISSP)
                   </h5>
-                  <p className="text-caption text-muted-foreground">Official Security Credential · (ISC)2</p>
+                  <p className="font-mono text-caption text-muted-foreground mt-0.5">
+                    REGISTRY: CISSP-90821-VN · SHA-256 VERIFIED
+                  </p>
                 </div>
-                <div className="vault-holo-foil flex size-9 items-center justify-center rounded-full text-white shadow-xs">
-                  <ShieldCheck className="size-4 drop-shadow-xs" />
+                <div className="vault-holo-foil flex size-9 items-center justify-center rounded-lg text-primary-foreground shadow-xs">
+                  <ShieldCheck className="size-4" />
                 </div>
               </div>
 
@@ -427,7 +422,7 @@ export function StyleSwitcherDemo() {
                 <div className="flex items-center gap-1.5" data-status-tone="expiring-60">
                   <span className="vault-live-dot" aria-hidden />
                   <span className="rounded border border-status-expiring-60-border bg-status-expiring-60-bg px-2 py-0.5 font-mono text-[11px] font-medium text-status-expiring-60-fg">
-                    Expiring (Amber Pulse)
+                    Expiring in 60d
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5" data-status-tone="expired">
@@ -441,8 +436,8 @@ export function StyleSwitcherDemo() {
 
             <p className="text-[11px] text-muted-foreground">
               {style === "vault"
-                ? "Vault mode active: Multi-spectral holographic sheen sweeps across on hover with live status indicator pulses."
-                : "Switch to 'Credential Vault' style above to test the holographic sheen and pulsing live status dots."}
+                ? "Vault mode active: Real-time solid status dot pulses indicate credential lifecycle states."
+                : "Switch to 'Credential Vault' style above to activate live status dot indicators."}
             </p>
           </div>
         </div>

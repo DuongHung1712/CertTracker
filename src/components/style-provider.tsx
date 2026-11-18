@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-export type ThemeStyle = "classic" | "aurora" | "tactile" | "vault";
+export type ThemeStyle = "classic" | "vault";
 
 export interface StyleOption {
   id: ThemeStyle;
@@ -17,38 +17,25 @@ export const THEME_STYLES: StyleOption[] = [
     label: "Classic Swiss",
     tagline: "Dense, functional, paper & ink",
     description:
-      "Original CertTracker design. Crisp borders, warm paper-white background, and zero unnecessary decorative blur.",
-  },
-  {
-    id: "aurora",
-    label: "Aurora Glass",
-    tagline: "Frosted glassmorphism & ambient glow",
-    description:
-      "Translucent glass panels with ambient backdrop blur, iridescent glows, and solid sticky table cells for crisp data reading.",
-  },
-  {
-    id: "tactile",
-    label: "Modern Tactile 2.0",
-    tagline: "Layered elevation & physical feel",
-    description:
-      "Subtle dual shadows, concave inner-shadow input fields, and realistic tactile push-down button feedback.",
+      "Original CertTracker design. Crisp flat borders, warm paper-white background, 6px radius, and zero unnecessary decorative ornament.",
   },
   {
     id: "vault",
     label: "Credential Vault",
-    tagline: "Cryptographic security & physical seal",
+    tagline: "Cryptographic security & physical credential",
     description:
-      "Tailored for authentic credentials: interactive spotlight cards, holographic security sheen, animated border beam pulses, and live glowing status indicators.",
+      "Tailored for authentic credentials: crisp precision 1px borders, monospace security tags, solid high-contrast surfaces, and live status dots.",
   },
 ];
 
 export const STYLE_STORAGE_KEY = "certtracker-style";
 
-export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(s==='aurora'||s==='tactile'||s==='vault'||s==='classic'){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
+export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(s==='vault'||s==='classic'){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
 
-interface StyleContextType {
+export interface StyleContextType {
   style: ThemeStyle;
   setStyle: (style: ThemeStyle) => void;
+  toggleStyle: () => void;
   styles: typeof THEME_STYLES;
 }
 
@@ -66,12 +53,12 @@ export function StyleProvider({
   React.useEffect(() => {
     try {
       const stored = localStorage.getItem(STYLE_STORAGE_KEY) as ThemeStyle | null;
-      if (stored === "classic" || stored === "aurora" || stored === "tactile" || stored === "vault") {
+      if (stored === "classic" || stored === "vault") {
         setStyleState(stored);
         document.documentElement.setAttribute("data-style", stored);
       } else {
         const currentAttr = document.documentElement.getAttribute("data-style") as ThemeStyle | null;
-        if (currentAttr === "classic" || currentAttr === "aurora" || currentAttr === "tactile" || currentAttr === "vault") {
+        if (currentAttr === "classic" || currentAttr === "vault") {
           setStyleState(currentAttr);
         } else {
           document.documentElement.setAttribute("data-style", defaultStyle);
@@ -83,7 +70,7 @@ export function StyleProvider({
   }, [defaultStyle]);
 
   const setStyle = React.useCallback((next: ThemeStyle) => {
-    if (next !== "classic" && next !== "aurora" && next !== "tactile" && next !== "vault") return;
+    if (next !== "classic" && next !== "vault") return;
     setStyleState(next);
     try {
       localStorage.setItem(STYLE_STORAGE_KEY, next);
@@ -94,12 +81,16 @@ export function StyleProvider({
     }
   }, []);
 
+  const toggleStyle = React.useCallback(() => {
+    setStyle(style === "classic" ? "vault" : "classic");
+  }, [style, setStyle]);
+
   React.useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
       if (e.key === STYLE_STORAGE_KEY) {
         if (e.newValue) {
           const next = e.newValue as ThemeStyle;
-          if (next === "classic" || next === "aurora" || next === "tactile" || next === "vault") {
+          if (next === "classic" || next === "vault") {
             setStyleState(next);
             document.documentElement.setAttribute("data-style", next);
           }
@@ -114,7 +105,7 @@ export function StyleProvider({
     return () => window.removeEventListener("storage", handleStorage);
   }, [defaultStyle]);
 
-  // Global mouse-tracking spotlight coordinator for the Vault style
+  // Global mouse-tracking coordinator for elements with .vault-spotlight
   React.useEffect(() => {
     if (style !== "vault") return;
 
@@ -136,9 +127,10 @@ export function StyleProvider({
     () => ({
       style,
       setStyle,
+      toggleStyle,
       styles: THEME_STYLES,
     }),
-    [style, setStyle],
+    [style, setStyle, toggleStyle],
   );
 
   return <StyleContext.Provider value={value}>{children}</StyleContext.Provider>;
@@ -151,3 +143,4 @@ export function useThemeStyle() {
   }
   return context;
 }
+

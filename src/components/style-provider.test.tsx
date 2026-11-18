@@ -11,15 +11,14 @@ import {
 } from "./style-provider";
 
 function TestConsumer() {
-  const { style, setStyle, styles } = useThemeStyle();
+  const { style, setStyle, toggleStyle, styles } = useThemeStyle();
   return (
     <div>
       <span data-testid="current-style">{style}</span>
       <div data-testid="styles-count">{styles.length}</div>
-      <button onClick={() => setStyle("aurora")}>Set Aurora</button>
-      <button onClick={() => setStyle("tactile")}>Set Tactile</button>
       <button onClick={() => setStyle("vault")}>Set Vault</button>
       <button onClick={() => setStyle("classic")}>Set Classic</button>
+      <button onClick={toggleStyle}>Toggle Style</button>
     </div>
   );
 }
@@ -42,7 +41,7 @@ describe("StyleProvider & useThemeStyle", () => {
     );
   });
 
-  it("defaults to classic style and exposes THEME_STYLES", () => {
+  it("defaults to classic style and exposes exactly 2 THEME_STYLES (classic & vault)", () => {
     render(
       <StyleProvider>
         <TestConsumer />
@@ -50,12 +49,13 @@ describe("StyleProvider & useThemeStyle", () => {
     );
 
     expect(screen.getByTestId("current-style").textContent).toBe("classic");
-    expect(screen.getByTestId("styles-count").textContent).toBe(String(THEME_STYLES.length));
+    expect(screen.getByTestId("styles-count").textContent).toBe("2");
+    expect(THEME_STYLES.map((s) => s.id)).toEqual(["classic", "vault"]);
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
   });
 
   it("loads stored style from localStorage on mount", () => {
-    localStorage.setItem(STYLE_STORAGE_KEY, "aurora");
+    localStorage.setItem(STYLE_STORAGE_KEY, "vault");
 
     render(
       <StyleProvider>
@@ -63,8 +63,8 @@ describe("StyleProvider & useThemeStyle", () => {
       </StyleProvider>,
     );
 
-    expect(screen.getByTestId("current-style").textContent).toBe("aurora");
-    expect(document.documentElement.getAttribute("data-style")).toBe("aurora");
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+    expect(document.documentElement.getAttribute("data-style")).toBe("vault");
   });
 
   it("updates state, localStorage, and html[data-style] on style change", async () => {
@@ -75,22 +75,35 @@ describe("StyleProvider & useThemeStyle", () => {
       </StyleProvider>,
     );
 
-    await user.click(screen.getByRole("button", { name: "Set Aurora" }));
-    expect(screen.getByTestId("current-style").textContent).toBe("aurora");
-    expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("aurora");
-    expect(document.documentElement.getAttribute("data-style")).toBe("aurora");
-
-    await user.click(screen.getByRole("button", { name: "Set Tactile" }));
-    expect(screen.getByTestId("current-style").textContent).toBe("tactile");
-    expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("tactile");
-    expect(document.documentElement.getAttribute("data-style")).toBe("tactile");
-
     await user.click(screen.getByRole("button", { name: "Set Vault" }));
     expect(screen.getByTestId("current-style").textContent).toBe("vault");
     expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("vault");
     expect(document.documentElement.getAttribute("data-style")).toBe("vault");
 
     await user.click(screen.getByRole("button", { name: "Set Classic" }));
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+    expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("classic");
+    expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+  });
+
+  it("toggles between classic and vault using toggleStyle", async () => {
+    const user = userEvent.setup();
+    render(
+      <StyleProvider>
+        <TestConsumer />
+      </StyleProvider>,
+    );
+
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+
+    // Toggle 1: classic -> vault
+    await user.click(screen.getByRole("button", { name: "Toggle Style" }));
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+    expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("vault");
+    expect(document.documentElement.getAttribute("data-style")).toBe("vault");
+
+    // Toggle 2: vault -> classic
+    await user.click(screen.getByRole("button", { name: "Toggle Style" }));
     expect(screen.getByTestId("current-style").textContent).toBe("classic");
     expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("classic");
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
@@ -107,23 +120,23 @@ describe("StyleProvider & useThemeStyle", () => {
       window.dispatchEvent(
         new StorageEvent("storage", {
           key: STYLE_STORAGE_KEY,
-          newValue: "tactile",
+          newValue: "vault",
         }),
       );
     });
 
-    expect(screen.getByTestId("current-style").textContent).toBe("tactile");
-    expect(document.documentElement.getAttribute("data-style")).toBe("tactile");
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+    expect(document.documentElement.getAttribute("data-style")).toBe("vault");
   });
 
   it("reverts to defaultStyle when storage key is removed in another tab", () => {
-    localStorage.setItem(STYLE_STORAGE_KEY, "aurora");
+    localStorage.setItem(STYLE_STORAGE_KEY, "vault");
     render(
       <StyleProvider defaultStyle="classic">
         <TestConsumer />
       </StyleProvider>,
     );
-    expect(screen.getByTestId("current-style").textContent).toBe("aurora");
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
 
     act(() => {
       window.dispatchEvent(
@@ -138,16 +151,29 @@ describe("StyleProvider & useThemeStyle", () => {
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
   });
 
-  it("ignores unknown or invalid style strings gracefully", () => {
+  it("strictly rejects obsolete exploratory styles (aurora, tactile) and unknown strings", () => {
     const { result } = renderHook(() => useThemeStyle(), {
       wrapper: ({ children }) => <StyleProvider>{children}</StyleProvider>,
     });
 
     act(() => {
-      // @ts-expect-error testing runtime guard against invalid style
+      // @ts-expect-error verifying obsolete aurora is strictly rejected
+      result.current.setStyle("aurora");
+    });
+    expect(result.current.style).toBe("classic");
+    expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+
+    act(() => {
+      // @ts-expect-error verifying obsolete tactile is strictly rejected
+      result.current.setStyle("tactile");
+    });
+    expect(result.current.style).toBe("classic");
+    expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+
+    act(() => {
+      // @ts-expect-error testing runtime guard against unknown style
       result.current.setStyle("neon-cyberpunk");
     });
-
     expect(result.current.style).toBe("classic");
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
 
