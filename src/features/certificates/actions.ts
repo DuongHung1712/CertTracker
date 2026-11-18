@@ -6,9 +6,12 @@ import {
   certificateDuplicateMessage,
   certificateSchema,
   certificateWithIdSchema,
+  proposeCertificateSchema,
   type CertificateInput,
   type CertificateKind,
+  type ProposeCertificateInput,
 } from "@/features/certificates/schema";
+import type { CertificateChoice } from "@/features/records/certificate-course";
 import { idSchema } from "@/features/courses/schema";
 import { assertAffected } from "@/lib/assert-affected";
 import { mapPostgresError } from "@/lib/postgres-error";
@@ -94,5 +97,98 @@ export async function deleteCertificate(input: { id: string }): Promise<Result<n
   const guard = assertAffected(data);
   if (guard) return guard;
   revalidatePath("/courses");
+  return ok(null);
+}
+
+export async function proposeCertificate(input: ProposeCertificateInput): Promise<Result<CertificateChoice>> {
+  const parsed = proposeCertificateSchema.safeParse(input);
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return err("You must be signed in to propose a certificate.");
+
+  // Get the caller's member_id from profiles
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("member_id, role")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (profileError || !profile?.member_id) {
+    return err("Your account is not linked to a member profile.");
+  }
+
+  // Anti-duplicate check: see if an approved entry already exists with identical name
+  const trimmedName = parsed.data.name.trim();
+  const { data: existing } = await supabase
+    .from("certificates")
+    .select("id, name, kind, catalogue_status")
+    .ilike("name", trimmedName)
+    .eq("catalogue_status", "approved")
+    .limit(1);
+
+  const duplicateItem = Array.isArray(existing) ? existing[0] : existing;
+  if (duplicateItem) {
+    return err(`This certificate is already in the Catalogue ("${duplicateItem.name}"). Choose it from the list.`);
+  }
+
+  const { data: inserted, error } = await supabase
+    .from("certificates")
+    .insert({
+      name: trimmedName,
+      kind: parsed.data.kind,
+      provider_id: parsed.data.providerId ?? null,
+      proposed_provider: parsed.data.proposedProvider ?? null,
+      url: parsed.data.url ?? null,
+      proposal_reason: parsed.data.reason ?? null,
+      catalogue_status: "pending",
+      proposed_by: profile.member_id,
+    })
+    .select("id, name, kind, provider_id, proposed_provider, catalogue_status, providers(name)")
+    .single();
+
+  if (error) {
+    return err(
+      mapPostgresError(error, {
+        duplicate: "A certificate with this name and provider already exists in the Catalogue or has been proposed.",
+      }),
+    );
+  }
+  if (!inserted) return err("Could not propose certificate");
+
+  revalidatePath("/me");
+  revalidatePath("/dashboard");
+  revalidatePath("/courses");
+  revalidatePath("/records");
+
+  const choice: CertificateChoice = {
+    id: inserted.id,
+    label: inserted.name,
+    hint: (inserted.providers as { name: string } | null)?.name ?? inserted.proposed_provider ?? undefined,
+    kind: inserted.kind,
+    grantingCourse: null,
+    catalogueStatus: "pending",
+  };
+
+  return ok(choice);
+}
+
+export async function approveCertificate(input: { id: string }): Promise<Result<null>> {
+  const parsed = idSchema.safeParse(input);
+  if (!parsed.success) return err("Invalid data");
+
+  const supabase = await createClient();
+  // One transaction in SQL: creates the typed provider and, for a course completion, the course that grants it.
+  const { error } = await supabase.rpc("approve_certificate", { p_id: parsed.data.id });
+  if (error?.code === "P0002") return err("This proposal was already reviewed. Refresh the page.");
+  if (error) return err(mapPostgresError(error, { duplicate: "The Catalogue already has an item with this name and provider: delete the proposal and use that one." }));
+
+  revalidatePath("/courses");
+  revalidatePath("/records");
+  revalidatePath("/me");
+  revalidatePath("/dashboard");
   return ok(null);
 }

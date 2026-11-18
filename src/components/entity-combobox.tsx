@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,
@@ -41,6 +42,7 @@ export function EntityCombobox({
   options,
   placeholder,
   emptyText,
+  emptyAction,
   disabled,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
@@ -52,6 +54,7 @@ export function EntityCombobox({
   options: ComboboxOption[];
   placeholder: string;
   emptyText: string;
+  emptyAction?: { label: string; onClick: (query?: string) => void };
   disabled?: boolean;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
@@ -70,6 +73,8 @@ export function EntityCombobox({
   const grouped = options.some((option) => option.group);
   const groups = useMemo(() => (grouped ? groupOptions(options) : []), [grouped, options]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   const renderItem = (option: ComboboxOption) => (
     <ComboboxItem key={option.id} value={option}>
       {/* Wraps instead of truncating: a long certificate name must not hide the kind at its end. */}
@@ -85,6 +90,7 @@ export function EntityCombobox({
       items={grouped ? groups : options}
       value={selected}
       onValueChange={(option) => onChange(option?.id ?? "")}
+      onInputValueChange={(q) => setSearchQuery(q)}
       itemToStringLabel={(option) => option.label}
       isItemEqualToValue={(a, b) => a.id === b.id}
       filter={matches}
@@ -101,7 +107,24 @@ export function EntityCombobox({
         className="w-full"
       />
       <ComboboxContent>
-        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+        <ComboboxEmpty>
+          {emptyAction ? (
+            <div className="flex flex-col items-center gap-1.5 py-1 text-center">
+              <span>{emptyText}</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-caption"
+                onClick={() => emptyAction.onClick(searchQuery)}
+              >
+                + {emptyAction.label}
+              </Button>
+            </div>
+          ) : (
+            emptyText
+          )}
+        </ComboboxEmpty>
         <ComboboxList>
           {grouped
             ? (group: OptionGroup) => (

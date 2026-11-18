@@ -13,7 +13,9 @@ import { rowActionsColumn } from "@/components/data/row-actions-column";
 import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
 import type { SelectOption } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
-import { deleteCertificate } from "@/features/certificates/actions";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { approveCertificate, deleteCertificate } from "@/features/certificates/actions";
 import { CERTIFICATE_ADD_NEUTRAL_LABEL, CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN, certificateDeleteHint, formatPreparedBy } from "@/features/certificates/schema";
 import { CertificateSheet } from "@/features/certificates/components/certificate-sheet";
 import type { CertificateRow } from "@/features/certificates/queries";
@@ -80,7 +82,23 @@ export function CertificatesTable({
   }, [certificates, preparedBy, search]);
 
   const columns: ColumnDef<CertificateRow, unknown>[] = [
-    { accessorKey: "name", header: "Name", cell: ({ row }) => <TruncatedCell text={row.original.name} /> },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 min-w-0">
+          <TruncatedCell text={row.original.name} />
+          {row.original.catalogueStatus === "pending" && (
+            <Badge
+              variant="outline"
+              className="rounded-sm border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1 py-0 h-4 shrink-0"
+            >
+              Pending
+            </Badge>
+          )}
+        </div>
+      ),
+    },
     {
       accessorKey: "kind",
       header: "Kind",
@@ -117,6 +135,21 @@ export function CertificatesTable({
       ? [
           rowActionsColumn<CertificateRow>({
             rowLabel: (row) => row.name,
+            extraItems: (row) =>
+              row.catalogueStatus === "pending" ? (
+                <DropdownMenuItem
+                  onClick={async () => {
+                    const res = await approveCertificate({ id: row.id });
+                    if (!res.ok) {
+                      toast.error(res.error);
+                    } else {
+                      toast.success(`Approved ${row.name}`);
+                    }
+                  }}
+                >
+                  Approve proposal
+                </DropdownMenuItem>
+              ) : null,
             onEdit: (row) => {
               setEditing(row);
               setSheetOpen(true);
