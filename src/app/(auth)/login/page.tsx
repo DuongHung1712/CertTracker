@@ -2,9 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Logo } from "@/components/app-shell/logo";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { LoginForm } from "@/features/auth/components/login-form";
+import { PasswordSetFeedback } from "@/features/auth/components/password-set-feedback";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordSet?: string; next?: string }> }) {
-  const { passwordSet, next } = await searchParams;
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ passwordSet?: string; next?: string; email?: string }> }) {
+  const { passwordSet, next, email } = await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
@@ -18,8 +19,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             {passwordSet ? "Password saved. Sign in with your new password." : "Sign in with the account you were given"}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <LoginForm next={safeNextPath(next)} />
+        <CardContent className="flex flex-col gap-4">
+          {passwordSet && <PasswordSetFeedback />}
+          <LoginForm next={safeNextPath(next)} defaultEmail={email} />
         </CardContent>
       </Card>
     </main>

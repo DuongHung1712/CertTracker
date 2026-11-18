@@ -43,8 +43,10 @@ test("opening the link alone does not use it up, and a mismatch keeps it valid",
 
 test("an invited member sets a password, signs in as Member and sees their own page", async ({ page }) => {
   await setPassword(page, inviteHash, "invite");
-  await expect(page).toHaveURL(/\/login\?passwordSet=1$/);
+  await expect(page).toHaveURL(/\/login\?passwordSet=1(&email=[^&]+)?$/);
   await expect(page.getByText("Password saved. Sign in with your new password.")).toBeVisible();
+  await expect(page.getByRole("status")).toBeVisible();
+  await expect(page.getByText("Password set successfully", { exact: true })).toBeVisible();
 
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
@@ -77,5 +79,5 @@ test("a recovery link works while another user is signed in", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
   await setPassword(page, hash, "recovery", "Another-password-2");
-  await expect(page).toHaveURL(/\/login\?passwordSet=1$/);
+  await expect(page).toHaveURL(/\/login\?passwordSet=1(&email=[^&]+)?$/);
 });

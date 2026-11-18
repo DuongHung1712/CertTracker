@@ -55,6 +55,9 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
       >
         {pending ? "Saving…" : "Save password"}
       </Button>
+      <p className="text-caption text-center text-muted-foreground">
+        After setting your password, you will be redirected to sign in with your new credentials.
+      </p>
     </form>
   );
 }

@@ -48,8 +48,10 @@ export async function setPassword(_prev: Result<null> | null, formData: FormData
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? LINK_ERROR);
 
   const supabase = await createClient();
-  const { error: linkError } = await supabase.auth.verifyOtp({ token_hash: parsed.data.tokenHash, type: parsed.data.type });
+  const { data: verifyData, error: linkError } = await supabase.auth.verifyOtp({ token_hash: parsed.data.tokenHash, type: parsed.data.type });
   if (linkError) return err(LINK_ERROR);
+
+  const email = verifyData?.user?.email ?? (await supabase.auth.getUser()).data.user?.email ?? "";
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   // verifyOtp already opened a session: close it whether or not the save worked, so nobody stays signed in without a password.
@@ -57,7 +59,8 @@ export async function setPassword(_prev: Result<null> | null, formData: FormData
   // The token is spent by now, so a retry needs a new link.
   if (error) return err("We could not save that password. Ask your admin for a new link, then choose a different one.");
 
-  redirect("/login?passwordSet=1");
+  const emailParam = email ? `&email=${encodeURIComponent(email)}` : "";
+  redirect(`/login?passwordSet=1${emailParam}`);
 }
 
 export type ChangePasswordState = { ok: true; data: null } | { ok: false; error: string; field?: ChangePasswordField };
