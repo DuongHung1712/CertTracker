@@ -145,7 +145,12 @@ export function ProposeCertificateDialog({
               }}
             >
               <SelectTrigger id="propose-provider-select" className="w-full">
-                <SelectValue placeholder="Choose provider" />
+                <SelectValue placeholder="Choose provider">
+                  {(selected: string) =>
+                    selected === OTHER_PROVIDER_VALUE
+                      ? "+ Other / New provider"
+                      : (providers.find((p) => p.id === selected)?.name ?? "Choose provider")}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {providers.map((p) => (
