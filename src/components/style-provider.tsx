@@ -76,6 +76,7 @@ export function StyleProvider({
   }, [defaultStyle]);
 
   const setStyle = React.useCallback((next: ThemeStyle) => {
+    if (next !== "classic" && next !== "aurora" && next !== "tactile") return;
     setStyleState(next);
     try {
       localStorage.setItem(STYLE_STORAGE_KEY, next);
@@ -88,17 +89,23 @@ export function StyleProvider({
 
   React.useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === STYLE_STORAGE_KEY && e.newValue) {
-        const next = e.newValue as ThemeStyle;
-        if (next === "classic" || next === "aurora" || next === "tactile") {
-          setStyleState(next);
-          document.documentElement.setAttribute("data-style", next);
+      if (e.key === STYLE_STORAGE_KEY) {
+        if (e.newValue) {
+          const next = e.newValue as ThemeStyle;
+          if (next === "classic" || next === "aurora" || next === "tactile") {
+            setStyleState(next);
+            document.documentElement.setAttribute("data-style", next);
+          }
+        } else {
+          // localStorage key was removed or cleared
+          setStyleState(defaultStyle);
+          document.documentElement.setAttribute("data-style", defaultStyle);
         }
       }
     };
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, []);
+  }, [defaultStyle]);
 
   const value = React.useMemo(
     () => ({

@@ -204,9 +204,15 @@ export function StyleSwitcherDemo() {
             >
               Destructive
             </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setClickCount((c) => c + 1)}
+            >
+              Ghost (Flat)
+            </Button>
           </div>
           <p className="text-[11px] text-muted-foreground">
-            {style === "tactile" && "Tactile rule active: active:translate-y-[1.5px] with compressed bottom shadow."}
+            {style === "tactile" && "Tactile rule active: active:translate-y-[1.5px] with compressed bottom shadow on action buttons; ghost buttons stay completely flat."}
             {style === "aurora" && "Aurora rule active: soft teal radial glow on hover with frosted edge accents."}
             {style === "classic" && "Classic rule active: crisp flat tokens, strict 6px radius, no drop shadow."}
           </p>
@@ -246,20 +252,20 @@ export function StyleSwitcherDemo() {
           <div>
             <h4 className="text-body font-semibold">Solid Sticky Table Cells & Headers</h4>
             <p className="text-caption text-muted-foreground">
-              Critical Glassmorphism safety: Table headers remain <strong>100% solid & opaque</strong> so scrolled content underneath never bleeds through.
+              Critical Glassmorphism safety: Table headers and sticky columns remain <strong>100% solid & opaque</strong> so scrolled content underneath never bleeds through.
             </p>
           </div>
           <span className="rounded bg-primary/10 px-2.5 py-1 text-caption font-medium text-primary">
-            Scroll table body to test
+            Scroll horizontally & vertically
           </span>
         </div>
 
-        <div className="relative max-h-52 overflow-y-auto rounded-lg border">
-          <table className="w-full text-left text-table">
+        <div className="relative max-h-52 overflow-auto rounded-lg border">
+          <table className="w-full min-w-[700px] text-left text-table">
             <thead className="sticky top-0 z-10 border-b border-border shadow-xs">
               <tr className="border-b border-border">
-                <th className="px-4 py-2 text-label uppercase text-muted-foreground">
-                  Member
+                <th className="sticky left-0 z-20 px-4 py-2 text-label uppercase text-muted-foreground">
+                  Member (Sticky Left)
                 </th>
                 <th className="px-4 py-2 text-label uppercase text-muted-foreground">
                   Certificate
@@ -271,26 +277,30 @@ export function StyleSwitcherDemo() {
                   Expiry Date
                 </th>
                 <th className="px-4 py-2 text-label uppercase text-muted-foreground">
-                  Sticky Status Header (Solid)
+                  Score
+                </th>
+                <th className="sticky right-0 z-20 px-4 py-2 text-label uppercase text-muted-foreground">
+                  Status (Sticky Right)
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                { name: "Nguyen Van A", cert: "AWS Solutions Architect", date: "15/01/2026", exp: "15/01/2029", st: "Active" },
-                { name: "Tran Thi B", cert: "PMP Project Management", date: "10/02/2025", exp: "10/02/2028", st: "Active" },
-                { name: "Le Hoang C", cert: "Cisco CCNA Routing", date: "05/03/2024", exp: "05/03/2027", st: "Expiring in 60d" },
-                { name: "Pham Minh D", cert: "CKA Kubernetes Admin", date: "20/04/2024", exp: "20/04/2026", st: "Expiring soon" },
-                { name: "Hoang Quoc E", cert: "Scrum Master PSM I", date: "12/05/2023", exp: "12/05/2025", st: "Expired" },
-                { name: "Vu Thu F", cert: "ITIL 4 Foundation", date: "01/06/2024", exp: "Permanent", st: "No Expiry" },
-                { name: "Do Manh G", cert: "Azure Fundamentals AZ-900", date: "14/07/2025", exp: "14/07/2028", st: "Active" },
+                { name: "Nguyen Van A", cert: "AWS Solutions Architect", date: "15/01/2026", exp: "15/01/2029", score: "920/1000", st: "Active" },
+                { name: "Tran Thi B", cert: "PMP Project Management", date: "10/02/2025", exp: "10/02/2028", score: "Proficient", st: "Active" },
+                { name: "Le Hoang C", cert: "Cisco CCNA Routing", date: "05/03/2024", exp: "05/03/2027", score: "840/1000", st: "Expiring in 60d" },
+                { name: "Pham Minh D", cert: "CKA Kubernetes Admin", date: "20/04/2024", exp: "20/04/2026", score: "88%", st: "Expiring soon" },
+                { name: "Hoang Quoc E", cert: "Scrum Master PSM I", date: "12/05/2023", exp: "12/05/2025", score: "95%", st: "Expired" },
+                { name: "Vu Thu F", cert: "ITIL 4 Foundation", date: "01/06/2024", exp: "Permanent", score: "34/40", st: "No Expiry" },
+                { name: "Do Manh G", cert: "Azure Fundamentals AZ-900", date: "14/07/2025", exp: "14/07/2028", score: "910/1000", st: "Active" },
               ].map((row, idx) => (
-                <tr key={idx} className="hover:bg-accent/40">
-                  <td className="px-4 py-2 font-medium text-foreground">{row.name}</td>
+                <tr key={idx} className="group hover:bg-accent/40">
+                  <td className="sticky left-0 z-10 px-4 py-2 font-medium text-foreground">{row.name}</td>
                   <td className="px-4 py-2 text-muted-foreground">{row.cert}</td>
                   <td className="px-4 py-2 text-muted-foreground">{row.date}</td>
                   <td className="px-4 py-2 text-muted-foreground">{row.exp}</td>
-                  <td className="px-4 py-2 font-mono text-caption text-foreground">{row.st}</td>
+                  <td className="px-4 py-2 text-muted-foreground">{row.score}</td>
+                  <td className="sticky right-0 z-10 px-4 py-2 font-mono text-caption text-foreground">{row.st}</td>
                 </tr>
               ))}
             </tbody>

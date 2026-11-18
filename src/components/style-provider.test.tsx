@@ -109,4 +109,52 @@ describe("StyleProvider & useThemeStyle", () => {
     expect(screen.getByTestId("current-style").textContent).toBe("tactile");
     expect(document.documentElement.getAttribute("data-style")).toBe("tactile");
   });
+
+  it("reverts to defaultStyle when storage key is removed in another tab", () => {
+    localStorage.setItem(STYLE_STORAGE_KEY, "aurora");
+    render(
+      <StyleProvider defaultStyle="classic">
+        <TestConsumer />
+      </StyleProvider>,
+    );
+    expect(screen.getByTestId("current-style").textContent).toBe("aurora");
+
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: STYLE_STORAGE_KEY,
+          newValue: null,
+        }),
+      );
+    });
+
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+    expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+  });
+
+  it("ignores unknown or invalid style strings gracefully", () => {
+    const { result } = renderHook(() => useThemeStyle(), {
+      wrapper: ({ children }) => <StyleProvider>{children}</StyleProvider>,
+    });
+
+    act(() => {
+      // @ts-expect-error testing runtime guard against invalid style
+      result.current.setStyle("neon-cyberpunk");
+    });
+
+    expect(result.current.style).toBe("classic");
+    expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+
+    // also test invalid storage event
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent("storage", {
+          key: STYLE_STORAGE_KEY,
+          newValue: "corrupted-value",
+        }),
+      );
+    });
+
+    expect(result.current.style).toBe("classic");
+  });
 });

@@ -295,12 +295,17 @@ html[data-style="aurora"].dark body {
   background-attachment: fixed;
 }
 
+/* Ensure main content container lets the body's ambient gradient shine through */
+html[data-style="aurora"] [data-slot="sidebar-inset"] {
+  background-color: transparent !important;
+}
+
 /* Glass panels with backdrop blur & subtle iridescent border glow */
 html[data-style="aurora"] .bg-card,
 html[data-style="aurora"] [data-slot="card"],
 html[data-style="aurora"] [role="dialog"],
 html[data-style="aurora"] [role="menu"],
-html[data-style="aurora"] aside[data-sidebar="sidebar"],
+html[data-style="aurora"] [data-sidebar="sidebar"],
 html[data-style="aurora"] .glass-panel {
   background-color: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(14px) saturate(150%);
@@ -313,7 +318,7 @@ html[data-style="aurora"].dark .bg-card,
 html[data-style="aurora"].dark [data-slot="card"],
 html[data-style="aurora"].dark [role="dialog"],
 html[data-style="aurora"].dark [role="menu"],
-html[data-style="aurora"].dark aside[data-sidebar="sidebar"],
+html[data-style="aurora"].dark [data-sidebar="sidebar"],
 html[data-style="aurora"].dark .glass-panel {
   background-color: rgba(22, 32, 40, 0.72);
   backdrop-filter: blur(16px) saturate(160%);
@@ -336,38 +341,71 @@ html[data-style="aurora"].dark .bg-popover {
 }
 
 /* Aurora Glass button hover glow */
+html[data-style="aurora"] [data-slot="button"][data-variant="default"]:hover,
 html[data-style="aurora"] button.bg-primary:hover {
   box-shadow: 0 0 18px 2px rgba(14, 92, 88, 0.35);
 }
+html[data-style="aurora"].dark [data-slot="button"][data-variant="default"]:hover,
 html[data-style="aurora"].dark button.bg-primary:hover {
   box-shadow: 0 0 20px 2px rgba(36, 156, 144, 0.45);
 }
 
 /*
  * CRITICAL REQUIREMENT: Solid sticky table cells & headers.
- * In glassmorphism, transparent headers allow scrolled rows to show through,
- * ruining legibility. Solid opaque background is enforced for headers and sticky cells.
+ * In glassmorphism, transparent headers or sticky columns allow scrolled content
+ * to show through, ruining legibility. Solid opaque background is enforced for headers,
+ * sticky columns, and cells, disabling any backdrop-filter on them.
  */
 html[data-style="aurora"] thead,
-html[data-style="aurora"] th,
+html[data-style="aurora"] thead th,
+html[data-style="aurora"] thead td,
 html[data-style="aurora"] table thead tr,
+html[data-style="aurora"] table th,
+html[data-style="aurora"] table td[class*="sticky"],
+html[data-style="aurora"] table td.sticky,
 html[data-style="aurora"] [data-sticky="true"],
 html[data-style="aurora"] .sticky-header,
 html[data-style="aurora"] .sticky {
-  background-color: #FFFFFF !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-html[data-style="aurora"].dark thead,
-html[data-style="aurora"].dark th,
+/* Light mode solid opaque backgrounds */
+html[data-style="aurora"] thead th,
+html[data-style="aurora"] thead td,
+html[data-style="aurora"] table thead tr,
+html[data-style="aurora"] thead {
+  background-color: #EDF0EE !important;
+}
+
+html[data-style="aurora"] table td[class*="sticky"],
+html[data-style="aurora"] table td.sticky,
+html[data-style="aurora"] [data-sticky="true"]:not(th) {
+  background-color: #FFFFFF !important;
+}
+
+html[data-style="aurora"] tr:hover td[class*="sticky"],
+html[data-style="aurora"] tr:hover td.sticky {
+  background-color: #E2EFEC !important;
+}
+
+/* Dark mode solid opaque backgrounds */
+html[data-style="aurora"].dark thead th,
+html[data-style="aurora"].dark thead td,
 html[data-style="aurora"].dark table thead tr,
-html[data-style="aurora"].dark [data-sticky="true"],
-html[data-style="aurora"].dark .sticky-header,
-html[data-style="aurora"].dark .sticky {
+html[data-style="aurora"].dark thead {
+  background-color: #1F2B35 !important;
+}
+
+html[data-style="aurora"].dark table td[class*="sticky"],
+html[data-style="aurora"].dark table td.sticky,
+html[data-style="aurora"].dark [data-sticky="true"]:not(th) {
   background-color: #162028 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+}
+
+html[data-style="aurora"].dark tr:hover td[class*="sticky"],
+html[data-style="aurora"].dark tr:hover td.sticky {
+  background-color: #163332 !important;
 }
 
 
@@ -393,10 +431,11 @@ html[data-style="tactile"].dark .tactile-card {
 }
 
 /* Concave input: subtle recessed / indented inner shadow */
-html[data-style="tactile"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
-html[data-style="tactile"] textarea,
+html[data-style="tactile"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="file"]):not([data-slot="input-group-control"]),
+html[data-style="tactile"] textarea:not([data-slot="input-group-control"]),
 html[data-style="tactile"] select,
-html[data-style="tactile"] [data-slot="input"],
+html[data-style="tactile"] [data-slot="input"]:not([data-slot="input-group-control"]),
+html[data-style="tactile"] [data-slot="input-group"],
 html[data-style="tactile"] .input-concave {
   background-color: #FAFCFB;
   box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.07), inset 0 1px 2px rgba(15, 23, 42, 0.04);
@@ -404,55 +443,67 @@ html[data-style="tactile"] .input-concave {
   transition: box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
-html[data-style="tactile"].dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
-html[data-style="tactile"].dark textarea,
+html[data-style="tactile"].dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="file"]):not([data-slot="input-group-control"]),
+html[data-style="tactile"].dark textarea:not([data-slot="input-group-control"]),
 html[data-style="tactile"].dark select,
+html[data-style="tactile"].dark [data-slot="input"]:not([data-slot="input-group-control"]),
+html[data-style="tactile"].dark [data-slot="input-group"],
 html[data-style="tactile"].dark .input-concave {
   background-color: #121A20;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45), inset 0 1px 2px rgba(0, 0, 0, 0.25);
   border-color: rgba(97, 123, 142, 0.45);
 }
 
-html[data-style="tactile"] input:focus-visible,
-html[data-style="tactile"] textarea:focus-visible,
-html[data-style="tactile"] select:focus-visible {
-  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05), 0 0 0 2px var(--ring);
+/* Clear duplicate styles inside compound input groups (e.g. Combobox) */
+html[data-style="tactile"] [data-slot="input-group"] [data-slot="input-group-control"],
+html[data-style="tactile"].dark [data-slot="input-group"] [data-slot="input-group-control"] {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
 }
 
-html[data-style="tactile"].dark input:focus-visible,
-html[data-style="tactile"].dark textarea:focus-visible,
-html[data-style="tactile"].dark select:focus-visible {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 0 2px var(--ring);
+html[data-style="tactile"] :is(input, textarea, select, [data-slot="input"], [data-slot="input-group"]):not([data-slot="input-group-control"]):focus-visible,
+html[data-style="tactile"] [data-slot="input-group"]:has([data-slot="input-group-control"]:focus-visible) {
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+  border-color: var(--ring);
+}
+
+html[data-style="tactile"].dark :is(input, textarea, select, [data-slot="input"], [data-slot="input-group"]):not([data-slot="input-group-control"]):focus-visible,
+html[data-style="tactile"].dark [data-slot="input-group"]:has([data-slot="input-group-control"]:focus-visible) {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  border-color: var(--ring);
 }
 
 /* Tactile active button feel: raised resting state + active push-down depression */
-html[data-style="tactile"] button:not(:disabled):not([aria-disabled="true"]):not([data-variant="ghost"]):not([data-variant="link"]),
-html[data-style="tactile"] .btn-tactile {
+html[data-style="tactile"] [data-slot="button"]:not([data-variant="ghost"]):not([data-variant="link"]):not(:disabled):not([aria-disabled="true"]),
+html[data-style="tactile"] .btn-tactile:not(:disabled):not([aria-disabled="true"]) {
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
 
-html[data-style="tactile"] button.bg-primary:not(:disabled) {
+html[data-style="tactile"] [data-slot="button"][data-variant="default"]:not(:disabled):not([aria-disabled="true"]),
+html[data-style="tactile"] button.bg-primary:not(:disabled):not([aria-disabled="true"]) {
   box-shadow: 0 2.5px 0 var(--primary-hover), 0 3px 6px rgba(14, 92, 88, 0.22);
 }
 
-html[data-style="tactile"] button:not(:disabled):not([aria-disabled="true"]):active,
-html[data-style="tactile"] .btn-tactile:active {
+html[data-style="tactile"] [data-slot="button"]:not([data-variant="ghost"]):not([data-variant="link"]):not(:disabled):not([aria-disabled="true"]):active,
+html[data-style="tactile"] .btn-tactile:not(:disabled):not([aria-disabled="true"]):active {
   transform: translateY(1.5px);
   box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.15) !important;
 }
 
-html[data-style="tactile"].dark button:not(:disabled):not([aria-disabled="true"]):not([data-variant="ghost"]):not([data-variant="link"]),
-html[data-style="tactile"].dark .btn-tactile {
+html[data-style="tactile"].dark [data-slot="button"]:not([data-variant="ghost"]):not([data-variant="link"]):not(:disabled):not([aria-disabled="true"]),
+html[data-style="tactile"].dark .btn-tactile:not(:disabled):not([aria-disabled="true"]) {
   box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 3px 8px rgba(0, 0, 0, 0.35);
 }
 
-html[data-style="tactile"].dark button.bg-primary:not(:disabled) {
+html[data-style="tactile"].dark [data-slot="button"][data-variant="default"]:not(:disabled):not([aria-disabled="true"]),
+html[data-style="tactile"].dark button.bg-primary:not(:disabled):not([aria-disabled="true"]) {
   box-shadow: 0 2.5px 0 #13554F, 0 4px 10px rgba(0, 0, 0, 0.4);
 }
 
-html[data-style="tactile"].dark button:not(:disabled):not([aria-disabled="true"]):active,
-html[data-style="tactile"].dark .btn-tactile:active {
+html[data-style="tactile"].dark [data-slot="button"]:not([data-variant="ghost"]):not([data-variant="link"]):not(:disabled):not([aria-disabled="true"]):active,
+html[data-style="tactile"].dark .btn-tactile:not(:disabled):not([aria-disabled="true"]):active {
   transform: translateY(1.5px);
   box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(0, 0, 0, 0.45) !important;
 }
