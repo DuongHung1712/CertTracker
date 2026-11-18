@@ -266,3 +266,193 @@ input:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--foreground) !important;
   caret-color: var(--foreground);
 }
+
+/* ==========================================================================
+   MULTI-STYLE THEME SYSTEM (PoC: Classic Swiss / Aurora Glass / Modern Tactile 2.0)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Aurora Glass (Glassmorphism, ambient glow, solid sticky table cells)
+   -------------------------------------------------------------------------- */
+
+/* Light mode Aurora ambient glow & translucency */
+html[data-style="aurora"] body {
+  background-color: #F4F7F5;
+  background-image:
+    radial-gradient(at 15% 15%, rgba(14, 92, 88, 0.08) 0px, transparent 50%),
+    radial-gradient(at 85% 75%, rgba(36, 156, 144, 0.07) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(226, 239, 236, 0.5) 0px, transparent 70%);
+  background-attachment: fixed;
+}
+
+/* Dark mode Aurora ambient glow & translucency */
+html[data-style="aurora"].dark body {
+  background-color: #0E151B;
+  background-image:
+    radial-gradient(at 15% 15%, rgba(36, 156, 144, 0.15) 0px, transparent 45%),
+    radial-gradient(at 85% 80%, rgba(14, 92, 88, 0.18) 0px, transparent 50%),
+    radial-gradient(at 50% 30%, rgba(22, 51, 50, 0.35) 0px, transparent 65%);
+  background-attachment: fixed;
+}
+
+/* Glass panels with backdrop blur & subtle iridescent border glow */
+html[data-style="aurora"] .bg-card,
+html[data-style="aurora"] [data-slot="card"],
+html[data-style="aurora"] [role="dialog"],
+html[data-style="aurora"] [role="menu"],
+html[data-style="aurora"] aside[data-sidebar="sidebar"],
+html[data-style="aurora"] .glass-panel {
+  background-color: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border-color: rgba(14, 92, 88, 0.18);
+  box-shadow: 0 8px 28px -4px rgba(14, 92, 88, 0.07), 0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+}
+
+html[data-style="aurora"].dark .bg-card,
+html[data-style="aurora"].dark [data-slot="card"],
+html[data-style="aurora"].dark [role="dialog"],
+html[data-style="aurora"].dark [role="menu"],
+html[data-style="aurora"].dark aside[data-sidebar="sidebar"],
+html[data-style="aurora"].dark .glass-panel {
+  background-color: rgba(22, 32, 40, 0.72);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border-color: rgba(56, 178, 163, 0.24);
+  box-shadow: 0 10px 32px -4px rgba(0, 0, 0, 0.5), 0 0 16px -2px rgba(36, 156, 144, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
+}
+
+/* Popover & dropdown floating glass */
+html[data-style="aurora"] .bg-popover {
+  background-color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+}
+
+html[data-style="aurora"].dark .bg-popover {
+  background-color: rgba(22, 32, 40, 0.88);
+  backdrop-filter: blur(18px) saturate(170%);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+}
+
+/* Aurora Glass button hover glow */
+html[data-style="aurora"] button.bg-primary:hover {
+  box-shadow: 0 0 18px 2px rgba(14, 92, 88, 0.35);
+}
+html[data-style="aurora"].dark button.bg-primary:hover {
+  box-shadow: 0 0 20px 2px rgba(36, 156, 144, 0.45);
+}
+
+/*
+ * CRITICAL REQUIREMENT: Solid sticky table cells & headers.
+ * In glassmorphism, transparent headers allow scrolled rows to show through,
+ * ruining legibility. Solid opaque background is enforced for headers and sticky cells.
+ */
+html[data-style="aurora"] thead,
+html[data-style="aurora"] th,
+html[data-style="aurora"] table thead tr,
+html[data-style="aurora"] [data-sticky="true"],
+html[data-style="aurora"] .sticky-header,
+html[data-style="aurora"] .sticky {
+  background-color: #FFFFFF !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-style="aurora"].dark thead,
+html[data-style="aurora"].dark th,
+html[data-style="aurora"].dark table thead tr,
+html[data-style="aurora"].dark [data-sticky="true"],
+html[data-style="aurora"].dark .sticky-header,
+html[data-style="aurora"].dark .sticky {
+  background-color: #162028 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+
+/* --------------------------------------------------------------------------
+   2. Modern Tactile 2.0 (Dual shadow, concave input, tactile active button feel)
+   -------------------------------------------------------------------------- */
+
+/* Subtle dual shadow on cards and elevated containers */
+html[data-style="tactile"] .bg-card,
+html[data-style="tactile"] [data-slot="card"],
+html[data-style="tactile"] [role="dialog"],
+html[data-style="tactile"] [role="menu"],
+html[data-style="tactile"] .tactile-card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 6px 16px -2px rgba(15, 23, 42, 0.07), 0 0 0 1px rgba(15, 23, 42, 0.04);
+}
+
+html[data-style="tactile"].dark .bg-card,
+html[data-style="tactile"].dark [data-slot="card"],
+html[data-style="tactile"].dark [role="dialog"],
+html[data-style="tactile"].dark [role="menu"],
+html[data-style="tactile"].dark .tactile-card {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px -2px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Concave input: subtle recessed / indented inner shadow */
+html[data-style="tactile"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+html[data-style="tactile"] textarea,
+html[data-style="tactile"] select,
+html[data-style="tactile"] [data-slot="input"],
+html[data-style="tactile"] .input-concave {
+  background-color: #FAFCFB;
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.07), inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  border-color: rgba(131, 144, 140, 0.45);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+html[data-style="tactile"].dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]),
+html[data-style="tactile"].dark textarea,
+html[data-style="tactile"].dark select,
+html[data-style="tactile"].dark .input-concave {
+  background-color: #121A20;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45), inset 0 1px 2px rgba(0, 0, 0, 0.25);
+  border-color: rgba(97, 123, 142, 0.45);
+}
+
+html[data-style="tactile"] input:focus-visible,
+html[data-style="tactile"] textarea:focus-visible,
+html[data-style="tactile"] select:focus-visible {
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05), 0 0 0 2px var(--ring);
+}
+
+html[data-style="tactile"].dark input:focus-visible,
+html[data-style="tactile"].dark textarea:focus-visible,
+html[data-style="tactile"].dark select:focus-visible {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25), 0 0 0 2px var(--ring);
+}
+
+/* Tactile active button feel: raised resting state + active push-down depression */
+html[data-style="tactile"] button:not(:disabled):not([aria-disabled="true"]):not([data-variant="ghost"]):not([data-variant="link"]),
+html[data-style="tactile"] .btn-tactile {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+html[data-style="tactile"] button.bg-primary:not(:disabled) {
+  box-shadow: 0 2.5px 0 var(--primary-hover), 0 3px 6px rgba(14, 92, 88, 0.22);
+}
+
+html[data-style="tactile"] button:not(:disabled):not([aria-disabled="true"]):active,
+html[data-style="tactile"] .btn-tactile:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.1), inset 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+}
+
+html[data-style="tactile"].dark button:not(:disabled):not([aria-disabled="true"]):not([data-variant="ghost"]):not([data-variant="link"]),
+html[data-style="tactile"].dark .btn-tactile {
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.45), 0 3px 8px rgba(0, 0, 0, 0.35);
+}
+
+html[data-style="tactile"].dark button.bg-primary:not(:disabled) {
+  box-shadow: 0 2.5px 0 #13554F, 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+html[data-style="tactile"].dark button:not(:disabled):not([aria-disabled="true"]):active,
+html[data-style="tactile"].dark .btn-tactile:active {
+  transform: translateY(1.5px);
+  box-shadow: 0 0.5px 0 rgba(0, 0, 0, 0.4), inset 0 1px 3px rgba(0, 0, 0, 0.45) !important;
+}

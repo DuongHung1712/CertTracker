@@ -1,9 +1,10 @@
 "use client";
 
-import { ChevronDown, Monitor, Moon, Sun, User } from "lucide-react";
+import { Box, ChevronDown, Layers, Monitor, Moon, Palette, Sparkles, Sun, User } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useTransition } from "react";
+import { useThemeStyle, type ThemeStyle } from "@/components/style-provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -26,6 +27,7 @@ import { signOut } from "@/features/auth/actions";
 export function UserMenu({ email, role }: { email: string; role: Role }) {
   const [pending, startTransition] = useTransition();
   const { theme, setTheme } = useTheme();
+  const { style, setStyle } = useThemeStyle();
 
   return (
     <DropdownMenu>
@@ -62,6 +64,28 @@ export function UserMenu({ email, role }: { email: string; role: Role }) {
               <DropdownMenuRadioItem value="system">
                 <Monitor aria-hidden className="size-4" />
                 <span>System</span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Palette aria-hidden className="size-4" />
+            <span>Visual Style</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent>
+            <DropdownMenuRadioGroup value={style} onValueChange={(val) => setStyle(val as ThemeStyle)}>
+              <DropdownMenuRadioItem value="classic">
+                <Layers aria-hidden className="size-4" />
+                <span>Classic Swiss</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="aurora">
+                <Sparkles aria-hidden className="size-4" />
+                <span>Aurora Glass</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="tactile">
+                <Box aria-hidden className="size-4" />
+                <span>Modern Tactile 2.0</span>
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
