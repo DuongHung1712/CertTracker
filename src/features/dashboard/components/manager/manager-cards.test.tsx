@@ -118,11 +118,12 @@ describe("ManagerTabStrip & the merged Coming soon card", () => {
     const html = renderToStaticMarkup(<ManagerTabStrip />);
     expect(html).toContain('aria-selected="true"');
     expect(html).toContain("Overview");
-    for (const name of ["Approvals Soon", "Skills Soon", "Goals Soon"]) {
+    for (const name of ["Skills Soon", "Goals Soon"]) {
       expect(count(html, `aria-label="${name}"`)).toBe(1);
     }
-    expect(count(html, 'role="tab"')).toBe(4);
-    expect(count(html, "disabled")).toBe(3);
+    expect(count(html, 'role="tab"')).toBe(3);
+    expect(count(html, "disabled")).toBe(2);
+    expect(html).not.toContain("Approvals");
     // No fake queue size; the visible name matches the accessible name (WCAG 2.5.3).
     expect(html).not.toContain("Approvals (2)");
     expect(html).not.toContain("Skill Matrix");

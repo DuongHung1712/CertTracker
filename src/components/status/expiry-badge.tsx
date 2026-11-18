@@ -39,12 +39,15 @@ export function ExpiryBadge({
   expiryDate,
   kind,
   className,
+  counted = true,
 }: {
   status: string | null;
   daysToExpiry: number | null;
   expiryDate: string | null;
   kind?: "exam" | "completion";
   className?: string;
+  /** False for a Completed item still waiting, returned or renewed: it holds no live credential, so no live dot. */
+  counted?: boolean;
 }) {
   const expiryStatus = toExpiryStatus(status);
   const { tone, label } = expiryMeta(expiryStatus);
@@ -74,7 +77,7 @@ export function ExpiryBadge({
           />
         }
       >
-        {tone !== "na" && <span className="vault-live-dot" aria-hidden />}
+        {tone !== "na" && counted && <span className="vault-live-dot" aria-hidden />}
         <Icon aria-hidden className="size-3.5" />
         {label}
         {detail !== label && <span className="sr-only">, {detail}</span>}

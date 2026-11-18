@@ -188,11 +188,11 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
       >
         {kpis.activeInProgress ? (
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between gap-2 font-mono">
+            <div className="flex items-center justify-between gap-2">
               <span className="min-w-0 truncate font-medium text-foreground" title={kpis.activeInProgress.certificateName}>
                 {kpis.activeInProgress.certificateName}
               </span>
-              <span className="shrink-0 font-semibold text-foreground">{progress}%</span>
+              <span className="shrink-0 font-semibold tabular-nums text-foreground">{progress}%</span>
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
               <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />

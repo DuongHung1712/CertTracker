@@ -26,7 +26,7 @@ import { inMemberView, MEMBER_VIEW_LABEL, type MemberView } from "@/features/das
 import { deleteRecord, deleteRecords, reviewRecord } from "@/features/records/actions";
 import { EvidenceCell } from "@/features/records/components/evidence-cell";
 import { RecordSheet } from "@/features/records/components/record-sheet";
-import { filterByKind, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type KindFilter } from "@/features/records/kind";
+import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type KindFilter } from "@/features/records/kind";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { MAX_BULK_DELETE, RECORD_STATUSES, reviewSchema } from "@/features/records/schema";
@@ -277,6 +277,7 @@ export function RecordsTable({
             daysToExpiry={row.original.daysToExpiry}
             expiryDate={row.original.expiryDate}
             kind={row.original.certificateKind}
+            counted={row.original.status !== "done" || isApprovedDone(row.original)}
           />
         ),
       },

@@ -234,9 +234,9 @@ describe("AdminDashboardView: composition (layout option B)", () => {
     expect(left.slice(0, left.indexOf(">"))).toContain("xl:order-1");
   });
 
-  it("renders Approvals, Goals, and Skills once in the tab strip", () => {
+  it("renders Goals and Skills once in the tab strip; Approvals is live, so it is not a placeholder", () => {
     const html = render();
-    expect(count(html, 'aria-label="Approvals Soon"')).toBe(1);
+    expect(count(html, 'aria-label="Approvals Soon"')).toBe(0);
     expect(count(html, 'aria-label="Goals Soon"')).toBe(1);
     expect(count(html, 'aria-label="Skills Soon"')).toBe(1);
   });
@@ -244,7 +244,6 @@ describe("AdminDashboardView: composition (layout option B)", () => {
 
 describe("AdminDashboardView: one Planned features card", () => {
   const ITEMS = [
-    "Approvals",
     "Goals",
     "Skills",
     "Focus area",

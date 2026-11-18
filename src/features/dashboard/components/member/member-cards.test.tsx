@@ -24,7 +24,7 @@ const CARDS: { name: string; element: ReactElement; title: string; description: 
     name: "MemberProfileCard (focus area)",
     element: <MemberProfileCard fullName="Lê Minh Châu" teamName="Team Cloud" careerRoleName="Engineer" yoeYears={3} />,
     title: "Focus area",
-    description: "Choose the area you want to grow in, such as cloud or security, and see what your next role needs: certificates, experience and skills. Not available yet.",
+    description: "Pick the area you want to grow in, such as cloud or security. Not available yet.",
   },
 ];
 

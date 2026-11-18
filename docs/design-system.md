@@ -373,3 +373,11 @@ A second axis, independent of light/dark: `data-style` on `<html>`, `classic` (d
 | `--input` (field border, >= 3:1 on page, card and field) | `#7A8783` | `#4F7F7B` |
 
 Text colours stay those of the active light/dark theme. `src/app/tokens.test.ts` checks the vault pairs. The vault rules live in `globals.css` under `html[data-style="vault"]`; components only add hooks (`data-slot`, `data-verified`, `data-status-tone`), never vault classes of their own. `data-verified="true"` marks only an item that counts (approved and not renewed) and is still valid. Pulsing status dots stop under `prefers-reduced-motion`.
+
+What Vault adds on top of the tokens, all from CSS hooks (Classic draws none of it):
+
+- **Status stamps** (`data-stamp` on `RecordStatusLabel`, `ApprovalBadge`, `CatalogueStatusBadge`): one mono uppercase stamp per status, coloured from the status tokens. Not started = N/A, In progress = primary, Completed = active, Waiting and a pending proposal = expiring-soon, Returned and a rejected proposal = expired.
+- **Held credential**: an approved, not renewed item gets a sealed icon (`data-sealed`) and a record line (`.vault-credential-strip`: Issued, Valid to, Holder code). Only what really counts looks like a certificate.
+- **Live dot**: only on a counted credential (`ExpiryBadge counted`); a Waiting, Returned or renewed item shows its expiry without it.
+- **Ledger tables**: mono column heads, 1px column rules, tabular numerals.
+- Mono is for labels, codes, dates and measures; KPI figures use the body face with tabular numerals.

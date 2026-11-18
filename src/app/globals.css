@@ -529,6 +529,103 @@ html[data-style="vault"].dark .vault-seal {
   border: 1px solid rgba(52, 211, 153, 0.5);
 }
 
+/* Vault status stamps: every learning-item status (record status, approval, catalogue proposal) reads as one
+   kind of mono stamp, coloured from the status tokens. Components only set data-stamp. */
+html[data-style="vault"] [data-stamp] {
+  height: auto;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--stamp-border, var(--border));
+  border-radius: 3px;
+  background-color: var(--stamp-bg, transparent);
+  color: var(--stamp-fg, var(--foreground));
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[data-style="vault"] [data-stamp] svg {
+  width: 12px;
+  height: 12px;
+  color: currentColor;
+}
+html[data-style="vault"] [data-stamp="not_started"] {
+  --stamp-fg: var(--status-na-fg);
+  --stamp-bg: var(--status-na-bg);
+  --stamp-border: var(--status-na-border);
+}
+html[data-style="vault"] [data-stamp="in_progress"] {
+  --stamp-fg: var(--primary);
+  --stamp-border: var(--primary);
+}
+html[data-style="vault"] [data-stamp="done"] {
+  --stamp-fg: var(--status-active-fg);
+  --stamp-bg: var(--status-active-bg);
+  --stamp-border: var(--status-active-border);
+}
+html[data-style="vault"] [data-stamp="waiting"],
+html[data-style="vault"] [data-stamp="catalogue-pending"] {
+  --stamp-fg: var(--status-expiring-soon-fg);
+  --stamp-bg: var(--status-expiring-soon-bg);
+  --stamp-border: var(--status-expiring-soon-border);
+}
+html[data-style="vault"] [data-stamp="returned"],
+html[data-style="vault"] [data-stamp="catalogue-rejected"] {
+  --stamp-fg: var(--status-expired-fg);
+  --stamp-bg: var(--status-expired-bg);
+  --stamp-border: var(--status-expired-border);
+}
+
+/* Vault credential: a held item (approved, not renewed) carries its record line and a seal. Hidden in Classic. */
+.vault-credential-strip {
+  display: none;
+}
+html[data-style="vault"] .vault-credential-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+}
+html[data-style="vault"] .vault-credential-strip > div {
+  display: flex;
+  gap: 6px;
+}
+html[data-style="vault"] .vault-credential-strip dt {
+  color: var(--muted-foreground);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html[data-style="vault"] .vault-credential-strip dd {
+  margin: 0;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+html[data-style="vault"] [data-sealed="true"] {
+  border-color: var(--primary);
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Vault ledger tables: mono column heads, hairline column rules, aligned numerals. */
+html[data-style="vault"] [data-slot="table-head"] {
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+}
+html[data-style="vault"] [data-slot="table-head"] + [data-slot="table-head"],
+html[data-style="vault"] [data-slot="table-cell"] + [data-slot="table-cell"] {
+  border-left: 1px solid var(--border);
+}
+html[data-style="vault"] [data-slot="table-cell"] {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Live Status Indicators on Status Badges (Pure Solid Colors) */
 .vault-live-dot {
   display: none;
