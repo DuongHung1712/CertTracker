@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { labelForPath } from "@/components/app-shell/nav";
+import { NotificationsMenu } from "@/components/app-shell/notifications-menu";
 import { UserMenu } from "@/components/app-shell/user-menu";
 import type { Role } from "@/components/status/labels";
 
@@ -29,7 +30,8 @@ export function Topbar({ email, role }: { email: string; role: Role }) {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-1.5">
+        <NotificationsMenu />
         <UserMenu email={email} role={role} />
       </div>
     </header>

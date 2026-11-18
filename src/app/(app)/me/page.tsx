@@ -2,14 +2,17 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { getCurrentUser } from "@/features/auth/queries";
+import { parseMemberView } from "@/features/dashboard/member-metrics";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
 import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
 
-const MY_LEARNING_DESCRIPTION = "Exam certificates you hold, courses you have studied and course completions.";
+const MY_LEARNING_DESCRIPTION = "Your exam certificates and course completions: planned, in progress or done.";
 
-export default async function MePage() {
+export default async function MePage({ searchParams }: { searchParams: Promise<{ view?: string | string[] }> }) {
+  const { view } = await searchParams;
+  const initialView = parseMemberView(view);
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
@@ -41,6 +44,9 @@ export default async function MePage() {
       />
       <RecordsRealtime />
       <RecordsTable
+        // The dashboard tiles open this page with ?view=<tile>; the key remounts the table when it changes.
+        key={initialView ?? "all"}
+        initialView={initialView}
         records={records}
         memberOptions={[]}
         certificateOptions={certificateOptions}

@@ -49,10 +49,10 @@ describe("setPassword", () => {
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
   });
 
-  it("signs out, then sends the person to sign in with the new password", async () => {
+  it("signs out, then sends the person to sign in with the new password and prefilled email", async () => {
     await setPassword(null, passwordForm());
     expect(signOut).toHaveBeenCalledWith({ scope: "local" });
-    expect(redirect).toHaveBeenCalledWith("/login?passwordSet=1");
+    expect(redirect).toHaveBeenCalledWith("/login?passwordSet=1&email=a%40certtracker.test");
     expect(signOut.mock.invocationCallOrder[0]).toBeLessThan(redirect.mock.invocationCallOrder[0]!);
   });
 

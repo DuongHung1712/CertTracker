@@ -22,6 +22,8 @@ export function withCareerColumns(rows: RecordRow[], profiles: Map<string, Caree
   });
 }
 
+const APPROVAL_LABEL = { waiting: "Waiting for approval", approved: "Approved", returned: "Returned" } as const;
+
 type ColumnKind = "text" | "number" | "date" | "percent";
 type Value = string | number | null;
 
@@ -35,8 +37,8 @@ type ExportColumn = {
 
 /**
  * Column order and headers are the export contract: the import accepts an exported file unchanged (decision #26).
- * Import-relevant headers resolve through HEADER_ALIASES; "Code", "Career role", "YoE", "Kind", "Expiry date", "Days left"
- * and "Expiry status" are display-only and are reported as unknown (ignored) columns on re-import.
+ * Import-relevant headers resolve through HEADER_ALIASES; "Code", "Career role", "YoE", "Kind", "Expiry date", "Days left",
+ * "Expiry status" and "Approval" are display-only and are reported as unknown (ignored) columns on re-import.
  */
 export const EXPORT_COLUMNS: ExportColumn[] = [
   { header: "Code", kind: "text", value: (r) => r.memberCode },
@@ -55,6 +57,7 @@ export const EXPORT_COLUMNS: ExportColumn[] = [
   { header: "Currency", kind: "text", value: (r) => r.costCurrency },
   { header: "Duration (hours)", kind: "number", value: (r) => r.estHours },
   { header: "Status", kind: "text", value: (r) => RECORD_STATUS_LABEL[r.status] },
+  { header: "Approval", kind: "text", value: (r) => (r.status === "done" ? APPROVAL_LABEL[r.approval ?? "approved"] : null) },
   { header: "Progress (%)", kind: "percent", value: (r) => r.progress },
   { header: "Planned exam date", kind: "date", value: (r) => r.plannedExamDate, width: 14 },
   { header: "Issue date", kind: "date", value: (r) => r.issuedDate, width: 14 },

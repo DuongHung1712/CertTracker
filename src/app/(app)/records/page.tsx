@@ -9,9 +9,9 @@ import { listCertificateOptions, listMemberOptions, listRecords, listStudyCourse
 export default async function RecordsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string | string[] }>;
+  searchParams: Promise<{ search?: string | string[]; approval?: string | string[] }>;
 }) {
-  const { search } = await searchParams;
+  const { search, approval } = await searchParams;
   const user = await getCurrentUser();
   // UX only — RLS would show a Member just their own rows here anyway; /me is their screen.
   if (user?.role === "member") redirect("/me");
@@ -25,6 +25,8 @@ export default async function RecordsPage({
   // Dashboard links open the list already searched (?search=<name>); the key remounts the table when it changes.
   const initialSearch = (Array.isArray(search) ? search[0] : search) ?? "";
 
+  const initialApproval = (Array.isArray(approval) ? approval[0] : approval) === "waiting";
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -34,8 +36,11 @@ export default async function RecordsPage({
       />
       <RecordsRealtime />
       <RecordsTable
-        key={initialSearch}
+        key={`${initialSearch}|${initialApproval}`}
         initialSearch={initialSearch}
+        initialApproval={initialApproval}
+        canReview
+        reviewerMemberId={user?.role === "admin" ? null : (user?.memberId ?? null)}
         records={records}
         memberOptions={memberOptions}
         certificateOptions={certificateOptions}

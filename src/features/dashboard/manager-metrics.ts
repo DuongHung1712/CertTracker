@@ -1,11 +1,11 @@
 import { EXPIRING_WINDOW_DAYS, URGENT_WINDOW_DAYS } from "@/features/dashboard/member-metrics";
 import { formatRate, ratePercent } from "@/features/dashboard/metrics";
-import { isExam } from "@/features/records/kind";
+import { isApprovedDone, isCounted, isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
 
-export const isDone = (r: RecordRow): boolean => r.status === "done";
+export const isDone = isApprovedDone;
 // Exam certificates only: a completion never expires, even when its certificate carries a validity.
 export const isExpiring60 = (r: RecordRow): boolean =>
   isExam(r) && isDone(r) && r.daysToExpiry !== null && r.daysToExpiry >= 0 && r.daysToExpiry <= EXPIRING_WINDOW_DAYS;
@@ -42,7 +42,7 @@ export type ManagerKpis = {
 
 /** Exam certificates only: a course completion has no expiry and is counted by `calculateCompletionKpis`. */
 export function calculateManagerKpis(allRecords: RecordRow[]): ManagerKpis {
-  const records = allRecords.filter(isExam);
+  const records = allRecords.filter(isExam).filter(isCounted);
   let doneCount = 0;
   let validCount = 0;
   let expiringCount = 0;
@@ -118,7 +118,7 @@ export function getTeamReadinessLeague(
   members: { id: string; fullName: string; teamName: string | null }[],
   allRecords: RecordRow[],
 ): MemberReadinessRow[] {
-  const records = allRecords.filter(isExam);
+  const records = allRecords.filter(isExam).filter(isCounted);
   const recordsByMember = new Map<string, RecordRow[]>();
   for (const r of records) {
     const list = recordsByMember.get(r.memberId) ?? [];
@@ -208,7 +208,7 @@ export function getCertificatesEarnedByMonth(
 
   const countsByKey = new Map<string, number>();
   for (const r of records) {
-    if (isExam(r) && r.status === "done" && r.issuedDate) {
+    if (isExam(r) && isApprovedDone(r) && r.issuedDate) {
       const key = r.issuedDate.slice(0, 7);
       countsByKey.set(key, (countsByKey.get(key) ?? 0) + 1);
     }
@@ -296,7 +296,7 @@ export function getMembersWithoutCerts(
   records: RecordRow[],
 ): { id: string; fullName: string; teamName: string | null }[] {
   const membersWithCompleted = new Set(
-    records.filter((r) => r.status === "done" && isExam(r)).map((r) => r.memberId),
+    records.filter((r) => isApprovedDone(r) && isExam(r)).map((r) => r.memberId),
   );
   return members.filter((m) => !membersWithCompleted.has(m.id));
 }

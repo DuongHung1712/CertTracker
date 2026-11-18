@@ -1,5 +1,6 @@
 import { ExpiredCard } from "@/features/dashboard/components/admin/expired-card";
 import { ExpiringCard } from "@/features/dashboard/components/admin/expiring-card";
+import { WaitingTile } from "@/features/dashboard/components/waiting-tile";
 import { TeamCountsSummary } from "@/features/dashboard/components/admin/team-counts-summary";
 import { ValidCard } from "@/features/dashboard/components/admin/valid-card";
 import { KpiGroup } from "@/features/dashboard/components/kpi-group";
@@ -31,6 +32,11 @@ export function AdminKpiCards({
   return (
     <section aria-label="Overview" className="flex flex-col gap-6">
       <h2 className="sr-only">Overview</h2>
+      <KpiGroup title="Approvals">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <WaitingTile count={kpis.waitingRecords} />
+        </div>
+      </KpiGroup>
       <KpiGroup title="Exam certificates">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
           <ValidCard

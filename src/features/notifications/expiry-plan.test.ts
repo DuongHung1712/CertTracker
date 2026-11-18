@@ -22,6 +22,7 @@ const record = (id: string, memberId: string, over: Partial<SnapshotRecord> = {}
   id,
   memberId,
   status: "done",
+  approval: "approved",
   certificateName: `Course ${id}`,
   issuedDate: "2026-01-01",
   expiryDate: "2026-11-01",
@@ -349,6 +350,7 @@ describe("planExpiryAlerts", () => {
 describe("expiryBucket", () => {
   const rec = (expiryStatus: string, daysToExpiry: number | null, status: SnapshotRecord["status"] = "done") => ({
     status,
+    approval: "approved" as const,
     expiryStatus,
     daysToExpiry,
   });
@@ -412,5 +414,24 @@ describe("capItems", () => {
   });
   it("#25 honours a custom max", () => {
     expect(capItems([1, 2, 3], 2)).toEqual({ shown: [1, 2], hidden: 1 });
+  });
+});
+
+describe("expiryBucket: only Approved items", () => {
+  it.each(["waiting", "returned"] as const)("skips a %s Completed item", (approval) => {
+    expect(expiryBucket({ status: "done", approval, expiryStatus: "Expiring Soon", daysToExpiry: 10 })).toBeNull();
+    expect(expiryBucket({ status: "done", approval: "approved", expiryStatus: "Expiring Soon", daysToExpiry: 10 })).toBe("soon");
+  });
+});
+
+describe("planExpiryAlerts: only Approved items", () => {
+  it("sends no alert for a Waiting or Returned Completed item", () => {
+    const { alerts } = planExpiryAlerts(
+      snap({
+        members: [member("a")],
+        records: [record("w", "a", { approval: "waiting" }), record("r", "a", { approval: "returned" })],
+      }),
+    );
+    expect(alerts).toEqual([]);
   });
 });

@@ -36,6 +36,9 @@ export function makeRecord(
     expiryDate: "2027-03-08",
     daysToExpiry: 120,
     expiryStatus: "Active",
+    approval: (partial.status ?? "done") === "done" ? "approved" : null,
+    approvalNote: null,
+    certificateCatalogueStatus: "approved",
     ...partial,
   };
 }

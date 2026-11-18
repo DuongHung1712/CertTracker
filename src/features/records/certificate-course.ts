@@ -5,6 +5,9 @@ export type CertificateChoice = ComboboxOption & {
   kind: CertificateKind;
   /** The course that grants a completion; null for an exam. */
   grantingCourse: { id: string; name: string } | null;
+  catalogueStatus?: "approved" | "pending" | "rejected";
+  /** The catalogue provider (its name is the hint); null while a proposal only has a typed provider. */
+  providerId?: string | null;
 };
 
 export type StudyCourse = { id: string; name: string; preparesForId: string };

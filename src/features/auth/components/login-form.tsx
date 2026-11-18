@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { signIn } from "@/features/auth/actions";
 
 // Autofocus on every size: /login has one job, and the keyboard on a phone is what the person needs next.
-export function LoginForm({ next = null }: { next?: string | null }) {
+export function LoginForm({ next = null, defaultEmail = "" }: { next?: string | null; defaultEmail?: string }) {
   const [state, formAction, pending] = useActionState(signIn, null);
 
   return (
@@ -23,7 +23,8 @@ export function LoginForm({ next = null }: { next?: string | null }) {
           name="email"
           type="email"
           autoComplete="email"
-          autoFocus
+          defaultValue={defaultEmail}
+          autoFocus={!defaultEmail}
           required
           className="h-9"
           aria-describedby={state && !state.ok ? "login-error" : undefined}
@@ -38,6 +39,7 @@ export function LoginForm({ next = null }: { next?: string | null }) {
           id="password"
           name="password"
           autoComplete="current-password"
+          autoFocus={!!defaultEmail}
           required
           className="h-9"
           aria-describedby={state && !state.ok ? "login-error" : undefined}

@@ -17,14 +17,25 @@ describe("navForUser (docs/design-system.md §4.5)", () => {
       "/settings",
     ]);
     expect(hrefs("admin", true)).toContain("/me");
+    expect(hrefs("admin", true)).toContain("/skills");
+    expect(hrefs("admin", true)).toContain("/goals");
   });
 
   it("gives managers team views but no org, import or settings", () => {
-    expect(hrefs("manager", true)).toEqual(["/dashboard", "/me", "/members", "/records", "/data-quality", "/courses"]);
+    expect(hrefs("manager", true)).toEqual([
+      "/dashboard",
+      "/me",
+      "/skills",
+      "/goals",
+      "/members",
+      "/records",
+      "/data-quality",
+      "/courses",
+    ]);
   });
 
   it("gives members only their own views and the catalogue", () => {
-    expect(hrefs("member", true)).toEqual(["/dashboard", "/me", "/courses"]);
+    expect(hrefs("member", true)).toEqual(["/dashboard", "/me", "/skills", "/goals", "/courses"]);
   });
 });
 
@@ -42,6 +53,8 @@ describe("labelForPath", () => {
     expect(labelForPath("/data-quality")).toBe("Data quality");
     // [copy] The /records route is called "Learning" in the UI (the route itself does not change).
     expect(labelForPath("/records")).toBe("Learning");
+    expect(labelForPath("/skills")).toBe("My skills");
+    expect(labelForPath("/goals")).toBe("Quarterly goals");
     expect(labelForPath("/unknown")).toBe("CertTracker");
   });
 });

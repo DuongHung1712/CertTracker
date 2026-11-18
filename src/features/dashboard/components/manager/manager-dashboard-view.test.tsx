@@ -21,7 +21,7 @@ const RECORDS: RecordRow[] = [
   makeRecord({ id: "r-ip", memberId: "m2", memberName: "Lê Minh Châu", certificateName: "Course Planned", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: null }),
 ];
 
-function render({ records = RECORDS }: { records?: RecordRow[] } = {}): string {
+function render({ records = RECORDS, viewerMemberId }: { records?: RecordRow[]; viewerMemberId?: string } = {}): string {
   return renderToStaticMarkup(
     <ManagerDashboardView
       greeting="Good morning, Manager"
@@ -29,6 +29,7 @@ function render({ records = RECORDS }: { records?: RecordRow[] } = {}): string {
       managedTeamNames={["Team Cloud"]}
       records={records}
       members={MEMBERS}
+      viewerMemberId={viewerMemberId}
     />,
   );
 }
@@ -43,6 +44,17 @@ function region(html: string, name: string): string {
 }
 
 const textOf = (markup: string) => markup.replace(/<[^>]+>/g, "").trim();
+
+describe("ManagerDashboardView: waiting tile", () => {
+  const waiting = (id: string, memberId: string) => makeRecord({ id, memberId, approval: "waiting" });
+  const tile = (html: string) => textOf(html.slice(html.indexOf('href="/records?approval=waiting"'), html.indexOf("</a>", html.indexOf('href="/records?approval=waiting"'))));
+
+  it("does not count the manager's own waiting item", () => {
+    const records = [waiting("w1", "m2"), waiting("w2", "m1")];
+    expect(tile(render({ records, viewerMemberId: "m1" }))).toContain("Waiting for approval1Completed items to check");
+    expect(tile(render({ records }))).toContain("Waiting for approval2Completed items to check");
+  });
+});
 
 describe("ManagerDashboardView: each region once", () => {
   it("renders every kept region exactly once", () => {

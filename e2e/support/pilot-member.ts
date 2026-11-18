@@ -69,7 +69,7 @@ export async function acceptInvitation(page: Page, email: string, hash: string) 
   await page.getByLabel("New password").fill(PILOT_PASSWORD);
   await page.getByLabel("Confirm password").fill(PILOT_PASSWORD);
   await page.getByRole("button", { name: "Save password" }).click();
-  await expect(page).toHaveURL(/\/login\?passwordSet=1$/);
+  await expect(page).toHaveURL(/\/login\?passwordSet=1(&email=[^&]+)?$/);
   await signInWithPilotPassword(page, email);
 }
 

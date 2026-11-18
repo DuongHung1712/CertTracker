@@ -53,6 +53,7 @@ const KPIS: DashboardKpis = {
   noExpiryCerts: 7,
   completionDoneRecords: 0,
   completionInProgressRecords: 4321,
+  waitingRecords: 0,
 };
 
 function row(key: string, label: string): BreakdownRow {

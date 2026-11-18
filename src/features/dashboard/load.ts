@@ -4,7 +4,7 @@ import { getMemberCareer } from "@/features/career/queries";
 import type { ManagerDashboardView } from "@/features/dashboard/components/manager/manager-dashboard-view";
 import type { MemberDashboardView } from "@/features/dashboard/components/member/member-dashboard-view";
 import { formatManagerSubtitle } from "@/features/dashboard/manager-metrics";
-import { getGreeting } from "@/features/dashboard/member-metrics";
+import { extractFirstName, getGreeting } from "@/features/dashboard/member-metrics";
 import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard/queries";
 import { settle } from "@/features/dashboard/settle";
 import { resolveMemberProfile } from "@/features/dashboard/view-model";
@@ -86,7 +86,6 @@ export async function loadMemberDashboard(
     settle(listMembers()),
   ]);
 
-  const now = new Date();
   const profile = resolveMemberProfile({
     member: (membersResult.ok && membersResult.data.find((m) => m.id === memberId)) || null,
     firstRecord: recordsResult.ok ? recordsResult.data[0] : undefined,
@@ -101,7 +100,7 @@ export async function loadMemberDashboard(
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     certificateOptions: certificateOptionsResult.ok ? certificateOptionsResult.data : [],
     studyCourses: studyCoursesResult.ok ? studyCoursesResult.data : [],
-    subtitle: `${getGreeting(profile.fullName, now)} · Figures as of ${formatDateTimeVn(now.toISOString())}.`,
+    subtitle: `Welcome back, ${extractFirstName(profile.fullName)}! Ready to plan your next certification milestone?`,
   };
 }
 
@@ -145,5 +144,6 @@ export async function loadManagerDashboard(
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     members,
     membersError: membersResult.ok ? undefined : membersResult.error,
+    viewerMemberId: user.memberId,
   };
 }
