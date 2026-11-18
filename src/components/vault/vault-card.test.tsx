@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { VaultCard, SpotlightCard } from "./vault-card";
+import { VaultCard } from "./vault-card";
 
-describe("VaultCard & SpotlightCard", () => {
+describe("VaultCard", () => {
   afterEach(() => {
     cleanup();
   });
@@ -37,19 +37,6 @@ describe("VaultCard & SpotlightCard", () => {
     const card = screen.getByTestId("card");
     expect(card.className).toContain("vault-verified");
     expect(card.getAttribute("data-verified")).toBe("true");
-  });
-
-  it("SpotlightCard alias maintains backwards compatibility", () => {
-    render(
-      <SpotlightCard data-testid="card" isVerified>
-        <span>Alias Content</span>
-      </SpotlightCard>,
-    );
-
-    const card = screen.getByTestId("card");
-    expect(card.className).toContain("vault-card");
-    expect(card.className).toContain("vault-verified");
-    expect(card.textContent).toContain("Alias Content");
   });
 
   it("passes arbitrary props and merges custom classNames", () => {

@@ -289,7 +289,7 @@ html[data-style="vault"] {
   --card: #FFFFFF;
   --popover: #FFFFFF;
   --border: #CAD6D3;
-  --input: #83908C;
+  --input: #7A8783;
 }
 
 /* Vault design tokens: Dark mode (solid cryptographic obsidian vault) */
@@ -298,7 +298,7 @@ html[data-style="vault"].dark {
   --card: #10171D;
   --popover: #10171D;
   --border: #1E3837;
-  --input: #38605D;
+  --input: #4F7F7B;
 }
 
 /* Light mode Credential Vault: solid architectural titanium paper (zero gradient) */
@@ -384,7 +384,8 @@ html[data-style="vault"] textarea,
 html[data-style="vault"] select,
 html[data-style="vault"] [data-slot="input"],
 html[data-style="vault"] [data-slot="input-group"] {
-  border-color: rgba(14, 92, 88, 0.35);
+  /* --input reaches 3:1 against the vault surfaces (WCAG 1.4.11, tokens.test.ts). */
+  border-color: var(--input);
   transition: border-color 0.12s ease;
 }
 
@@ -394,7 +395,7 @@ html[data-style="vault"].dark select,
 html[data-style="vault"].dark [data-slot="input"],
 html[data-style="vault"].dark [data-slot="input-group"] {
   background-color: #0E161C;
-  border-color: rgba(36, 156, 144, 0.4);
+  border-color: var(--input);
 }
 
 html[data-style="vault"] :is(input, textarea, select, [data-slot="input"]):focus-visible,
@@ -462,7 +463,6 @@ html[data-style="vault"].dark tr:hover td.sticky {
 /* Vault verified credential border: crisp 1px solid precision outline (zero gradient) */
 html[data-style="vault"] .vault-verified,
 html[data-style="vault"] [data-verified="true"],
-html[data-style="vault"] [data-solid="true"],
 html[data-style="vault"] .vault-pulse-verified {
   border: 1px solid #10B981;
   outline: 1px solid rgba(16, 185, 129, 0.3);
@@ -471,7 +471,6 @@ html[data-style="vault"] .vault-pulse-verified {
 
 html[data-style="vault"].dark .vault-verified,
 html[data-style="vault"].dark [data-verified="true"],
-html[data-style="vault"].dark [data-solid="true"],
 html[data-style="vault"].dark .vault-pulse-verified {
   border: 1px solid #34D399;
   outline: 1px solid rgba(52, 211, 153, 0.35);
@@ -630,7 +629,9 @@ html[data-style="vault"] .vault-dot-red {
 
 /* Accessibility: Respect preferred reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  html[data-style="vault"] .vault-live-dot::before {
+  html[data-style="vault"] .vault-live-dot::before,
+  html[data-style="vault"] .vault-dot-emerald::before,
+  html[data-style="vault"] .vault-dot-amber::before {
     animation: none !important;
   }
 }

@@ -20,7 +20,7 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
-import { isRecordDeletableByMember, kindCounts, learningPath, plannedDateLabel } from "@/features/records/kind";
+import { isApprovedDone, isRecordDeletableByMember, kindCounts, learningPath, plannedDateLabel } from "@/features/records/kind";
 import { CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import { deleteRecord, updateRecordProgress } from "@/features/records/actions";
@@ -197,9 +197,9 @@ export function MemberCertificatesList({
         <div className="flex flex-col gap-3">
           {visibleRecords.map((record) => {
             const isInProgress = record.status === "in_progress";
+            // Verified = counted (approved, not renewed) and still valid; a Waiting or Returned item is not.
             const isVerified =
-              record.status === "done" &&
-              (record.expiryStatus === "Active" || record.expiryStatus === "No Expiry");
+              isApprovedDone(record) && (record.expiryStatus === "Active" || record.expiryStatus === "No Expiry");
             const tone = tileTone(record);
             const { icon: TileIcon, className: tileClassName } = TILE[tone];
 

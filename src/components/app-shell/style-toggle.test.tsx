@@ -89,35 +89,4 @@ describe("StyleToggle", () => {
     await user.keyboard("{Alt>}v{/Alt}");
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
   });
-
-  it("gracefully functions when rendered without StyleProvider", async () => {
-    const user = userEvent.setup();
-    render(<StyleToggle />);
-
-    const button = screen.getByRole("button");
-    expect(button).toBeDefined();
-    expect(button.textContent).toContain("Classic");
-
-    await user.click(button);
-    expect(document.documentElement.getAttribute("data-style")).toBe("vault");
-    expect(button.textContent).toContain("Vault");
-  });
-
-  it("updates fallbackStyle in fallback mode when an external style change event occurs", async () => {
-    render(<StyleToggle />);
-    const button = screen.getByRole("button");
-    expect(button.textContent).toContain("Classic");
-
-    // Dispatch external change to vault
-    act(() => {
-      window.dispatchEvent(new CustomEvent("certtracker-style-change", { detail: "vault" }));
-    });
-    expect(button.textContent).toContain("Vault");
-
-    // Dispatch external change back to classic
-    act(() => {
-      window.dispatchEvent(new CustomEvent("certtracker-style-change", { detail: "classic" }));
-    });
-    expect(button.textContent).toContain("Classic");
-  });
 });

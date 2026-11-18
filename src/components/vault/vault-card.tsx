@@ -36,7 +36,3 @@ export function VaultCard({
     </div>
   );
 }
-
-/** Backwards-compatibility alias for previous imports */
-export const SpotlightCard = VaultCard;
-export type SpotlightCardProps = VaultCardProps;

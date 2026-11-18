@@ -29,6 +29,8 @@ export const THEME_STYLES: StyleOption[] = [
 ];
 
 export const STYLE_STORAGE_KEY = "certtracker-style";
+/** Dispatched on window by setStoredThemeStyle so every reader in this tab re-reads the style. */
+export const STYLE_CHANGE_EVENT = "certtracker-style-change";
 
 /** Inline script injected into <head> to prevent FOUC before React hydration */
 export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(s==='vault'||s==='classic'){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
@@ -70,7 +72,7 @@ export function setStoredThemeStyle(next: ThemeStyle): void {
     }
   }
   if (typeof window !== "undefined") {
-    window.dispatchEvent(new CustomEvent("certtracker-style-change", { detail: next }));
+    window.dispatchEvent(new CustomEvent(STYLE_CHANGE_EVENT, { detail: next }));
   }
 }
 
@@ -100,74 +102,44 @@ export function StyleProvider({
   children: React.ReactNode;
   defaultStyle?: ThemeStyle;
 }) {
-  const [style, setStyleState] = React.useState<ThemeStyle>(defaultStyle);
+  // The style lives on <html data-style> (set before first paint by STYLE_INIT_SCRIPT): an external store, so
+  // React reads it instead of copying it into state, and every change below just re-reads it.
+  const subscribe = React.useCallback(
+    (onChange: () => void) => {
+      // Another tab changed or cleared the stored style.
+      const onStorage = (e: StorageEvent) => {
+        if (e.key !== STYLE_STORAGE_KEY) return;
+        const next = e.newValue === "classic" || e.newValue === "vault" ? e.newValue : defaultStyle;
+        document.documentElement.setAttribute("data-style", next);
+        onChange();
+      };
+      window.addEventListener(STYLE_CHANGE_EVENT, onChange);
+      window.addEventListener("storage", onStorage);
+      return () => {
+        window.removeEventListener(STYLE_CHANGE_EVENT, onChange);
+        window.removeEventListener("storage", onStorage);
+      };
+    },
+    [defaultStyle],
+  );
+  const style = React.useSyncExternalStore(subscribe, getStoredThemeStyle, () => defaultStyle);
 
+  // Without the init script (tests, a restricted storage), settle the attribute once: stored, else present, else default.
   React.useEffect(() => {
+    let stored: string | null = null;
     try {
-      const stored = localStorage.getItem(STYLE_STORAGE_KEY) as ThemeStyle | null;
-      if (stored === "classic" || stored === "vault") {
-        setStyleState(stored);
-        document.documentElement.setAttribute("data-style", stored);
-      } else {
-        const currentAttr = document.documentElement.getAttribute("data-style") as ThemeStyle | null;
-        if (currentAttr === "classic" || currentAttr === "vault") {
-          setStyleState(currentAttr);
-        } else {
-          document.documentElement.setAttribute("data-style", defaultStyle);
-        }
-      }
+      stored = localStorage.getItem(STYLE_STORAGE_KEY);
     } catch {
       // localStorage may fail in restricted/private contexts
     }
+    const attr = document.documentElement.getAttribute("data-style");
+    const next = stored === "classic" || stored === "vault" ? stored : attr === "classic" || attr === "vault" ? attr : defaultStyle;
+    document.documentElement.setAttribute("data-style", next);
+    window.dispatchEvent(new CustomEvent(STYLE_CHANGE_EVENT, { detail: next }));
   }, [defaultStyle]);
 
-  const setStyle = React.useCallback((next: ThemeStyle) => {
-    if (next !== "classic" && next !== "vault") return;
-    setStyleState(next);
-    setStoredThemeStyle(next);
-  }, []);
-
-  const toggleStyle = React.useCallback(() => {
-    setStyleState((prev) => {
-      const next = prev === "classic" ? "vault" : "classic";
-      setStoredThemeStyle(next);
-      return next;
-    });
-  }, []);
-
-  // Same-window synchronization (dispatched by setStoredThemeStyle)
-  React.useEffect(() => {
-    const handleCustomChange = (e: Event) => {
-      const customEvent = e as CustomEvent<ThemeStyle>;
-      const next = customEvent.detail;
-      if (next === "classic" || next === "vault") {
-        setStyleState(next);
-      }
-    };
-    window.addEventListener("certtracker-style-change", handleCustomChange);
-    return () => window.removeEventListener("certtracker-style-change", handleCustomChange);
-  }, []);
-
-  // Multi-tab synchronization
-  React.useEffect(() => {
-    const handleStorage = (e: StorageEvent) => {
-      if (e.key === STYLE_STORAGE_KEY) {
-        if (e.newValue) {
-          const next = e.newValue as ThemeStyle;
-          if (next === "classic" || next === "vault") {
-            setStyleState(next);
-            document.documentElement.setAttribute("data-style", next);
-          }
-        } else {
-          // localStorage key was removed or cleared
-          setStyleState(defaultStyle);
-          document.documentElement.setAttribute("data-style", defaultStyle);
-        }
-      }
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [defaultStyle]);
+  const setStyle = setStoredThemeStyle;
+  const toggleStyle = toggleStoredThemeStyle;
 
   // Global keyboard shortcut: Alt+V to quickly toggle visual style
   React.useEffect(() => {
@@ -202,10 +174,6 @@ export function StyleProvider({
   );
 
   return <StyleContext.Provider value={value}>{children}</StyleContext.Provider>;
-}
-
-export function useThemeStyleOptional() {
-  return React.useContext(StyleContext);
 }
 
 export function useThemeStyle() {

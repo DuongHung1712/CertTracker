@@ -119,3 +119,26 @@ describe("dark design tokens", () => {
     expect(contrastRatio(darkHex(id), darkHex("card"))).toBeGreaterThanOrEqual(3);
   });
 });
+
+// Credential Vault (data-style="vault") overrides surfaces and the input border; text colours come from :root / .dark.
+describe("Credential Vault tokens", () => {
+  const vault = readTokens(String.raw`html\[data-style="vault"\]`);
+  const vaultDark = readTokens(String.raw`html\[data-style="vault"\]\.dark`);
+  const modes = [
+    { name: "light", own: vault, base: tokens, inputBg: vault.card },
+    { name: "dark", own: vaultDark, base: darkTokens, inputBg: "#0E161C" },
+  ];
+
+  it.each(modes)("$name: body text reaches 4.5:1 on the vault surfaces", ({ own, base }) => {
+    for (const surface of ["background", "card"]) {
+      expect(contrastRatio(base.foreground, own[surface])).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(base["muted-foreground"], own[surface])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(modes)("$name: the input border reaches 3:1 against the page, the card and the field", ({ own, inputBg }) => {
+    for (const surface of [own.background, own.card, inputBg]) {
+      expect(contrastRatio(own.input, surface)).toBeGreaterThanOrEqual(3);
+    }
+  });
+});

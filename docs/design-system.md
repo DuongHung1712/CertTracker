@@ -360,3 +360,16 @@ The page never scrolls horizontally; only a table scrolls inside its own frame (
 
 - **Light theme**: Warm paper-white (`#F6F7F5`) background, blue-black ink text (`#15212B`), deep teal accent (`#0E5C58`).
 - **Dark theme**: Dark slate paper (`#10171D`) background, pale ink text (`#EBF0EE`), luminous teal accent (`#249C90`), muted text (`#9EB2B7`), input borders (`#617B8E`). Both themes meet WCAG 2.1 AA text (>= 4.5:1) and UI boundaries/focus (>= 3:1). Controlled via `.dark` class on the root, persisted in localStorage (`next-themes` with `disableTransitionOnChange`), and switched via user menu radio items.
+
+### 10.1 Visual style (decision #68)
+
+A second axis, independent of light/dark: `data-style` on `<html>`, `classic` (default) or `vault` (Credential Vault). Switched by the topbar toggle, the user menu or Alt+V; stored in localStorage (`certtracker-style`) and applied before first paint by `STYLE_INIT_SCRIPT` in `src/components/style-provider.tsx`.
+
+| Token | Vault light | Vault dark |
+|---|---|---|
+| `--background` | `#F2F5F4` | `#0A0F13` |
+| `--card`, `--popover` | `#FFFFFF` | `#10171D` |
+| `--border` | `#CAD6D3` | `#1E3837` |
+| `--input` (field border, >= 3:1 on page, card and field) | `#7A8783` | `#4F7F7B` |
+
+Text colours stay those of the active light/dark theme. `src/app/tokens.test.ts` checks the vault pairs. The vault rules live in `globals.css` under `html[data-style="vault"]`; components only add hooks (`data-slot`, `data-verified`, `data-status-tone`), never vault classes of their own. `data-verified="true"` marks only an item that counts (approved and not renewed) and is still valid. Pulsing status dots stop under `prefers-reduced-motion`.
