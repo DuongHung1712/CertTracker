@@ -44,7 +44,7 @@ async function openMenu(page: Page, name: string) {
 }
 
 const heldValue = (page: Page) =>
-  page.locator("dl > div").filter({ has: page.getByText("Held", { exact: true }) }).locator("dd").first();
+  page.locator("dl > div").filter({ has: page.getByText("Valid", { exact: true }) }).locator("dd").first();
 const waitingTile = (page: Page) => page.getByRole("link", { name: /Waiting for approval/ });
 
 test("E-11: member submits, manager returns, member fixes, manager approves; numbers rise only then", async ({ browser }) => {
@@ -71,7 +71,7 @@ test("E-11: member submits, manager returns, member fixes, manager approves; num
     await expect(recordRow(member, AWS)).toContainText("Waiting for approval");
     await member.goto("/dashboard");
     await expect(heldValue(member)).toHaveText("0");
-    await expect(member.getByText("None yet · 1 waiting for approval")).toBeVisible();
+    await expect(member.getByText("1 waiting for approval", { exact: true })).toBeVisible();
     await expect(member.getByRole("link", { name: "See waiting items" })).toHaveAttribute("href", "/me?view=waiting");
 
     // The manager finds it through the tile and the filter, and returns it with a note.

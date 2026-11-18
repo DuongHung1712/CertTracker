@@ -33,7 +33,7 @@ export type MemberKpis = {
   expiredCount: number;
   /** Items not started yet: what the member has planned or still has to schedule. */
   notStartedCount: number;
-  /** Not-started item with the nearest planned exam date, or null when none has a date. */
+  /** Not-started item with the nearest planned date, else the first not-started one; null when nothing is planned. */
   nextPlanned: RecordRow | null;
   /** Most actively progressed in-progress record */
   activeInProgress: RecordRow | null;
@@ -117,7 +117,7 @@ const isNeedsAction = (r: RecordRow): boolean => isExpired(r) || isExpiring(r);
 export const MEMBER_VIEWS = ["held", "needs-action", "in-progress", "up-next", "waiting"] as const;
 export type MemberView = (typeof MEMBER_VIEWS)[number];
 export const MEMBER_VIEW_LABEL: Record<MemberView, string> = {
-  held: "Held",
+  held: "Valid",
   "needs-action": "Needs action",
   "in-progress": "In progress",
   "up-next": "Up next",
@@ -140,7 +140,8 @@ export const inMemberView = (record: RecordRow, view: MemberView): boolean => VI
 
 const TAB_FILTERS: Record<MemberTab, (r: RecordRow) => boolean> = {
   all: () => true,
-  valid: isValid,
+  // Same as the Valid tile: valid exams and finished course completions.
+  valid: isHeld,
   expiring: isExpiring,
   in_progress: isInProgress,
 };
@@ -187,7 +188,9 @@ export function calculateMemberKpis(records: RecordRow[]): MemberKpis {
   const nextPlanned =
     notStartedRows
       .filter((r) => r.plannedExamDate !== null)
-      .sort((a, b) => a.plannedExamDate!.localeCompare(b.plannedExamDate!))[0] ?? null;
+      .sort((a, b) => a.plannedExamDate!.localeCompare(b.plannedExamDate!))[0] ??
+    notStartedRows[0] ??
+    null;
 
   const activeInProgress =
     inProgressRows.slice().sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0))[0] ?? null;

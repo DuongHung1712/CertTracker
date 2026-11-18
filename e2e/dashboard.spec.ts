@@ -166,9 +166,9 @@ test("manager team readiness list displays member status breakdown numbers", asy
 test("manager sees later modules once, as disabled tabs and one Coming soon card, with no mock data", async ({ page }) => {
   await signIn(page, "manager@certtracker.test");
 
-  // Tab strip: the only place Approvals, Goals and Skills appear (plus the one approvals KPI tile).
+  // Tab strip: Goals and Skills are the later modules; Approvals is live (WBS 15.4), so it is no placeholder.
   await expect(page.getByRole("tab", { name: "Overview" })).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByRole("tab", { name: "Approvals Soon" })).toBeDisabled();
+  await expect(page.getByRole("tab", { name: "Approvals Soon" })).toHaveCount(0);
   await expect(page.getByRole("tab", { name: "Goals Soon" })).toBeDisabled();
   await expect(page.getByRole("tab", { name: "Skills Soon" })).toBeDisabled();
 
@@ -233,7 +233,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
 
   // Personal KPI cards match the seed member's records (Lê Minh Châu has 1 not_started record)
-  await expect(tileValue(page, "Held")).toHaveText("0");
+  await expect(tileValue(page, "Valid")).toHaveText("0");
   await expect(tileValue(page, "Needs action")).toHaveText("0");
   await expect(tileValue(page, "In progress")).toHaveText("0");
   await expect(tileValue(page, "Up next")).toHaveText("1");
@@ -263,7 +263,7 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   // Focus area (with integrated next career role) is visible and non-interactive
   const focusCard = page.getByRole("region", { name: "Focus area (Coming soon)" });
   await expect(focusCard).toBeVisible();
-  await expect(focusCard).toContainText("next role needs");
+  await expect(focusCard).toContainText("Pick the area you want to grow in");
 
   // Sidebar navigation has My skills and Quarterly goals
   await expect(page.getByRole("link", { name: "My skills" })).toBeVisible();
@@ -297,11 +297,11 @@ test("a member's tiles open My learning narrowed to their items", async ({ page 
   await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(1);
 
   await page.goto("/me?view=held");
-  await expect(page.getByText("Showing Held only")).toBeVisible();
+  await expect(page.getByText("Showing Valid only")).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Show all" }).click();
-  await expect(page.getByText("Showing Held only")).toHaveCount(0);
+  await expect(page.getByText("Showing Valid only")).toHaveCount(0);
   await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(1);
 
   // An unknown view is ignored.
@@ -440,7 +440,6 @@ test("admin merged Coming soon card has no interactive controls", async ({ page 
   await signIn(page, ADMIN_EMAIL);
 
   const planned = [
-    "Approvals",
     "Goals",
     "Skills",
     "Focus area",

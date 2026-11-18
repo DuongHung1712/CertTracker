@@ -12,7 +12,8 @@ const ICON: Record<RecordStatus, LucideIcon> = {
 export function RecordStatusLabel({ status }: { status: RecordStatus }) {
   const Icon = ICON[status];
   return (
-    <span className="inline-flex items-center gap-1.5 text-table text-foreground">
+    // data-stamp: the Credential Vault style draws every status as one kind of stamp (globals.css).
+    <span data-stamp={status} className="inline-flex items-center gap-1.5 text-table text-foreground">
       <Icon aria-hidden className="size-4 text-muted-foreground" />
       {RECORD_STATUS_LABEL[status]}
     </span>
@@ -29,7 +30,7 @@ export function ApprovalBadge({ approval }: { approval: ApprovalState | null }) 
   if (approval !== "waiting" && approval !== "returned") return null;
   const { icon: Icon, label, variant } = APPROVAL_BADGE[approval];
   return (
-    <Badge variant={variant} className="rounded-sm whitespace-nowrap">
+    <Badge data-stamp={approval} variant={variant} className="rounded-sm whitespace-nowrap">
       <Icon aria-hidden className="size-4" />
       {label}
     </Badge>
@@ -42,8 +43,9 @@ export function CatalogueStatusBadge({ status }: { status?: "approved" | "pendin
   if (status === "pending") {
     return (
       <Badge
+        data-stamp="catalogue-pending"
         variant="outline"
-        className="rounded-sm whitespace-nowrap border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 inline-flex items-center gap-1 text-[11px]"
+        className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm border-status-expiring-soon-border bg-status-expiring-soon-bg text-caption text-status-expiring-soon-fg"
       >
         <Hourglass aria-hidden className="size-3" />
         Pending Approval
@@ -51,7 +53,11 @@ export function CatalogueStatusBadge({ status }: { status?: "approved" | "pendin
     );
   }
   return (
-    <Badge variant="destructive" className="rounded-sm whitespace-nowrap inline-flex items-center gap-1 text-[11px]">
+    <Badge
+      data-stamp="catalogue-rejected"
+      variant="destructive"
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm text-caption"
+    >
       <Undo2 aria-hidden className="size-3" />
       Rejected
     </Badge>

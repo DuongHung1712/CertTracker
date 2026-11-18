@@ -20,7 +20,7 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
-import { isRecordDeletableByMember, kindCounts, learningPath, plannedDateLabel } from "@/features/records/kind";
+import { isApprovedDone, isRecordDeletableByMember, kindCounts, learningPath, plannedDateLabel } from "@/features/records/kind";
 import { CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import { deleteRecord, updateRecordProgress } from "@/features/records/actions";
@@ -197,13 +197,20 @@ export function MemberCertificatesList({
         <div className="flex flex-col gap-3">
           {visibleRecords.map((record) => {
             const isInProgress = record.status === "in_progress";
+            // Verified = counted (approved, not renewed) and still valid; a Waiting or Returned item is not.
+            const isVerified =
+              isApprovedDone(record) && (record.expiryStatus === "Active" || record.expiryStatus === "No Expiry");
+            // A held credential (approved, not renewed) reads as a certificate in the Credential Vault style.
+            const isHeld = isApprovedDone(record);
             const tone = tileTone(record);
             const { icon: TileIcon, className: tileClassName } = TILE[tone];
 
             return (
               <div
                 key={record.id}
-                className="flex flex-col gap-2.5 rounded-lg border border-border/80 bg-background/50 p-3.5 transition-colors hover:border-border"
+                data-slot="card"
+                data-verified={isVerified ? "true" : undefined}
+                className="vault-card flex flex-col gap-2.5 rounded-lg border border-border/80 bg-background/50 p-3.5 transition-colors hover:border-border"
               >
                 {/* Main Row */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -211,6 +218,7 @@ export function MemberCertificatesList({
                     <div
                       aria-hidden="true"
                       data-tone={tone}
+                      data-sealed={isHeld ? "true" : undefined}
                       className={cn("size-9 shrink-0 rounded-md border flex items-center justify-center", tileClassName)}
                     >
                       <TileIcon className="size-4" />
@@ -220,7 +228,7 @@ export function MemberCertificatesList({
                       <h4 className="text-sm font-semibold text-foreground leading-snug truncate">
                         {record.certificateName}
                       </h4>
-                      <p className="text-xs font-mono text-muted-foreground truncate">
+                      <p className="text-xs text-muted-foreground truncate">
                         {record.providerName ?? "Provider not set"}
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
                       </p>
@@ -237,6 +245,7 @@ export function MemberCertificatesList({
                         daysToExpiry={record.daysToExpiry}
                         expiryDate={record.expiryDate}
                         kind={record.certificateKind}
+                        counted={isApprovedDone(record)}
                       />
                     ) : (
                       <RecordStatusLabel status={record.status} />
@@ -324,6 +333,24 @@ export function MemberCertificatesList({
                   </div>
                 </div>
 
+                {/* Credential Vault only (hidden in Classic): the record line of a held credential. */}
+                {isHeld && (
+                  <dl className="vault-credential-strip">
+                    <div>
+                      <dt>Issued</dt>
+                      <dd>{record.issuedDate ? formatDate(record.issuedDate) : "—"}</dd>
+                    </div>
+                    <div>
+                      <dt>Valid to</dt>
+                      <dd>{record.expiryDate ? formatDate(record.expiryDate) : "No expiry"}</dd>
+                    </div>
+                    <div>
+                      <dt>Holder</dt>
+                      <dd>{record.memberCode}</dd>
+                    </div>
+                  </dl>
+                )}
+
                 {/* In Progress Study Progress Meter Row */}
                 {isInProgress && (
                   <div className="flex flex-col gap-2 border-t border-border/50 pt-2 sm:flex-row sm:items-center sm:justify-between sm:pl-12">
@@ -338,7 +365,7 @@ export function MemberCertificatesList({
                               size="sm"
                               disabled={updatingId === record.id || (progressOverrides[record.id] ?? record.progress) >= 99}
                               onClick={() => handleQuickStep(record.id, progressOverrides[record.id] ?? record.progress, 10, record.certificateName)}
-                              className="h-5 px-1.5 text-[10px] font-mono leading-none rounded hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                              className="h-5 rounded px-1.5 font-mono text-label leading-none tabular-nums hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
                               aria-label={`Add 10% progress to ${record.certificateName}`}
                             >
                               +10%
@@ -349,7 +376,7 @@ export function MemberCertificatesList({
                               size="sm"
                               disabled={updatingId === record.id || (progressOverrides[record.id] ?? record.progress) >= 99}
                               onClick={() => handleQuickStep(record.id, progressOverrides[record.id] ?? record.progress, 25, record.certificateName)}
-                              className="h-5 px-1.5 text-[10px] font-mono leading-none rounded hover:bg-primary/10 hover:text-primary hover:border-primary/30"
+                              className="h-5 rounded px-1.5 font-mono text-label leading-none tabular-nums hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
                               aria-label={`Add 25% progress to ${record.certificateName}`}
                             >
                               +25%

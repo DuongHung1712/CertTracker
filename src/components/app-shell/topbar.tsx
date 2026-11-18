@@ -7,6 +7,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { labelForPath } from "@/components/app-shell/nav";
 import { NotificationsMenu } from "@/components/app-shell/notifications-menu";
+import { StyleToggle } from "@/components/app-shell/style-toggle";
 import { UserMenu } from "@/components/app-shell/user-menu";
 import type { Role } from "@/components/status/labels";
 
@@ -32,6 +33,7 @@ export function Topbar({ email, role }: { email: string; role: Role }) {
       </Breadcrumb>
       <div className="ml-auto flex items-center gap-1.5">
         <NotificationsMenu />
+        <StyleToggle />
         <UserMenu email={email} role={role} />
       </div>
     </header>

@@ -66,9 +66,9 @@ export function ValidCard({
       <dl className="flex items-baseline justify-between gap-2">
         <div>
           <dt className="text-xs text-primary-foreground-muted">Valid</dt>
-          <dd className="font-mono text-2xl font-bold tracking-tight">{valid}</dd>
+          <dd className="text-2xl font-bold tabular-nums tracking-tight">{valid}</dd>
         </div>
-        <div className="text-right font-mono text-caption text-primary-foreground-muted">
+        <div className="text-right text-caption tabular-nums text-primary-foreground-muted">
           <dt className="sr-only">Out of</dt>
           <dd>{`of ${completed} completed`}</dd>
         </div>

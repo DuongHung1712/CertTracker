@@ -33,7 +33,7 @@ export function MemberProfileCard({
           <p className="text-xs text-muted-foreground truncate">
             {careerRoleName ?? "Role not set"} · {teamName ?? "No team assigned"}
           </p>
-          <div className="flex items-center gap-1 pt-1.5 text-xs font-mono text-muted-foreground">
+          <div className="flex items-center gap-1 pt-1.5 text-xs text-muted-foreground">
             <Timer className="size-3 shrink-0" aria-hidden="true" />
             <span>{yoeYears === null ? "Experience not set" : `${formatYoe(yoeYears)} of experience`}</span>
           </div>
@@ -42,7 +42,7 @@ export function MemberProfileCard({
 
       <ComingSoonCard
         title="Focus area"
-        description="Choose the area you want to grow in, such as cloud or security, and see what your next role needs: certificates, experience and skills. Not available yet."
+        description="Pick the area you want to grow in, such as cloud or security. Not available yet."
       />
     </section>
   );

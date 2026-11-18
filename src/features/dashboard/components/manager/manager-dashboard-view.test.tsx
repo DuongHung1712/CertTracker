@@ -84,9 +84,9 @@ describe("ManagerDashboardView: each region once", () => {
     }
   });
 
-  it("shows Approvals, Goals and Skills once each: one tab, plus one approvals KPI", () => {
+  it("shows Goals and Skills once each as a Soon tab, and Approvals as the live waiting KPI only", () => {
     const html = render();
-    expect(count(html, 'aria-label="Approvals Soon"')).toBe(1);
+    expect(count(html, 'aria-label="Approvals Soon"')).toBe(0);
     expect(count(html, 'aria-label="Goals Soon"')).toBe(1);
     expect(count(html, 'aria-label="Skills Soon"')).toBe(1);
     expect(count(html, "Waiting for approval")).toBe(1);
