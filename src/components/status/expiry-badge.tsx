@@ -65,6 +65,7 @@ export function ExpiryBadge({
       <TooltipTrigger
         render={
           <span
+            data-status-tone={tone}
             className={cn(
               "inline-flex h-6 items-center gap-1 rounded-sm border px-1.5 text-caption font-medium whitespace-nowrap",
               TONE_CLASS[tone],
@@ -73,6 +74,7 @@ export function ExpiryBadge({
           />
         }
       >
+        <span className="vault-live-dot" aria-hidden />
         <Icon aria-hidden className="size-3.5" />
         {label}
         {detail !== label && <span className="sr-only">, {detail}</span>}

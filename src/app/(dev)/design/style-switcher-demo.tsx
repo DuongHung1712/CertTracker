@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Box, Check, Layers, Monitor, Moon, Palette, Sparkles, Sun } from "lucide-react";
+import { Award, Box, Check, Layers, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useThemeStyle, type ThemeStyle } from "@/components/style-provider";
+import { SpotlightCard } from "@/components/vault/spotlight-card";
 
 export function StyleSwitcherDemo() {
   const { theme, setTheme } = useTheme();
@@ -18,6 +19,7 @@ export function StyleSwitcherDemo() {
     classic: <Layers className="size-5 text-primary" />,
     aurora: <Sparkles className="size-5 text-primary" />,
     tactile: <Box className="size-5 text-primary" />,
+    vault: <ShieldCheck className="size-5 text-primary" />,
   };
 
   return (
@@ -82,8 +84,8 @@ export function StyleSwitcherDemo() {
         </div>
       </div>
 
-      {/* 3 Visual Style Selection Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      {/* 4 Visual Style Selection Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {styles.map((item) => {
           const isSelected = style === item.id;
           return (
@@ -154,6 +156,22 @@ export function StyleSwitcherDemo() {
                     </span>
                     <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
                       Push-down button feel
+                    </span>
+                  </>
+                )}
+                {item.id === "vault" && (
+                  <>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
+                      Cursor spotlight
+                    </span>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
+                      Hologram sheen
+                    </span>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
+                      Border beam pulse
+                    </span>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono text-primary">
+                      Live status dots
                     </span>
                   </>
                 )}
@@ -305,6 +323,126 @@ export function StyleSwitcherDemo() {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Component Touchpoints 4 & 5: Credential Vault Showcase */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* Touchpoint 4: Interactive Mouse-Tracking Spotlight & Border Beam */}
+        <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+          <div className="border-b pb-3">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
+              <h4 className="text-body font-semibold">Spotlight & Border Beam (Vault)</h4>
+            </div>
+            <p className="text-caption text-muted-foreground">
+              Move cursor over the certificate card below. Notice the dynamic spotlight following your mouse and the perimeter border beam on verified credentials.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2">
+            <SpotlightCard
+              hasSpotlight
+              hasBorderBeam
+              isVerified
+              className="cursor-pointer"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="rounded bg-emerald-500/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    CRYPTOGRAPHICALLY VERIFIED
+                  </span>
+                  <h5 className="mt-1.5 text-body font-bold text-foreground">
+                    AWS Certified Solutions Architect - Professional
+                  </h5>
+                  <p className="text-caption text-muted-foreground">Credential ID: AWS-PSA-90821-VN</p>
+                </div>
+                <div className="flex size-10 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/10">
+                  <Award className="size-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-center justify-between border-t pt-3">
+                <div className="flex items-center gap-2">
+                  <span className="vault-live-dot vault-dot-emerald" aria-hidden />
+                  <span className="font-mono text-caption text-foreground">Valid through Oct 2028</span>
+                </div>
+                <span className="font-mono text-caption text-muted-foreground">Score: 940/1000</span>
+              </div>
+            </SpotlightCard>
+
+            <p className="text-[11px] text-muted-foreground">
+              {style === "vault"
+                ? "Vault mode active: Interactive cursor tracking coordinates (--mouse-x, --mouse-y) with animated 360-degree border beam."
+                : "Switch to 'Credential Vault' style above to activate the mouse-tracking spotlight and border beam."}
+            </p>
+          </div>
+        </div>
+
+        {/* Touchpoint 5: Holographic Security Sheen & Live Pulsing Status Dots */}
+        <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
+          <div className="border-b pb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-4 text-primary" />
+              <h4 className="text-body font-semibold">Holographic Sheen & Live Dots</h4>
+            </div>
+            <p className="text-caption text-muted-foreground">
+              Hover over the credential below to reveal the prismatic holographic reflection. Observe the live emerald (valid) and amber (expiring) pulsing status dots.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 pt-2">
+            <SpotlightCard
+              hasSpotlight
+              hasHologram
+              className="group cursor-pointer border-emerald-500/30"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5">
+                    <span className="vault-holo-foil size-2 rounded-full" />
+                    <span className="text-[10px] font-semibold tracking-wider uppercase text-primary">
+                      Hologram Security Seal
+                    </span>
+                  </div>
+                  <h5 className="mt-2 text-body font-bold text-foreground">
+                    Certified Information Systems Security Professional (CISSP)
+                  </h5>
+                  <p className="text-caption text-muted-foreground">Official Security Credential · (ISC)2</p>
+                </div>
+                <div className="vault-holo-foil flex size-9 items-center justify-center rounded-full text-white shadow-xs">
+                  <ShieldCheck className="size-4 drop-shadow-xs" />
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center gap-3 border-t pt-3">
+                <div className="flex items-center gap-1.5" data-status-tone="active">
+                  <span className="vault-live-dot" aria-hidden />
+                  <span className="rounded border border-status-active-border bg-status-active-bg px-2 py-0.5 font-mono text-[11px] font-medium text-status-active-fg">
+                    Active (Live Pulse)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5" data-status-tone="expiring-60">
+                  <span className="vault-live-dot" aria-hidden />
+                  <span className="rounded border border-status-expiring-60-border bg-status-expiring-60-bg px-2 py-0.5 font-mono text-[11px] font-medium text-status-expiring-60-fg">
+                    Expiring (Amber Pulse)
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5" data-status-tone="expired">
+                  <span className="vault-live-dot" aria-hidden />
+                  <span className="rounded border border-status-expired-border bg-status-expired-bg px-2 py-0.5 font-mono text-[11px] font-medium text-status-expired-fg">
+                    Expired
+                  </span>
+                </div>
+              </div>
+            </SpotlightCard>
+
+            <p className="text-[11px] text-muted-foreground">
+              {style === "vault"
+                ? "Vault mode active: Multi-spectral holographic sheen sweeps across on hover with live status indicator pulses."
+                : "Switch to 'Credential Vault' style above to test the holographic sheen and pulsing live status dots."}
+            </p>
+          </div>
         </div>
       </div>
     </div>

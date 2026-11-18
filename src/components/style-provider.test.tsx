@@ -18,6 +18,7 @@ function TestConsumer() {
       <div data-testid="styles-count">{styles.length}</div>
       <button onClick={() => setStyle("aurora")}>Set Aurora</button>
       <button onClick={() => setStyle("tactile")}>Set Tactile</button>
+      <button onClick={() => setStyle("vault")}>Set Vault</button>
       <button onClick={() => setStyle("classic")}>Set Classic</button>
     </div>
   );
@@ -83,6 +84,11 @@ describe("StyleProvider & useThemeStyle", () => {
     expect(screen.getByTestId("current-style").textContent).toBe("tactile");
     expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("tactile");
     expect(document.documentElement.getAttribute("data-style")).toBe("tactile");
+
+    await user.click(screen.getByRole("button", { name: "Set Vault" }));
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+    expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("vault");
+    expect(document.documentElement.getAttribute("data-style")).toBe("vault");
 
     await user.click(screen.getByRole("button", { name: "Set Classic" }));
     expect(screen.getByTestId("current-style").textContent).toBe("classic");

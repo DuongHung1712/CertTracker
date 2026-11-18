@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, ChevronDown, Layers, Monitor, Moon, Palette, Sparkles, Sun, User } from "lucide-react";
+import { Box, ChevronDown, Layers, Monitor, Moon, Palette, ShieldCheck, Sparkles, Sun, User } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useTransition } from "react";
@@ -86,6 +86,10 @@ export function UserMenu({ email, role }: { email: string; role: Role }) {
               <DropdownMenuRadioItem value="tactile">
                 <Box aria-hidden className="size-4" />
                 <span>Modern Tactile 2.0</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="vault">
+                <ShieldCheck aria-hidden className="size-4" />
+                <span>Credential Vault</span>
               </DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>

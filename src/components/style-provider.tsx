@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-export type ThemeStyle = "classic" | "aurora" | "tactile";
+export type ThemeStyle = "classic" | "aurora" | "tactile" | "vault";
 
 export interface StyleOption {
   id: ThemeStyle;
@@ -33,11 +33,18 @@ export const THEME_STYLES: StyleOption[] = [
     description:
       "Subtle dual shadows, concave inner-shadow input fields, and realistic tactile push-down button feedback.",
   },
+  {
+    id: "vault",
+    label: "Credential Vault",
+    tagline: "Cryptographic security & physical seal",
+    description:
+      "Tailored for authentic credentials: interactive spotlight cards, holographic security sheen, animated border beam pulses, and live glowing status indicators.",
+  },
 ];
 
 export const STYLE_STORAGE_KEY = "certtracker-style";
 
-export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(s==='aurora'||s==='tactile'||s==='classic'){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
+export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(s==='aurora'||s==='tactile'||s==='vault'||s==='classic'){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
 
 interface StyleContextType {
   style: ThemeStyle;
@@ -59,12 +66,12 @@ export function StyleProvider({
   React.useEffect(() => {
     try {
       const stored = localStorage.getItem(STYLE_STORAGE_KEY) as ThemeStyle | null;
-      if (stored === "classic" || stored === "aurora" || stored === "tactile") {
+      if (stored === "classic" || stored === "aurora" || stored === "tactile" || stored === "vault") {
         setStyleState(stored);
         document.documentElement.setAttribute("data-style", stored);
       } else {
         const currentAttr = document.documentElement.getAttribute("data-style") as ThemeStyle | null;
-        if (currentAttr === "classic" || currentAttr === "aurora" || currentAttr === "tactile") {
+        if (currentAttr === "classic" || currentAttr === "aurora" || currentAttr === "tactile" || currentAttr === "vault") {
           setStyleState(currentAttr);
         } else {
           document.documentElement.setAttribute("data-style", defaultStyle);
@@ -76,7 +83,7 @@ export function StyleProvider({
   }, [defaultStyle]);
 
   const setStyle = React.useCallback((next: ThemeStyle) => {
-    if (next !== "classic" && next !== "aurora" && next !== "tactile") return;
+    if (next !== "classic" && next !== "aurora" && next !== "tactile" && next !== "vault") return;
     setStyleState(next);
     try {
       localStorage.setItem(STYLE_STORAGE_KEY, next);
@@ -92,7 +99,7 @@ export function StyleProvider({
       if (e.key === STYLE_STORAGE_KEY) {
         if (e.newValue) {
           const next = e.newValue as ThemeStyle;
-          if (next === "classic" || next === "aurora" || next === "tactile") {
+          if (next === "classic" || next === "aurora" || next === "tactile" || next === "vault") {
             setStyleState(next);
             document.documentElement.setAttribute("data-style", next);
           }
@@ -106,6 +113,24 @@ export function StyleProvider({
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
   }, [defaultStyle]);
+
+  // Global mouse-tracking spotlight coordinator for the Vault style
+  React.useEffect(() => {
+    if (style !== "vault") return;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const card = (e.target as HTMLElement | null)?.closest<HTMLElement>(
+        ".vault-spotlight, [data-spotlight], .vault-card, [data-slot='card'], dl > div",
+      );
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      card.style.setProperty("--mouse-x", `${e.clientX - rect.left}px`);
+      card.style.setProperty("--mouse-y", `${e.clientY - rect.top}px`);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    return () => window.removeEventListener("pointermove", handlePointerMove);
+  }, [style]);
 
   const value = React.useMemo(
     () => ({
