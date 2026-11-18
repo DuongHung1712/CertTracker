@@ -266,11 +266,12 @@ export function RecordSheet({
 
   const providersList = useMemo(() => {
     if (providers && providers.length > 0) return providers;
+    // The providers of the catalogue entries already loaded, keyed by id: the proposal saves a provider id.
     const map = new Map<string, string>();
     for (const opt of localCertificates) {
-      if (opt.hint) map.set(opt.hint, opt.hint);
+      if (opt.providerId && opt.hint) map.set(opt.providerId, opt.hint);
     }
-    return [...map.values()].map((name) => ({ id: name, name }));
+    return [...map].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [providers, localCertificates]);
 
   function handleProposeSuccess(choice: CertificateChoice) {

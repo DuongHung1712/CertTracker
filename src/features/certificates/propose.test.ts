@@ -38,6 +38,11 @@ beforeEach(() => {
 });
 
 describe("proposeCertificateSchema", () => {
+  it("refuses a provider name in place of its id (the picker must send ids)", () => {
+    const result = proposeCertificateSchema.safeParse({ name: "Agent skills", kind: "exam", providerId: "AWS" });
+    expect(result.success).toBe(false);
+  });
+
   it("validates that either providerId or proposedProvider is supplied", () => {
     const validWithId = proposeCertificateSchema.safeParse({
       name: "Google Cloud Leader",

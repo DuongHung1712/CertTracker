@@ -98,7 +98,7 @@ export const proposeCertificateSchema = z
   .object({
     name: z.string().trim().min(1, "Enter the certificate or course name").max(200, "Name can have at most 200 characters"),
     kind: z.enum(CERTIFICATE_KINDS, "Choose a kind"),
-    providerId: z.string().nullable().optional(),
+    providerId: z.guid("Choose a provider from the list").nullable().optional(),
     proposedProvider: z.preprocess(
       (v) => (typeof v === "string" && v.trim() === "" ? null : (v ?? null)),
       z.string().trim().max(100, "Provider can have at most 100 characters").nullable().optional(),

@@ -15,8 +15,8 @@ afterEach(() => {
 });
 
 const PROVIDERS = [
-  { id: "p1", name: "Amazon Web Services" },
-  { id: "p2", name: "Google Cloud" },
+  { id: "00000000-0000-0000-0000-0000000000a1", name: "Amazon Web Services" },
+  { id: "00000000-0000-0000-0000-0000000000a2", name: "Google Cloud" },
 ];
 
 describe("ProposeCertificateDialog", () => {
@@ -69,7 +69,7 @@ describe("ProposeCertificateDialog", () => {
         expect.objectContaining({
           name: "New Kubernetes Cert",
           kind: "exam",
-          providerId: "p1",
+          providerId: "00000000-0000-0000-0000-0000000000a1",
         }),
       );
       expect(onSuccess).toHaveBeenCalledWith(

@@ -128,7 +128,7 @@ export async function listCertificateOptions(): Promise<CertificateChoice[]> {
   const rows = await fetchAllRows((from, to) =>
     supabase
       .from("certificates")
-      .select("id, name, kind, catalogue_status, proposed_provider, providers(name), granting:courses!certificates_course_id_fkey(id, name)")
+      .select("id, name, kind, provider_id, catalogue_status, proposed_provider, providers(name), granting:courses!certificates_course_id_fkey(id, name)")
       .order("name")
       .order("id")
       .range(from, to),
@@ -137,6 +137,7 @@ export async function listCertificateOptions(): Promise<CertificateChoice[]> {
     id: row.id,
     label: row.name,
     hint: row.providers?.name ?? row.proposed_provider ?? undefined,
+    providerId: row.provider_id,
     kind: row.kind,
     grantingCourse: row.granting ? { id: row.granting.id, name: row.granting.name } : null,
     catalogueStatus: (row.catalogue_status as "approved" | "pending" | "rejected") ?? "approved",
