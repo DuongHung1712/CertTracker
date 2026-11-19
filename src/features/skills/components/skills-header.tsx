@@ -1,6 +1,7 @@
 import * as React from "react";
-import { Award, CheckCircle, HelpCircle, RotateCcw, Target, TrendingUp } from "lucide-react";
+import { Award, CheckCircle, HelpCircle, RotateCcw, Target, TrendingUp, Zap } from "lucide-react";
 import type { RoleBenchmark, SkillStats } from "../types";
+import { SkillLegendBar } from "./skill-legend-bar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +11,7 @@ interface SkillsHeaderProps {
   onOpenGuide: () => void;
   onFilterGaps: () => void;
   onResetSeed: () => void;
+  onOpenBatchAssess?: () => void;
 }
 
 export function SkillsHeader({
@@ -18,6 +20,7 @@ export function SkillsHeader({
   onOpenGuide,
   onFilterGaps,
   onResetSeed,
+  onOpenBatchAssess,
 }: SkillsHeaderProps) {
   return (
     <div className="flex flex-col gap-4">
@@ -39,7 +42,20 @@ export function SkillsHeader({
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {onOpenBatchAssess && (
+            <Button
+              type="button"
+              size="sm"
+              onClick={onOpenBatchAssess}
+              className="flex items-center gap-1.5 text-caption font-semibold h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-2xs"
+              title="Quickly rate multiple skills in your stack by domain without modal friction"
+            >
+              <Zap className="size-3.5" />
+              <span>Quick Assess Stack</span>
+            </Button>
+          )}
+
           <Button
             type="button"
             variant="outline"
@@ -64,6 +80,9 @@ export function SkillsHeader({
           </Button>
         </div>
       </div>
+
+      {/* Official 0-5 Legend Strip (collapsible reference) */}
+      <SkillLegendBar defaultExpanded={false} />
 
       {/* 4 KPI Summary Cards */}
       <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">

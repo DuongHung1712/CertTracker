@@ -101,10 +101,10 @@ function AssessmentForm({ skill, onClose, onSaveAssessment }: AssessmentFormProp
                   {isSelected && <Check className="size-3.5 text-primary" />}
                 </div>
                 <span className="text-[12px] font-semibold text-foreground">
-                  {info.title}
+                  {info.title} ({info.percentageRange})
                 </span>
-                <span className="text-[10px] text-muted-foreground line-clamp-1">
-                  {info.summary}
+                <span className="text-[10px] text-muted-foreground line-clamp-2">
+                  {info.officialLegend}
                 </span>
               </button>
             );

@@ -4,9 +4,11 @@ export type SkillCategory =
   | "cloud"
   | "backend"
   | "frontend"
+  | "mobile"
   | "devops"
   | "security"
   | "data_ai"
+  | "embedded"
   | "leadership";
 
 export type VerificationStatus = "certified" | "self_assessed" | "pending_review";

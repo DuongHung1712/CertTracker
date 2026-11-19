@@ -1,16 +1,24 @@
 import * as React from "react";
 import { Award, Clock, Info, ShieldCheck, UserCheck } from "lucide-react";
-import type { Skill } from "../types";
-import { SkillLevelBadge } from "./skill-level-badge";
+import type { Skill, SkillLevel } from "../types";
+import { SkillLegendPopover } from "./skill-legend-popover";
+import { SkillQuickRate } from "./skill-quick-rate";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface SkillTableProps {
   skills: Skill[];
   onViewDetails: (skill: Skill) => void;
   onAssess: (skill: Skill) => void;
+  onQuickRate?: (skillId: string, level: SkillLevel) => void;
 }
 
-export function SkillTable({ skills, onViewDetails, onAssess }: SkillTableProps) {
+export function SkillTable({
+  skills,
+  onViewDetails,
+  onAssess,
+  onQuickRate,
+}: SkillTableProps) {
   return (
     <div className="relative overflow-x-auto rounded-lg border border-border bg-card">
       <table className="w-full text-left text-table">
@@ -26,7 +34,10 @@ export function SkillTable({ skills, onViewDetails, onAssess }: SkillTableProps)
               Category
             </th>
             <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
-              Level &amp; Target
+              <div className="inline-flex items-center gap-1">
+                <span>Level &amp; Target</span>
+                <SkillLegendPopover align="start" side="bottom" />
+              </div>
             </th>
             <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
               Verification
@@ -43,6 +54,8 @@ export function SkillTable({ skills, onViewDetails, onAssess }: SkillTableProps)
           {skills.map((skill) => {
             const isCertified = skill.verification === "certified";
             const isPending = skill.verification === "pending_review";
+            const delta = skill.currentLevel - skill.targetLevel;
+            const meetsTarget = skill.currentLevel >= skill.targetLevel;
 
             return (
               <tr
@@ -77,14 +90,31 @@ export function SkillTable({ skills, onViewDetails, onAssess }: SkillTableProps)
                   </span>
                 </td>
 
-                {/* Level */}
+                {/* Level (Inline 1-Click Quick-Rate) */}
                 <td data-slot="table-cell" className="px-2.5 py-1 whitespace-nowrap">
-                  <SkillLevelBadge
-                    currentLevel={skill.currentLevel}
-                    targetLevel={skill.targetLevel}
-                    size="sm"
-                    showSegments={false}
-                  />
+                  <div className="flex items-center gap-2">
+                    <SkillQuickRate
+                      skillId={skill.id}
+                      skillName={skill.name}
+                      currentLevel={skill.currentLevel}
+                      targetLevel={skill.targetLevel}
+                      onRate={(lvl) => onQuickRate?.(skill.id, lvl)}
+                      size="sm"
+                    />
+                    <span
+                      className={cn(
+                        "font-mono text-[10px] tabular-nums whitespace-nowrap",
+                        meetsTarget ? "text-primary font-medium" : "text-muted-foreground",
+                      )}
+                      title={`Role Target: Level ${skill.targetLevel} (${meetsTarget ? (delta > 0 ? `+${delta} above` : "Meets target") : `${delta} gap`})`}
+                    >
+                      {meetsTarget
+                        ? delta > 0
+                          ? `+${delta}`
+                          : "Met"
+                        : `${delta}`}
+                    </span>
+                  </div>
                 </td>
 
                 {/* Verification */}

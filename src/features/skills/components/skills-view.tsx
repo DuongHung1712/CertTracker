@@ -7,10 +7,11 @@ import {
   Search,
   Table,
   X,
+  Zap,
 } from "lucide-react";
 import { calculateSkillStats, filterSkills, getCategoryCounts, sortSkills } from "../metrics";
-import { SKILL_CATEGORIES } from "../schema";
-import { SEED_ROLE_BENCHMARK, SEED_SKILLS } from "../seed-data";
+import { LEVEL_SCALE_GUIDE, SKILL_CATEGORIES } from "../schema";
+import { ENTERPRISE_SKILL_CATALOG, SEED_ROLE_BENCHMARK, SEED_SKILLS } from "../seed-data";
 import type {
   RoleBenchmark,
   Skill,
@@ -21,6 +22,7 @@ import type {
   VerificationStatus,
 } from "../types";
 import { SkillAssessmentDialog } from "./skill-assessment-dialog";
+import { SkillBatchAssessDialog } from "./skill-batch-assess-dialog";
 import { SkillCard } from "./skill-card";
 import { SkillDetailDialog } from "./skill-detail-dialog";
 import { SkillLevelGuide } from "./skill-level-guide";
@@ -49,36 +51,62 @@ export function SkillsView({
   initialSkills = SEED_SKILLS,
   benchmark = SEED_ROLE_BENCHMARK,
 }: SkillsViewProps) {
-  const [skills, setSkills] = React.useState<Skill[]>(initialSkills);
+  // Master skills state containing all catalog skills overlaid with initial user profile skills
+  const [allSkills, setAllSkills] = React.useState<Skill[]>(() => {
+    const map = new Map<string, Skill>();
+    for (const item of ENTERPRISE_SKILL_CATALOG) {
+      map.set(item.id, { ...item });
+    }
+    for (const item of initialSkills) {
+      map.set(item.id, { ...item });
+    }
+    return Array.from(map.values());
+  });
+
+  const profileSkillIds = React.useMemo(
+    () => new Set(initialSkills.map((s) => s.id)),
+    [initialSkills],
+  );
+
   const [selectedCategory, setSelectedCategory] = React.useState<"all" | SkillCategory>("all");
   const [verificationFilter, setVerificationFilter] = React.useState<SkillVerificationFilter>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [sortBy, setSortBy] = React.useState<SkillSortOption>("gap-desc");
   const [viewMode, setViewMode] = React.useState<"grid" | "table">("grid");
+  const [catalogScope, setCatalogScope] = React.useState<"profile" | "enterprise">("profile");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   // Dialog states
   const [guideOpen, setGuideOpen] = React.useState(false);
+  const [batchAssessOpen, setBatchAssessOpen] = React.useState(false);
   const [detailSkill, setDetailSkill] = React.useState<Skill | null>(null);
   const [detailOpen, setDetailOpen] = React.useState(false);
   const [assessSkill, setAssessSkill] = React.useState<Skill | null>(null);
   const [assessOpen, setAssessOpen] = React.useState(false);
 
-  // Category counts based on unfiltered current skills
-  const categoryCounts = React.useMemo(() => getCategoryCounts(skills), [skills]);
+  // Active skills based on current catalog scope (profile vs enterprise)
+  const activeSkills = React.useMemo(() => {
+    if (catalogScope === "profile") {
+      return allSkills.filter((s) => profileSkillIds.has(s.id));
+    }
+    return allSkills;
+  }, [allSkills, catalogScope, profileSkillIds]);
+
+  // Category counts based on active scope skills
+  const categoryCounts = React.useMemo(() => getCategoryCounts(activeSkills), [activeSkills]);
 
   // Filtered and sorted skills
   const filteredSkills = React.useMemo(() => {
-    const matched = filterSkills(skills, {
+    const matched = filterSkills(activeSkills, {
       category: selectedCategory,
       verification: verificationFilter,
       query: searchQuery,
     });
     return sortSkills(matched, sortBy);
-  }, [skills, selectedCategory, verificationFilter, searchQuery, sortBy]);
+  }, [activeSkills, selectedCategory, verificationFilter, searchQuery, sortBy]);
 
-  // Metric stats
-  const stats = React.useMemo(() => calculateSkillStats(skills), [skills]);
+  // Metric stats calculated from active scope skills
+  const stats = React.useMemo(() => calculateSkillStats(activeSkills), [activeSkills]);
 
   // Handlers
   function handleOpenDetails(skill: Skill) {
@@ -92,10 +120,48 @@ export function SkillsView({
   }
 
   function handleQuickAssessDefault() {
-    // Pick the first skill that has a gap, or the first skill in the list
-    const candidate = skills.find((s) => s.currentLevel < s.targetLevel) || skills[0];
+    // Pick the first skill that has a gap, or the first skill in the active list
+    const candidate = activeSkills.find((s) => s.currentLevel < s.targetLevel) || activeSkills[0];
     if (candidate) {
       handleOpenAssess(candidate);
+    }
+  }
+
+  // 1-Click Inline Quick-Rate Handler
+  function handleQuickRate(skillId: string, newLevel: SkillLevel) {
+    const targetSkill = allSkills.find((s) => s.id === skillId);
+    if (!targetSkill) return;
+
+    const isLevel5 = newLevel === 5;
+    let verification: VerificationStatus;
+    if (isLevel5) {
+      verification = "pending_review";
+    } else if (targetSkill.certifiedProof) {
+      verification = "certified";
+    } else {
+      verification = "self_assessed";
+    }
+
+    setAllSkills((prev) =>
+      prev.map((s) => {
+        if (s.id !== skillId) return s;
+        return {
+          ...s,
+          currentLevel: newLevel,
+          verification,
+          lastEvaluatedAt: new Date().toISOString().slice(0, 10),
+        };
+      }),
+    );
+
+    if (isLevel5) {
+      toast.success(
+        `Requested Level 5 (DC Master) review from DC Manager for ${targetSkill.name}`,
+      );
+    } else {
+      toast.success(
+        `Updated ${targetSkill.name} to Level ${newLevel} (${LEVEL_SCALE_GUIDE[newLevel].title})`,
+      );
     }
   }
 
@@ -106,7 +172,7 @@ export function SkillsView({
     evidenceNote: string;
     isManagerReview: boolean;
   }) {
-    setSkills((prev) =>
+    setAllSkills((prev) =>
       prev.map((s) => {
         if (s.id !== updated.skillId) return s;
         let verification: VerificationStatus;
@@ -130,12 +196,33 @@ export function SkillsView({
     );
   }
 
+  function handleSaveBatch(updatedSkills: Skill[]) {
+    setAllSkills(updatedSkills);
+  }
+
+  function handleToggleCatalogScope(scope: "profile" | "enterprise") {
+    setCatalogScope(scope);
+    if (scope === "enterprise") {
+      toast.info("Loaded full 65-skill enterprise tech stack catalog");
+    } else {
+      toast.info("Switched to core role profile (16 skills)");
+    }
+  }
+
   function handleResetSeed() {
-    setSkills(SEED_SKILLS);
+    const map = new Map<string, Skill>();
+    for (const item of ENTERPRISE_SKILL_CATALOG) {
+      map.set(item.id, { ...item });
+    }
+    for (const item of initialSkills) {
+      map.set(item.id, { ...item });
+    }
+    setAllSkills(Array.from(map.values()));
     setSelectedCategory("all");
     setVerificationFilter("all");
     setSearchQuery("");
     setSortBy("gap-desc");
+    setCatalogScope("profile");
     toast.info("Reset skills data to initial demo seed");
   }
 
@@ -163,6 +250,7 @@ export function SkillsView({
           setVerificationFilter("gaps_only");
         }}
         onResetSeed={handleResetSeed}
+        onOpenBatchAssess={() => setBatchAssessOpen(true)}
       />
 
       {/* Category Tabs */}
@@ -232,10 +320,40 @@ export function SkillsView({
           )}
         </div>
 
-        {/* Right: Filters, Sort, and View Switcher */}
+        {/* Right: Filters, Scope, Sort, and View Switcher */}
         <div className="flex flex-wrap items-center gap-2">
+          {/* Catalog Scope Switcher */}
+          <div className="inline-flex rounded-md border border-border bg-muted p-0.5">
+            <button
+              type="button"
+              onClick={() => handleToggleCatalogScope("profile")}
+              className={cn(
+                "rounded px-2 py-1 text-[11px] font-medium transition-colors",
+                catalogScope === "profile"
+                  ? "bg-card text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              title="Standard Senior Engineer Profile (16 skills)"
+            >
+              Profile ({profileSkillIds.size})
+            </button>
+            <button
+              type="button"
+              onClick={() => handleToggleCatalogScope("enterprise")}
+              className={cn(
+                "rounded px-2 py-1 text-[11px] font-medium transition-colors",
+                catalogScope === "enterprise"
+                  ? "bg-card text-foreground shadow-2xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              title="Full Enterprise Stack Catalog (65 skills)"
+            >
+              Full Stack ({allSkills.length})
+            </button>
+          </div>
+
           {/* Verification Status Filter */}
-          <div className="w-40">
+          <div className="w-36">
             <Select
               value={verificationFilter}
               onValueChange={(val) => setVerificationFilter(val as SkillVerificationFilter)}
@@ -254,7 +372,7 @@ export function SkillsView({
           </div>
 
           {/* Sort By Dropdown */}
-          <div className="w-44">
+          <div className="w-40">
             <Select
               value={sortBy}
               onValueChange={(val) => setSortBy(val as SkillSortOption)}
@@ -314,7 +432,20 @@ export function SkillsView({
             </button>
           </div>
 
-          {/* Quick Assess Button */}
+          {/* Quick Assess by Domain (Batch Fast-Fill) Button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setBatchAssessOpen(true)}
+            className="flex items-center gap-1.5 h-8 font-medium hover:border-primary/40 hover:bg-primary/5"
+            title="Batch Fast-Fill Mode across technical domains"
+          >
+            <Zap className="size-3.5 text-primary" />
+            <span className="hidden sm:inline">Fast-Fill</span>
+          </Button>
+
+          {/* Assess Skill Button */}
           <Button
             type="button"
             size="sm"
@@ -352,6 +483,7 @@ export function SkillsView({
               skill={skill}
               onViewDetails={handleOpenDetails}
               onAssess={handleOpenAssess}
+              onQuickRate={handleQuickRate}
             />
           ))}
         </div>
@@ -360,6 +492,7 @@ export function SkillsView({
           skills={filteredSkills}
           onViewDetails={handleOpenDetails}
           onAssess={handleOpenAssess}
+          onQuickRate={handleQuickRate}
         />
       )}
 
@@ -367,6 +500,14 @@ export function SkillsView({
       <SkillLevelGuide
         open={guideOpen}
         onOpenChange={setGuideOpen}
+      />
+
+      <SkillBatchAssessDialog
+        open={batchAssessOpen}
+        onOpenChange={setBatchAssessOpen}
+        skills={allSkills}
+        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
+        onSaveBatch={handleSaveBatch}
       />
 
       <SkillDetailDialog

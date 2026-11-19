@@ -84,7 +84,7 @@ export function SkillLevelGuide({ open, onOpenChange }: SkillLevelGuideProps) {
                   <div className="flex flex-1 flex-col gap-1 text-caption">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-foreground">
-                        {item.title} — {item.summary}
+                        {item.title} ({item.percentageRange}) — {item.officialLegend}
                       </span>
                       {isMaster ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-medium text-primary">

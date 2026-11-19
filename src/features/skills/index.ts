@@ -10,3 +10,7 @@ export { SkillLevelBadge } from "./components/skill-level-badge";
 export { SkillLevelGuide } from "./components/skill-level-guide";
 export { SkillDetailDialog } from "./components/skill-detail-dialog";
 export { SkillAssessmentDialog } from "./components/skill-assessment-dialog";
+export { SkillQuickRate } from "./components/skill-quick-rate";
+export { SkillLegendBar } from "./components/skill-legend-bar";
+export { SkillLegendPopover } from "./components/skill-legend-popover";
+export { SkillBatchAssessDialog } from "./components/skill-batch-assess-dialog";

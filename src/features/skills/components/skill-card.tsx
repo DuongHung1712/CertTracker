@@ -1,7 +1,9 @@
 import * as React from "react";
 import { Award, Clock, Info, ShieldCheck, UserCheck } from "lucide-react";
-import type { Skill } from "../types";
+import type { Skill, SkillLevel } from "../types";
+import { SkillLegendPopover } from "./skill-legend-popover";
 import { SkillLevelBadge } from "./skill-level-badge";
+import { SkillQuickRate } from "./skill-quick-rate";
 import { Button } from "@/components/ui/button";
 import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
@@ -10,9 +12,15 @@ interface SkillCardProps {
   skill: Skill;
   onViewDetails: (skill: Skill) => void;
   onAssess: (skill: Skill) => void;
+  onQuickRate?: (skillId: string, level: SkillLevel) => void;
 }
 
-export function SkillCard({ skill, onViewDetails, onAssess }: SkillCardProps) {
+export function SkillCard({
+  skill,
+  onViewDetails,
+  onAssess,
+  onQuickRate,
+}: SkillCardProps) {
   const isCertified = skill.verification === "certified";
   const isPending = skill.verification === "pending_review";
   const hasProof = !!skill.certifiedProof;
@@ -55,13 +63,32 @@ export function SkillCard({ skill, onViewDetails, onAssess }: SkillCardProps) {
           </p>
         </div>
 
-        {/* Competency Level Bar */}
-        <div className="rounded-lg border border-border/70 bg-muted/20 p-2.5">
+        {/* Competency Level Bar & 1-Click Quick-Rate */}
+        <div className="rounded-lg border border-border/70 bg-muted/20 p-2.5 flex flex-col gap-2">
           <SkillLevelBadge
             currentLevel={skill.currentLevel}
             targetLevel={skill.targetLevel}
+            showSegments={!onQuickRate}
             size="sm"
           />
+          {onQuickRate && (
+            <div className="flex items-center justify-between border-t border-border/50 pt-1.5">
+              <div className="flex items-center gap-1">
+                <span className="font-mono text-[10px] text-muted-foreground uppercase font-semibold">
+                  Quick-Rate:
+                </span>
+                <SkillLegendPopover align="start" side="top" />
+              </div>
+              <SkillQuickRate
+                skillId={skill.id}
+                skillName={skill.name}
+                currentLevel={skill.currentLevel}
+                targetLevel={skill.targetLevel}
+                onRate={(lvl) => onQuickRate(skill.id, lvl)}
+                size="sm"
+              />
+            </div>
+          )}
         </div>
 
         {/* Verification Status & Proof Box */}

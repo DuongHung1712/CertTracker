@@ -264,4 +264,134 @@ describe("SkillsView master component", () => {
 
     expect(screen.getByText("Cloud Architecture & AWS Services")).toBeDefined();
   });
+
+  it("updates skill level instantly via 1-Click inline quick-rate on card", async () => {
+    const user = userEvent.setup();
+    const { toast } = await import("sonner");
+    render(<SkillsView />);
+
+    // In grid view by default, find 1-click pills for the first skill
+    const radiogroups = screen.getAllByRole("radiogroup");
+    expect(radiogroups.length).toBeGreaterThan(0);
+
+    // Click Level 4 pill on the first skill
+    const level4Radios = screen.getAllByRole("radio", { name: /Level 4/i });
+    await user.click(level4Radios[0]);
+
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Level 4"));
+  });
+
+  it("updates skill level instantly via 1-Click inline quick-rate in table view", async () => {
+    const user = userEvent.setup();
+    const { toast } = await import("sonner");
+    render(<SkillsView />);
+
+    // Switch to table view
+    const tableToggle = screen.getByRole("button", { name: "Table view" });
+    await user.click(tableToggle);
+
+    // Click Level 3 on one of the skills
+    const level3Radios = screen.getAllByRole("radio", { name: /Level 3/i });
+    await user.click(level3Radios[0]);
+
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Level 3"));
+  });
+
+  it("toggles Official Scale Reference Legend expanded and collapsed", async () => {
+    const user = userEvent.setup();
+    render(<SkillsView />);
+
+    // Initially collapsed
+    expect(screen.getByText("Official Competency Scale Legend (0–5)")).toBeDefined();
+    const toggleBtn = screen.getByRole("button", { name: /Show Scale Reference/i });
+    await user.click(toggleBtn);
+
+    // Expanded details are now rendered
+    expect(screen.getByText("Hide Legend")).toBeDefined();
+    expect(screen.getByText("No idea on the area (0%)")).toBeDefined();
+    expect(screen.getByText("SME / Expert - most experienced resource, extensive depth (100%+)")).toBeDefined();
+
+    // Click to collapse
+    await user.click(screen.getByRole("button", { name: "Hide Legend" }));
+    expect(screen.queryByText("No idea on the area (0%)")).toBeNull();
+  });
+
+  it("switches to Full Enterprise Catalog (65 skills) and back to Profile (16)", async () => {
+    const user = userEvent.setup();
+    const { toast } = await import("sonner");
+    render(<SkillsView />);
+
+    const fullStackBtn = screen.getByRole("button", { name: /Full Stack \(65\)/i });
+    await user.click(fullStackBtn);
+
+    expect(toast.info).toHaveBeenCalledWith(expect.stringContaining("Loaded full 65-skill enterprise"));
+    // New catalog skills like FastAPI should now be in the view
+    expect(screen.getByText("Python (FastAPI & AsyncIO)")).toBeDefined();
+
+    // Switch back to Profile (16)
+    const profileBtn = screen.getByRole("button", { name: /Profile/i });
+    await user.click(profileBtn);
+
+    expect(toast.info).toHaveBeenCalledWith(expect.stringContaining("Switched to core role profile"));
+    expect(screen.queryByText("Python (FastAPI & AsyncIO)")).toBeNull();
+  });
+
+  it("opens Batch Fast-Fill mode from header and saves batch changes", async () => {
+    const user = userEvent.setup();
+    render(<SkillsView />);
+
+    // Click Quick Assess Stack in header
+    const quickAssessBtn = screen.getByRole("button", { name: /Quick Assess Stack/i });
+    await user.click(quickAssessBtn);
+
+    // Batch Fast-Fill dialog is visible
+    expect(screen.getByText("Quick Assess by Domain (Batch Fast-Fill)")).toBeDefined();
+
+    // Click Apply Assessments
+    const applyBtn = screen.getByRole("button", { name: /Apply Assessments/i });
+    await user.click(applyBtn);
+
+    // Dialog closes
+    expect(screen.queryByText("Quick Assess by Domain (Batch Fast-Fill)")).toBeNull();
+  });
+
+  it("preserves user rating edits when toggling between Profile and Full Stack scopes", async () => {
+    const user = userEvent.setup();
+    render(<SkillsView />);
+
+    // In grid view, find pill 1 for first skill (initial level is 3 or 4)
+    const level1Radios = screen.getAllByRole("radio", { name: /Level 1/i });
+    await user.click(level1Radios[0]);
+    expect(level1Radios[0].getAttribute("aria-checked")).toBe("true");
+
+    // Switch to Full Stack
+    const fullStackBtn = screen.getByRole("button", { name: /Full Stack \(65\)/i });
+    await user.click(fullStackBtn);
+
+    // Switch back to Profile
+    const profileBtn = screen.getByRole("button", { name: /Profile/i });
+    await user.click(profileBtn);
+
+    // Pill 1 must STILL be checked — user edit was NOT wiped by switching scopes!
+    const recheckedLevel1Radios = screen.getAllByRole("radio", { name: /Level 1/i });
+    expect(recheckedLevel1Radios[0].getAttribute("aria-checked")).toBe("true");
+  });
+
+  it("allows opening SkillLegendPopover to view official 0–5 scale descriptions inline", async () => {
+    const user = userEvent.setup();
+    render(<SkillsView />);
+
+    // In card view, click the inline legend popover trigger
+    const popoverTriggers = screen.getAllByRole("button", {
+      name: /View official competency scale reference/i,
+    });
+    expect(popoverTriggers.length).toBeGreaterThan(0);
+    await user.click(popoverTriggers[0]);
+
+    // Popover content should now be visible
+    expect(screen.getByText("Competency Scale Legend")).toBeDefined();
+    expect(screen.getByText("0 – 5 Matrix")).toBeDefined();
+    expect(screen.getByText("No idea on the area (0%)")).toBeDefined();
+    expect(screen.getByText("SME / Expert - most experienced resource, extensive depth (100%+)")).toBeDefined();
+  });
 });
