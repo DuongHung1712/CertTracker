@@ -33,7 +33,6 @@ const LEVELS: SkillLevel[] = [0, 1, 2, 3, 4, 5];
  * Includes official 0–5 legend descriptions in tooltips, role target markers, and keyboard navigation.
  */
 export function SkillQuickRate({
-  skillId,
   skillName,
   currentLevel,
   targetLevel,
@@ -110,8 +109,8 @@ export function SkillQuickRate({
           const buttonClass = cn(
             "relative inline-flex items-center justify-center font-mono font-semibold transition-all duration-150 rounded-xs cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring active:scale-90 active:brightness-95",
             size === "sm"
-              ? "h-5 min-w-[20px] px-1 text-[11px]"
-              : "h-6 min-w-[26px] px-1.5 text-caption",
+              ? "h-6 min-w-[24px] px-1 text-[11px]"
+              : "h-7 min-w-[28px] px-1.5 text-caption",
             // Unselected state
             !isSelected &&
               "bg-muted/40 text-muted-foreground border border-border/60 hover:bg-muted hover:text-foreground hover:border-foreground/40",

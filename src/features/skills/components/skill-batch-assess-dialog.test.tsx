@@ -31,7 +31,7 @@ describe("SkillBatchAssessDialog", () => {
       />,
     );
 
-    expect(screen.getByText("Quick Assess by Domain (Batch Fast-Fill)")).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Quick Assess Stack" })).toBeDefined();
     expect(screen.getByText(/Rated/)).toBeDefined();
     // Default category is Backend & Systems, contains Distributed Systems
     expect(screen.getByText("Distributed Systems & Resilient Messaging")).toBeDefined();
@@ -125,5 +125,45 @@ describe("SkillBatchAssessDialog", () => {
 
     expect(screen.getByText("Python (FastAPI & AsyncIO)")).toBeDefined();
     expect(screen.queryByText("Distributed Systems & Resilient Messaging")).toBeNull();
+  });
+
+  it("shows clean empty state message when search matches nothing", async () => {
+    const user = userEvent.setup();
+    render(
+      <SkillBatchAssessDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        skills={SEED_SKILLS}
+        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
+        onSaveBatch={vi.fn()}
+      />,
+    );
+
+    const searchInput = screen.getByPlaceholderText(/Filter stack/i);
+    await user.type(searchInput, "NonExistentSkillXYZ");
+
+    expect(screen.getByText(/No skills found matching/i)).toBeDefined();
+  });
+
+  it("matches role targets and clears domain via domain actions", async () => {
+    const user = userEvent.setup();
+    const { toast } = await import("sonner");
+    render(
+      <SkillBatchAssessDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        skills={SEED_SKILLS}
+        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
+        onSaveBatch={vi.fn()}
+      />,
+    );
+
+    const matchTargetsBtn = screen.getByRole("button", { name: /Match Targets/i });
+    await user.click(matchTargetsBtn);
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Matched role targets"));
+
+    const clearBtn = screen.getByRole("button", { name: /Clear \(L0\)/i });
+    await user.click(clearBtn);
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Set domain skills to Level 0"));
   });
 });

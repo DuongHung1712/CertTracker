@@ -208,7 +208,7 @@ export function SkillAssessmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl sm:max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[94vw] sm:w-full sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <span className="font-mono text-label uppercase text-muted-foreground vault-mono-tag">

@@ -345,14 +345,14 @@ describe("SkillsView master component", () => {
     await user.click(quickAssessBtn);
 
     // Batch Fast-Fill dialog is visible
-    expect(screen.getByText("Quick Assess by Domain (Batch Fast-Fill)")).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Quick Assess Stack" })).toBeDefined();
 
     // Click Apply Assessments
     const applyBtn = screen.getByRole("button", { name: /Apply Assessments/i });
     await user.click(applyBtn);
 
     // Dialog closes
-    expect(screen.queryByText("Quick Assess by Domain (Batch Fast-Fill)")).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Quick Assess Stack" })).toBeNull();
   });
 
   it("preserves user rating edits when toggling between Profile and Full Stack scopes", async () => {

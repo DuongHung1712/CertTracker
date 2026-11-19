@@ -21,7 +21,7 @@ export function SkillLevelGuide({ open, onOpenChange }: SkillLevelGuideProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl sm:max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[94vw] sm:w-full sm:max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Info className="size-5 text-primary" />

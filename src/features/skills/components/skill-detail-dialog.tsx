@@ -37,7 +37,7 @@ export function SkillDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl sm:max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[94vw] sm:w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <span className="font-mono text-label uppercase text-muted-foreground vault-mono-tag">

@@ -4,7 +4,7 @@ import type { SkillCategory, SkillLevel } from "./types";
 export const SKILL_CATEGORIES: { id: SkillCategory; label: string; icon: string }[] = [
   { id: "backend", label: "Backend & Systems", icon: "Server" },
   { id: "frontend", label: "Frontend & Web", icon: "Layout" },
-  { id: "mobile", label: "Mobile Engineering", icon: "Smartphone" },
+  { id: "mobile", label: "Mobile & Native", icon: "Smartphone" },
   { id: "cloud", label: "Cloud & Infrastructure", icon: "Cloud" },
   { id: "devops", label: "DevOps & SRE", icon: "Cpu" },
   { id: "data_ai", label: "Data & AI", icon: "Sparkles" },
