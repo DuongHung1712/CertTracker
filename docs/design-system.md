@@ -175,6 +175,7 @@ The first column identifies the row (code or name), the last column is the "⋯"
 
 The page is titled "Catalogue" and has two tabs, **Certificates** and **Courses**. Everyone reads; only the admin sees the add button, the row menu and the Certificate types and Providers sections below the tabs. Both tables have a Link column (`ExternalLinkCell`).
 
+- **Approval badge (`ApprovalBadge`, `components/status/record-status.tsx`):** next to the Completed status in the records table and the member list; "Waiting for approval" is a `secondary` badge with an hourglass, "Returned" a `destructive` badge with an undo icon (text plus icon, never colour alone); Approved shows nothing. It uses the badge variants, no `--status-*` tokens (those are for expiry only).
 - **Kind badge:** `secondary` badge, `rounded-sm`, with `CERTIFICATE_KIND_LABEL`: "Exam" or "Course completion". It appears in the Certificates table, in the records table next to the certificate name, and in the certificate picker options ("AWS Solutions Architect Associate · Exam"). A credential from finishing a course is a course completion, never a certificate, in text, toasts and dialogs (`CERTIFICATE_KIND_NOUN` picks the noun).
 - **Certificate form:** Kind first. The Course picker appears only for a course completion and lists courses that grant nothing yet (plus the edited completion's own). Empty states differ: "No courses yet. Add a course first." and "Every course already grants a completion." The title follows the selected kind.
 - **Course form:** Name, Provider, Duration (hours), Cost and Currency, Refundable, Course link, Prepares for (exam certificates only).
@@ -206,7 +207,8 @@ When the database **blocks** the delete (for example a course that certificates 
 - Success: a toast that names exactly what happened, *"Added member M004"*.
 - Input error: under the field, say what is wrong and how to fix it, *"This email is already used by member M002"*.
 - System error: an error toast plus what to do, *"Could not save because the connection was lost. Check your network and try again."*
-- Loading: a skeleton shaped like the content; no full-page spinner.
+- Loading: a skeleton shaped like the content; no full-page spinner. The dashboard is the exception: three roles see three layouts, so `dashboard/loading.tsx` is role-neutral (header, one row of four compact cards, two content blocks) and takes only the width the page has.
+- Password fields use `PasswordInput` (`components/password-input.tsx`): a ghost icon button (Eye / EyeOff, 16px, 32px target, `aria-pressed`, "Show password" / "Hide password") that never submits the form. Form errors attach `aria-invalid` only to the field that is wrong.
 - Navigation (decision #56; decided 2026-10-31, option C): two layers.
   1. **A thin teal bar** at the very top (`NavigationProgressBar`, `components/app-shell/navigation-progress.tsx`): 3px high, `bg-primary`, `aria-hidden`. The bar appears from the click on a link until the URL changes; meanwhile its width grows gradually to about 80%. When done, it runs to 100% and fades out over 200ms. The bar only changes opacity and is never attached to or removed from the DOM, so it never shifts the layout.
   2. **The skeleton pulse** of `loading.tsx` from the moment the URL changes until the content arrives (`role="status" aria-busy="true"`).
@@ -233,10 +235,10 @@ When the database **blocks** the delete (for example a course that certificates 
 
 Hiding is only UX; every permission is still enforced by RLS.
 
-`/profile` opens from the user menu ("Profile"), not the sidebar: `PageHeader`, Account card (the name edits inline with a pencil button, `NameField`; the email is read-only), Your scope (managers only), My career (linked accounts only), Change password. Each region has its own `SectionError`.
+`/profile` opens from the user menu ("Profile"), not the sidebar: `PageHeader`, Account card (the name edits inline with a pencil button, `NameField`; the email is read-only), Your scope (managers only), My career (linked accounts only), Change password (an error is shown under, and marks, only the wrong field). Each region has its own `SectionError`.
 
 ### 4.6 Admin Dashboard
-- **Layout:** header, then the **Overview** (3 KPI cards and a stat strip) at full width, then three independent columns (`lg:grid-cols-12`: Left `lg:col-span-3`, Centre `lg:col-span-6`, Right `lg:col-span-3`, all `gap-6`), then **Individual ranking** at full width. In the markup the Centre column comes first, then Right, then Left; from `lg` up `lg:order-2/3/1` shows them as Left, Centre, Right. On a phone the order is Overview, Explorer, Needs attention, Planned features, profile, Quick actions, chart, ranking. `e2e/column-heights.spec.ts` guards the balance at 1440px: the tallest and the shortest column may differ by at most 350px (measured with the seed: Left 555, Centre 897, Right 808, a gap of 342px).
+- **Layout:** header, then the **Overview** at full width, then the top area (`xl:grid-cols-3`, two columns from `md`, one on a phone: Left = profile and monthly chart, Centre = Needs attention and Quick actions, Right = Planned features; test ids `col-left/col-center/col-right`), then the **Explorer row** (`explorer-row`: tab strip and Explorer, full width so its two-pane mode (`@2xl`) always applies), then **Individual ranking**. In the markup the order is Centre, Left, Right (no grid cell is left empty at `md`: row 1 = Centre | Left, row 2 = Planned features at full width). On a phone the order is therefore Overview, Needs attention, Quick actions, profile, chart, Planned features, then the Explorer row (accepted: Planned features is inside the grid, so it comes before the Explorer). From `xl` up `xl:order-2/3/1` shows them as Left, Centre, Right: the keyboard order (Centre, Left, Right) differs from the visual order on purpose (work first on phones). `e2e/column-heights.spec.ts` guards the balance of the top columns at 1440px (max gap 350px; measured with the seed: Left 357, Centre 376, Right 494). The manager page uses the same pattern (`xl:grid-cols-12` 3/6/3, `mgr-col-*`, Team readiness in its own full-width row `mgr-readiness-row`, also guarded).
 - **Header:** title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), the "Filter groups" button (smooth scroll and focus to the search box in `#dashboard-filters`, honouring `prefers-reduced-motion`) and "Export CSV" (`ExportLinks`). "Add learning" lives only in Quick actions.
 - **Overview (`aria-label="Overview"`):** two `KpiGroup`s (`role="group"` with an `h3` title, shared with the manager page): "Exam certificates" (3 cards and a stat strip) and "Course completions" (a stat strip). The cards are in `dl > div` (`dt` label, bare number in the `dd`), built from `KpiTile`. Cards use status tokens and `text-primary-foreground-muted`; no `amber-`/`rose-` utility colours and no `opacity-<n>` text.
   1. "Valid certificates" (`ValidCard`): solid `bg-primary` card, "<n>% valid" chip, "<valid>" with "of <completed> completed", a progress ring whose dash length is `2πr` of a radius constant, and "<n> certificates issued this month" or "None issued this month". When the records query fails the caption is left out.
@@ -356,21 +358,35 @@ The page never scrolls horizontally; only a table scrolls inside its own frame (
 
 ## 10. Logo & Favicon
 
-- **Ý nghĩa nhận diện:** Biểu tượng Monogram chữ **C** (Certificate / Chứng chỉ) uốn cong vững chãi, ôm trọn dấu **Checkmark** (Tracker / Đạt chuẩn / Đã xác thực) vươn lên qua khe mở. Thiết kế tối giản, hình học chuẩn xác, cân bằng quang học và nhận diện rõ nét từ kích thước 16x16px của tab trình duyệt đến kích thước hiển thị lớn.
-- **Màu sắc & Token:**
-  - Khung nền bo góc squircle: token `primary` (`#0E5C58`), `rx` = 7/32 cạnh logo (≈ 22%, theo tỷ lệ). **Ngoại lệ có chủ ý** của quy tắc "bo góc ≤ 8px" (§8): logo là hình vẽ co giãn theo kích thước, không phải component UI, nên ở `size` ≥ 37px góc bo vượt 8px.
-  - Đường nét chữ "C": token `card` / trắng (`#FFFFFF`), stroke 3.2px, đầu nét bo tròn `round`.
-  - Dấu kiểm xác thực: token `accent` (`#E2EFEC`), stroke 3.2px, góc nối và đầu nét `round`.
-  - Chỉ **file favicon SVG** (`src/app/icon.svg`) tự thêm viền `#1C7C75` (token `ring`) khi trình duyệt ở chế độ tối (`@media (prefers-color-scheme: dark)`), để biểu tượng không chìm vào nền tab tối. Ứng dụng vẫn chưa có dark mode (xem §11).
-  - Dạng Wordmark: Chữ "Cert" dùng token `foreground` (`#15212B`), "Tracker" dùng token `primary` (`#0E5C58`), font Be Vietnam Pro SemiBold (600), `letter-spacing: -0.02em`.
-- **Tệp nguồn:**
-  - `src/app/icon.svg` và `src/app/favicon.ico`: favicon theo quy ước file của Next.js App Router (tự thêm vào `<head>` kèm hash chống cache; **không** khai báo `metadata.icons` trong `layout.tsx`, vì khai báo đó tắt cơ chế này).
-  - `public/logo.svg`: bản vector đầy đủ gồm biểu tượng + chữ "CertTracker".
-  - `public/icon-512.png`: ảnh 512×512 cho nơi cần ảnh vuông lớn (chia sẻ, PWA sau này); hiện chưa được tham chiếu trong app.
-- **Component:** `src/components/app-shell/logo.tsx` (`Logo`, `LogoMark`) dùng linh hoạt trong Sidebar (cả khi mở và thu gọn) và trang Login.
+- **Light theme**: Warm paper-white (`#F6F7F5`) background, blue-black ink text (`#15212B`), deep teal accent (`#0E5C58`).
+- **Dark theme**: Dark slate paper (`#10171D`) background, pale ink text (`#EBF0EE`), luminous teal accent (`#249C90`), muted text (`#9EB2B7`), input borders (`#617B8E`). Both themes meet WCAG 2.1 AA text (>= 4.5:1) and UI boundaries/focus (>= 3:1). Controlled via `.dark` class on the root, persisted in localStorage (`next-themes` with `disableTransitionOnChange`), and switched via user menu radio items.
 
-## 11. Chưa làm
+### 10.1 Visual style (decision #68, #69)
 
-- **Dark mode** — token đã đặt tên theo vai trò; khi làm chỉ khai báo lại giá trị.
-- **Logo** — chưa có; dùng chữ "CertTracker" (600, `foreground`).
-- **Bảng màu biểu đồ** — làm cùng Dashboard (tuần 5).
+A second axis, independent of light/dark: `data-style` on `<html>`: `classic` (Classic Swiss, default), `vault` (Credential Vault), or `nordic` (Nordic Heritage). Switched by the topbar toggle, the user menu or Alt+V; stored in localStorage (`certtracker-style`) and applied before first paint by `STYLE_INIT_SCRIPT` in `src/components/style-provider.tsx`.
+
+| Token | Vault light | Vault dark | Nordic light | Nordic dark |
+|---|---|---|---|---|
+| `--background` | `#F2F5F4` | `#0A0F13` | `#F7F5EE` | `#151815` |
+| `--card`, `--popover` | `#FFFFFF` | `#10171D` | `#FFFFFF` | `#1C201C` |
+| `--border` | `#CAD6D3` | `#1E3837` | `#E2DDD0` | `#2C322C` |
+| `--input` (field border, >= 3:1 on page, card and field) | `#7A8783` | `#4F7F7B` | `#7D847B` | `#5C705E` |
+| `--primary` | `#0E5C58` | `#249C90` | `#0E4D45` | `#339987` |
+| `--ring` | `#1C7C75` | `#38B2A3` | `#D95A1E` | `#EA6C2D` |
+
+Text colours stay those of the active style and light/dark theme. `src/app/tokens.test.ts` checks the vault and nordic pairs. The vault rules live in `globals.css` under `html[data-style="vault"]`; the nordic rules live under `html[data-style="nordic"]`; components only add hooks (`data-slot`, `data-verified`, `data-status-tone`), never style classes of their own. `data-verified="true"` marks only an item that counts (approved and not renewed) and is still valid. Pulsing status dots stop under `prefers-reduced-motion`.
+
+What Vault adds on top of the tokens, all from CSS hooks (Classic draws none of it):
+
+- **Status stamps** (`data-stamp` on `RecordStatusLabel`, `ApprovalBadge`, `CatalogueStatusBadge`): one mono uppercase stamp per status, coloured from the status tokens. Not started = N/A, In progress = primary, Completed = active, Waiting and a pending proposal = expiring-soon, Returned and a rejected proposal = expired.
+- **Held credential**: an approved, not renewed item gets a sealed icon (`data-sealed`) and a record line (`.vault-credential-strip`: Issued, Valid to, Holder code). Only what really counts looks like a certificate.
+- **Live dot**: only on a counted credential (`ExpiryBadge counted`); a Waiting, Returned or renewed item shows its expiry without it.
+- **Ledger tables**: mono column heads, 1px column rules, tabular numerals.
+- Mono is for labels, codes, dates and measures; KPI figures use the body face with tabular numerals.
+
+What Nordic Heritage adds on top of the tokens, all from CSS hooks:
+
+- **Warm tactile craft & heritage ground**: Warm linen paper (`#F7F5EE` light) and deep roast charcoal (`#151815` dark) with natural pine green (`#0E4D45` / `#339987`) and warm sand / forest borders (`#E2DDD0` / `#2C322C`).
+- **Terracotta accents** (`#D95A1E` light, `#EA6C2D` dark): high-visibility keyboard focus rings (skill role targets were removed, decision #70).
+- **100% solid, opaque table headers and sticky cells**: (`#EFECE4` light, `#232823` dark) preventing scroll bleed-through.
+- **Zero gradients & strict anti-slop**: Solid crisp 1px borders, high-contrast surfaces, and WCAG AA >= 4.5:1 text contrast.

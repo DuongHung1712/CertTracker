@@ -32,4 +32,24 @@ describe("EntityCombobox", () => {
     render(field(OPTIONS));
     expect(screen.getByRole<HTMLInputElement>("combobox").value).toBe("AWS Solutions Architect Associate · Exam");
   });
+
+  it("lists grouped options under their headings and still filters across groups", async () => {
+    const grouped: ComboboxOption[] = [
+      { id: "a", label: "AWS Associate", group: "Exam certificates" },
+      { id: "c", label: "Intro to LLMs", group: "Course completions" },
+      { id: "n", label: "NVIDIA Associate", group: "Exam certificates" },
+    ];
+    render(
+      <EntityCombobox id="certificate" value="" onChange={() => {}} options={grouped} placeholder="Choose" emptyText="None" />,
+    );
+    const input = screen.getByRole("combobox");
+    await userEvent.click(input);
+    expect(screen.getByText("Exam certificates")).toBeTruthy();
+    expect(screen.getByText("Course completions")).toBeTruthy();
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+
+    await userEvent.type(input, "llms");
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual(["Intro to LLMs"]);
+    expect(screen.queryByText("Exam certificates")).toBeNull();
+  });
 });

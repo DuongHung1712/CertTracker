@@ -3,7 +3,7 @@ import { ComingSoonCard } from "@/components/status/coming-soon-card";
 import { DashboardTabStrip } from "@/features/dashboard/components/dashboard-tab-strip";
 
 export function ManagerTabStrip() {
-  return <DashboardTabStrip label="Manager dashboard views" soon={["Approvals", "Skills", "Goals"]} />;
+  return <DashboardTabStrip label="Manager dashboard views" soon={["Skills", "Goals"]} />;
 }
 
 export function AskAboutMyTeamComingSoon() {

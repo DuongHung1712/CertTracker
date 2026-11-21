@@ -5,6 +5,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { AddButton } from "@/components/data/add-button";
 import { DataTable } from "@/components/data/data-table";
+import { TruncatedCell } from "@/components/data/truncated-cell";
 import { EmptyState } from "@/components/data/empty-state";
 import { ExternalLinkCell } from "@/components/data/external-link-cell";
 import { FilterBar } from "@/components/data/filter-bar";
@@ -12,13 +13,21 @@ import { rowActionsColumn } from "@/components/data/row-actions-column";
 import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
 import type { SelectOption } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
-import { deleteCertificate } from "@/features/certificates/actions";
-import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN, certificateDeleteHint } from "@/features/certificates/schema";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
+import { approveCertificate, deleteCertificate } from "@/features/certificates/actions";
+import { CERTIFICATE_ADD_NEUTRAL_LABEL, CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN, certificateDeleteHint, formatPreparedBy } from "@/features/certificates/schema";
 import { CertificateSheet } from "@/features/certificates/components/certificate-sheet";
 import type { CertificateRow } from "@/features/certificates/queries";
 import { pluralize } from "@/lib/plural";
 
 const NO_CERT_TYPES_OR_PROVIDERS_HINT = "Add a certificate type and a provider first.";
+
+/** Exams list the courses that prepare for them; completions name the course that grants them. */
+function courseCellText(row: CertificateRow, names: string[]): string | null {
+  if (row.kind === "exam") return names.length > 0 ? `Prepared by: ${formatPreparedBy(names)}` : null;
+  return row.courseName ? `Granted by: ${row.courseName}` : null;
+}
 
 function toCertificateInput(row: CertificateRow) {
   return {
@@ -40,7 +49,9 @@ export function CertificatesTable({
   providers,
   courses,
   hasCourses,
+  preparedBy,
   canManage,
+  initialSearch = "",
 }: {
   certificates: CertificateRow[];
   certTypes: SelectOption[];
@@ -48,9 +59,13 @@ export function CertificatesTable({
   /** Courses that grant nothing yet; the table adds back the one the edited completion already uses. */
   courses: SelectOption[];
   hasCourses: boolean;
+  /** Names of the courses that prepare for each exam, keyed by certificate id. */
+  preparedBy: Record<string, string[]>;
   canManage: boolean;
+  /** Starting value of the search box (Data Quality links here with ?search=<name>). */
+  initialSearch?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CertificateRow | null>(null);
   const removal = useConfirmedDelete<CertificateRow>({
@@ -61,11 +76,29 @@ export function CertificatesTable({
   const rows = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) return certificates;
-    return certificates.filter((c) => `${c.name} ${c.providerName} ${c.certTypeName} ${c.courseName ?? ""}`.toLowerCase().includes(query));
-  }, [certificates, search]);
+    return certificates.filter((c) =>
+      `${c.name} ${c.providerName} ${c.certTypeName} ${c.courseName ?? ""} ${(preparedBy[c.id] ?? []).join(" ")}`.toLowerCase().includes(query),
+    );
+  }, [certificates, preparedBy, search]);
 
   const columns: ColumnDef<CertificateRow, unknown>[] = [
-    { accessorKey: "name", header: "Name" },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5 min-w-0">
+          <TruncatedCell text={row.original.name} />
+          {row.original.catalogueStatus === "pending" && (
+            <Badge
+              variant="outline"
+              className="rounded-sm border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1 py-0 h-4 shrink-0"
+            >
+              Pending
+            </Badge>
+          )}
+        </div>
+      ),
+    },
     {
       accessorKey: "kind",
       header: "Kind",
@@ -75,9 +108,9 @@ export function CertificatesTable({
         </Badge>
       ),
     },
-    { accessorKey: "certTypeName", header: "Type" },
-    { accessorKey: "providerName", header: "Provider" },
-    { accessorKey: "level", header: "Level", cell: ({ row }) => row.original.level ?? "—" },
+    { accessorKey: "certTypeName", header: "Type", cell: ({ row }) => <TruncatedCell text={row.original.certTypeName} /> },
+    { accessorKey: "providerName", header: "Provider", cell: ({ row }) => <TruncatedCell text={row.original.providerName} /> },
+    { accessorKey: "level", header: "Level", cell: ({ row }) => <TruncatedCell text={row.original.level ?? "—"} /> },
     {
       accessorKey: "validityMonths",
       header: "Validity",
@@ -89,11 +122,34 @@ export function CertificatesTable({
       enableSorting: false,
       cell: ({ row }) => <ExternalLinkCell url={row.original.url} label={`Open link for ${row.original.name}`} />,
     },
-    { accessorKey: "courseName", header: "Granted by", cell: ({ row }) => row.original.courseName ?? "—" },
+    {
+      id: "course",
+      header: "Course",
+      enableSorting: false,
+      cell: ({ row }) => {
+        const text = courseCellText(row.original, preparedBy[row.original.id] ?? []);
+        return text ? <TruncatedCell text={text} /> : <span className="text-muted-foreground">—</span>;
+      },
+    },
     ...(canManage
       ? [
           rowActionsColumn<CertificateRow>({
             rowLabel: (row) => row.name,
+            extraItems: (row) =>
+              row.catalogueStatus === "pending" ? (
+                <DropdownMenuItem
+                  onClick={async () => {
+                    const res = await approveCertificate({ id: row.id });
+                    if (!res.ok) {
+                      toast.error(res.error);
+                    } else {
+                      toast.success(`Approved ${row.name}`);
+                    }
+                  }}
+                >
+                  Approve proposal
+                </DropdownMenuItem>
+              ) : null,
             onEdit: (row) => {
               setEditing(row);
               setSheetOpen(true);
@@ -115,13 +171,13 @@ export function CertificatesTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search certificates…"
+        searchPlaceholder="Search certificates and course completions…"
         hasActiveFilters={search.length > 0}
         onClear={() => setSearch("")}
       >
         {canManage && (
           <AddButton
-            label="Add certificate"
+            label={CERTIFICATE_ADD_NEUTRAL_LABEL}
             blockedReason={canAdd ? undefined : NO_CERT_TYPES_OR_PROVIDERS_HINT}
             onClick={() => {
               setEditing(null);
@@ -137,11 +193,11 @@ export function CertificatesTable({
         empty={
           certificates.length === 0 ? (
             <EmptyState
-              title="No certificates yet"
-              description={canManage ? "Add the first certificate members can hold." : "No certificates are available yet."}
+              title="Nothing here yet"
+              description={canManage ? "Add the first certificate or course completion members can hold." : "Nothing is available yet."}
             />
           ) : (
-            <EmptyState title="No certificates found" description="Try a different search or clear the filters." />
+            <EmptyState title="Nothing found" description="Try a different search or clear the filters." />
           )
         }
       />

@@ -17,6 +17,7 @@ const record = (id: string, memberId: string, over: Partial<SnapshotRecord> = {}
   id,
   memberId,
   status: "done",
+  approval: "approved",
   certificateName: `Course ${id}`,
   issuedDate: "2026-01-01",
   expiryDate: "2027-06-01",
@@ -222,7 +223,6 @@ describe("planMonthlyReports KPIs", () => {
       valid: 5, // done and not expired, No Expiry included
       expiring: 2, // Expiring Soon + Expiring in 60d, a subset of valid
       expired: 1,
-      completionRate: 60,
     });
   });
 
@@ -258,19 +258,6 @@ describe("planMonthlyReports KPIs", () => {
     expect(k.expiredInMonth).toBe(3);
   });
 
-  it("#32 completion rate is null with no records, rounds down (29/100 is 29), and is 100 only when all are done", () => {
-    expect(kpiOf([]).completionRate).toBeNull();
-
-    const many = (done: number, total: number) =>
-      Array.from({ length: total }, (_, i) =>
-        record(`r${i}`, "a", i < done ? {} : { status: "in_progress", issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
-      );
-    expect(kpiOf(many(29, 100)).completionRate).toBe(29);
-    expect(kpiOf(many(99, 100)).completionRate).toBe(99);
-    expect(kpiOf(many(100, 100)).completionRate).toBe(100);
-    expect(kpiOf(many(2, 3)).completionRate).toBe(66);
-  });
-
   it("an inactive member is excluded from members and from every count", () => {
     const k = kpiOf(
       [
@@ -295,9 +282,9 @@ describe("planMonthlyReports KPIs", () => {
       MONTH,
     );
     const r = reports[0]!;
-    expect(r.overall).toMatchObject({ members: 2, records: 2, done: 1, completionRate: 50 });
-    expect(r.teams.map((t) => [t.teamName, t.kpi.records, t.kpi.completionRate])).toEqual([
-      ["Team 1", 1, 100],
+    expect(r.overall).toMatchObject({ members: 2, records: 2, done: 1 });
+    expect(r.teams.map((t) => [t.teamName, t.kpi.records, t.kpi.done])).toEqual([
+      ["Team 1", 1, 1],
       ["Team 2", 1, 0],
     ]);
   });
@@ -380,5 +367,23 @@ describe("planMonthlyReports delivery", () => {
 
   it("rejects an impossible month instead of silently reporting on nothing", () => {
     expect(() => planMonthlyReports(snap({ ...base, staff: [admin()] }), "2026-13")).toThrow();
+  });
+});
+
+describe("planMonthlyReports: only Approved items count", () => {
+  const unapproved = (approval: "waiting" | "returned") =>
+    ({ approval, expiryStatus: "Expiring Soon", daysToExpiry: 5, expiryDate: "2026-10-10" }) as const;
+
+  it("a Waiting or Returned Completed item is in no number and not in upcoming", () => {
+    const { reports } = planMonthlyReports(
+      snap({
+        members: [member("a")],
+        records: [record("ok", "a"), record("w", "a", unapproved("waiting")), record("r", "a", unapproved("returned"))],
+        staff: [admin()],
+      }),
+      MONTH,
+    );
+    expect(reports[0]!.overall).toMatchObject({ records: 1, done: 1, valid: 1, expiring: 0, expired: 0 });
+    expect(reports[0]!.upcoming).toEqual([]);
   });
 });

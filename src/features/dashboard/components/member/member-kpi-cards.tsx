@@ -1,176 +1,230 @@
-import { AlertCircle, Award, CheckCircle2, Clock, PlayCircle } from "lucide-react";
-import type { MemberKpis } from "@/features/dashboard/member-metrics";
-import { formatRate, ratePercent } from "@/features/dashboard/metrics";
+import { AlertCircle, ArrowRight, Award, CalendarClock, CheckCircle2, Clock, PlayCircle } from "lucide-react";
+import Link from "next/link";
+import type { ReactNode } from "react";
+import type { MemberKpis, MemberView } from "@/features/dashboard/member-metrics";
+import { formatDate } from "@/lib/format";
 import { daysLeftLabel, pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
 
 /** Keeps the four tiles the same height whatever they hold. */
 const KPI_TILE_MIN_HEIGHT = "min-h-[175px]";
 
-export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
-  const compliance = formatRate(ratePercent(kpis.validCount, kpis.total));
+type Tone = "primary" | "neutral" | "warning" | "danger";
 
+const TILE_SURFACE: Record<Tone, string> = {
+  primary: "border-transparent bg-primary text-primary-foreground",
+  neutral: "border-border bg-card",
+  warning: "border-[var(--status-expiring-soon-border)] bg-card",
+  danger: "border-destructive/30 bg-card",
+};
+const LABEL_COLOUR: Record<Tone, string> = {
+  primary: "text-primary-foreground/80",
+  neutral: "text-muted-foreground",
+  warning: "text-[var(--status-expiring-soon-fg)]",
+  danger: "text-destructive",
+};
+const VALUE_COLOUR: Record<Tone, string> = {
+  primary: "text-primary-foreground",
+  neutral: "text-foreground",
+  warning: "text-foreground",
+  danger: "text-foreground",
+};
+const MUTED_COLOUR: Record<Tone, string> = {
+  primary: "text-primary-foreground/80",
+  neutral: "text-muted-foreground",
+  warning: "text-muted-foreground",
+  danger: "text-muted-foreground",
+};
+
+/**
+ * One tile. The label is the link (stretched over the whole tile) to /me narrowed to the tile's items, so the
+ * number always leads somewhere. `dt` text stays the plain label: the e2e tile lookup matches it exactly.
+ */
+function Tile({
+  label,
+  view,
+  href,
+  tone,
+  icon,
+  value,
+  summary,
+  children,
+}: {
+  label: string;
+  view: MemberView;
+  href?: string;
+  tone: Tone;
+  icon: ReactNode;
+  value: number;
+  summary: string;
+  children: ReactNode;
+}) {
   return (
-    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-3">
-      {/* 1. All certificates, in solid primary */}
-      <div className={cn("flex flex-col justify-between rounded-lg border border-transparent bg-primary p-3.5 text-primary-foreground", KPI_TILE_MIN_HEIGHT)}>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <dt className="text-label uppercase tracking-wider text-primary-foreground/80 font-mono">
-              Certificates
-            </dt>
-            <Award className="size-3.5 text-primary-foreground/80 shrink-0" aria-hidden="true" />
-          </div>
-          <dd className="text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums text-primary-foreground mt-1">
-            {kpis.total}
-          </dd>
-          <dd className="text-caption text-primary-foreground/80 leading-tight">
-            Including certificates not started or in progress
-          </dd>
+    <div
+      className={cn(
+        "group/tile relative flex min-w-0 flex-col justify-between rounded-lg border p-3.5 transition-colors focus-within:ring-[3px] focus-within:ring-ring/50",
+        TILE_SURFACE[tone],
+        tone === "primary" ? "hover:bg-primary/90" : "hover:bg-accent/40",
+        KPI_TILE_MIN_HEIGHT,
+      )}
+    >
+      <div className="flex min-w-0 flex-col gap-1">
+        <div className="flex items-center justify-between gap-1">
+          <dt className={cn("min-w-0 truncate font-mono text-label uppercase tracking-wider", LABEL_COLOUR[tone])}>
+            <Link
+              href={href ?? `/me?view=${view}`}
+              className="outline-none after:absolute after:inset-0 after:rounded-lg"
+            >
+              {label}
+            </Link>
+          </dt>
+          <span className={cn("shrink-0", LABEL_COLOUR[tone])}>{icon}</span>
         </div>
-
-        <div className="border-t border-primary-foreground/20 pt-2 flex flex-col gap-1.5">
-          <div className="inline-flex items-center self-start rounded border border-primary-foreground/30 px-1.5 py-0.5 text-caption font-medium text-primary-foreground">
-            {`${compliance} valid (${kpis.validCount} of ${kpis.total})`}
-          </div>
-          <div className="flex flex-wrap items-center gap-1 text-caption font-mono text-primary-foreground/90">
-            <span className="rounded border border-primary-foreground/30 px-1 py-0.5">{kpis.expiringCount} expiring</span>
-            <span className="rounded border border-primary-foreground/30 px-1 py-0.5">{kpis.inProgressCount} in progress</span>
-          </div>
-        </div>
+        <dd className={cn("mt-1 text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl", VALUE_COLOUR[tone])}>{value}</dd>
+        <dd className={cn("min-w-0 truncate text-caption leading-tight", MUTED_COLOUR[tone])} title={summary}>
+          {summary}
+        </dd>
       </div>
-
-      {/* 2. Expiring within 60 days: amber border and warning accent */}
       <div
         className={cn(
-          "flex flex-col justify-between rounded-lg border p-3.5 bg-card",
-          KPI_TILE_MIN_HEIGHT,
-          kpis.expiringCount > 0
-            ? "border-[var(--status-expiring-soon-border)]"
-            : "border-border",
+          "flex min-w-0 flex-col gap-1.5 border-t pt-2 text-caption",
+          tone === "primary" ? "border-primary-foreground/20" : "border-border",
         )}
       >
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <dt
-              className={cn(
-                "text-label uppercase tracking-wider font-mono",
-                kpis.expiringCount > 0
-                  ? "text-[var(--status-expiring-soon-fg)]"
-                  : "text-muted-foreground",
-              )}
-            >
-              Expiring within 60 days
-            </dt>
-            <Clock
-              className={cn(
-                "size-3.5 shrink-0",
-                kpis.expiringCount > 0
-                  ? "text-[var(--status-expiring-soon-fg)]"
-                  : "text-muted-foreground",
-              )}
-              aria-hidden="true"
-            />
-          </div>
-          <dd
-            className={cn(
-              "text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1",
-              kpis.expiringCount > 0
-                ? "text-[var(--status-expiring-soon-fg)]"
-                : "text-foreground",
-            )}
-          >
-            {kpis.expiringCount}
-          </dd>
-          <dd className="text-caption text-muted-foreground leading-tight">
-            Valid, 60 days or less left
-          </dd>
-        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
-        <div className="border-t border-border pt-2 flex flex-col gap-0.5 text-caption">
-          {kpis.leastDaysRecord ? (
-            <>
-              <span className="font-medium text-foreground truncate max-w-full" title={kpis.leastDaysRecord.certificateName}>
-                Next to expire: {kpis.leastDaysRecord.certificateName}
-              </span>
-              <span className="font-mono text-caption font-semibold text-[var(--status-expiring-soon-fg)]">
-                {daysLeftLabel(kpis.leastDaysRecord.daysToExpiry)}
-              </span>
-            </>
+/** Last line of a tile: what to do or what is next, with an arrow that nudges on hover. */
+function Footer({ children, strong }: { children: ReactNode; strong?: boolean }) {
+  return (
+    <span className="flex min-w-0 items-center justify-between gap-1">
+      <span className={cn("min-w-0 truncate", strong && "font-medium")}>{children}</span>
+      <ArrowRight
+        className="size-3 shrink-0 transition-transform group-hover/tile:translate-x-0.5 motion-reduce:transition-none"
+        aria-hidden="true"
+      />
+    </span>
+  );
+}
+
+export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
+  const held = kpis.validCount + kpis.completionDoneCount;
+  const needsAction = kpis.expiredCount + kpis.expiringCount;
+  const hasExpired = kpis.expiredCount > 0;
+  const hasExpiring = kpis.expiringCount > 0;
+  const progress = kpis.activeInProgress?.progress ?? 0;
+
+  const needsSummary = hasExpired
+    ? [pluralize(kpis.expiredCount, "expired exam"), hasExpiring ? `${kpis.expiringCount} expiring` : null].filter(Boolean).join(" · ")
+    : hasExpiring
+      ? `Next: ${kpis.leastDaysRecord?.certificateName ?? "an exam certificate"}`
+      : "Nothing due in 60 days";
+
+  return (
+    <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* "Valid": what the member holds today, approved and not expired (the /me list calls it Valid too). */}
+      <Tile
+        label="Valid"
+        view="held"
+        tone="primary"
+        icon={<Award className="size-3.5" aria-hidden="true" />}
+        value={held}
+        summary={[
+          held > 0
+            ? `${pluralize(kpis.validCount, "exam certificate")} · ${pluralize(kpis.completionDoneCount, "course completion")}`
+            : kpis.waitingCount > 0
+              ? null
+              : "None yet",
+          kpis.waitingCount > 0 ? `${kpis.waitingCount} waiting for approval` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ")}
+      >
+        {/* With nothing valid the list would be empty, so offer only the waiting items. */}
+        {(held > 0 || kpis.waitingCount === 0) && <Footer>View all</Footer>}
+        {kpis.waitingCount > 0 && (
+          // `relative` lifts it above the tile's stretched label link.
+          <Link href="/me?view=waiting" className="relative w-fit text-caption hover:underline">
+            See waiting items
+          </Link>
+        )}
+      </Tile>
+
+      <Tile
+        label="Needs action"
+        view="needs-action"
+        tone={hasExpired ? "danger" : hasExpiring ? "warning" : "neutral"}
+        icon={
+          hasExpired ? (
+            <AlertCircle className="size-3.5" aria-hidden="true" />
+          ) : hasExpiring ? (
+            <Clock className="size-3.5" aria-hidden="true" />
           ) : (
-            <span className="text-muted-foreground text-caption">All up to date</span>
-          )}
-        </div>
-      </div>
+            <CheckCircle2 className="size-3.5" aria-hidden="true" />
+          )
+        }
+        value={needsAction}
+        summary={needsSummary}
+      >
+        {hasExpired ? (
+          <Footer strong>Renew first</Footer>
+        ) : hasExpiring && kpis.leastDaysRecord ? (
+          <Footer strong>{daysLeftLabel(kpis.leastDaysRecord.daysToExpiry)}</Footer>
+        ) : (
+          <span className="flex items-center gap-1.5 font-medium text-status-active-fg">
+            <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+            All up to date
+          </span>
+        )}
+      </Tile>
 
-      {/* 3. In progress: active study goals */}
-      <div className={cn("flex flex-col justify-between rounded-lg border border-border bg-card p-3.5", KPI_TILE_MIN_HEIGHT)}>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <dt className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-              In progress
-            </dt>
-            <PlayCircle className="size-3.5 text-primary shrink-0" aria-hidden="true" />
+      <Tile
+        label="In progress"
+        view="in-progress"
+        // The journey lives on the Learning tab (decision #72).
+        href={kpis.inProgressCount === 0 ? "/courses" : "/me?tab=learning"}
+        tone="neutral"
+        icon={<PlayCircle className="size-3.5 text-primary" aria-hidden="true" />}
+        value={kpis.inProgressCount}
+        summary={kpis.inProgressCount > 0 ? "Update as you go" : "Nothing in progress"}
+      >
+        {kpis.activeInProgress ? (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="min-w-0 truncate font-medium text-foreground" title={kpis.activeInProgress.certificateName}>
+                {kpis.activeInProgress.certificateName}
+              </span>
+              <span className="shrink-0 font-semibold tabular-nums text-foreground">{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+            </div>
           </div>
-          <dd className="text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums text-foreground mt-1">
-            {kpis.inProgressCount}
-          </dd>
-          <dd className="text-caption text-muted-foreground leading-tight">
-            Certificates in progress
-          </dd>
-        </div>
+        ) : (
+          <Footer>Explore catalogue &rarr;</Footer>
+        )}
+      </Tile>
 
-        <div className="border-t border-border pt-2 flex flex-col gap-1 text-caption">
-          {kpis.inProgressRows.length > 0 ? (
-            kpis.inProgressRows.slice(0, 2).map((row) => (
-              <div
-                key={row.id}
-                className="flex items-center justify-between rounded bg-muted/50 px-1.5 py-0.5 font-mono"
-              >
-                <span className="truncate max-w-[90px] font-medium text-foreground">
-                  {row.certificateName}
-                </span>
-                <span className="font-semibold text-foreground">{row.progress}%</span>
-              </div>
-            ))
-          ) : (
-            <span className="text-muted-foreground text-caption">No certificates in progress</span>
-          )}
-        </div>
-      </div>
-
-      {/* 4. Expired: status check and compliance note */}
-      <div className={cn("flex flex-col justify-between rounded-lg border border-border bg-card p-3.5", KPI_TILE_MIN_HEIGHT)}>
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center justify-between">
-            <dt className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-              Expired
-            </dt>
-            {kpis.expiredCount > 0 ? (
-              <AlertCircle className="size-3.5 text-destructive shrink-0" aria-hidden="true" />
-            ) : (
-              <CheckCircle2 className="size-3.5 text-[var(--status-active-fg)] shrink-0" aria-hidden="true" />
-            )}
-          </div>
-          <dd
-            className={cn(
-              "text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums mt-1",
-              kpis.expiredCount > 0 ? "text-destructive" : "text-foreground",
-            )}
-          >
-            {kpis.expiredCount}
-          </dd>
-          <dd className="text-caption text-muted-foreground leading-tight">
-            {kpis.expiredCount === 0 ? "All up to date" : "Needs renewal"}
-          </dd>
-        </div>
-
-        <div className="border-t border-border pt-2 text-caption text-muted-foreground leading-tight">
-          {kpis.expiredCount === 0
-            ? "No expired certificates."
-            : `${pluralize(kpis.expiredCount, "certificate")} ${kpis.expiredCount === 1 ? "needs" : "need"} renewal.`}
-        </div>
-      </div>
+      <Tile
+        label="Up next"
+        view="up-next"
+        href="/me?tab=learning"
+        tone="neutral"
+        icon={<CalendarClock className="size-3.5 text-primary" aria-hidden="true" />}
+        value={kpis.notStartedCount}
+        summary={kpis.nextPlanned?.certificateName ?? "Nothing planned"}
+      >
+        <Footer strong={Boolean(kpis.nextPlanned?.plannedExamDate)}>
+          {kpis.nextPlanned?.plannedExamDate
+            ? formatDate(kpis.nextPlanned.plannedExamDate)
+            : kpis.nextPlanned
+              ? "Set a date"
+              : "Plan one"}
+        </Footer>
+      </Tile>
     </dl>
   );
 }

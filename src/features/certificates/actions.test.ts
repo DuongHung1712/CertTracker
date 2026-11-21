@@ -15,7 +15,7 @@ const updateValues = vi.fn();
 function chain(table: string) {
   const self: Record<string, unknown> = {};
   const next = () => Promise.resolve(replies[table]?.shift() ?? { data: null, error: null });
-  for (const method of ["select", "eq", "in", "not", "delete"]) self[method] = () => self;
+  for (const method of ["select", "eq", "in", "not", "neq", "limit", "delete"]) self[method] = () => self;
   self.update = (values: unknown) => {
     updateValues(table, values);
     return self;
@@ -52,7 +52,7 @@ beforeEach(() => {
 describe("deleteCertificate", () => {
   it("explains that records block the delete", async () => {
     replies.certificates = [{ data: null, error: fkViolation }];
-    expect(await deleteCertificate({ id: ID })).toEqual({ ok: false, error: "This certificate has records. Delete them first." });
+    expect(await deleteCertificate({ id: ID })).toEqual({ ok: false, error: "Members already hold this. Delete their entries first." });
   });
 });
 
@@ -75,7 +75,7 @@ describe("createCertificate", () => {
 
 describe("updateCertificate kind change (spec Q6)", () => {
   it("refuses a completion whose granting course changes while a record studied another course", async () => {
-    replies.training_records = [{ data: [{ course_id: COURSE }], error: null }];
+    replies.training_records = [{ data: [{ id: "r1" }], error: null }];
     expect(await updateCertificate({ ...completion, courseId: OTHER_COURSE })).toEqual({
       ok: false,
       error: "This course completion has records with another course. Change them first.",
@@ -84,7 +84,7 @@ describe("updateCertificate kind change (spec Q6)", () => {
   });
 
   it("refuses exam to completion when a record studied another course", async () => {
-    replies.training_records = [{ data: [{ course_id: OTHER_COURSE }], error: null }];
+    replies.training_records = [{ data: [{ id: "r1" }], error: null }];
     expect(await updateCertificate(completion)).toEqual({
       ok: false,
       error: "This course completion has records with another course. Change them first.",
@@ -94,8 +94,15 @@ describe("updateCertificate kind change (spec Q6)", () => {
 
   it("allows exam to completion when the records are empty or use the granting course", async () => {
     replies.certificates = [{ data: [{ id: ID }], error: null }];
-    replies.training_records = [{ data: [{ course_id: COURSE }], error: null }];
+    replies.training_records = [{ data: [], error: null }];
     expect(await updateCertificate(completion)).toEqual({ ok: true, data: null });
+  });
+
+  it("saves a completion without a validity even when the input carries one", async () => {
+    replies.certificates = [{ data: [{ id: ID }], error: null }];
+    replies.training_records = [{ data: [], error: null }];
+    expect(await updateCertificate({ ...completion, validityMonths: 36 })).toEqual({ ok: true, data: null });
+    expect(updateValues).toHaveBeenCalledWith("certificates", expect.objectContaining({ kind: "completion", validity_months: null }));
   });
 
   it("allows completion to exam without looking at the records", async () => {

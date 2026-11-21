@@ -60,13 +60,16 @@ insert into public.training_records (member_id, certificate_id, status, progress
   ('cccccccc-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000002', 'done', 100, public.vn_today() - 10),   -- No Team C2: Active
   ('dddddddd-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000001', 'done', 100, public.vn_today() - 5);    -- Inactive: must never be counted
 
+-- Open records become learning items, exactly as migration 20261120000003 does (decision #72).
+do $mv$ begin perform public.move_open_records_to_learning(); end $mv$;
+
 -- ============ KPIs: the same org-wide numbers for every signed-in role ============
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000a');
 select results_eq(
   $$select total_members, total_records, done_records, in_progress_records, not_started_records,
            active_certs, expiring_60_certs, expiring_soon_certs, expired_certs, no_expiry_certs
       from public.dashboard_kpis()$$,
-  $$values (5, 9, 7, 1, 1, 2, 1, 1, 2, 1)$$,
+  $$values (5, 7, 7, 1, 1, 2, 1, 1, 2, 1)$$,
   'admin: KPIs count active members only and partition done certificates into expiry buckets');
 select is((select expiring_60_certs from public.dashboard_kpis()), 1,
   'a done certificate with 31-60 days left lands in the Expiring in 60d bucket (not Active, not Expiring Soon)');
@@ -75,13 +78,13 @@ reset role;
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000b');
 select results_eq(
   $$select total_members, total_records, done_records from public.dashboard_kpis()$$,
-  $$values (5, 9, 7)$$, 'manager: KPIs are org-wide, not limited to the managed team');
+  $$values (5, 7, 7)$$, 'manager: KPIs are org-wide, not limited to the managed team');
 reset role;
 
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000c');
 select results_eq(
   $$select total_members, total_records, done_records from public.dashboard_kpis()$$,
-  $$values (5, 9, 7)$$, 'member: sees the same org-wide aggregates (RLS would show them one row)');
+  $$values (5, 7, 7)$$, 'member: sees the same org-wide aggregates (RLS would show them one row)');
 reset role;
 
 select pg_temp.login_as('a0000000-0000-0000-0000-0000000000ff');   -- signed in but has no profile

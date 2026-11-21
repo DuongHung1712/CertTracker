@@ -1,9 +1,8 @@
-import { AlertTriangle, Bot, Calendar, CheckSquare, Compass, Layers, Target } from "lucide-react";
+import { AlertTriangle, Bot, Calendar, Compass, Layers, Target } from "lucide-react";
 
 const NOT_AVAILABLE = "Not available yet.";
 
 const FEATURES = [
-  { title: "Approvals", icon: CheckSquare, text: "Review and approve the certificates that members submit." },
   { title: "Goals", icon: Target, text: "Set certificate goals for a quarter and follow the progress." },
   { title: "Skills", icon: Layers, text: "See which skills your members have, based on their certificates." },
   { title: "Focus area", icon: Compass, text: "Choose the area you want to grow in, such as cloud or security." },
@@ -30,7 +29,7 @@ export function AdminComingSoonCard() {
       aria-label="Planned features (Coming soon)"
       className="flex flex-col gap-3 rounded-lg border border-dashed border-border bg-card p-4"
     >
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-mono text-label tracking-wider text-muted-foreground">Planned features</span>
         <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-caption font-medium text-muted-foreground">
           Coming soon

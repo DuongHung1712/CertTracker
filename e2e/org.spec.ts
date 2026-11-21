@@ -6,6 +6,17 @@ import {
   removeSeedManagerProgramScope,
   SEED_PROGRAM_NAME,
 } from "./support/manager-scopes";
+import { signInAsSeedAdmin } from "./support/restore-seed";
+
+// The end-to-end test creates a centre and a program; left behind, they pile up run after run until the new row
+// lands on page 2 of the Centres table and the test can no longer see it.
+test.afterEach(async () => {
+  const admin = await signInAsSeedAdmin();
+  const programs = await admin.from("programs").delete().like("name", "Program E2E %");
+  if (programs.error) throw new Error(`remove e2e programs: ${programs.error.message}`);
+  const centres = await admin.from("dcs").delete().like("name", "DC E2E %");
+  if (centres.error) throw new Error(`remove e2e centres: ${centres.error.message}`);
+});
 
 test("admin manages the org tree end to end", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
@@ -37,20 +48,12 @@ test("admin manages the org tree end to end", async ({ page }) => {
   await expect(page.getByText("This centre still has programs")).toBeVisible();
 });
 
-test("member has no write access to the org tree", async ({ page }) => {
+test("a member who types /org is sent to the dashboard", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   await expect(page.getByRole("link", { name: "Organisation" })).toHaveCount(0);
-
-  // The nav link is hidden, but /org has no route guard — a Member who types the URL directly
-  // must still land on a read-only page with no write controls (server-gated via canManage, not
-  // just a client-side hide).
   await page.goto("/org");
-  await expect(page.getByRole("heading", { name: "Organisation" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add centre" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add program" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Add team" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: "Organisation" })).toHaveCount(0);
 });
 
 test("admin assigns a manager to a program and the manager sees every team of that program", async ({ page, browser }) => {

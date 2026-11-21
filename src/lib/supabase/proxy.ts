@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isCronPath } from "@/lib/cron-path";
+import { safeNextPath } from "@/lib/safe-next-path";
 import type { Database } from "@/types/database";
 
 const PUBLIC_PATHS = ["/login"];
@@ -81,16 +82,19 @@ export async function updateSession(request: NextRequest) {
   };
   // A bare redirect would drop the cookies the client just refreshed, leaving the browser with a rotated-away token.
   const redirectTo = (target: string) => {
-    const url = request.nextUrl.clone();
-    url.pathname = target;
+    const url = new URL(target, request.nextUrl);
     const redirect = NextResponse.redirect(url);
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     return redirect;
   };
   const user = needsServerCheck ? await askAuthServer() : ((await checkLocally()) ?? (await askAuthServer()));
 
-  if (!user && !isPublic) return redirectTo("/login");
-  if (user && isPublic) return redirectTo("/dashboard");
+  // Keep the page the visitor wanted (e.g. a link in a notification e-mail) so sign-in can return to it.
+  if (!user && !isPublic) {
+    const next = request.method === "GET" ? safeNextPath(pathname + request.nextUrl.search) : null;
+    return redirectTo(next && next !== "/" ? `/login?next=${encodeURIComponent(next)}` : "/login");
+  }
+  if (user && isPublic) return redirectTo(safeNextPath(request.nextUrl.searchParams.get("next")) ?? "/dashboard");
 
   return response;
 }

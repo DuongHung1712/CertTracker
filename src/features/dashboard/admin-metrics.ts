@@ -1,5 +1,5 @@
 import { URGENT_WINDOW_DAYS } from "@/features/dashboard/member-metrics";
-import { isExam } from "@/features/records/kind";
+import { isApprovedDone, isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
@@ -9,10 +9,10 @@ export const ADMIN_ATTENTION_LIMIT = 10;
 
 // Exam certificates only: a completion never expires, even when its certificate carries a validity.
 const isAdminExpired = (r: RecordRow): boolean =>
-  isExam(r) && r.status === "done" && r.daysToExpiry !== null && r.daysToExpiry < 0;
+  isExam(r) && isApprovedDone(r) && r.daysToExpiry !== null && r.daysToExpiry < 0;
 
 const isAdminExpiringUrgent = (r: RecordRow): boolean =>
-  isExam(r) && r.status === "done" &&
+  isExam(r) && isApprovedDone(r) &&
   r.daysToExpiry !== null &&
   r.daysToExpiry >= 0 &&
   r.daysToExpiry <= URGENT_WINDOW_DAYS;
@@ -23,7 +23,7 @@ const isAdminExpiringUrgent = (r: RecordRow): boolean =>
  */
 export function countIssuedThisMonth(records: RecordRow[], now: Date = new Date()): number {
   const currentMonthKey = todayVn(now).slice(0, 7);
-  return records.filter((r) => isExam(r) && r.status === "done" && r.issuedDate?.slice(0, 7) === currentMonthKey).length;
+  return records.filter((r) => isExam(r) && isApprovedDone(r) && r.issuedDate?.slice(0, 7) === currentMonthKey).length;
 }
 
 /** Expired plus expiring-within-30-days certificates: what Needs attention would list without the limit. */

@@ -119,3 +119,62 @@ describe("dark design tokens", () => {
     expect(contrastRatio(darkHex(id), darkHex("card"))).toBeGreaterThanOrEqual(3);
   });
 });
+
+// Credential Vault (data-style="vault") overrides surfaces and the input border; text colours come from :root / .dark.
+describe("Credential Vault tokens", () => {
+  const vault = readTokens(String.raw`html\[data-style="vault"\]`);
+  const vaultDark = readTokens(String.raw`html\[data-style="vault"\]\.dark`);
+  const modes = [
+    { name: "light", own: vault, base: tokens, inputBg: vault.card },
+    { name: "dark", own: vaultDark, base: darkTokens, inputBg: "#0E161C" },
+  ];
+
+  it.each(modes)("$name: body text reaches 4.5:1 on the vault surfaces", ({ own, base }) => {
+    for (const surface of ["background", "card"]) {
+      expect(contrastRatio(base.foreground, own[surface])).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(base["muted-foreground"], own[surface])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(modes)("$name: the input border reaches 3:1 against the page, the card and the field", ({ own, inputBg }) => {
+    for (const surface of [own.background, own.card, inputBg]) {
+      expect(contrastRatio(own.input, surface)).toBeGreaterThanOrEqual(3);
+    }
+  });
+});
+
+// Nordic Heritage (data-style="nordic") provides warm linen & terracotta styling.
+describe("Nordic Heritage tokens", () => {
+  const nordic = readTokens(String.raw`html\[data-style="nordic"\]`);
+  const nordicDark = readTokens(String.raw`html\[data-style="nordic"\]\.dark`);
+  const modes = [
+    { name: "light", own: nordic, base: tokens, inputBg: nordic.card },
+    { name: "dark", own: nordicDark, base: darkTokens, inputBg: "#151815" },
+  ];
+
+  it.each(modes)("$name: body text reaches 4.5:1 on the nordic surfaces", ({ own }) => {
+    for (const surface of ["background", "card"]) {
+      expect(contrastRatio(own.foreground, own[surface])).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(own["muted-foreground"], own[surface])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(modes)("$name: the input border reaches 3:1 against the page, the card and the field", ({ own, inputBg }) => {
+    for (const surface of [own.background, own.card, inputBg]) {
+      expect(contrastRatio(own.input, surface)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it.each(modes)("$name: primary and ring reach contrast guidelines on card and background", ({ own }) => {
+    expect(contrastRatio(own["primary-foreground"], own.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own.primary, own.card)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own.primary, own.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own.ring, own.card)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(own.ring, own.background)).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(modes)("$name: sidebar and secondary surfaces reach WCAG AA contrast", ({ own }) => {
+    expect(contrastRatio(own["sidebar-foreground"], own.sidebar)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own["secondary-foreground"], own.secondary)).toBeGreaterThanOrEqual(4.5);
+  });
+});

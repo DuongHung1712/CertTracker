@@ -2,10 +2,12 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
+import Link from "next/link";
 import { toast } from "sonner";
 import type { z } from "zod";
-import { createCourse, updateCourse } from "@/features/courses/actions";
-import { courseSchema, type CourseInput } from "@/features/courses/schema";
+import { createCourse, createCourseWithCompletion, updateCourse } from "@/features/courses/actions";
+import { courseWithCompletionSchema } from "@/features/certificates/schema";
+import type { CourseInput } from "@/features/courses/schema";
 import { Button } from "@/components/ui/button";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -17,24 +19,23 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CURRENCIES, toCurrency } from "@/lib/money";
 
-const NONE = "none";
-type Editing = (CourseInput & { id: string }) | null;
+type Editing = (CourseInput & { id: string; grantsCertificateName?: string | null }) | null;
 
 export function CourseSheet({
   open,
   onOpenChange,
   editing,
-  certificates,
   providers,
+  certTypes,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: Editing;
-  /** Exam certificates a course can prepare for. */
-  certificates: SelectOption[];
   providers: SelectOption[];
+  /** Types the completion can have (create mode only). */
+  certTypes: SelectOption[];
 }) {
-  const empty: CourseInput = {
+  const empty: z.input<typeof courseWithCompletionSchema> = {
     name: "",
     providerId: "",
     preparesForId: null,
@@ -44,25 +45,41 @@ export function CourseSheet({
     estHours: null,
     url: null,
     refundConditions: null,
+    // Owner 2026-11-20: a course normally ends in a completion certificate.
+    grantsCompletion: true,
+    completionCertTypeId: "",
+    completionUrl: null,
+    completionName: null,
   };
   // `courseSchema` has `.default()` fields (`refundable`) and several `z.preprocess`-based
   // nullable fields, so its input type (pre-parse) and output type (CourseInput, post-parse) diverge.
   // The three explicit generics tell react-hook-form to accept the input shape as field values and
   // hand `onSubmit` the resolved output — same fix as member-dialog.tsx's `memberSchema`.
-  const form = useForm<z.input<typeof courseSchema>, unknown, CourseInput>({
-    resolver: zodResolver(courseSchema),
-    values: editing ?? empty,
+  const form = useForm<z.input<typeof courseWithCompletionSchema>, unknown, z.output<typeof courseWithCompletionSchema>>({
+    resolver: zodResolver(courseWithCompletionSchema),
+    values: editing ? { ...editing, grantsCompletion: false, completionCertTypeId: "", completionUrl: null, completionName: null } : empty,
   });
 
   const refundable = useWatch({ control: form.control, name: "refundable" });
+  const grantsCompletion = useWatch({ control: form.control, name: "grantsCompletion" });
 
-  async function onSubmit(values: CourseInput) {
-    const result = editing ? await updateCourse({ id: editing.id, ...values }) : await createCourse(values);
+  async function onSubmit(values: z.output<typeof courseWithCompletionSchema>) {
+    const { grantsCompletion: grants, completionCertTypeId, completionUrl, completionName, ...course } = values;
+    void completionCertTypeId;
+    void completionUrl;
+    void completionName;
+    const result = editing
+      ? await updateCourse({ id: editing.id, ...course })
+      : grants
+        ? await createCourseWithCompletion(values)
+        : await createCourse(course);
     if (!result.ok) {
       form.setError("root", { message: result.error });
       return;
     }
-    toast.success(editing ? `Saved course ${values.name}` : `Added course ${values.name}`);
+    toast.success(
+      editing ? `Saved course ${values.name}` : grants ? `Added course ${values.name} and its course completion` : `Added course ${values.name}`,
+    );
     onOpenChange(false);
     form.reset(empty);
   }
@@ -70,12 +87,16 @@ export function CourseSheet({
   return (
     <FormSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(next) => {
+        if (!next) form.reset(editing ? undefined : empty);
+        onOpenChange(next);
+      }}
       title={editing ? "Edit course" : "Add course"}
       onSubmit={form.handleSubmit(onSubmit)}
       rootError={form.formState.errors.root?.message}
       submitting={form.formState.isSubmitting}
     >
+      <p className="text-caption text-muted-foreground">* Required</p>
       <Field>
         <FieldLabel htmlFor="course-name">
           Name <RequiredMark />
@@ -107,18 +128,6 @@ export function CourseSheet({
           )}
         />
         <FieldError errors={[form.formState.errors.providerId]} />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="course-hours">Duration (hours)</FieldLabel>
-        <Input
-          id="course-hours"
-          type="number"
-          min={1}
-          className="h-9"
-          {...form.register("estHours")}
-          aria-invalid={!!form.formState.errors.estHours}
-        />
-        <FieldError errors={[form.formState.errors.estHours]} />
       </Field>
       <div className="grid grid-cols-[1fr_8rem] gap-3">
         <Field>
@@ -167,6 +176,18 @@ export function CourseSheet({
           <FieldError errors={[form.formState.errors.costCurrency]} />
         </Field>
       </div>
+      <Field>
+        <FieldLabel htmlFor="course-hours">Duration (hours)</FieldLabel>
+        <Input
+          id="course-hours"
+          type="number"
+          min={1}
+          className="h-9"
+          {...form.register("estHours")}
+          aria-invalid={!!form.formState.errors.estHours}
+        />
+        <FieldError errors={[form.formState.errors.estHours]} />
+      </Field>
       <Field orientation="horizontal">
         <FieldLabel htmlFor="course-refundable">Refundable</FieldLabel>
         <Controller
@@ -204,24 +225,93 @@ export function CourseSheet({
         <Input id="course-url" type="url" className="h-9" {...form.register("url")} aria-invalid={!!form.formState.errors.url} />
         <FieldError errors={[form.formState.errors.url]} />
       </Field>
-      <Field>
-        <FieldLabel htmlFor="course-prepares-for">Prepares for</FieldLabel>
-        <Controller
-          control={form.control}
-          name="preparesForId"
-          render={({ field }) => (
-            <OptionSelect
-              id="course-prepares-for"
-              value={typeof field.value === "string" && field.value ? field.value : NONE}
-              onChange={(value) => field.onChange(value === NONE ? null : value)}
-              options={[{ id: NONE, name: "None" }, ...certificates]}
-              placeholder="None"
-              invalid={!!form.formState.errors.preparesForId}
+      {editing?.grantsCertificateName && (
+        <p className="text-body text-muted-foreground">
+          Grants the course completion{" "}
+          <Link
+            href={`/courses?search=${encodeURIComponent(editing.grantsCertificateName)}`}
+            onClick={() => onOpenChange(false)}
+            className="text-primary underline underline-offset-2"
+          >
+            {editing.grantsCertificateName}
+          </Link>
+        </p>
+      )}
+      {!editing && (
+        <>
+          <Field orientation="horizontal">
+            <FieldLabel htmlFor="course-grants-completion">This course grants a course completion</FieldLabel>
+            <Controller
+              control={form.control}
+              name="grantsCompletion"
+              render={({ field }) => (
+                <Switch
+                  id="course-grants-completion"
+                  checked={field.value}
+                  onCheckedChange={(checked) => {
+                    field.onChange(checked);
+                    // Hidden stale values must never block Save.
+                    if (!checked) {
+                      form.setValue("completionCertTypeId", "");
+                      form.setValue("completionUrl", "");
+                      form.setValue("completionName", "");
+                      form.clearErrors(["completionCertTypeId", "completionUrl", "completionName"]);
+                    }
+                  }}
+                />
+              )}
             />
+          </Field>
+          {grantsCompletion && (
+            <>
+              <Field>
+                <FieldLabel htmlFor="completion-name">Completion name</FieldLabel>
+                <Input
+                  id="completion-name"
+                  className="h-9"
+                  aria-describedby="completion-name-hint"
+                  {...form.register("completionName")}
+                  aria-invalid={!!form.formState.errors.completionName}
+                />
+                <p id="completion-name-hint" className="text-caption text-muted-foreground">Leave empty to use the course name.</p>
+                <FieldError errors={[form.formState.errors.completionName]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="completion-type">
+                  Completion type <RequiredMark />
+                </FieldLabel>
+                <Controller
+                  control={form.control}
+                  name="completionCertTypeId"
+                  render={({ field }) => (
+                    <OptionSelect
+                      id="completion-type"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      options={certTypes}
+                      placeholder="Choose a type"
+                      invalid={!!form.formState.errors.completionCertTypeId}
+                    />
+                  )}
+                />
+                <FieldError errors={[form.formState.errors.completionCertTypeId]} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="completion-url">Completion link</FieldLabel>
+                <Input
+                  id="completion-url"
+                  type="url"
+                  className="h-9"
+                  {...form.register("completionUrl")}
+                  aria-invalid={!!form.formState.errors.completionUrl}
+                />
+                <FieldError errors={[form.formState.errors.completionUrl]} />
+              </Field>
+              <p className="text-caption text-muted-foreground">Leave the link empty to use the course link.</p>
+            </>
           )}
-        />
-        <FieldError errors={[form.formState.errors.preparesForId]} />
-      </Field>
+        </>
+      )}
     </FormSheet>
   );
 }

@@ -99,7 +99,7 @@ describe("[copy] plain-English interface", () => {
     const allowed = (p: Piece) =>
       (p.file === "src/features/certificates/actions.ts" &&
         (p.text === " has records with another course. Change them first." ||
-          p.text === "This certificate has records. Delete them first.")) ||
+          p.text === "Members already hold this. Delete their entries first.")) ||
       (p.file === "src/app/api/export/records/route.ts" && p.text === "export: could not load records") ||
       (p.file === "src/features/notifications/deliver.ts" && p.text === ": could not record the failure (");
     expect(offenders((p) => visible(p) && /\brecords?\b/i.test(p.text) && !allowed(p))).toEqual([]);

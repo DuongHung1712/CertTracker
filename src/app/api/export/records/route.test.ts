@@ -5,6 +5,7 @@ const listMemberCareers = vi.fn();
 vi.mock("@/features/auth/queries", () => ({ getCurrentUser: async () => ({ id: "u1", role: "admin" }) }));
 vi.mock("@/features/career/queries", () => ({ listMemberCareers: () => listMemberCareers() }));
 vi.mock("@/features/records/queries", () => ({ listRecords: () => listRecords() }));
+vi.mock("@/features/learning/queries", () => ({ listLearningItems: async () => [] }));
 
 import { GET } from "@/app/api/export/records/route";
 

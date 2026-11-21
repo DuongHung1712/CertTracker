@@ -12,7 +12,7 @@ const META: Record<ExpiryStatus, { tone: ExpiryTone; label: string }> = {
   "Expiring Soon": { tone: "expiring-soon", label: "Expires within 30 days" },
   Expired: { tone: "expired", label: "Expired" },
   "No Expiry": { tone: "no-expiry", label: "No expiry" },
-  "N/A": { tone: "na", label: "Not issued yet" },
+  "N/A": { tone: "na", label: "Not earned yet" },
 };
 
 /** Narrows the `expiry_status` text column of `v_training_records`. */
@@ -28,13 +28,15 @@ export function expiryDetail({
   status,
   daysToExpiry,
   expiryDate,
+  kind = "exam",
 }: {
   status: ExpiryStatus;
   daysToExpiry: number | null;
   expiryDate: string | null;
+  kind?: "exam" | "completion";
 }): string {
-  if (status === "No Expiry") return "This certificate does not expire";
-  if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "Not issued yet";
+  if (status === "No Expiry") return kind === "completion" ? "Doesn't expire" : "This certificate does not expire";
+  if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "Not earned yet";
   const date = formatDate(expiryDate);
   if (daysToExpiry < 0) return `Expired ${pluralize(-daysToExpiry, "day")} ago · ${date}`;
   if (daysToExpiry === 0) return `Expires today · ${date}`;

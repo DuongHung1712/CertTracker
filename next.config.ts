@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The menu calls it "My learning"; people type that, the route is /me.
+  redirects: async () => [{ source: "/my-learning", destination: "/me", permanent: false }],
   experimental: {
     // Evidence uploads go through a Server Action; the default cap is 1 MB. Files are limited to
     // 4 MB in src/lib/storage/evidence.ts — 5 MB here leaves room for multipart overhead.

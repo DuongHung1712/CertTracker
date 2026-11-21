@@ -1,6 +1,7 @@
 import type { RecordStatus } from "@/components/status/labels";
-import { CERTIFICATE_KIND_LABEL, type CertificateKind } from "@/features/certificates/schema";
+import { type CertificateKind } from "@/features/certificates/schema";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
+import type { ApprovalState } from "@/features/records/kind";
 import type { RefundStatus } from "@/features/records/schema";
 import { toCurrency, type Currency } from "@/lib/money";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
@@ -38,10 +39,17 @@ export type RecordRow = {
   expiryDate: string | null;
   daysToExpiry: number | null;
   expiryStatus: string | null;
+  /** Only a Completed item has one; only Approved items count in numbers. */
+  approval: ApprovalState | null;
+  /** Why a Returned item came back. */
+  approvalNote: string | null;
+  certificateCatalogueStatus?: "approved" | "pending" | "rejected" | null;
+  /** Replaced by a later approved renewal of the same certificate: history only, counts nowhere. */
+  renewed?: boolean;
 };
 
 const COLUMNS =
-  "id, member_id, member_code, member_name, member_email, team_id, team_name, certificate_id, certificate_name, certificate_kind, course_id, course_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status";
+  "id, member_id, member_code, member_name, member_email, team_id, team_name, certificate_id, certificate_name, certificate_kind, course_id, course_name, cert_type_name, provider_name, validity_months, cost, cost_currency, est_hours, status, progress, planned_exam_date, issued_date, certificate_url, evidence_path, via_company, refund_status, notes, expiry_date, days_to_expiry, expiry_status, approval, approval_note, certificate_catalogue_status, renewed";
 
 /** The view joins `certificates` inner, so a missing kind means a broken join: stop instead of showing a wrong badge. */
 function requireKind(kind: CertificateKind | null): CertificateKind {
@@ -95,6 +103,10 @@ export async function listRecords(filter: { memberId?: string } = {}): Promise<R
             expiryDate: row.expiry_date,
             daysToExpiry: row.days_to_expiry,
             expiryStatus: row.expiry_status,
+            approval: row.approval,
+            approvalNote: row.approval_note,
+            certificateCatalogueStatus: (row.certificate_catalogue_status as "approved" | "pending" | "rejected") ?? "approved",
+            renewed: row.renewed ?? false,
           },
         ]
       : [],
@@ -110,23 +122,25 @@ export async function listMemberOptions() {
   return rows.map((row) => ({ id: row.id, label: row.full_name, hint: row.code }));
 }
 
-/** Every certificate a record can be for, with the kind in the label so "Exam" and "Course completion" are told apart. */
+/** Every certificate a record can be for. The sheet lists one kind at a time, so the label is just the name. */
 export async function listCertificateOptions(): Promise<CertificateChoice[]> {
   const supabase = await createClient();
   const rows = await fetchAllRows((from, to) =>
     supabase
       .from("certificates")
-      .select("id, name, kind, providers(name), granting:courses!certificates_course_id_fkey(id, name)")
+      .select("id, name, kind, provider_id, catalogue_status, proposed_provider, providers(name), granting:courses!certificates_course_id_fkey(id, name)")
       .order("name")
       .order("id")
       .range(from, to),
   );
   return rows.map((row) => ({
     id: row.id,
-    label: `${row.name} · ${CERTIFICATE_KIND_LABEL[row.kind]}`,
-    hint: row.providers?.name ?? undefined,
+    label: row.name,
+    hint: row.providers?.name ?? row.proposed_provider ?? undefined,
+    providerId: row.provider_id,
     kind: row.kind,
     grantingCourse: row.granting ? { id: row.granting.id, name: row.granting.name } : null,
+    catalogueStatus: (row.catalogue_status as "approved" | "pending" | "rejected") ?? "approved",
   }));
 }
 

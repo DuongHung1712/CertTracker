@@ -32,6 +32,7 @@ import {
 } from "@/features/dashboard/manager-metrics";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
+import { isReviewable } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 
 export function ManagerDashboardView({
@@ -43,6 +44,7 @@ export function ManagerDashboardView({
   recordsError,
   members,
   membersError,
+  viewerMemberId = null,
 }: {
   greeting: string;
   subtitle: string;
@@ -52,6 +54,8 @@ export function ManagerDashboardView({
   recordsError?: string;
   members: { id: string; fullName: string; teamName: string | null }[];
   membersError?: string;
+  /** The manager's own member row: their own waiting item is not theirs to review, so it is not counted. */
+  viewerMemberId?: string | null;
 }) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const hasTeams = managedTeamNames.length > 0;
@@ -69,6 +73,8 @@ export function ManagerDashboardView({
 
   const kpis = useMemo(() => calculateManagerKpis(filteredRecords), [filteredRecords]);
   const completions = useMemo(() => calculateCompletionKpis(filteredRecords), [filteredRecords]);
+  // The whole scope, not the selected team: the tile links to the list of the whole scope.
+  const waiting = useMemo(() => records.filter((r) => isReviewable(r, viewerMemberId)).length, [records, viewerMemberId]);
   const plannedExams = useMemo(() => getPlannedExams(filteredRecords).length, [filteredRecords]);
 
   const teamsWithCounts = useMemo(() => {
@@ -131,14 +137,14 @@ export function ManagerDashboardView({
 
           {/* Three independent columns (as in the Figma): each one flows down on its own, so a tall card
               in one column never leaves a gap in the next. The centre column comes first in the markup
-              so that on a phone the KPIs and the work lists lead; from lg up the columns are reordered.
+              so that on a phone the KPIs and the work lists lead; from xl up the columns are reordered.
               The lists are spread so the three columns end at about the same height. */}
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-12">
             {/* Centre column (6 cols) */}
-            <div className="flex flex-col gap-6 lg:order-2 lg:col-span-6">
+            <div data-testid="mgr-col-center" className="flex min-w-0 flex-col gap-6 md:col-span-2 xl:order-2 xl:col-span-6">
               <section aria-label="Overview" className="flex flex-col gap-3">
                 <h2 className="sr-only">Overview</h2>
-                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} completions={completions} plannedExams={plannedExams} pastDueText={pastDueText} />}
+                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} completions={completions} plannedExams={plannedExams} pastDueText={pastDueText} waiting={waiting} />}
               </section>
 
               <ManagerTabStrip />
@@ -154,20 +160,10 @@ export function ManagerDashboardView({
                 )}
               </Section>
 
-              <Section
-                title="Team readiness"
-                description="Status breakdown for members across your managed teams."
-              >
-                {membersError || recordsError ? (
-                  <SectionError title="Team readiness" />
-                ) : (
-                  <TeamReadinessDossier rows={readinessRows} records={filteredRecords} />
-                )}
-              </Section>
             </div>
 
             {/* Right column (3 cols) */}
-            <div className="flex flex-col gap-4 lg:order-3 lg:col-span-3">
+            <div data-testid="mgr-col-right" className="flex min-w-0 flex-col gap-4 xl:order-3 xl:col-span-3">
               {recordsError ? (
                 <SectionError title="Needs attention" />
               ) : (
@@ -189,7 +185,7 @@ export function ManagerDashboardView({
             </div>
 
             {/* Left column (3 cols) */}
-            <div className="flex flex-col gap-4 lg:order-1 lg:col-span-3">
+            <div data-testid="mgr-col-left" className="flex min-w-0 flex-col gap-4 xl:order-1 xl:col-span-3">
               <section aria-label="Readiness summary">
                 {recordsError ? (
                   <SectionError title="Readiness summary" />
@@ -201,6 +197,20 @@ export function ManagerDashboardView({
               <QuickActionsCard />
               <MonthlyEarnedChart records={filteredRecords} />
             </div>
+          </div>
+
+          {/* Own full-width row (like the admin Explorer): the ranking and the member details need the width. */}
+          <div data-testid="mgr-readiness-row" className="flex min-w-0 flex-col gap-6">
+            <Section
+              title="Team readiness"
+              description="Status breakdown for members across your managed teams."
+            >
+              {membersError || recordsError ? (
+                <SectionError title="Team readiness" />
+              ) : (
+                <TeamReadinessDossier rows={readinessRows} records={filteredRecords} />
+              )}
+            </Section>
           </div>
         </>
       )}

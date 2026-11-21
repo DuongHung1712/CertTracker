@@ -44,3 +44,41 @@ test("Excel export is a valid workbook", async ({ page }) => {
   expect(rows[0]).toContain("Course studied");
   expect(rows.length).toBeGreaterThan(1);
 });
+
+test.describe("catalogue export", () => {
+  async function exportCatalogue(page: Page, link: "Export CSV" | "Export Excel") {
+    await page.goto("/courses");
+    const [file] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: link }).click()]);
+    return { bytes: await readFile(await file.path()), filename: file.suggestedFilename() };
+  }
+
+  test("admin exports the catalogue as CSV and Excel, without member data", async ({ page }) => {
+    await signIn(page, "admin@certtracker.test");
+    const csv = await exportCatalogue(page, "Export CSV");
+    expect([...csv.bytes.subarray(0, 3)]).toEqual([0xef, 0xbb, 0xbf]);
+    const text = csv.bytes.toString("utf8");
+    expect(text).toContain("Name,Kind,Certificate type,Provider,Level,Validity (months),Link,Granting course,Prepared by");
+    expect(text).toContain("AWS Solutions Architect Associate");
+    expect(text).not.toContain("Trần Thị Bình");
+    expect(csv.filename).toMatch(/^certtracker-catalogue-\d{4}-\d{2}-\d{2}\.csv$/);
+
+    const xlsx = await exportCatalogue(page, "Export Excel");
+    const book = XLSX.read(xlsx.bytes);
+    expect(book.SheetNames).toEqual(["Certificates", "Courses"]);
+    const courses = XLSX.utils.sheet_to_json<string[]>(book.Sheets.Courses, { header: 1 });
+    expect(courses[0]).toEqual(["Name", "Provider", "Prepares for", "Grants", "Cost", "Currency", "Duration (hours)", "Refundable", "Refund conditions", "Link"]);
+    expect(courses.length).toBeGreaterThan(1);
+  });
+
+  for (const email of ["manager@certtracker.test", "member@certtracker.test"]) {
+    test(`${email} has no export buttons and the route answers 403`, async ({ page }) => {
+      await signIn(page, email);
+      await page.goto("/courses");
+      await expect(page.getByRole("link", { name: "Export CSV" })).toHaveCount(0);
+      for (const format of ["csv", "xlsx"]) {
+        const status = await page.evaluate(async (f) => (await fetch(`/api/export/catalogue?format=${f}`)).status, format);
+        expect(status).toBe(403);
+      }
+    });
+  }
+});

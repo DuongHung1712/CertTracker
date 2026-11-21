@@ -1,5 +1,6 @@
 import { AlertCircle, Clock } from "lucide-react";
 import { KpiGroup } from "@/features/dashboard/components/kpi-group";
+import { WaitingTile } from "@/features/dashboard/components/waiting-tile";
 import { StatStrip } from "@/features/dashboard/components/stat-strip";
 import type { CompletionKpis } from "@/features/dashboard/completion-metrics";
 import type { ManagerKpis } from "@/features/dashboard/manager-metrics";
@@ -12,6 +13,7 @@ export function TopKpiRow({
   completions,
   plannedExams,
   pastDueText,
+  waiting,
 }: {
   /** Exam certificates only (see `calculateManagerKpis`). */
   kpis: ManagerKpis;
@@ -19,11 +21,13 @@ export function TopKpiRow({
   /** Planned exams in the next 60 days: the length of the Planned exams list. */
   plannedExams: number;
   pastDueText?: string;
+  /** Completed items in scope that wait for approval. */
+  waiting: number;
 }) {
   return (
     <div className="flex flex-col gap-6">
       <KpiGroup title="Exam certificates">
-        <ExamTiles kpis={kpis} pastDueText={pastDueText} />
+        <ExamTiles kpis={kpis} pastDueText={pastDueText} waiting={waiting} />
         <StatStrip
           stats={[
             ["Valid", kpis.validCount],
@@ -47,9 +51,10 @@ export function TopKpiRow({
   );
 }
 
-function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: string }) {
+function ExamTiles({ kpis, pastDueText, waiting }: { kpis: ManagerKpis; pastDueText?: string; waiting: number }) {
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+    <div className="@container">
+    <div className="grid grid-cols-1 gap-3.5 @md:grid-cols-3">
       {/* 1. Expiring in 60 days */}
       <dl className="m-0 p-0 contents">
         <div
@@ -62,7 +67,7 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
           )}
         >
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               <dt
                 className={cn(
                   "text-label uppercase tracking-wider font-mono",
@@ -105,7 +110,7 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
           )}
         >
           <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
+            <div className="flex items-start justify-between gap-2">
               <dt
                 className={cn(
                   "text-label uppercase tracking-wider font-mono",
@@ -148,41 +153,17 @@ function ExamTiles({ kpis, pastDueText }: { kpis: ManagerKpis; pastDueText?: str
             </span>
           </div>
 
-          <div className="border-t border-border/60 pt-2 flex items-center justify-between text-caption text-muted-foreground truncate">
-            <span className="truncate">
+          <div className="border-t border-border/60 pt-2 flex items-center justify-between text-caption text-muted-foreground">
+            <span className="min-w-0 [overflow-wrap:anywhere]">
               {kpis.expiredCount > 0 && pastDueText
                 ? `Past due: ${pastDueText}`
                 : "No expired certificates"}
             </span>
           </div>
         </div>
-
-        {/* 3. Waiting approval (Coming soon) */}
-        <div
-          className={cn(
-            "flex flex-col justify-between rounded-lg border border-dashed border-border p-3.5 bg-card/60",
-            KPI_TILE_MIN_HEIGHT,
-          )}
-        >
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <dt className="text-label uppercase tracking-wider font-mono text-muted-foreground">
-                Waiting for approval
-              </dt>
-              <span className="rounded border border-border px-1.5 py-0.5 text-caption font-mono text-muted-foreground">
-                Soon
-              </span>
-            </div>
-            <dd className="text-2xl sm:text-3xl font-semibold tracking-tight tabular-nums font-mono text-muted-foreground mt-1">
-              —
-            </dd>
-          </div>
-
-          <div className="border-t border-dashed border-border/60 pt-2 text-caption text-muted-foreground truncate">
-            <span>Approvals queue · Coming soon</span>
-          </div>
-        </div>
       </dl>
+      <WaitingTile count={waiting} />
+    </div>
     </div>
   );
 }

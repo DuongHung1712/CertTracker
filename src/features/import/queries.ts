@@ -1,5 +1,6 @@
 import { preparingCourseByCertificate } from "@/features/import/preparing-course";
 import type { ImportLookups, PlannedRow } from "@/features/import/plan";
+import type { ExistingNames } from "@/features/import/preview";
 import {
   importActionSchema,
   importStatusSchema,
@@ -48,7 +49,7 @@ export type ImportRowView = {
  */
 export async function loadImportLookups(): Promise<ImportLookups> {
   const supabase = await createClient();
-  const [members, teams, providers, certTypes, certificates, courses, records] = await Promise.all([
+  const [members, teams, providers, certTypes, certificates, courses, records, learningItems] = await Promise.all([
     fetchAllRows((from, to) =>
       supabase.from("members").select("id, email, full_name, team_id, is_active").order("email").order("id").range(from, to),
     ),
@@ -78,6 +79,14 @@ export async function loadImportLookups(): Promise<ImportLookups> {
         .order("id")
         .range(from, to),
     ),
+    fetchAllRows((from, to) =>
+      supabase
+        .from("learning_items")
+        .select("id, member_id, course_id, target_certificate_id, status, progress, planned_date, finished_date, notes")
+        .neq("status", "done")
+        .order("id")
+        .range(from, to),
+    ),
   ]);
 
   const courseByCertificate = preparingCourseByCertificate(courses, new Map(certificates.map((c) => [c.id, c.name])));
@@ -104,6 +113,7 @@ export async function loadImportLookups(): Promise<ImportLookups> {
         cost: course?.cost ?? null,
         costCurrency: toCurrency(course?.cost_currency ?? null),
         estHours: course?.est_hours ?? null,
+        grantsCourseId: c.course_id,
       };
     }),
     studyCourses: courses.map((c) => ({
@@ -129,6 +139,33 @@ export async function loadImportLookups(): Promise<ImportLookups> {
       refundStatus: r.refund_status,
       notes: r.notes,
     })),
+    learningItems: learningItems.map((li) => ({
+      id: li.id,
+      memberId: li.member_id,
+      courseId: li.course_id,
+      targetCertificateId: li.target_certificate_id,
+      status: li.status,
+      progress: li.progress,
+      plannedDate: li.planned_date,
+      finishedDate: li.finished_date,
+      notes: li.notes,
+    })),
+  };
+}
+
+/** Catalogue names for the preview's near-duplicate check; names only, so it stays cheap next to `loadImportLookups`. */
+export async function loadExistingNames(): Promise<ExistingNames> {
+  const supabase = await createClient();
+  const [providers, certTypes, certificates] = await Promise.all([
+    fetchAllRows((from, to) => supabase.from("providers").select("id, name").order("id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("cert_types").select("id, name").order("id").range(from, to)),
+    fetchAllRows((from, to) => supabase.from("certificates").select("id, name, provider_id").order("id").range(from, to)),
+  ]);
+  const providerName = new Map(providers.map((provider) => [provider.id, provider.name]));
+  return {
+    providers,
+    certTypes: certTypes.map((row) => row.name),
+    certificates: certificates.map((row) => ({ name: row.name, provider: (row.provider_id ? providerName.get(row.provider_id) : undefined) ?? "" })),
   };
 }
 

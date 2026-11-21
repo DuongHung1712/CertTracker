@@ -1,12 +1,19 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { fieldLabel, signIn } from "./helpers";
-import { createCompletionFixture } from "./support/completion-fixture";
-import { signInAsSeedAdmin } from "./support/restore-seed";
+import { createCompletionFixture, sweepCompletionFixtures } from "./support/completion-fixture";
+import { fillDatePassed, openOwnCertificateForm } from "./support/pilot-member";
+import { restoreSeedLearning, signInAsSeedAdmin } from "./support/restore-seed";
 
-// Seed rows (supabase/seed.sql): An–AWS done, Bình–NVIDIA in_progress 40, Châu–AWS not_started 0.
+// A timed-out test can skip its `finally`; this keeps the leftover fixture from reaching the next test or the database.
+test.afterEach(sweepCompletionFixtures);
+
+// Seed (supabase/seed.sql): one certificate, An–AWS. Decision #72: Bình's NVIDIA course and Châu's AWS plan are
+// learning items, so the certificate list has no in-progress rows; tests about the journey use the Learning tab.
 const AWS = "AWS Solutions Architect Associate";
+const NVIDIA = "NVIDIA Generative AI LLMs";
 const AN = "5eed0000-0000-0000-0000-00000000b001";
 const NVIDIA_ID = "5eed0000-0000-0000-0000-00000000e002";
+const CHAU = "5eed0000-0000-0000-0000-00000000b003";
 
 /** An has no NVIDIA record in the seed; tests that create one must not leave it for the next test. */
 async function removeAnNvidiaRecord() {
@@ -15,28 +22,25 @@ async function removeAnNvidiaRecord() {
   if (error) throw new Error(`remove An–NVIDIA record: ${error.message}`);
 }
 
-const CHAU = "5eed0000-0000-0000-0000-00000000b003";
-const AWS_ID = "5eed0000-0000-0000-0000-00000000e001";
-
-/** Châu–AWS back to the seed state (Not started, 0%, no issue date, no proof file), without going through the UI. */
-async function restoreChauAwsSeed() {
+/** Châu holds no certificate in the seed: removes any (and its proof file) a test added. */
+async function removeChauCertificates() {
   const admin = await signInAsSeedAdmin();
-  const record = await admin.from("training_records").select("evidence_path").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
-  if (record.error) throw new Error(`read Châu–AWS: ${record.error.message}`);
-  if (record.data.evidence_path) {
-    const removed = await admin.storage.from("certificates").remove([record.data.evidence_path]);
+  const records = await admin.from("training_records").select("evidence_path").eq("member_id", CHAU);
+  if (records.error) throw new Error(`read Châu certificates: ${records.error.message}`);
+  const files = records.data.flatMap((r) => (r.evidence_path ? [r.evidence_path] : []));
+  if (files.length > 0) {
+    const removed = await admin.storage.from("certificates").remove(files);
     if (removed.error) throw new Error(`remove proof: ${removed.error.message}`);
   }
-  const reset = await admin
-    .from("training_records")
-    .update({ status: "not_started", progress: 0, issued_date: null, evidence_path: null })
-    .eq("member_id", CHAU)
-    .eq("certificate_id", AWS_ID);
-  if (reset.error) throw new Error(`reset Châu–AWS: ${reset.error.message}`);
+  const deleted = await admin.from("training_records").delete().eq("member_id", CHAU);
+  if (deleted.error) throw new Error(`remove Châu certificates: ${deleted.error.message}`);
 }
 
-// A failed run must not leak its An–NVIDIA record into the tests after it (they assert one row per member).
-test.beforeEach(removeAnNvidiaRecord);
+// A failed run must not leak its rows into the tests after it (they assert one row per member).
+test.beforeEach(async () => {
+  await removeAnNvidiaRecord();
+  await removeChauCertificates();
+});
 
 /** Row that contains every given text (the row's accessible name is unreliable across columns). */
 function recordRow(page: Page, ...texts: string[]): Locator {
@@ -75,19 +79,6 @@ async function clickMenuItem(page: Page, row: Locator, name: string) {
   }).toPass({ timeout: 15_000 });
 }
 
-/** Admin/manager edit of a record's status + progress through the row menu; waits for the save toast. */
-async function editStatus(page: Page, row: Locator, status: string, progress: string) {
-  await openRowMenu(row);
-  await page.getByRole("menuitem", { name: "Edit" }).click();
-  const dialog = page.getByRole("dialog");
-  await pickSelect(page, dialog, "Status", status);
-  // Progress is only shown for In progress; Not started resets it to 0 on its own.
-  if (status === "In progress") await dialog.getByLabel("Progress (%)").fill(progress);
-  await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText("Saved certificate").first()).toBeVisible();
-  await expect(dialog).toHaveCount(0);
-}
-
 test("admin adds a record with evidence, opens it, and deletes it", async ({ page }) => {
   test.setTimeout(60_000); // upload + replace + cleanup, each waiting on server round trips and revalidation
   await signIn(page, "admin@certtracker.test");
@@ -98,10 +89,9 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   // "tran" (no diacritics) must find "Trần Thị Bình".
   await pickOption(page, dialog, "Member", "tran", "Trần Thị Bình");
   await pickOption(page, dialog, "Certificate", "aws", AWS);
-  await pickSelect(page, dialog, "Status", "Completed");
-  // Completed hides Progress (it is saved as 100).
+  // A certificate is always Completed (decision #72): no Progress field.
   await expect(dialog.getByLabel("Progress (%)")).toHaveCount(0);
-  await dialog.getByLabel(fieldLabel("Issue date")).fill("01/06/2026");
+  await dialog.getByLabel(fieldLabel("Date passed")).fill("01/06/2026");
   await dialog.getByLabel("Evidence").setInputFiles("e2e/fixtures/evidence.pdf");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Added certificate")).toBeVisible();
@@ -117,6 +107,10 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
       await openRowMenu(row);
       await expect(link).toBeVisible({ timeout: 1_500 });
     }).toPass({ timeout: 15_000 });
+    // The Evidence column shows the same file without opening the menu.
+    await page.keyboard.press("Escape");
+    await expect(row.getByRole("link", { name: "Proof file attached" })).toHaveAttribute("href", /^\/api\/records\/[0-9a-f-]+\/evidence$/);
+    await openRowMenu(row);
     const href = await link.getAttribute("href");
     expect(href).toMatch(/^\/api\/records\/[0-9a-f-]+\/evidence$/);
     const response = await page.request.get(href!, { maxRedirects: 0 });
@@ -159,23 +153,38 @@ test("admin adds a record with evidence, opens it, and deletes it", async ({ pag
   }
 });
 
-test("a second record for the same member and certificate is refused", async ({ page }) => {
-  await signIn(page, "admin@certtracker.test");
-  await page.goto("/records");
+test("the kind choice filters the certificate picker, clears the pick, and a reopened sheet starts empty", async ({ page }) => {
+  const completion = await createCompletionFixture();
+  try {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+    await page.getByRole("button", { name: "Add certificate" }).click();
+    const dialog = page.getByRole("dialog");
+    // Exam is the default: the completion is not offered.
+    await expect(dialog.getByRole("tab", { name: "Exam certificate" })).toHaveAttribute("aria-selected", "true");
+    await dialog.getByLabel(fieldLabel("Certificate")).fill(completion.certificateName);
+    await expect(page.getByRole("option", { name: completion.optionName })).toHaveCount(0);
+    await page.keyboard.press("Escape");
+    await dialog.getByLabel(fieldLabel("Certificate")).fill("aws");
+    await page.getByRole("option", { name: AWS }).click();
+    // Switching the kind clears the certificate; a course certificate has an issue date, not a date passed.
+    await dialog.getByRole("tab", { name: "Course certificate" }).click();
+    await expect(dialog.getByLabel(fieldLabel("Course certificate"))).toHaveValue("");
+    await pickOption(page, dialog, "Course certificate", completion.certificateName, completion.optionName);
+    await expect(dialog.getByLabel(fieldLabel("Issue date"))).toBeVisible();
+    await expect(dialog.getByLabel(fieldLabel("Date passed"))).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Add certificate" }).click();
-  const dialog = page.getByRole("dialog");
-  await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
-  await pickOption(page, dialog, "Certificate", "aws", AWS);
-  await dialog.getByRole("button", { name: "Save" }).click();
-
-  await expect(
-    dialog.getByText("This member already has this certificate. Edit the existing one instead of creating a new one."),
-  ).toBeVisible();
-  await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "Cancel" }).click();
+    await expect(dialog).toHaveCount(0);
+    await page.getByRole("button", { name: "Add certificate" }).click();
+    await expect(page.getByRole("dialog").getByLabel(fieldLabel("Certificate"))).toHaveValue("");
+    await expect(page.getByRole("dialog").getByRole("tab", { name: "Exam certificate" })).toHaveAttribute("aria-selected", "true");
+  } finally {
+    await completion.remove();
+  }
 });
 
-test("a record for a course completion saves the granting course, and the table shows the kind and course studied", async ({ page }) => {
+test("a record for a course completion saves the granting course, and the table shows the kind", async ({ page }) => {
   const completion = await createCompletionFixture();
   try {
     await signIn(page, "admin@certtracker.test");
@@ -183,7 +192,9 @@ test("a record for a course completion saves the granting course, and the table 
     await page.getByRole("button", { name: "Add certificate" }).click();
     const dialog = page.getByRole("dialog");
     await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
-    await pickOption(page, dialog, "Certificate", completion.certificateName, completion.optionName);
+    await dialog.getByRole("tab", { name: "Course certificate" }).click();
+    await pickOption(page, dialog, "Course certificate", completion.certificateName, completion.optionName);
+    await dialog.getByLabel(fieldLabel("Issue date")).fill("01/06/2026");
     await dialog.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Added course completion")).toBeVisible();
 
@@ -192,8 +203,6 @@ test("a record for a course completion saves the granting course, and the table 
     expect(saved.data?.course_id).toBe(completion.courseId);
     const row = recordRow(page, "Nguyễn Văn An", completion.certificateName);
     await expect(row).toContainText("Course completion");
-    // The Course studied column is shown from the xl breakpoint; Playwright's 1280 px viewport is one.
-    await expect(row.getByText(completion.courseName)).toBeVisible();
   } finally {
     await completion.remove();
   }
@@ -216,16 +225,14 @@ test("the Kind filter separates exam certificates from course completions, and t
     const examRow = recordRow(page, "Nguyễn Văn An", AWS);
 
     await page.getByRole("combobox", { name: "Kind" }).click();
-    await page.getByRole("option", { name: "Course completions" }).click();
+    await page.getByRole("option", { name: "Course certificates" }).click();
     await expect(completionRow).toBeVisible();
     await expect(examRow).toHaveCount(0);
-    await expect(page.getByRole("columnheader", { name: "Planned finish date" })).toBeVisible();
 
     await page.getByRole("combobox", { name: "Kind" }).click();
     await page.getByRole("option", { name: "Exam certificates" }).click();
     await expect(examRow).toBeVisible();
     await expect(completionRow).toHaveCount(0);
-    await expect(page.getByRole("columnheader", { name: "Planned exam date" })).toBeVisible();
 
     // Overview: the completion is counted in its own group and not in the exam figures (seed: 1 completed exam).
     await page.goto("/dashboard");
@@ -238,103 +245,7 @@ test("the Kind filter separates exam certificates from course completions, and t
   }
 });
 
-test("an exam record saves the course studied that prepares for it", async ({ page }) => {
-  await signIn(page, "admin@certtracker.test");
-  await page.goto("/records");
-  await page.getByRole("button", { name: "Add certificate" }).click();
-  const dialog = page.getByRole("dialog");
-  await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
-  await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs · Exam");
-  await pickSelect(page, dialog, "Course studied", "NVIDIA Generative AI LLMs");
-  await dialog.getByRole("button", { name: "Save" }).click();
-  try {
-    await expect(page.getByText("Added certificate")).toBeVisible();
-    const admin = await signInAsSeedAdmin();
-    const saved = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", NVIDIA_ID).single();
-    expect(saved.data?.course_id).toBe(NVIDIA_ID);
-    await expect(recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs")).toContainText("Exam");
-  } finally {
-    await removeAnNvidiaRecord();
-  }
-});
-
-/** Châu's seed record, put back after a test changed its certificate or course. */
-async function restoreChauAwsCertificate() {
-  const admin = await signInAsSeedAdmin();
-  const { error } = await admin.from("training_records").update({ certificate_id: AWS_ID, course_id: AWS_ID }).eq("member_id", CHAU).neq("certificate_id", AWS_ID);
-  if (error) throw new Error(`restore Châu–AWS: ${error.message}`);
-}
-
-async function chauCourseId(certificateId: string) {
-  const admin = await signInAsSeedAdmin();
-  const { data, error } = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", certificateId).single();
-  if (error) throw new Error(`read Châu's record: ${error.message}`);
-  return data.course_id;
-}
-
-async function switchChauCertificate(page: Page, from: string, query: string, optionName: string, to: string) {
-  await clickMenuItem(page, recordRow(page, "Lê Minh Châu", from), "Edit");
-  const dialog = page.getByRole("dialog");
-  await pickOption(page, dialog, "Certificate", query, optionName);
-  await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog).toHaveCount(0);
-  // The refreshed list shows the new certificate; a Realtime refresh would otherwise detach the next popup mid-click.
-  await expect(recordRow(page, "Lê Minh Châu", to)).toBeVisible();
-}
-
-test("switching the certificate of a record clears the course studied for an exam and sets it for a completion", async ({ page }) => {
-  const completion = await createCompletionFixture();
-  try {
-    await signIn(page, "admin@certtracker.test");
-    await page.goto("/records");
-
-    await switchChauCertificate(page, AWS, "nvidia", "NVIDIA Generative AI LLMs · Exam", "NVIDIA Generative AI LLMs");
-    expect(await chauCourseId(NVIDIA_ID)).toBeNull();
-
-    await switchChauCertificate(page, "NVIDIA Generative AI LLMs", completion.certificateName, completion.optionName, completion.certificateName);
-    expect(await chauCourseId(completion.certificateId)).toBe(completion.courseId);
-  } finally {
-    await restoreChauAwsCertificate();
-    await completion.remove();
-  }
-});
-
-test("a saved course that no longer prepares for the certificate stays visible and survives an unchanged save", async ({ page }) => {
-  const admin = await signInAsSeedAdmin();
-  const created = await admin.from("courses").insert({ name: `Unlinked course ${Date.now()}`, provider_id: "5eed0000-0000-0000-0000-00000000c101", refundable: false, prepares_for_id: AWS_ID }).select("id, name").single();
-  if (created.error) throw new Error(`create course: ${created.error.message}`);
-  const course = created.data;
-  try {
-    const attach = await admin.from("training_records").update({ course_id: course.id }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
-    if (attach.error) throw new Error(`attach course: ${attach.error.message}`);
-    // The admin later unlinks the course; the record keeps it.
-    const unlink = await admin.from("courses").update({ prepares_for_id: null }).eq("id", course.id);
-    if (unlink.error) throw new Error(`unlink course: ${unlink.error.message}`);
-
-    await signIn(page, "admin@certtracker.test");
-    await page.goto("/records");
-    await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
-    const dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel(fieldLabel("Course studied"))).toContainText(`${course.name} (no longer linked to this certificate)`);
-
-    await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(dialog).toHaveCount(0);
-    expect(await chauCourseId(AWS_ID)).toBe(course.id);
-
-    await clickMenuItem(page, recordRow(page, "Lê Minh Châu", AWS), "Edit");
-    await pickSelect(page, page.getByRole("dialog"), "Course studied", "None (self-study)");
-    await page.getByRole("dialog").getByRole("button", { name: "Save" }).click();
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect.poll(() => chauCourseId(AWS_ID)).toBeNull();
-  } finally {
-    const restore = await admin.from("training_records").update({ course_id: AWS_ID }).eq("member_id", CHAU).eq("certificate_id", AWS_ID);
-    if (restore.error) throw new Error(`restore course: ${restore.error.message}`);
-    const removed = await admin.from("courses").delete().eq("id", course.id);
-    if (removed.error) throw new Error(`remove course: ${removed.error.message}`);
-  }
-});
-
-test("status rules are enforced in the form", async ({ page }) => {
+test("date rules are enforced in the form", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   await page.goto("/records");
 
@@ -343,18 +254,17 @@ test("status rules are enforced in the form", async ({ page }) => {
   // An has no NVIDIA record, so a stray successful save would be visible as a new row (and would fail the count below).
   await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
   await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs");
-  await pickSelect(page, dialog, "Status", "Completed");
 
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog.getByText("A completed course needs an issue date")).toBeVisible();
+  await expect(dialog.getByText("A completed item needs a date")).toBeVisible();
 
-  await dialog.getByLabel(fieldLabel("Issue date")).fill("31/02/2026");
+  await dialog.getByLabel(fieldLabel("Date passed")).fill("31/02/2026");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog.getByText("Enter a valid issue date (dd/mm/yyyy)")).toBeVisible();
+  await expect(dialog.getByText("Enter a valid date (dd/mm/yyyy)")).toBeVisible();
 
-  await dialog.getByLabel(fieldLabel("Issue date")).fill("01/01/2099");
+  await dialog.getByLabel(fieldLabel("Date passed")).fill("01/01/2099");
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog.getByText("The issue date cannot be in the future")).toBeVisible();
+  await expect(dialog.getByText("The date cannot be in the future")).toBeVisible();
 
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toHaveCount(0);
@@ -369,20 +279,19 @@ test("R13: a future date left in the calendar never blocks Save silently", async
   const dialog = page.getByRole("dialog");
   await pickOption(page, dialog, "Member", "nguyen", "Nguyễn Văn An");
   await pickOption(page, dialog, "Certificate", "nvidia", "NVIDIA Generative AI LLMs");
-  await pickSelect(page, dialog, "Status", "Completed");
   const row = recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs");
   try {
     // The schema shows the errors; the browser's own validation must not get in first.
     expect(await dialog.locator("form").evaluate((form: HTMLFormElement) => form.noValidate)).toBe(true);
 
-    const issued = dialog.getByLabel(fieldLabel("Issue date"));
+    const issued = dialog.getByLabel(fieldLabel("Date passed"));
     await issued.fill("01/01/2099");
-    await dialog.getByRole("button", { name: "Choose Issue date from calendar" }).click();
+    await dialog.getByRole("button", { name: "Choose Date passed from calendar" }).click();
     const picker = dialog.locator('input[type="date"]');
     // Close the calendar the way the user would (on the hidden date input, so Escape cannot reach the sheet).
     await picker.evaluate((element: HTMLInputElement) => element.blur());
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(dialog.getByText("The issue date cannot be in the future")).toBeVisible();
+    await expect(dialog.getByText("The date cannot be in the future")).toBeVisible();
 
     // Correcting the text must not leave the old date behind in the hidden calendar input.
     await issued.fill("01/06/2026");
@@ -398,37 +307,28 @@ test("R13: a future date left in the calendar never blocks Save silently", async
 
 test("R10: a member's save keeps the notes an admin wrote", async ({ page }) => {
   const admin = await signInAsSeedAdmin();
-  const seed = await admin.from("training_records").select("notes").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
-  if (seed.error) throw new Error(`read seed note: ${seed.error.message}`);
   const note = `Admin note ${Date.now()}`;
-  const set = await admin.from("training_records").update({ notes: note }).eq("member_id", CHAU).eq("certificate_id", AWS_ID).select("id");
-  if (set.error || set.data.length !== 1) throw new Error(`set note: ${set.error?.message ?? "no row"}`);
+  const added = await admin
+    .from("training_records")
+    .insert({ member_id: CHAU, certificate_id: NVIDIA_ID, status: "done", progress: 100, issued_date: "2026-06-01", notes: note })
+    .select("id");
+  if (added.error || added.data.length !== 1) throw new Error(`add Châu certificate: ${added.error?.message ?? "no row"}`);
 
   try {
     await signIn(page, "member@certtracker.test");
     await page.goto("/records");
     await expect(page).toHaveURL(/\/me$/);
-    const row = recordRow(page, AWS);
-    await openRowMenu(row);
-    await page.getByRole("menuitem", { name: "Edit" }).click();
+    await clickMenuItem(page, recordRow(page, NVIDIA), "Edit");
     const dialog = page.getByRole("dialog");
-    await pickSelect(page, dialog, "Status", "In progress");
-    await dialog.getByLabel("Progress (%)").fill("30");
+    await dialog.getByLabel(fieldLabel("Date passed")).fill("02/06/2026");
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Saved certificate").first()).toBeVisible();
-    await expect(row).toContainText("30%");
+    await expect(page.getByText(/^Saved certificate/).first()).toBeVisible();
+    await expect(dialog).toHaveCount(0);
 
-    const after = await admin.from("training_records").select("notes, progress").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
-    expect(after.data).toEqual({ notes: note, progress: 30 });
+    const after = await admin.from("training_records").select("notes, issued_date").eq("member_id", CHAU).eq("certificate_id", NVIDIA_ID).single();
+    expect(after.data).toEqual({ notes: note, issued_date: "2026-06-02" });
   } finally {
-    // Seed state: Not started / 0, the seed note.
-    const restore = await admin
-      .from("training_records")
-      .update({ status: "not_started", progress: 0, notes: seed.data.notes })
-      .eq("member_id", CHAU)
-      .eq("certificate_id", AWS_ID)
-      .select("id");
-    if (restore.error || restore.data.length !== 1) throw new Error(`restore seed record: ${restore.error?.message ?? "no row"}`);
+    await removeChauCertificates();
   }
 });
 
@@ -436,10 +336,14 @@ test("manager sees only the managed team and can only pick managed members", asy
   await signIn(page, "manager@certtracker.test");
   await page.goto("/records");
 
-  // The manager manages Team Cloud (An, Châu); Bình is on Team AI (supabase/seed.sql).
-  await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Lê Minh Châu", exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Trần Thị Bình", exact: true })).toHaveCount(0);
+  // The manager manages Team Cloud (An, Châu); Bình is on Team AI (supabase/seed.sql). An holds the only certificate;
+  // Châu's and Bình's seed items are on the Learning tab.
+  await expect(page.getByRole("button", { name: "Nguyễn Văn An", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Trần Thị Bình", exact: true })).toHaveCount(0);
+  await page.getByRole("tab", { name: /^Learning/ }).click();
+  await expect(recordRow(page, "Lê Minh Châu", AWS)).toBeVisible();
+  await expect(recordRow(page, "Trần Thị Bình")).toHaveCount(0);
+  await page.getByRole("tab", { name: /^Certificates/ }).click();
 
   await page.getByRole("button", { name: "Add certificate" }).click();
   const dialog = page.getByRole("dialog");
@@ -451,56 +355,66 @@ test("manager sees only the managed team and can only pick managed members", asy
 });
 
 test("/records?search=<member> opens the admin's list already searched", async ({ page }) => {
-  // The dashboard's Resolve / View links point here.
-  await signIn(page, "admin@certtracker.test");
-  await page.goto(`/records?search=${encodeURIComponent("Trần Thị Bình")}`);
-  await expect(page.getByRole("cell", { name: "Trần Thị Bình", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("cell", { name: "Lê Minh Châu", exact: true })).toHaveCount(0);
-  await expect(page.getByPlaceholder(/Search by/)).toHaveValue("Trần Thị Bình");
-});
-
-test("/records?search=<member> opens the manager's list already searched", async ({ page }) => {
-  await signIn(page, "manager@certtracker.test");
-  await page.goto(`/records?search=${encodeURIComponent("Lê Minh Châu")}`);
-  await expect(page.getByRole("cell", { name: "Lê Minh Châu", exact: true }).first()).toBeVisible();
-  await expect(page.getByRole("cell", { name: "Nguyễn Văn An", exact: true })).toHaveCount(0);
-});
-
-test("member updates own progress and cannot see company fields", async ({ page }) => {
-  await signIn(page, "member@certtracker.test");
-  await page.goto("/records");
-  await expect(page).toHaveURL(/\/me$/);
-
-  const row = recordRow(page, AWS);
+  // The dashboard's Resolve / View links point here. A second certificate holder makes the narrowing visible.
+  const admin = await signInAsSeedAdmin();
+  const added = await admin.from("training_records").insert({ member_id: CHAU, certificate_id: NVIDIA_ID, status: "done", progress: 100, issued_date: "2026-06-01" });
+  if (added.error) throw new Error(`add Châu certificate: ${added.error.message}`);
   try {
-    await openRowMenu(row);
-    // Anchor on a visible item first: a count of 0 before the menu has rendered would pass vacuously.
-    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
-    await expect(page.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
-    await page.getByRole("menuitem", { name: "Edit" }).click();
-
-    const dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel(fieldLabel("Certificate"))).toBeVisible();
-    await expect(dialog.getByLabel("Registered through the company")).toHaveCount(0);
-    await expect(dialog.getByLabel("Refund status")).toHaveCount(0);
-    await expect(dialog.getByLabel(fieldLabel("Member"))).toHaveCount(0);
-
-    await pickSelect(page, dialog, "Status", "In progress");
-    await dialog.getByLabel("Progress (%)").fill("40");
-    await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Saved certificate").first()).toBeVisible();
-    await expect(row).toContainText("40%");
+    await signIn(page, "admin@certtracker.test");
+    await page.goto(`/records?search=${encodeURIComponent("Lê Minh Châu")}`);
+    await expect(page.getByRole("button", { name: "Lê Minh Châu", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Nguyễn Văn An", exact: true })).toHaveCount(0);
+    await expect(page.getByPlaceholder(/Search by/)).toHaveValue("Lê Minh Châu");
   } finally {
-    // Restore the seed state (Not started / 0) so the suite can run again on the same database.
-    await page.keyboard.press("Escape");
-    await editStatus(page, row, "Not started", "0");
-    await expect(row).toContainText("0%");
+    await removeChauCertificates();
   }
 });
 
-test("the certificate form says what to do when a certificate is missing", async ({ page }) => {
-  const hint = "Can't find your certificate? Ask your admin to add it.";
+test("/records?search=<member> opens the manager's list already searched", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  const added = await admin.from("training_records").insert({ member_id: CHAU, certificate_id: NVIDIA_ID, status: "done", progress: 100, issued_date: "2026-06-01" });
+  if (added.error) throw new Error(`add Châu certificate: ${added.error.message}`);
+  try {
+    await signIn(page, "manager@certtracker.test");
+    await page.goto(`/records?search=${encodeURIComponent("Lê Minh Châu")}`);
+    await expect(page.getByRole("button", { name: "Lê Minh Châu", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Nguyễn Văn An", exact: true })).toHaveCount(0);
+  } finally {
+    await removeChauCertificates();
+  }
+});
+
+test("member updates own progress on the Learning tab and cannot see company fields", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  try {
+    await signIn(page, "member@certtracker.test");
+    await page.goto("/me?tab=learning");
+    // Châu's seed item is self-study for the AWS exam.
+    const row = recordRow(page, AWS);
+    await clickMenuItem(page, row, "Edit");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByRole("heading", { name: "Edit learning" })).toBeVisible();
+    await pickSelect(page, dialog, "Status", "In progress");
+    await dialog.getByLabel("Progress (%)").fill("40");
+    await dialog.getByRole("button", { name: "Save" }).click();
+    await expect(page.getByText("Saved", { exact: true }).first()).toBeVisible();
+    await expect(row).toContainText("40%");
+
+    // The certificate form has no company fields and no Member picker for a member.
+    await page.goto("/me");
+    await page.getByRole("button", { name: "Add certificate" }).click();
+    const form = page.getByRole("dialog");
+    await expect(form.getByLabel(fieldLabel("Certificate"))).toBeVisible();
+    await expect(form.getByLabel("Registered through the company")).toHaveCount(0);
+    await expect(form.getByLabel("Refund status")).toHaveCount(0);
+    await expect(form.getByLabel(fieldLabel("Member"))).toHaveCount(0);
+  } finally {
+    await restoreSeedLearning(admin);
+  }
+});
+
+test("the certificate form offers to propose a missing certificate", async ({ page }) => {
+  const hint = "Can't find yours?";
   await signIn(page, "member@certtracker.test");
   await page.goto("/records");
   await expect(page).toHaveURL(/\/me$/);
@@ -512,33 +426,21 @@ test("the certificate form says what to do when a certificate is missing", async
   await dialog.getByLabel(fieldLabel("Certificate")).fill("zzzz-no-such-certificate");
   // The popup is portalled outside the dialog.
   await expect(page.getByText("No certificates found", { exact: true })).toBeVisible();
-  await expect(dialog.getByText(hint, { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Propose a new certificate/ }).first()).toBeVisible();
 });
 
-test("member uploads, opens and removes evidence on their own record", async ({ page }) => {
+test("member uploads, opens and removes evidence on their own certificate", async ({ page }) => {
   test.setTimeout(60_000);
   await signIn(page, "member@certtracker.test");
-  await page.goto("/records");
-  await expect(page).toHaveURL(/\/me$/);
 
-  const row = recordRow(page, AWS);
+  const row = recordRow(page, NVIDIA);
   const evidenceLink = page.getByRole("menuitem", { name: "View evidence" });
   try {
-    // Upload through the sheet (the seed record has no evidence).
-    await openRowMenu(row);
-    await expect(page.getByRole("menuitem", { name: "Edit" })).toBeVisible();
-    await expect(evidenceLink).toHaveCount(0);
-    await page.getByRole("menuitem", { name: "Edit" }).click();
-    let dialog = page.getByRole("dialog");
-    await expect(dialog.getByLabel(fieldLabel("Certificate"))).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Remove evidence" })).toHaveCount(0);
-    // R11: evidence is only offered for a Completed certificate.
-    await expect(dialog.getByLabel("Evidence", { exact: true })).toHaveCount(0);
-    await pickSelect(page, dialog, "Status", "Completed");
-    await dialog.getByLabel(fieldLabel("Issue date")).fill("01/06/2026");
+    const dialog = await openOwnCertificateForm(page, "nvidia", NVIDIA);
+    await fillDatePassed(dialog);
     await dialog.getByLabel("Evidence", { exact: true }).setInputFiles("e2e/fixtures/evidence.pdf");
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Saved certificate").first()).toBeVisible();
+    await expect(page.getByText(/^Added certificate/).first()).toBeVisible();
     await expect(dialog).toHaveCount(0);
 
     // The upload revalidates after the record save, so retry until the menu shows the link.
@@ -553,22 +455,16 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
     expect(response.status()).toBe(307);
     expect(response.headers()["location"]).toContain("/storage/v1/object/sign/certificates/");
     await page.keyboard.press("Escape");
+    await expect(row.getByRole("link", { name: "Proof file attached" })).toBeVisible();
 
     // Remove it through the sheet.
     await clickMenuItem(page, row, "Edit");
-    dialog = page.getByRole("dialog");
-    await expect(dialog.getByRole("link", { name: "View current evidence" })).toBeVisible();
-    // R11: leaving Completed hides the whole evidence block (the stored file is left alone; nothing is saved here).
-    await pickSelect(page, dialog, "Status", "In progress");
-    await expect(dialog.getByRole("link", { name: "View current evidence" })).toHaveCount(0);
-    await expect(dialog.getByRole("button", { name: "Remove evidence" })).toHaveCount(0);
-    await expect(dialog.getByLabel("Evidence", { exact: true })).toHaveCount(0);
-    await pickSelect(page, dialog, "Status", "Completed");
-    await expect(dialog.getByRole("link", { name: "View current evidence" })).toBeVisible();
-    await dialog.getByRole("button", { name: "Remove evidence" }).click();
+    const edit = page.getByRole("dialog");
+    await expect(edit.getByRole("link", { name: "View current evidence" })).toBeVisible();
+    await edit.getByRole("button", { name: "Remove evidence" }).click();
     await expect(page.getByText("Removed evidence")).toBeVisible();
-    await dialog.getByRole("button", { name: "Cancel" }).click();
-    await expect(dialog).toHaveCount(0);
+    await edit.getByRole("button", { name: "Cancel" }).click();
+    await expect(edit).toHaveCount(0);
 
     // Anchored on the always-present "Edit" item; retried until the revalidation has dropped the link.
     await expect(async () => {
@@ -578,52 +474,86 @@ test("member uploads, opens and removes evidence on their own record", async ({ 
       await expect(evidenceLink).toHaveCount(0, { timeout: 1_500 });
     }).toPass({ timeout: 15_000 });
     await page.keyboard.press("Escape");
+    // Still a certificate, now without proof: the Evidence column shows the gap.
+    await expect(row.getByText("No proof yet")).toBeVisible();
   } finally {
-    await restoreChauAwsSeed();
+    await removeChauCertificates();
   }
 });
 
-test("the list updates live for another user", async ({ browser }) => {
-  const managerContext = await browser.newContext();
-  const adminContext = await browser.newContext();
+test("the Learning tab updates live for another user", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  await signIn(page, "manager@certtracker.test");
+  // The row renders on the server before the browser joins the Realtime channel; an update sent earlier is
+  // missed (seen on CI). Wait for the server's "Subscribed to PostgreSQL" frame first.
+  let subscribed = false;
+  page.on("websocket", (ws) =>
+    ws.on("framereceived", (frame) => {
+      if (String(frame.payload).includes("Subscribed to PostgreSQL")) subscribed = true;
+    }),
+  );
+  await page.goto("/records?tab=learning");
+  const row = recordRow(page, "Lê Minh Châu", AWS);
+  await expect(row).toContainText("Not started");
+  await expect.poll(() => subscribed, { timeout: 15_000 }).toBe(true);
   try {
-    const managerPage = await managerContext.newPage();
-    const adminPage = await adminContext.newPage();
-    await signIn(managerPage, "manager@certtracker.test");
-    await signIn(adminPage, "admin@certtracker.test");
-    await managerPage.goto("/records");
-    await adminPage.goto("/records");
-
-    // After Week 4's import spec Châu can have a second record, so pin the row by member and course.
-    const managerRow = recordRow(managerPage, "Lê Minh Châu", AWS);
-    const adminRow = recordRow(adminPage, "Lê Minh Châu", AWS);
-    await expect(managerRow).toContainText("0%");
-    await expect(adminRow).toBeVisible();
-
-    try {
-      await editStatus(adminPage, adminRow, "In progress", "55");
-      // No reload on the manager page: Realtime must trigger the refresh.
-      await expect(managerRow).toContainText("55%", { timeout: 10_000 });
-    } finally {
-      await adminPage.keyboard.press("Escape");
-      await editStatus(adminPage, adminRow, "Not started", "0");
-    }
-    await expect(managerRow).toContainText("0%", { timeout: 10_000 });
+    // Someone else (here the admin, straight in the database) updates Châu's item.
+    const started = await admin.from("learning_items").update({ status: "in_progress", progress: 55 }).eq("member_id", CHAU).select("id");
+    if (started.error || started.data.length !== 1) throw new Error(`start Châu's item: ${started.error?.message ?? "not found"}`);
+    // No reload: Realtime must trigger the refresh.
+    await expect(row).toContainText("55%", { timeout: 10_000 });
   } finally {
-    await managerContext.close();
-    await adminContext.close();
+    await restoreSeedLearning(admin);
   }
+  await expect(row).toContainText("Not started", { timeout: 10_000 });
 });
 
-test("a member's My learning page offers kind tabs, one add action and the exam-then-course hint", async ({ page }) => {
+test("a member's My learning page offers Certificates and Learning tabs, each with its own add action", async ({ page }) => {
   await signIn(page, "member@certtracker.test");
   await page.goto("/me");
   await expect(page.getByRole("heading", { name: "My learning", level: 1 })).toBeVisible();
-  await expect(page.getByText("Exam certificates you hold, courses you have studied and course completions.")).toBeVisible();
-  await expect(page.getByRole("tab", { name: "All (1)" })).toBeVisible();
-  await expect(page.getByRole("tab", { name: "Exam certificates (1)" })).toBeVisible();
-  await page.getByRole("tab", { name: "Course completions (0)" }).click();
-  await expect(page.getByText("Nothing found")).toBeVisible();
-  await expect(page.getByText("Studying for an exam? Choose the exam, then the course you used.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add certificate or course completion" })).toBeVisible();
+  await expect(page.getByText("Your certificates, and the courses and exams you are working on.")).toBeVisible();
+  await expect(page.getByRole("tab", { name: "Certificates (0)" })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByText("Passed an exam or finished a course? Add the certificate with its proof.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add certificate" })).toBeVisible();
+  await page.getByRole("tab", { name: "Learning (1)" }).click();
+  await expect(page).toHaveURL(/\/me\?tab=learning$/);
+  await expect(page.getByRole("button", { name: "Add learning" })).toBeVisible();
+  await expect(recordRow(page, AWS)).toContainText("Not started");
+});
+
+test("admin selects rows for a bulk delete, and a row click opens the edit sheet", async ({ page }) => {
+  const admin = await signInAsSeedAdmin();
+  const created = await admin
+    .from("training_records")
+    .insert([
+      { member_id: AN, certificate_id: NVIDIA_ID, status: "done", progress: 100, issued_date: "2026-06-01" },
+      { member_id: CHAU, certificate_id: NVIDIA_ID, status: "done", progress: 100, issued_date: "2026-06-01" },
+    ])
+    .select("id");
+  if (created.error) throw new Error(`create QA rows: ${created.error.message}`);
+  try {
+    await signIn(page, "admin@certtracker.test");
+    await page.goto("/records");
+
+    // Clicking a row (not a control) opens the edit sheet.
+    await recordRow(page, "Nguyễn Văn An", AWS).getByRole("cell").nth(4).click();
+    await expect(page.getByRole("dialog").getByRole("heading", { name: "Edit certificate" })).toBeVisible();
+    await page.getByRole("dialog").getByRole("button", { name: "Cancel" }).click();
+
+    const anNvidia = recordRow(page, "Nguyễn Văn An", "NVIDIA");
+    const chauNvidia = recordRow(page, "Lê Minh Châu", "NVIDIA");
+    await expect(anNvidia).toHaveCount(1);
+    await expect(chauNvidia).toHaveCount(1);
+    await anNvidia.getByRole("checkbox").click();
+    await chauNvidia.getByRole("checkbox").click();
+    await expect(page.getByText("2 selected")).toBeVisible();
+    await page.getByRole("region", { name: "Bulk actions" }).getByRole("button", { name: "Delete" }).click();
+    await page.getByRole("alertdialog").getByRole("button", { name: "Delete 2 items" }).click();
+    await expect(page.getByText("Deleted 2 items")).toBeVisible();
+    await expect(anNvidia).toHaveCount(0);
+    await expect(chauNvidia).toHaveCount(0);
+  } finally {
+    await admin.from("training_records").delete().in("id", (created.data ?? []).map((row) => row.id));
+  }
 });

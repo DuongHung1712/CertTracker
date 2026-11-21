@@ -89,7 +89,7 @@ Nothing is deleted: the member, their certificates and proof stay. This is manua
 
 ## When a certificate is not in the catalogue
 
-Only the admin adds certificates and courses. The certificate form tells members: "Can't find your certificate? Ask your admin to add it."
+Only the admin adds certificates and courses. The certificate form tells members: "Can't find yours? Ask your admin to add it."
 
 As admin: open `/courses` (the catalogue), add the certificate on the Certificates tab. Fill in the type, the provider and the validity in months where you know them, because the expiry date comes from the validity. Add the course on the Courses tab if members study with one. Then tell the member to choose the certificate in their record.
 
@@ -107,8 +107,8 @@ Part D splits certificates from courses (decision #65). Do it with the release P
 
    If `courses` has rows and `records` is 0 (the old starter list was loaded), run `delete from public.courses;` before the push. Otherwise the migration turns every refundable row into a self-named course, and the new `courses.sql` then conflicts on (provider_id, name) and the two Meta rows would stay exams. The 61 and 59 growth checks below assume an empty catalogue.
 
-2. **Dry run.** `pnpm supabase db push --dry-run` lists every migration production lacks, not only this part's. Compare it with `pnpm supabase migration list --linked`. Expect, in order: `20261106000001_link_account_to_member`, `20261110000001_course_refund_conditions`, `20261110000003_set_my_full_name`, `20261111000001_certificate_catalogue`, `20261111000002_import_course_studied`, `20261111000003_lock_copy_function`. If the pilot set-up already pushed the first one, it is absent. Anything else in the list: stop and find out why.
-3. **Push.** `pnpm supabase db push`.
+2. **Dry run.** `pnpm supabase db push --dry-run` lists every migration production lacks, not only this part's. Compare it with `pnpm supabase migration list --linked`. Expect, in order: `20261106000001_link_account_to_member`, `20261110000001_course_refund_conditions`, `20261110000003_set_my_full_name`, `20261111000001_certificate_catalogue`, `20261111000002_import_course_studied`, `20261111000003_lock_copy_function`, `20261112000001_dashboard_kpis_by_kind`, `20261114000001_completions_never_expire`, `20261117000001_submit_and_approve`, `20261117000002_count_approved_only`. If the pilot set-up already pushed the first one, it is absent. Anything else in the list: stop and find out why.
+3. **Push.** `pnpm supabase db push`. The two approval migrations (15.4) turn every existing Completed item into Approved, so no number drops on release day; the backfill also updates `updated_at` of those rows.
 4. **Count after.** `certificates` must equal the old `courses` count; `courses` must equal the old count minus the courses with no cost, duration, refund conditions or record; `records` must not change:
 
    ```sql

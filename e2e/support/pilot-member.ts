@@ -58,7 +58,7 @@ export async function addPilotMember(fullName: string, email: string, teamId = T
 export async function signInWithPilotPassword(page: Page, email: string) {
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(PILOT_PASSWORD);
+  await page.getByLabel("Password", { exact: true }).fill(PILOT_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 }
@@ -69,7 +69,7 @@ export async function acceptInvitation(page: Page, email: string, hash: string) 
   await page.getByLabel("New password").fill(PILOT_PASSWORD);
   await page.getByLabel("Confirm password").fill(PILOT_PASSWORD);
   await page.getByRole("button", { name: "Save password" }).click();
-  await expect(page).toHaveURL(/\/login\?passwordSet=1$/);
+  await expect(page).toHaveURL(/\/login\?passwordSet=1(&email=[^&]+)?$/);
   await signInWithPilotPassword(page, email);
 }
 
@@ -85,18 +85,15 @@ export async function openOwnCertificateForm(page: Page, query = "aws", certific
   return dialog;
 }
 
-/** Evidence is only offered for a Completed certificate (R11), which needs an issue date. */
-export async function chooseCompleted(page: Page, dialog: Locator, issueDate = "01/06/2026") {
-  await dialog.getByLabel(fieldLabel("Status")).click();
-  // The listbox is portalled outside the dialog.
-  await page.getByRole("option", { name: "Completed", exact: true }).click();
-  await dialog.getByLabel(fieldLabel("Issue date")).fill(issueDate);
+/** A certificate is always Completed (decision #72), so it needs the date passed. */
+export async function fillDatePassed(dialog: Locator, issueDate = "01/06/2026") {
+  await dialog.getByLabel(fieldLabel("Date passed")).fill(issueDate);
 }
 
 /** A member adds the AWS certificate, Completed, on their own page with a PDF proof. */
 export async function addOwnCertificateWithProof(page: Page) {
   const dialog = await openOwnCertificateForm(page);
-  await chooseCompleted(page, dialog);
+  await fillDatePassed(dialog);
   await dialog.getByLabel("Evidence").setInputFiles("e2e/fixtures/evidence.pdf");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(page.getByText("Added certificate")).toBeVisible();

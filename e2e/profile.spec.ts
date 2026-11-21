@@ -197,7 +197,7 @@ test.describe("change password", () => {
     await page.getByRole("menuitem", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/login/);
     await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password").fill(NEW_PASSWORD);
+    await page.getByLabel("Password", { exact: true }).fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   });

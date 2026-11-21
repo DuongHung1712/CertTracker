@@ -4,6 +4,7 @@ import type { RecordInput } from "@/features/records/schema";
 
 const RECORD_ID = "5eed0000-0000-0000-0000-00000000c001";
 const update = vi.fn();
+let savedApproval: "waiting" | "approved" | null = null;
 let updateError: { code: string; message: string } | null = null;
 
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
@@ -12,7 +13,10 @@ vi.mock("@/lib/supabase/server", () => ({
     from: () => ({
       update: (values: unknown) => {
         update(values);
-        return { eq: () => ({ select: async () => ({ data: updateError ? null : [{ id: RECORD_ID }], error: updateError }) }) };
+        const chain: Record<string, unknown> = {};
+        chain.eq = () => chain;
+        chain.select = async () => ({ data: updateError ? null : [{ id: RECORD_ID, approval: savedApproval }], error: updateError });
+        return chain;
       },
     }),
   }),
@@ -23,22 +27,33 @@ const memberEdit = {
   memberId: "5eed0000-0000-0000-0000-00000000b001",
   certificateId: "5eed0000-0000-0000-0000-00000000d001",
   courseId: null,
-  status: "in_progress",
-  progress: 40,
+  status: "done",
+  progress: 100,
   plannedExamDate: null,
-  issuedDate: null,
+  issuedDate: "2026-06-01",
   certificateUrl: null,
 };
 
 beforeEach(() => {
   update.mockClear();
   updateError = null;
+  savedApproval = null;
+});
+
+describe("updateRecord returns what the database decided", () => {
+  it("passes the saved approval back", async () => {
+    savedApproval = "waiting";
+    expect(await updateRecord({ ...memberEdit } as unknown as RecordInput & { id: string })).toEqual({
+      ok: true,
+      data: { approval: "waiting" },
+    });
+  });
 });
 
 // R10: a member's form has no Notes field, so saving it must not wipe notes an admin or manager wrote.
 describe("updateRecord and notes", () => {
   it("leaves the notes column alone when the input has no notes (member form)", async () => {
-    expect(await updateRecord(memberEdit as RecordInput & { id: string })).toEqual({ ok: true, data: null });
+    expect(await updateRecord(memberEdit as RecordInput & { id: string })).toEqual({ ok: true, data: { approval: null } });
     expect(update).toHaveBeenCalledTimes(1);
     // `undefined` is dropped from the JSON body, so the column is not sent.
     expect((update.mock.calls[0][0] as { notes?: unknown }).notes).toBeUndefined();
@@ -51,7 +66,7 @@ describe("updateRecord and notes", () => {
   });
 
   it("still clears notes when the admin form sends them blank", async () => {
-    expect(await updateRecord({ ...memberEdit, notes: null } as RecordInput & { id: string })).toEqual({ ok: true, data: null });
+    expect(await updateRecord({ ...memberEdit, notes: null } as RecordInput & { id: string })).toEqual({ ok: true, data: { approval: null } });
     expect(update.mock.calls[0][0]).toHaveProperty("notes", null);
   });
 
@@ -73,7 +88,7 @@ describe("updateRecord and the course studied", () => {
     updateError = { code: "23505", message: "duplicate key" };
     expect(await updateRecord(edit)).toEqual({
       ok: false,
-      error: "This member already has this certificate. Edit the existing one instead of creating a new one.",
+      error: "This member already has this one. Edit the existing entry instead of creating a new one.",
     });
   });
 
@@ -83,6 +98,7 @@ describe("updateRecord and the course studied", () => {
     updateError = { code: "23514", message: 'new row violates check constraint "training_records_done_needs_issue"' };
     const status = await updateRecord(edit);
     expect(mismatch).toEqual({ ok: false, error: "That course does not prepare for this certificate. Choose another course or None (self-study)." });
-    expect(status).toEqual({ ok: false, error: "Status, progress and issue date do not match." });
+    expect(status).toEqual({ ok: false, error: "Status, progress and date do not match." });
   });
 });
+

@@ -4,11 +4,14 @@ import { getMemberCareer } from "@/features/career/queries";
 import type { ManagerDashboardView } from "@/features/dashboard/components/manager/manager-dashboard-view";
 import type { MemberDashboardView } from "@/features/dashboard/components/member/member-dashboard-view";
 import { formatManagerSubtitle } from "@/features/dashboard/manager-metrics";
-import { getGreeting } from "@/features/dashboard/member-metrics";
+import { extractFirstName, getGreeting } from "@/features/dashboard/member-metrics";
 import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard/queries";
 import { settle } from "@/features/dashboard/settle";
 import { resolveMemberProfile } from "@/features/dashboard/view-model";
 import { listDataQualityIssues } from "@/features/data-quality/queries";
+import { toExamOptions } from "@/features/learning/exam-options";
+import { learningAsJourneyRecords } from "@/features/learning/journey";
+import { listCourseOptions, listLearningItems } from "@/features/learning/queries";
 import { listMembers, listTeamOptionsForCurrentUser } from "@/features/members/queries";
 import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
 import { formatDateTimeVn } from "@/lib/format";
@@ -25,10 +28,11 @@ export async function loadAdminDashboard(user: SignedInUser) {
     certTypes,
     providers,
     ranking,
-    records,
+    recordsResult,
     dqIssues,
     careerResult,
     membersResult,
+    learningResult,
   ] = await Promise.all([
     settle(getDashboardKpis()),
     settle(getBreakdown("certificate", 10)),
@@ -40,7 +44,12 @@ export async function loadAdminDashboard(user: SignedInUser) {
     settle(listDataQualityIssues()),
     settle(memberId ? getMemberCareer(memberId) : Promise.resolve(null)),
     settle(memberId ? listMembers() : Promise.resolve([])),
+    settle(listLearningItems()),
   ]);
+  // The journey (planned exams, in progress) comes from learning items (decision #72).
+  const records = recordsResult.ok
+    ? { ok: true as const, data: [...recordsResult.data, ...(learningResult.ok ? learningAsJourneyRecords(learningResult.data) : [])] }
+    : recordsResult;
 
   const now = new Date();
   const currentMember = (membersResult.ok && membersResult.data.find((m) => m.id === memberId)) || null;
@@ -78,15 +87,16 @@ export async function loadMemberDashboard(
   user: SignedInUser,
   memberId: string,
 ): Promise<ComponentProps<typeof MemberDashboardView>> {
-  const [recordsResult, certificateOptionsResult, studyCoursesResult, careerResult, membersResult] = await Promise.all([
+  const [recordsResult, certificateOptionsResult, studyCoursesResult, careerResult, membersResult, learningResult, coursesResult] = await Promise.all([
     settle(listRecords({ memberId })),
     settle(listCertificateOptions()),
     settle(listStudyCourses()),
     settle(getMemberCareer(memberId)),
     settle(listMembers()),
+    settle(listLearningItems({ memberId })),
+    settle(listCourseOptions()),
   ]);
 
-  const now = new Date();
   const profile = resolveMemberProfile({
     member: (membersResult.ok && membersResult.data.find((m) => m.id === memberId)) || null,
     firstRecord: recordsResult.ok ? recordsResult.data[0] : undefined,
@@ -101,21 +111,28 @@ export async function loadMemberDashboard(
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     certificateOptions: certificateOptionsResult.ok ? certificateOptionsResult.data : [],
     studyCourses: studyCoursesResult.ok ? studyCoursesResult.data : [],
-    subtitle: `${getGreeting(profile.fullName, now)} · Figures as of ${formatDateTimeVn(now.toISOString())}.`,
+    journey: learningResult.ok ? learningAsJourneyRecords(learningResult.data) : [],
+    courses: coursesResult.ok ? coursesResult.data : [],
+    examOptions: certificateOptionsResult.ok ? toExamOptions(certificateOptionsResult.data) : [],
+    subtitle: `Welcome back, ${extractFirstName(profile.fullName)}! Ready to plan your next certification milestone?`,
   };
 }
 
 export async function loadManagerDashboard(
   user: SignedInUser,
 ): Promise<ComponentProps<typeof ManagerDashboardView>> {
-  const [recordsResult, membersResult, managedTeamsResult] = await Promise.all([
+  const [recordsResult, membersResult, managedTeamsResult, learningResult] = await Promise.all([
     settle(listRecords()),
     settle(listMembers()),
     settle(listTeamOptionsForCurrentUser()),
+    settle(listLearningItems()),
   ]);
 
   const now = new Date();
-  const allRecords = recordsResult.ok ? recordsResult.data : [];
+  // Certificates plus the open journey (decision #72): the manager metrics count both from one list.
+  const allRecords = recordsResult.ok
+    ? [...recordsResult.data, ...(learningResult.ok ? learningAsJourneyRecords(learningResult.data) : [])]
+    : [];
   const allMembers = membersResult.ok ? membersResult.data : [];
 
   const managedTeamOptions = managedTeamsResult.ok ? managedTeamsResult.data : [];
@@ -145,5 +162,6 @@ export async function loadManagerDashboard(
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     members,
     membersError: membersResult.ok ? undefined : membersResult.error,
+    viewerMemberId: user.memberId,
   };
 }

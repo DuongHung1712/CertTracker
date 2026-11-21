@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/password-input";
 import { Label } from "@/components/ui/label";
 import { setPassword } from "@/features/auth/actions";
 
@@ -17,10 +17,9 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
         <Label htmlFor="password" className="text-body font-medium">
           New password
         </Label>
-        <Input
+        <PasswordInput
           id="password"
           name="password"
-          type="password"
           autoComplete="new-password"
           minLength={8}
           required
@@ -34,10 +33,9 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
         <Label htmlFor="confirmPassword" className="text-body font-medium">
           Confirm password
         </Label>
-        <Input
+        <PasswordInput
           id="confirmPassword"
           name="confirmPassword"
-          type="password"
           autoComplete="new-password"
           required
           className="h-9"
@@ -57,6 +55,9 @@ export function SetPasswordForm({ tokenHash, type }: { tokenHash: string; type: 
       >
         {pending ? "Saving…" : "Save password"}
       </Button>
+      <p className="text-caption text-center text-muted-foreground">
+        After setting your password, you will be redirected to sign in with your new credentials.
+      </p>
     </form>
   );
 }

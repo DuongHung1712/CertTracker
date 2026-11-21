@@ -1,17 +1,29 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,
+  ComboboxCollection,
   ComboboxEmpty,
+  ComboboxGroup,
   ComboboxInput,
   ComboboxItem,
+  ComboboxLabel,
   ComboboxList,
 } from "@/components/ui/combobox";
 import { foldText } from "@/lib/text";
 
-export type ComboboxOption = { id: string; label: string; hint?: string };
+/** `group`, when set on the options, lists them under that heading; groups appear in order of first use. */
+export type ComboboxOption = { id: string; label: string; hint?: string; group?: string };
+type OptionGroup = { value: string; items: ComboboxOption[] };
+
+function groupOptions(options: ComboboxOption[]): OptionGroup[] {
+  const groups = new Map<string, ComboboxOption[]>();
+  for (const option of options) groups.set(option.group ?? "", [...(groups.get(option.group ?? "") ?? []), option]);
+  return [...groups].map(([value, items]) => ({ value, items }));
+}
 
 /** Diacritic-insensitive match on label + hint, so a search for `nguyen` finds a name with accents. */
 function matches(option: ComboboxOption, query: string): boolean {
@@ -30,6 +42,7 @@ export function EntityCombobox({
   options,
   placeholder,
   emptyText,
+  emptyAction,
   disabled,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
@@ -41,6 +54,7 @@ export function EntityCombobox({
   options: ComboboxOption[];
   placeholder: string;
   emptyText: string;
+  emptyAction?: { label: string; onClick: (query?: string) => void };
   disabled?: boolean;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
@@ -56,11 +70,27 @@ export function EntityCombobox({
     [value, selectedLabel],
   );
 
+  const grouped = options.some((option) => option.group);
+  const groups = useMemo(() => (grouped ? groupOptions(options) : []), [grouped, options]);
+
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const renderItem = (option: ComboboxOption) => (
+    <ComboboxItem key={option.id} value={option}>
+      {/* Wraps instead of truncating: a long certificate name must not hide the kind at its end. */}
+      <span className="min-w-0 flex-1 break-words">{option.label}</span>
+      {option.hint ? (
+        <span className="max-w-[40%] shrink-0 truncate text-caption text-muted-foreground">{option.hint}</span>
+      ) : null}
+    </ComboboxItem>
+  );
+
   return (
     <Combobox<ComboboxOption>
-      items={options}
+      items={grouped ? groups : options}
       value={selected}
       onValueChange={(option) => onChange(option?.id ?? "")}
+      onInputValueChange={(q) => setSearchQuery(q)}
       itemToStringLabel={(option) => option.label}
       isItemEqualToValue={(a, b) => a.id === b.id}
       filter={matches}
@@ -77,17 +107,33 @@ export function EntityCombobox({
         className="w-full"
       />
       <ComboboxContent>
-        <ComboboxEmpty>{emptyText}</ComboboxEmpty>
-        <ComboboxList>
-          {(option: ComboboxOption) => (
-            <ComboboxItem key={option.id} value={option}>
-              {/* Wraps instead of truncating: a long certificate name must not hide the kind at its end. */}
-              <span className="min-w-0 flex-1 break-words">{option.label}</span>
-              {option.hint ? (
-                <span className="max-w-[40%] shrink-0 truncate text-caption text-muted-foreground">{option.hint}</span>
-              ) : null}
-            </ComboboxItem>
+        <ComboboxEmpty>
+          {emptyAction ? (
+            <div className="flex flex-col items-center gap-1.5 py-1 text-center">
+              <span>{emptyText}</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-caption"
+                onClick={() => emptyAction.onClick(searchQuery)}
+              >
+                + {emptyAction.label}
+              </Button>
+            </div>
+          ) : (
+            emptyText
           )}
+        </ComboboxEmpty>
+        <ComboboxList>
+          {grouped
+            ? (group: OptionGroup) => (
+                <ComboboxGroup key={group.value} items={group.items}>
+                  <ComboboxLabel>{group.value}</ComboboxLabel>
+                  <ComboboxCollection>{renderItem}</ComboboxCollection>
+                </ComboboxGroup>
+              )
+            : renderItem}
         </ComboboxList>
       </ComboboxContent>
     </Combobox>

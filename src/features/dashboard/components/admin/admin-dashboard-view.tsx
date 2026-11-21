@@ -34,9 +34,8 @@ function NoRecords() {
 }
 
 /**
- * Overview and Individual ranking span the full width; between them three independent columns flow on their own.
- * The centre column comes first in the markup so that on a phone the work leads; from lg up `lg:order-*` puts
- * it between the left and the right column.
+ * Overview, the Explorer and Individual ranking span the full width; between Overview and the Explorer three
+ * independent columns flow on their own. The markup order is centre, left, right so that no grid cell is left empty on a tablet and the work leads on a phone; from xl up `xl:order-*` puts it between the left and the right column.
  */
 export function AdminDashboardView({
   greeting,
@@ -71,32 +70,37 @@ export function AdminDashboardView({
         <SectionError title="Overview" />
       )}
 
-      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-12">
-        <div data-testid="col-center" className="flex min-w-0 flex-col gap-6 lg:order-2 lg:col-span-6">
-          <DashboardTabStrip label="Admin dashboard views" soon={["Approvals", "Goals", "Skills"]} />
-          {noRecords ? (
-            <NoRecords />
-          ) : (
-            <Section title="Explorer">
-              <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, certificates })} defaultTab="team" />
-            </Section>
-          )}
-        </div>
-
-        <div data-testid="col-right" className="flex min-w-0 flex-col gap-6 lg:order-3 lg:col-span-3">
+      {/* Top area: three balanced columns from xl, two on a tablet (the planned-features card spans both), one on a
+          phone. Markup order centre, left, right (see above). */}
+      <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div data-testid="col-center" className="flex min-w-0 flex-col gap-6 xl:order-2">
           {records.ok ? (
             <AdminNeedsAttention records={records.data} dqIssuesCount={dqIssues.ok ? dqIssues.data.length : undefined} />
           ) : (
             <SectionError title="Needs attention" />
           )}
-          <AdminComingSoonCard />
+          <AdminQuickActionsCard />
         </div>
 
-        <div data-testid="col-left" className="flex min-w-0 flex-col gap-6 lg:order-1 lg:col-span-3">
+        <div data-testid="col-left" className="flex min-w-0 flex-col gap-6 xl:order-1">
           {profileError ? <SectionError title="Your profile" /> : <AdminProfileCard profile={profile} />}
-          <AdminQuickActionsCard />
           {records.ok ? <MonthlyEarnedChart records={records.data} /> : <SectionError title="Certificates earned" />}
         </div>
+
+        <div data-testid="col-right" className="flex min-w-0 flex-col gap-6 md:col-span-2 xl:order-3 xl:col-span-1">
+          <AdminComingSoonCard />
+        </div>
+      </div>
+
+      <div data-testid="explorer-row" className="flex min-w-0 flex-col gap-6">
+        <DashboardTabStrip label="Admin dashboard views" soon={["Goals", "Skills"]} />
+        {noRecords ? (
+          <NoRecords />
+        ) : (
+          <Section title="Explorer">
+            <Explorer tabs={buildExplorerTabs({ teams, certTypes, providers, certificates })} defaultTab="team" />
+          </Section>
+        )}
       </div>
 
       <Section

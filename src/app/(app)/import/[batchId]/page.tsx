@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/features/auth/queries";
 import { BatchPreview } from "@/features/import/components/batch-preview";
-import { getImportBatch, listImportRows } from "@/features/import/queries";
+import { getImportBatch, listImportRows, loadExistingNames } from "@/features/import/queries";
 import { batchIdSchema } from "@/features/import/schema";
 
 export default async function ImportBatchPage({ params }: { params: Promise<{ batchId: string }> }) {
@@ -15,7 +15,11 @@ export default async function ImportBatchPage({ params }: { params: Promise<{ ba
   if (!parsed.success) notFound();
   const batch = await getImportBatch(parsed.data.batchId);
   if (!batch) notFound();
-  const rows = await listImportRows(batch.id);
+  const [rows, existingNames] = await Promise.all([
+    listImportRows(batch.id),
+    // Only a batch still waiting for its go-ahead is checked for near-duplicates.
+    batch.status === "parsed" ? loadExistingNames() : undefined,
+  ]);
 
-  return <BatchPreview batch={batch} rows={rows} />;
+  return <BatchPreview batch={batch} rows={rows} existingNames={existingNames} />;
 }

@@ -51,7 +51,7 @@ describe("normalizeStatus", () => {
   });
   it("returns null for blank and an error for unknown text", () => {
     expect(normalizeStatus("")).toEqual({ ok: true, value: null });
-    expect(normalizeStatus("Failed")).toEqual({ ok: false, error: 'Unknown status "Failed"' });
+    expect(normalizeStatus("Failed")).toEqual({ ok: false, error: '"Failed" is not a known status. Use Completed, In progress or Not started.' });
   });
 });
 
@@ -78,7 +78,8 @@ describe("progress", () => {
   it("rejects out-of-range and non-numeric values", () => {
     expect(progressToPercent(150, "percent").ok).toBe(false);
     expect(progressToPercent(-5, "percent").ok).toBe(false);
-    expect(progressToPercent("nhiều", "percent").ok).toBe(false);
+    expect(progressToPercent("nhiều", "percent")).toEqual({ ok: false, error: '"nhiều" is not a number.' });
+    expect(progressToPercent(150, "percent")).toEqual({ ok: false, error: '"150" is outside 0–100%.' });
   });
 });
 
@@ -112,30 +113,34 @@ describe("dates", () => {
     expect(parseImportDate("08/25/2025", false).ok).toBe(false);
     expect(parseImportDate("sớm", false).ok).toBe(false);
   });
+  it("names the value and the expected format", () => {
+    expect(parseImportDate("not a date", false)).toEqual({ ok: false, error: '"not a date" is not a valid date (dd/mm/yyyy).' });
+    expect(parseImportDate(99999, false)).toEqual({ ok: false, error: '"99999" is not a valid date (dd/mm/yyyy).' });
+  });
 });
 
 describe("other fields", () => {
   it("normalizes email and rejects malformed ones", () => {
     expect(normalizeEmail("  AN@Certtracker.Test ")).toEqual({ ok: true, value: "an@certtracker.test" });
     expect(normalizeEmail("mailto:an@x.vn")).toEqual({ ok: true, value: "an@x.vn" });
-    expect(normalizeEmail("")).toEqual({ ok: false, error: "Email is missing" });
-    expect(normalizeEmail("an@").ok).toBe(false);
+    expect(normalizeEmail("")).toEqual({ ok: false, error: "a value is required." });
+    expect(normalizeEmail("an@")).toEqual({ ok: false, error: '"an@" is not a valid email address.' });
     const tooLong = `${"a".repeat(250)}@x.vn`; // 255 characters
-    expect(normalizeEmail(tooLong)).toEqual({ ok: false, error: "Email is too long (254 characters at most)" });
+    expect(normalizeEmail(tooLong)).toEqual({ ok: false, error: "too long (254 characters at most)." });
     expect(normalizeEmail(`${"a".repeat(249)}@x.vn`).ok).toBe(true); // 254 characters
     const started = Date.now();
     expect(normalizeEmail("a@".repeat(16_000)).ok).toBe(false);
     expect(Date.now() - started).toBeLessThan(100); // never reaches the regex
   });
   it("reads booleans", () => {
-    expect(normalizeBoolean("x", "Qua công ty")).toEqual({ ok: true, value: true });
-    expect(normalizeBoolean("Yes", "Qua công ty")).toEqual({ ok: true, value: true });
-    expect(normalizeBoolean("No", "Qua công ty")).toEqual({ ok: true, value: false });
-    expect(normalizeBoolean("Có", "Qua công ty")).toEqual({ ok: true, value: true });
-    expect(normalizeBoolean("Không", "Qua công ty")).toEqual({ ok: true, value: false });
-    expect(normalizeBoolean(1, "Qua công ty")).toEqual({ ok: true, value: true });
-    expect(normalizeBoolean("", "Qua công ty")).toEqual({ ok: true, value: null });
-    expect(normalizeBoolean("maybe", "Qua công ty").ok).toBe(false);
+    expect(normalizeBoolean("x")).toEqual({ ok: true, value: true });
+    expect(normalizeBoolean("Yes")).toEqual({ ok: true, value: true });
+    expect(normalizeBoolean("No")).toEqual({ ok: true, value: false });
+    expect(normalizeBoolean("Có")).toEqual({ ok: true, value: true });
+    expect(normalizeBoolean("Không")).toEqual({ ok: true, value: false });
+    expect(normalizeBoolean(1)).toEqual({ ok: true, value: true });
+    expect(normalizeBoolean("")).toEqual({ ok: true, value: null });
+    expect(normalizeBoolean("maybe")).toEqual({ ok: false, error: '"maybe" is not yes or no.' });
   });
   it("reads refund statuses including the export labels", () => {
     expect(normalizeRefund("Refunded")).toEqual({ ok: true, value: "paid" });
@@ -152,11 +157,11 @@ describe("other fields", () => {
     expect(normalizeRefund("Not applicable")).toEqual({ ok: true, value: "n_a" });
     expect(normalizeRefund("Pending")).toEqual({ ok: true, value: "pending" });
     expect(normalizeRefund("pending")).toEqual({ ok: true, value: "pending" });
-    expect(normalizeRefund("?").ok).toBe(false);
+    expect(normalizeRefund("?")).toEqual({ ok: false, error: expect.stringMatching(/^"\?" is not a known refund status\. Use .* or Refunded\./) });
   });
   it("accepts only http(s) links", () => {
     expect(normalizeUrl("https://credly.com/b/1")).toEqual({ ok: true, value: "https://credly.com/b/1" });
-    expect(normalizeUrl("javascript:alert(1)").ok).toBe(false);
+    expect(normalizeUrl("javascript:alert(1)")).toEqual({ ok: false, error: '"javascript:alert(1)" must start with http:// or https://.' });
     expect(normalizeUrl("")).toEqual({ ok: true, value: null });
   });
   it("reads validity in months or years, and no-expiry words", () => {
@@ -165,7 +170,10 @@ describe("other fields", () => {
     expect(parseValidityMonths("3 năm")).toEqual({ ok: true, value: 36 });
     expect(parseValidityMonths("Không hết hạn")).toEqual({ ok: true, value: null });
     expect(parseValidityMonths("")).toEqual({ ok: true, value: null });
-    expect(parseValidityMonths("0").ok).toBe(false);
+    expect(parseValidityMonths("0")).toEqual({
+      ok: false,
+      error: '"0" is not a valid number of months (a whole number up to 600, or "no expiry").',
+    });
   });
 });
 
@@ -184,7 +192,7 @@ describe("cost, currency and study hours", () => {
     expect(parseCost("")).toEqual({ ok: true, value: null });
   });
   it("rejects a cost that is not a non-negative amount", () => {
-    expect(parseCost("free")).toEqual({ ok: false, error: 'Cost "free" is not a valid amount.' });
+    expect(parseCost("free")).toEqual({ ok: false, error: '"free" is not a valid amount.' });
     expect(parseCost(-5).ok).toBe(false);
   });
   it.each([
@@ -195,7 +203,7 @@ describe("cost, currency and study hours", () => {
   });
   it("leaves a blank currency empty and rejects an unknown one with the documented message", () => {
     expect(parseCurrency("  ")).toEqual({ ok: true, value: null });
-    expect(parseCurrency("EUR")).toEqual({ ok: false, error: 'Unknown currency "EUR". Use VND or USD.' });
+    expect(parseCurrency("EUR")).toEqual({ ok: false, error: '"EUR" is not a known currency. Use VND or USD.' });
   });
   it("reads study hours as a positive whole number", () => {
     expect(parseStudyHours(40)).toEqual({ ok: true, value: 40 });
@@ -204,7 +212,7 @@ describe("cost, currency and study hours", () => {
     expect(parseStudyHours("")).toEqual({ ok: true, value: null });
     expect(parseStudyHours(0).ok).toBe(false);
     expect(parseStudyHours(2.5).ok).toBe(false);
-    expect(parseStudyHours("lots")).toEqual({ ok: false, error: 'Study hours "lots" must be a whole number above 0.' });
+    expect(parseStudyHours("lots")).toEqual({ ok: false, error: '"lots" must be a whole number above 0.' });
   });
 });
 
@@ -229,13 +237,13 @@ describe("headers", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((column) => column.header));
     expect(duplicates).toEqual([]);
     expect(Object.keys(map).sort()).toEqual([...IMPORT_FIELDS].sort());
-    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Expiry date", "Days left", "Expiry status"]);
+    expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Approval", "Expiry date", "Days left", "Expiry status"]);
   });
   it("still resolves the Vietnamese headers the previous export wrote", () => {
     expect(mapHeaders(["Khóa học", "Trạng thái", "Tiến độ (%)"]).map).toEqual({ courseName: 0, status: 1, progress: 2 });
     const old = mapHeaders(["Mã", "Họ tên", "Email", "Team", "Career role", "YoE", "Khóa học", "Nhà cung cấp", "Loại chứng chỉ", "Thời hạn (tháng)", "Cost", "Currency", "Study hours", "Trạng thái", "Tiến độ (%)", "Ngày thi dự kiến", "Ngày cấp", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn", "Link chứng chỉ", "Qua công ty", "Hoàn tiền", "Ghi chú"]);
-    // The old export predates "Course studied" (Review Focus 4: such a file imports unchanged).
-    expect(Object.keys(old.map).sort()).toEqual(IMPORT_FIELDS.filter((field) => field !== "courseStudied").sort());
+    // The old export predates "Course studied" and "Record type" (Review Focus 4: such a file imports unchanged).
+    expect(Object.keys(old.map).sort()).toEqual(IMPORT_FIELDS.filter((field) => field !== "courseStudied" && field !== "recordType").sort());
     expect(old.unknown).toEqual(["Mã", "Career role", "YoE", "Ngày hết hạn", "Số ngày còn lại", "Trạng thái hạn"]);
   });
   it("reports a field mapped twice", () => {

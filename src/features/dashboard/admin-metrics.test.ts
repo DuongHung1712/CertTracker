@@ -39,6 +39,8 @@ function mockRecord(overrides: Partial<RecordRow> = {}): RecordRow {
     expiryDate: "2029-03-01",
     daysToExpiry: 100,
     expiryStatus: "Active",
+    approval: "approved",
+    approvalNote: null,
     ...overrides,
   };
 }
@@ -200,5 +202,27 @@ describe("a course completion that carries a validity never needs attention", ()
   it("stays out of the Needs attention list and its count", () => {
     expect(getAdminNeedsAttentionItems([expiredCompletion, expiringCompletion], 0)).toEqual([]);
     expect(countAdminAttentionRecords([expiredCompletion, expiringCompletion])).toBe(0);
+  });
+});
+
+describe("admin metrics: only Approved exam certificates count", () => {
+  const waiting = { approval: "waiting", status: "done" } as const;
+  const returned = { approval: "returned", approvalNote: "Wrong date", status: "done" } as const;
+  it("keeps Waiting and Returned items out of Needs attention and its count", () => {
+    const records = [
+      mockRecord({ id: "ok", daysToExpiry: -3, expiryStatus: "Expired" }),
+      mockRecord({ id: "w", daysToExpiry: -3, expiryStatus: "Expired", ...waiting }),
+      mockRecord({ id: "r", daysToExpiry: 10, expiryStatus: "Expiring Soon", ...returned }),
+    ];
+    expect(countAdminAttentionRecords(records)).toBe(1);
+    expect(getAdminNeedsAttentionItems(records, 0).map((i) => i.id)).toEqual(["expired-ok"]);
+  });
+  it("does not count a Waiting item as issued this month", () => {
+    const now = new Date("2026-11-08T10:00:00Z");
+    const records = [
+      mockRecord({ id: "a", issuedDate: "2026-11-02" }),
+      mockRecord({ id: "b", issuedDate: "2026-11-03", ...waiting }),
+    ];
+    expect(countIssuedThisMonth(records, now)).toBe(1);
   });
 });

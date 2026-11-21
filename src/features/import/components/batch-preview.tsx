@@ -13,9 +13,13 @@ import { EmptyState } from "@/components/data/empty-state";
 import { FilterBar } from "@/components/data/filter-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { commitImport, discardImport } from "@/features/import/actions";
-import { countRows, describeNewEntities, ROW_OUTCOME_LABEL, rowOutcome, type RowOutcome } from "@/features/import/preview";
+import { OUTCOME_ALL, OutcomePills, type OutcomeFilter } from "@/features/import/components/outcome-pills";
+import { NewEntitiesList } from "@/features/import/components/new-entities";
+import {
+  commitDescription, countRows, listNewEntities, rawCell, ROW_OUTCOME_LABEL, rowOutcome,
+  type ExistingNames, type RowOutcome,
+} from "@/features/import/preview";
 import type { ImportBatchDetail, ImportRowView } from "@/features/import/queries";
 import { runBatchAction } from "@/features/import/run-batch-action";
 import { formatDateTimeVn } from "@/lib/format";
@@ -23,19 +27,13 @@ import { pluralize } from "@/lib/plural";
 import type { Result } from "@/lib/result";
 import { foldText } from "@/lib/text";
 
-/** A Base UI `Select` value must be a non-empty string, so "no filter" is a sentinel, not "". */
-const ALL = "all";
-const OUTCOMES: RowOutcome[] = ["create", "update", "unchanged", "error"];
-
-function isOutcome(value: string): value is RowOutcome {
-  return OUTCOMES.some((outcome) => outcome === value);
-}
+const ALL = OUTCOME_ALL;
 
 /** Errors first (destructive, with an icon), then warnings (muted, with an icon); one per line, wrapping. */
 function RowMessages({ row }: { row: ImportRowView }) {
   if (row.errors.length === 0 && row.warnings.length === 0) return <span className="text-muted-foreground">—</span>;
   return (
-    <ul className="flex max-w-xl min-w-64 flex-col gap-0.5 whitespace-normal">
+    <ul className="flex max-w-xl min-w-0 flex-col gap-0.5 whitespace-normal wrap-anywhere md:min-w-64">
       {row.errors.map((message, index) => (
         <li key={`e${index}`} className="flex items-start gap-1.5 text-destructive">
           <CircleAlert aria-hidden className="mt-0.5 size-3.5 shrink-0" />
@@ -54,6 +52,52 @@ function RowMessages({ row }: { row: ImportRowView }) {
   );
 }
 
+const OUTCOME_CLASS: Record<RowOutcome, string> = {
+  create: "font-medium",
+  update: "font-medium",
+  unchanged: "text-muted-foreground",
+  error: "font-medium text-destructive",
+};
+
+function OutcomeLabel({ row }: { row: ImportRowView }) {
+  const outcome = rowOutcome(row);
+  return <span className={OUTCOME_CLASS[outcome]}>{ROW_OUTCOME_LABEL[outcome]}</span>;
+}
+
+const CARDS_PER_STEP = 25;
+
+/** Narrow screens: one card per row, so Result and Details sit right under the row's own data instead of off to the side. */
+function RowCards({ rows }: { rows: ImportRowView[] }) {
+  const [shown, setShown] = useState(CARDS_PER_STEP);
+  return (
+    <div className="flex flex-col gap-2 md:hidden" data-testid="row-cards">
+      <ul className="flex flex-col gap-2">
+        {rows.slice(0, shown).map((row) => {
+          const studied = rawCell(row, "courseStudied");
+          return (
+            <li key={row.id} className="flex min-w-0 flex-col gap-1 rounded-lg border bg-card p-3 text-body">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-caption text-muted-foreground tabular-nums">{`Row ${row.rowNo}`}</span>
+                <OutcomeLabel row={row} />
+              </div>
+              <span className="font-medium wrap-anywhere">{row.raw.course ?? "—"}</span>
+              <span className="text-muted-foreground wrap-anywhere">{row.raw.email ?? "—"}</span>
+              {studied && <span className="text-caption text-muted-foreground wrap-anywhere">{`Course studied: ${studied}`}</span>}
+              <RowMessages row={row} />
+            </li>
+          );
+        })}
+      </ul>
+      {shown < rows.length && (
+        <Button variant="outline" size="sm" className="self-center" onClick={() => setShown((count) => count + CARDS_PER_STEP)}>
+          {`Show more (${rows.length - shown} left)`}
+        </Button>
+      )}
+      {rows.length === 0 && <EmptyState title="No rows found" description="Try a different search or clear the filters." />}
+    </div>
+  );
+}
+
 function committedMessage(batch: ImportBatchDetail): string {
   const [date, time] = batch.committedAt ? formatDateTimeVn(batch.committedAt).split(" ") : [];
   const when = date && time ? `Imported ${date} at ${time}` : "Imported";
@@ -62,17 +106,17 @@ function committedMessage(batch: ImportBatchDetail): string {
   return `${when}: created ${created}, updated ${updated}, skipped ${skipped}.`;
 }
 
-export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: ImportRowView[] }) {
+export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatchDetail; rows: ImportRowView[]; existingNames?: ExistingNames }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [outcomeFilter, setOutcomeFilter] = useState(ALL);
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeFilter>(ALL);
   const [confirming, setConfirming] = useState<"commit" | "discard" | null>(null);
   const [pending, setPending] = useState(false);
   // Set once an action succeeded: hides the buttons until the refreshed batch status arrives.
   const [finished, setFinished] = useState(false);
 
   const counts = useMemo(() => countRows(rows), [rows]);
-  const newEntities = useMemo(() => describeNewEntities(rows), [rows]);
+  const newEntities = useMemo(() => listNewEntities(rows, existingNames), [rows, existingNames]);
   const importable = counts.create + counts.update;
   const actionable = batch.status === "parsed" && !finished;
   // An upload that died between chunks leaves fewer rows than the parse announced; commit_import refuses it too (22023).
@@ -97,14 +141,30 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         accessorFn: (row) => row.rowNo,
         meta: { align: "right" },
       },
-      { id: "email", header: "Email", accessorFn: (row) => row.raw.email ?? "", cell: ({ row }) => row.original.raw.email ?? "—" },
+      {
+        id: "email",
+        header: "Email",
+        accessorFn: (row) => row.raw.email ?? "",
+        cell: ({ row }) => <span className="wrap-anywhere">{row.original.raw.email ?? "—"}</span>,
+      },
       {
         id: "certificate",
         header: "Certificate",
         accessorFn: (row) => row.raw.course ?? "",
-        cell: ({ row }) => <span className="whitespace-normal">{row.original.raw.course ?? "—"}</span>,
+        cell: ({ row }) => <span className="whitespace-normal wrap-anywhere">{row.original.raw.course ?? "—"}</span>,
       },
-      { id: "outcome", header: "Result", accessorFn: (row) => ROW_OUTCOME_LABEL[rowOutcome(row)] },
+      {
+        id: "courseStudied",
+        header: "Course studied",
+        accessorFn: (row) => rawCell(row, "courseStudied") ?? "",
+        cell: ({ row }) => <span className="whitespace-normal wrap-anywhere">{rawCell(row.original, "courseStudied") ?? "—"}</span>,
+      },
+      {
+        id: "outcome",
+        header: "Result",
+        accessorFn: (row) => ROW_OUTCOME_LABEL[rowOutcome(row)],
+        cell: ({ row }) => <OutcomeLabel row={row.original} />,
+      },
       { id: "details", header: "Details", enableSorting: false, cell: ({ row }) => <RowMessages row={row.original} /> },
     ],
     [],
@@ -215,10 +275,10 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
         </Alert>
       )}
 
-      <p className="text-body tabular-nums">
-        {OUTCOMES.map((outcome) => `${ROW_OUTCOME_LABEL[outcome]} ${counts[outcome]}`).join(" · ")}
-      </p>
-      {batch.status === "parsed" && newEntities && <p className="text-body text-muted-foreground">{newEntities}</p>}
+      <OutcomePills counts={counts} total={rows.length} value={outcomeFilter} onChange={setOutcomeFilter} />
+      {(batch.status === "parsed" || batch.status === "committed") && (
+        <NewEntitiesList entities={newEntities} created={batch.status === "committed"} />
+      )}
 
       <FilterBar
         search={search}
@@ -229,48 +289,38 @@ export function BatchPreview({ batch, rows }: { batch: ImportBatchDetail; rows: 
           setSearch("");
           setOutcomeFilter(ALL);
         }}
-      >
-        <Select value={outcomeFilter} onValueChange={(value) => setOutcomeFilter(value ?? ALL)}>
-          <SelectTrigger aria-label="Result">
-            <SelectValue>
-              {(value: string) => (value === ALL ? "All" : isOutcome(value) ? ROW_OUTCOME_LABEL[value] : value)}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>All</SelectItem>
-            {OUTCOMES.map((outcome) => (
-              <SelectItem key={outcome} value={outcome}>
-                {ROW_OUTCOME_LABEL[outcome]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FilterBar>
-
-      <DataTable
-        columns={columns}
-        data={visibleRows}
-        getRowId={(row) => row.id}
-        pageSize={50}
-        empty={
-          rows.length === 0 ? (
-            <EmptyState title="This batch has no rows" />
-          ) : (
-            <EmptyState title="No rows found" description="Try a different search or clear the filters." />
-          )
-        }
       />
+
+      <RowCards rows={visibleRows} />
+      <div className="hidden md:block">
+        <DataTable
+          columns={columns}
+          data={visibleRows}
+          getRowId={(row) => row.id}
+          pageSize={50}
+          empty={
+            rows.length === 0 ? (
+              <EmptyState title="This batch has no rows" />
+            ) : (
+              <EmptyState title="No rows found" description="Try a different search or clear the filters." />
+            )
+          }
+        />
+      </div>
 
       <ConfirmDialog
         open={confirming === "commit"}
         onOpenChange={(open) => !open && setConfirming(null)}
         title={`Import ${pluralize(importable, "row")} from ${batch.fileName}?`}
-        description={`Creates ${counts.create}, updates ${counts.update}. ${pluralize(counts.error, "row")} with errors will be skipped. If any row fails, nothing is imported.`}
+        description={commitDescription(counts)}
         confirmLabel={`Import ${pluralize(importable, "row")}`}
         pendingLabel="Importing…"
+        variant="default"
         pending={pending}
         onConfirm={handleCommit}
-      />
+      >
+        <NewEntitiesList entities={newEntities} />
+      </ConfirmDialog>
       <ConfirmDialog
         open={confirming === "discard"}
         onOpenChange={(open) => !open && setConfirming(null)}

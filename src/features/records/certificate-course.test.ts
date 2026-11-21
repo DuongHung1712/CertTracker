@@ -34,6 +34,14 @@ describe("courseAfterCertificateChange", () => {
   });
 });
 
+describe("courseAfterCertificateChange across kinds", () => {
+  it("sets the granting course for a completion, then clears it again for an exam the course does not prepare for", () => {
+    const toCompletion = courseAfterCertificateChange(completion, courses, "c-udemy");
+    expect(toCompletion).toBe("c-ml");
+    expect(courseAfterCertificateChange(otherExam, courses, toCompletion)).toBe("");
+  });
+});
+
 describe("courseChoicesFor", () => {
   it("lists the preparing courses with their names as labels", () => {
     expect(courseChoicesFor(courses, "saa", null)).toEqual([{ id: "c-udemy", label: "Udemy SAA" }]);

@@ -25,7 +25,6 @@ const kpi: Kpi = {
   expired: 1,
   issuedInMonth: 2,
   expiredInMonth: 0,
-  completionRate: 67,
 };
 
 describe("buildExpiryEmail", () => {

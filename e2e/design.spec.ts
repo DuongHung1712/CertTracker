@@ -8,7 +8,8 @@ test("design showcase renders tokens and components", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Expiry status" })).toBeVisible();
   await expect(page.getByText("Expired", { exact: true }).first()).toBeVisible();
 
-  const table = page.getByRole("table").first();
+  // The sample DataTable, not the style switcher demo table above it (its first column is "Member (Sticky Left)").
+  const table = page.getByRole("table").filter({ hasNot: page.getByText("Member (Sticky Left)") }).first();
   await expect(table.getByRole("row")).toHaveCount(7); // header + 6 sample rows
   await page.getByLabel("Search by name, code, course…").fill("Chau");
   await expect(table.getByRole("row")).toHaveCount(2);

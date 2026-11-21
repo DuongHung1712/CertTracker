@@ -63,6 +63,7 @@ const DEFAULT_DATA: AdminDashboardData = {
       noExpiryCerts: 0,
       completionDoneRecords: 0,
       completionInProgressRecords: 0,
+      waitingRecords: 0,
     },
   },
   certificates: { ok: true, data: [breakdown("c1", "Cloud Architect")] },
@@ -136,7 +137,7 @@ function elementWith(html: string, marker: string): string {
 }
 
 const region = (html: string, name: string) => elementWith(html, `aria-label="${name}"`);
-const column = (html: string, id: "col-center" | "col-right" | "col-left") =>
+const column = (html: string, id: "col-center" | "col-right" | "col-left" | "explorer-row") =>
   elementWith(html, `data-testid="${id}"`);
 
 const REGIONS = [
@@ -168,7 +169,7 @@ describe("AdminDashboardView: composition (layout option B)", () => {
 
   it("puts KPIs full width above the grid and the ranking full width below it", () => {
     const html = render();
-    const columns = ["col-center", "col-right", "col-left"] as const;
+    const columns = ["col-center", "col-right", "col-left", "explorer-row"] as const;
     for (const id of columns) {
       const col = column(html, id);
       expect(col, `${id} has no Overview`).not.toContain('aria-label="Overview"');
@@ -181,45 +182,61 @@ describe("AdminDashboardView: composition (layout option B)", () => {
     expect(html.indexOf('aria-label="Individual ranking"')).toBeGreaterThan(lastColumnEnd);
   });
 
-  it("places each widget in its column, centre first in the DOM (mobile order)", () => {
+  it("places each widget in its column, centre, left, right in the DOM (mobile order)", () => {
     const html = render();
     const center = column(html, "col-center");
     const right = column(html, "col-right");
     const left = column(html, "col-left");
 
-    expect(center).toContain('aria-label="Admin dashboard views"');
-    expect(center).toContain('aria-label="Explorer"');
-    expect(right).toContain('aria-label="Needs attention"');
+    const explorerRow = column(html, "explorer-row");
+
+    expect(explorerRow).toContain('aria-label="Admin dashboard views"');
+    expect(explorerRow).toContain('aria-label="Explorer"');
+    expect(center).toContain('aria-label="Needs attention"');
+    expect(center).toContain('aria-label="Quick actions"');
     expect(right).toContain('aria-label="Planned features (Coming soon)"');
     expect(left).toContain('aria-label="Your profile"');
-    expect(left).toContain('aria-label="Quick actions"');
     expect(left).toContain("Certificates earned by month:");
 
     const order = [
       'aria-label="Overview"',
       'data-testid="col-center"',
-      'aria-label="Admin dashboard views"',
-      'aria-label="Explorer"',
-      'data-testid="col-right"',
       'aria-label="Needs attention"',
-      'aria-label="Planned features (Coming soon)"',
+      'aria-label="Quick actions"',
       'data-testid="col-left"',
       'aria-label="Your profile"',
-      'aria-label="Quick actions"',
       "Certificates earned by month:",
+      'data-testid="col-right"',
+      'aria-label="Planned features (Coming soon)"',
+      'data-testid="explorer-row"',
+      'aria-label="Admin dashboard views"',
+      'aria-label="Explorer"',
       'aria-label="Individual ranking"',
     ].map((marker) => html.indexOf(marker));
     expect(order).toEqual([...order].sort((a, b) => a - b));
 
+    // Explorer row is outside every column.
+    expect(center).not.toContain('data-testid="explorer-row"');
+    expect(left).not.toContain('data-testid="explorer-row"');
+    expect(right).not.toContain('data-testid="explorer-row"');
+
+    // Grid breakpoints: 1 column, 2 from md, 3 from xl; right spans both columns at md.
+    const grid = elementWith(html, 'class="grid min-w-0');
+    const gridTag = grid.slice(0, grid.indexOf(">"));
+    expect(gridTag).toContain("grid-cols-1");
+    expect(gridTag).toContain("md:grid-cols-2");
+    expect(gridTag).toContain("xl:grid-cols-3");
+    expect(right.slice(0, right.indexOf(">"))).toContain("md:col-span-2");
+
     // Desktop: left, centre, right.
-    expect(center.slice(0, center.indexOf(">"))).toContain("lg:order-2");
-    expect(right.slice(0, right.indexOf(">"))).toContain("lg:order-3");
-    expect(left.slice(0, left.indexOf(">"))).toContain("lg:order-1");
+    expect(center.slice(0, center.indexOf(">"))).toContain("xl:order-2");
+    expect(right.slice(0, right.indexOf(">"))).toContain("xl:order-3");
+    expect(left.slice(0, left.indexOf(">"))).toContain("xl:order-1");
   });
 
-  it("renders Approvals, Goals, and Skills once in the tab strip", () => {
+  it("renders Goals and Skills once in the tab strip; Approvals is live, so it is not a placeholder", () => {
     const html = render();
-    expect(count(html, 'aria-label="Approvals Soon"')).toBe(1);
+    expect(count(html, 'aria-label="Approvals Soon"')).toBe(0);
     expect(count(html, 'aria-label="Goals Soon"')).toBe(1);
     expect(count(html, 'aria-label="Skills Soon"')).toBe(1);
   });
@@ -227,7 +244,6 @@ describe("AdminDashboardView: composition (layout option B)", () => {
 
 describe("AdminDashboardView: one Planned features card", () => {
   const ITEMS = [
-    "Approvals",
     "Goals",
     "Skills",
     "Focus area",
@@ -250,9 +266,8 @@ describe("AdminDashboardView: one Planned features card", () => {
     expect(card).not.toContain("<input");
   });
 
-  it("has no other Coming soon content: no approval tile, no profile card, no other Not available yet.", () => {
+  it("has no other Coming soon content: no profile card, no other Not available yet.", () => {
     const html = render();
-    expect(html).not.toContain("Waiting for approval");
     expect(html).not.toContain("Track specialization");
     expect(count(html, "Not available yet.")).toBe(ITEMS.length);
   });
@@ -511,7 +526,9 @@ describe("AdminDashboardView: exam certificates and course completions are separ
 
   it("renders the two groups inside Overview", () => {
     const overview = region(render(), "Overview");
-    expect(count(overview, 'role="group"')).toBe(2);
+    expect(count(overview, 'role="group"')).toBe(3);
+    expect(textOf(group(overview, "Approvals"))).toContain("Waiting for approval");
+    expect(overview).toContain('href="/records?approval=waiting"');
     expect(textOf(group(overview, "Exam certificates"))).toContain("Valid certificates");
     expect(textOf(group(overview, "Course completions"))).not.toContain("Valid certificates");
   });

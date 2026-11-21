@@ -47,45 +47,34 @@ function row(partial: Partial<BreakdownRow>): BreakdownRow {
 describe("[copy] member KPI cards", () => {
   const render = (records: RecordRow[]) => text(renderToStaticMarkup(<MemberKpiCards kpis={calculateMemberKpis(records)} />));
 
-  it("counts expired certificates with the right noun and verb", () => {
-    expect(render([doneRecord(-3, { id: "a" })])).toContain("1 certificate needs renewal.");
-    expect(render([doneRecord(-3, { id: "a" }), doneRecord(-9, { id: "b" })])).toContain("2 certificates need renewal.");
+  it("uses the agreed tile labels", () => {
+    const raw = renderToStaticMarkup(<MemberKpiCards kpis={calculateMemberKpis([doneRecord(45, { id: "a" })])} />);
+    // The e2e tile lookup matches the `dt` text exactly (the label is the tile's link).
+    for (const label of ["Valid", "Needs action", "In progress", "Up next"]) {
+      expect(raw, label).toMatch(new RegExp(`<dt[^>]*>.*?>\\s*${label}\\s*</a></dt>`, "s"));
+    }
+    expect(text(raw)).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|≤|active study goals| exp |\d+ study\b/i);
   });
 
-  it("says plainly that nothing is expired", () => {
+  it("says plainly that nothing needs renewing", () => {
     const html = render([doneRecord(120)]);
-    expect(html).toContain("No expired certificates.");
+    expect(html).toContain("Nothing due in 60 days");
+    expect(html).toContain("All up to date");
     expect(html).not.toMatch(/Audit compliance|registry violations/i);
   });
 
-  it("names the next certificate to expire and counts its days with daysLeftLabel", () => {
+  it("names the next exam to expire and counts its days with daysLeftLabel", () => {
     const one = render([doneRecord(1)]);
-    expect(one).toContain("Next to expire: AWS Solutions Architect Associate");
+    expect(one).toContain("Next: AWS Solutions Architect Associate");
     expect(one).toContain("1 day left");
-    expect(one).not.toContain("Target:");
     const today = render([doneRecord(0)]);
     expect(today).toContain("Expires today");
     expect(today).not.toContain("0 days left");
   });
 
-  it("uses the agreed tile labels and chips", () => {
-    const records = [doneRecord(45, { id: "a" }), makeRecord({ id: "b", status: "in_progress", progress: 40, expiryStatus: "N/A", daysToExpiry: null, expiryDate: null, issuedDate: null })];
-    const raw = renderToStaticMarkup(<MemberKpiCards kpis={calculateMemberKpis(records)} />);
-    // The e2e tile lookup matches the `dt` text exactly.
-    expect(raw).toMatch(/<dt[^>]*>\s*Certificates\s*<\/dt>/);
-    expect(raw).toMatch(/<dt[^>]*>\s*Expiring within 60 days\s*<\/dt>/);
-    const html = render(records);
-    expect(html).toContain("1 expiring");
-    expect(html).toContain("1 in progress");
-    expect(html).toContain("Certificates in progress");
-    expect(html).not.toMatch(/Recorded certificates|Recorded credentials|Compliant|Expiring soon|≤|active study goals| exp |\d+ study\b/i);
-    expect(render([])).toContain("No certificates in progress");
-  });
-
-  it("says the total covers courses not started or in progress, not only in progress", () => {
-    const html = render([doneRecord(120)]);
-    expect(html).toContain("Including certificates not started or in progress");
-    expect(html).not.toContain("Including certificates in progress");
+  it("counts expired exams with the right noun", () => {
+    expect(render([doneRecord(-3, { id: "a" })])).toContain("1 expired exam");
+    expect(render([doneRecord(-3, { id: "a" }), doneRecord(-9, { id: "b" })])).toContain("2 expired exams");
   });
 });
 
@@ -133,19 +122,6 @@ describe("[copy] member certificate list", () => {
     expect(html).not.toMatch(/Registered Records|certifications registered/);
   });
 
-  it("names study progress and the planned exam date plainly", () => {
-    const html = render([studying]);
-    expect(html).toContain("Study progress");
-    expect(html).toContain("Planned exam date");
-    expect(html).not.toMatch(/Curriculum coverage|Target exam date/);
-  });
-
-  it("calls the planned date of a course completion a planned finish date", () => {
-    const html = render([{ ...studying, certificateKind: "completion", certificateName: "Intro to Terraform" }]);
-    expect(html).toContain("Planned finish date");
-    expect(html).not.toContain("Planned exam date");
-  });
-
   it("names the expiring tab with the aggregate wording", () => {
     expect(render([doneRecord(45)])).toContain("Expiring within 60 days (1)");
   });
@@ -159,11 +135,11 @@ describe("[copy] explorer master list", () => {
 
   it("team tab: members in the team, then members with certificates, then certificates", () => {
     const one = render([row({ headcount: 1, people: 1, records: 1 })]);
-    expect(one).toContain("1 member · 1 with certificates");
-    expect(one).toContain("1 certificate");
+    expect(one).toContain("1 member · 1 with learning items");
+    expect(one).toContain("1 learning item");
     expect(one).not.toMatch(PLURAL_BUGS);
     expect(one).not.toContain("headcount");
-    expect(render([row({ headcount: 3, people: 2, records: 5 })])).toContain("3 members · 2 with certificates");
+    expect(render([row({ headcount: 3, people: 2, records: 5 })])).toContain("3 members · 2 with learning items");
   });
 
   it("other tabs count members only", () => {
@@ -176,7 +152,7 @@ describe("[copy] explorer master list", () => {
   it("calls the count column Total and never says records", () => {
     const html = render([row({ records: 2 })]);
     expect(html).toContain("Total");
-    expect(html).toContain("2 certificates");
+    expect(html).toContain("2 learning items");
     expect(html).not.toMatch(/\brecords?\b/i);
   });
 
@@ -191,11 +167,11 @@ describe("[copy] explorer detail panel", () => {
 
   it("counts certificates with pluralize and links to Certificates", () => {
     const html = render(row({ records: 1 }));
-    expect(html).toContain("Total: 1 certificate");
+    expect(html).toContain("Total: 1 learning item");
     expect(html).not.toMatch(PLURAL_BUGS);
     expect(html).toContain("View learning");
     expect(html).not.toMatch(/\brecords?\b/i);
-    expect(render(row({ records: 3, done: 2 }))).toContain("Total: 3 certificates");
+    expect(render(row({ records: 3, done: 2 }))).toContain("Total: 3 learning items");
   });
 
   it("words a certificate group by its members in the header, the footer and the copied text", () => {
@@ -206,16 +182,16 @@ describe("[copy] explorer detail panel", () => {
     expect(html).toContain("Total: 3 members");
     expect(html).not.toMatch(/records?/i);
     expect(copySummaryText(certificate, "Certificate")).toBe(
-      "AWS SAA: 3 members, 33% completed (1 completed, 1 in progress, 1 valid, 0 expired).",
+      "AWS SAA: 3 members, 33% done rate (1 completed, 1 in progress, 1 valid, 0 expired).",
     );
   });
 
   it("copies a summary in plain terms", () => {
     expect(copySummaryText(row({ label: "AWS", records: 1, done: 1, inProgress: 0, valid: 1, expired: 0 }), "Provider")).toBe(
-      "AWS: 1 certificate, 100% completed (1 completed, 0 in progress, 1 valid, 0 expired).",
+      "AWS: 1 learning item, 100% done rate (1 completed, 0 in progress, 1 valid, 0 expired).",
     );
     expect(copySummaryText(row({ label: "AWS", records: 4, done: 2, inProgress: 1, valid: 1, expired: 1 }), "Provider")).toBe(
-      "AWS: 4 certificates, 50% completed (2 completed, 1 in progress, 1 valid, 1 expired).",
+      "AWS: 4 learning items, 50% done rate (2 completed, 1 in progress, 1 valid, 1 expired).",
     );
   });
 });
@@ -225,17 +201,17 @@ describe("[copy] explorer filters", () => {
     expect(STATUS_FILTER_LABELS).toEqual({
       all: "Any status",
       has_expired: "With expired certificates",
-      has_in_progress: "With certificates in progress",
-      no_completed: "With no completed certificates",
+      has_in_progress: "With items in progress",
+      no_completed: "With no completed items",
     });
   });
 
-  it("labels the size filter in certificates, without symbols", () => {
+  it("labels the size filter in learning items, without symbols", () => {
     expect(MIN_RECORDS_FILTER_LABELS).toEqual({
-      "0": "Any number of certificates",
-      "1": "1 or more certificates",
-      "5": "5 or more certificates",
-      "10": "10 or more certificates",
+      "0": "Any number of learning items",
+      "1": "1 or more learning items",
+      "5": "5 or more learning items",
+      "10": "10 or more learning items",
     });
   });
 });
@@ -277,5 +253,13 @@ describe("[copy] status bar", () => {
   it("names an empty bar in certificates", () => {
     const html = renderToStaticMarkup(<StatusBar segments={[{ key: "a", label: "Valid", count: 0, color: "x" }]} />);
     expect(html).toContain('aria-label="No certificates"');
+  });
+});
+
+describe("[copy] member dashboard subtitle", () => {
+  it("greets warmly and encourages learning instead of audit wording", () => {
+    const source = readFileSync(join(process.cwd(), "src/features/dashboard/load.ts"), "utf8");
+    expect(source).toContain("Ready to plan your next certification milestone?");
+    expect(source).not.toContain("${getGreeting(profile.fullName, now)} · Figures as of");
   });
 });

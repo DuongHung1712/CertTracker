@@ -7,8 +7,8 @@ import {
   addOwnCertificateWithProof,
   addPilotMember,
   AWS,
-  chooseCompleted,
   evidenceHref,
+  fillDatePassed,
   openOwnCertificateForm,
   pilotEmail,
   recordRow,
@@ -155,7 +155,7 @@ test("E-7: a proof over 4 MB shows the form's message and nothing is saved", asy
   await signInWithPilotPassword(page, memberB.email);
   const before = await recordCount(memberB.id);
   const dialog = await openOwnCertificateForm(page);
-  await chooseCompleted(page, dialog);
+  await fillDatePassed(dialog);
   const oversized = Buffer.concat([Buffer.from("%PDF-"), Buffer.alloc(MAX_EVIDENCE_BYTES + 1 - 5)]);
   await dialog.getByLabel("Evidence").setInputFiles({ name: "proof.pdf", mimeType: "application/pdf", buffer: oversized });
   await expect(dialog.getByText(EVIDENCE_TOO_LARGE_MESSAGE)).toBeVisible();
@@ -169,7 +169,7 @@ test("E-7: a text file renamed .pdf shows the form's message and nothing is save
   await signInWithPilotPassword(page, memberB.email);
   const before = await recordCount(memberB.id);
   const dialog = await openOwnCertificateForm(page, "nvidia", NVIDIA);
-  await chooseCompleted(page, dialog);
+  await fillDatePassed(dialog);
   await dialog.getByLabel("Evidence").setInputFiles({ name: "proof.pdf", mimeType: "application/pdf", buffer: Buffer.from("just some text\n") });
   expect(await saveAndCountServerActions(page, dialog)).toBe(0);
   await expect(dialog.getByText(EVIDENCE_WRONG_TYPE_MESSAGE)).toBeVisible();

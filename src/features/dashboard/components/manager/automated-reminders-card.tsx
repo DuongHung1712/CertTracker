@@ -3,7 +3,7 @@ import { BellRing } from "lucide-react";
 export function AutomatedRemindersCard() {
   return (
     <section aria-label="Automated reminders" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-label uppercase tracking-wider font-mono text-muted-foreground">
           Automated reminders
         </span>

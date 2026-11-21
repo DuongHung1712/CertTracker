@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { idSchema, recordSchema, type RecordInput } from "@/features/records/schema";
+import type { ApprovalState } from "@/features/records/kind";
+import { idSchema, recordIdsSchema, recordSchema, reviewSchema, type RecordInput } from "@/features/records/schema";
 import { assertAffected } from "@/lib/assert-affected";
 import { mapPostgresError } from "@/lib/postgres-error";
 import { err, ok, type Result } from "@/lib/result";
@@ -10,9 +11,9 @@ import { createSupabaseStorage } from "@/lib/storage/supabase-storage";
 import { createClient } from "@/lib/supabase/server";
 
 const MESSAGES = {
-  duplicate: "This member already has this certificate. Edit the existing one instead of creating a new one.",
+  duplicate: "This member already has this one. Edit the existing entry instead of creating a new one.",
   restricted: "The member, the certificate or the course no longer exists. Reload the page and try again.",
-  invalid: "Status, progress and issue date do not match.",
+  invalid: "Status, progress and date do not match.",
 };
 const COURSE_MISMATCH_MESSAGE = "That course does not prepare for this certificate. Choose another course or None (self-study).";
 /** The `training_records_course_matches_certificate` trigger raises this text with the same 23514 as the status CHECKs. */
@@ -26,6 +27,32 @@ function recordErrorMessage(error: { code?: string | null; message: string }): s
 function revalidate() {
   revalidatePath("/records");
   revalidatePath("/me");
+}
+
+const REVIEW_FORBIDDEN_MESSAGE = "Only the member's manager or an admin can approve this.";
+const REVIEW_NOT_COMPLETED_MESSAGE = "Only a Completed item can be approved or returned. Refresh and try again.";
+const REVIEW_NOTE_MESSAGE = "Write what the member should fix.";
+
+/** Approve or return a Completed item. RLS and the approval trigger decide who may; this only maps their errors. */
+export async function reviewRecord(input: { id: string; decision: "approve" | "return"; note?: string }): Promise<Result<null>> {
+  const parsed = reviewSchema.safeParse(input);
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
+  const { id, decision, note } = parsed.data;
+  const supabase = await createClient();
+  const { data: rows, error } = await supabase
+    .from("training_records")
+    .update(decision === "approve" ? { approval: "approved" as const } : { approval: "returned" as const, approval_note: note })
+    .eq("id", id)
+    // The trigger silently clears approval on a row that is no longer Completed, so check it here.
+    .eq("status", "done")
+    .select("id");
+  if (error?.code === "42501") return err(REVIEW_FORBIDDEN_MESSAGE);
+  if (error) return err(mapPostgresError(error, { invalid: REVIEW_NOTE_MESSAGE }));
+  // Zero rows also covers a row RLS hides from the viewer: refused either way.
+  if (!rows?.length) return err(REVIEW_NOT_COMPLETED_MESSAGE);
+  revalidate();
+  revalidatePath("/dashboard");
+  return ok(null);
 }
 
 /** Columns every role may write. `undefined` values are dropped from the JSON body, so an absent company field is not sent. */
@@ -44,36 +71,36 @@ function toRow(data: RecordInput) {
   };
 }
 
-export async function createRecord(input: RecordInput): Promise<Result<{ id: string }>> {
+export async function createRecord(input: RecordInput): Promise<Result<{ id: string; approval: ApprovalState | null }>> {
   const parsed = recordSchema.safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("training_records")
     .insert({ member_id: parsed.data.memberId, ...toRow(parsed.data) })
-    .select("id")
+    .select("id, approval")
     .single();
   if (error) return err(recordErrorMessage(error));
   revalidate();
-  return ok({ id: data.id });
+  return ok({ id: data.id, approval: data.approval });
 }
 
 /** `member_id` is never updated: a record belongs to one member for life (delete and re-create to move it). */
 export async function updateRecord(
   input: Omit<RecordInput, "notes"> & { id: string; notes?: RecordInput["notes"] },
-): Promise<Result<null>> {
+): Promise<Result<{ approval: ApprovalState | null }>> {
   // The member form has no Notes; the schema would turn the missing value into null and wipe the stored notes.
   const keepNotes = input.notes === undefined;
   const parsed = recordSchema.safeExtend({ id: idSchema.shape.id }).safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
   const { id, ...data } = parsed.data;
   const supabase = await createClient();
-  const { data: rows, error } = await supabase.from("training_records").update(keepNotes ? { ...toRow(data), notes: undefined } : toRow(data)).eq("id", id).select("id");
+  const { data: rows, error } = await supabase.from("training_records").update(keepNotes ? { ...toRow(data), notes: undefined } : toRow(data)).eq("id", id).select("id, approval");
   if (error) return err(recordErrorMessage(error));
   const guard = assertAffected(rows);
-  if (guard) return guard;
+  if (guard && !guard.ok) return err(guard.error);
   revalidate();
-  return ok(null);
+  return ok({ approval: rows?.[0]?.approval ?? null });
 }
 
 export async function deleteRecord(input: { id: string }): Promise<Result<null>> {
@@ -97,6 +124,24 @@ export async function deleteRecord(input: { id: string }): Promise<Result<null>>
   }
   revalidate();
   return ok(null);
+}
+
+/** Bulk delete through the user's JWT: RLS decides which rows go; `count` is how many really did. */
+export async function deleteRecords(input: { ids: string[] }): Promise<Result<{ count: number }>> {
+  const parsed = recordIdsSchema.safeParse(input);
+  if (!parsed.success) return err("Invalid data");
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("training_records").delete().in("id", parsed.data.ids).select("id, evidence_path");
+  if (error) return err(mapPostgresError(error));
+  const guard = assertAffected(data);
+  if (guard && !guard.ok) return err(guard.error);
+  const paths = (data ?? []).flatMap((row) => (row.evidence_path ? [row.evidence_path] : []));
+  if (paths.length > 0) {
+    const { error: removeError } = await supabase.storage.from("certificates").remove(paths);
+    if (removeError) console.error("evidence cleanup failed", removeError.message);
+  }
+  revalidate();
+  return ok({ count: data?.length ?? 0 });
 }
 
 export async function uploadEvidence(formData: FormData): Promise<Result<null>> {
@@ -168,3 +213,4 @@ export async function removeEvidence(input: { id: string }): Promise<Result<null
   revalidate();
   return ok(null);
 }
+

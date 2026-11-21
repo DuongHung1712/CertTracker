@@ -194,6 +194,12 @@ test.describe("member import", () => {
     }
   });
 
+  test("a member who types /members is sent to My learning", async ({ page }) => {
+    await signIn(page, "member@certtracker.test");
+    await page.goto("/members");
+    await expect(page).toHaveURL(/\/me$/);
+  });
+
   test("importing twice skips the members already created", async ({ page }) => {
     const a = `${IMPORT_PREFIX}t-${Date.now()}@certtracker.test`;
     await signIn(page, "admin@certtracker.test");
@@ -210,4 +216,12 @@ test.describe("member import", () => {
     await dialog.locator('input[type="file"]').setInputFiles(csvFile([`Twice,${a},Team Cloud,`]));
     await expect(dialog.getByText("0 to create, 1 skipped, 0 with errors")).toBeVisible();
   });
+});
+
+test("the row actions menu button is at least 32 x 32 px", async ({ page }) => {
+  await signIn(page, "admin@certtracker.test");
+  await page.goto("/members");
+  const box = await page.getByRole("button", { name: /^Actions for / }).first().boundingBox();
+  expect(box?.width).toBeGreaterThanOrEqual(32);
+  expect(box?.height).toBeGreaterThanOrEqual(32);
 });

@@ -53,7 +53,7 @@ const CASES: { record: RecordRow; tone: ExpiryTone | "in-progress" | "neutral"; 
     // A done row the view cannot date (no issued date). The DB CHECK normally prevents it; the UI must still not lie.
     record: makeRecord({ id: "f", certificateName: "Course Undated", issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
     tone: "na",
-    label: "Not issued yet",
+    label: "Not earned yet",
   },
   {
     record: makeRecord({ id: "g", certificateName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
@@ -93,19 +93,55 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
     const odd: RecordRow = { ...makeRecord({ id: "z", certificateName: "Course Odd" }), expiryStatus: "valid" };
     const row = rowsByCourse(render([odd])).get("Course Odd");
     expect(row?.tone).toBe("na");
-    expect(row?.html).toContain(">Not issued yet<");
+    expect(row?.html).toContain(">Not earned yet<");
   });
 });
 
-describe("study progress bar", () => {
-  // I2: the bar uses the shared, rounding `clampPercent` from `@/components/status/labels`.
-  it("rounds and clamps the bar width", () => {
-    const studying = (id: string, certificateName: string, progress: number) =>
-      makeRecord({ id, certificateName, status: "in_progress", progress, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
-    const html = render([studying("p", "Course Partial", 47.6), studying("o", "Course Over", 140)]);
-    expect(html).toContain("width:48%");
-    expect(html).toContain("width:100%");
-    expect(html).not.toContain("width:47.6%");
-    expect(html).not.toContain("width:140%");
+describe("Mark completed action", () => {
+  it("is never offered: a certificate is a result, the journey is a learning item (decision #72)", () => {
+    const html = render([
+      makeRecord({ id: "r", certificateName: "Course Returned", status: "done", approval: "returned" }),
+      doneRecord(120, { id: "d", certificateName: "Course Done" }),
+    ]);
+    expect(html).not.toContain("completed\"");
+  });
+});
+
+describe("Delete draft action", () => {
+  it("shows delete button for not_started, in_progress, and returned records, but not for waiting or approved", () => {
+    const html = render([
+      makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress" }),
+      makeRecord({ id: "n", certificateName: "Course Planned", status: "not_started" }),
+      makeRecord({ id: "r", certificateName: "Course Returned", status: "done", approval: "returned" }),
+      makeRecord({ id: "w", certificateName: "Course Waiting", status: "done", approval: "waiting" }),
+      doneRecord(120, { id: "a", certificateName: "Course Approved" }),
+    ]);
+    expect(html).toContain('aria-label="Delete Course Studying"');
+    expect(html).toContain('aria-label="Delete Course Planned"');
+    expect(html).toContain('aria-label="Delete Course Returned"');
+    expect(html).not.toContain('aria-label="Delete Course Waiting"');
+    expect(html).not.toContain('aria-label="Delete Course Approved"');
+  });
+
+  it("renders Pending Approval badge when a certificate is pending catalogue approval", () => {
+    const html = render([
+      makeRecord({ id: "p1", certificateName: "Proposed Course", certificateCatalogueStatus: "pending" }),
+    ]);
+    expect(html).toContain("Awaiting admin approval");
+  });
+});
+
+describe("Credential Vault record line", () => {
+  it("prints issued, valid-to and holder only on a held credential", () => {
+    const held = render([doneRecord(200, { id: "held", issuedDate: "2025-03-12", expiryDate: "2028-03-12", memberCode: "M003" })]);
+    expect(held).toContain("vault-credential-strip");
+    expect(held).toContain("12/03/2025");
+    expect(held).toContain("12/03/2028");
+    expect(held).toContain("M003");
+    expect(held).toContain('data-sealed="true"');
+
+    const waiting = render([doneRecord(200, { id: "waiting", approval: "waiting" })]);
+    expect(waiting).not.toContain("vault-credential-strip");
+    expect(waiting).not.toContain("data-sealed");
   });
 });

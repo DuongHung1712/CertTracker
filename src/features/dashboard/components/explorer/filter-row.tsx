@@ -81,14 +81,21 @@ export function FilterRow({
           </SelectContent>
         </Select>
 
-        {/* Minimum certificates filter */}
+        {/* Minimum learning items filter */}
         <Select value={minRecordsFilter} onValueChange={(val) => onMinRecordsFilterChange(val ?? "0")}>
           <SelectTrigger
-            aria-label="Filter by number of certificates"
+            aria-label="Filter by number of learning items"
             className="h-8 min-w-28 flex-1 text-xs"
           >
             <SelectValue placeholder={MIN_RECORDS_FILTER_LABELS["0"]}>
-              {(val: string) => MIN_RECORDS_FILTER_LABELS[val] ?? MIN_RECORDS_FILTER_LABELS["0"]}
+              {(val: string) => {
+                const label = MIN_RECORDS_FILTER_LABELS[val] ?? MIN_RECORDS_FILTER_LABELS["0"];
+                return (
+                  <span title={label} className="block min-w-0 truncate">
+                    {label}
+                  </span>
+                );
+              }}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>

@@ -43,7 +43,8 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
         <div className="flex justify-end gap-1">
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon"
+            className="-my-1"
             aria-label={`Move ${row.original.name} up`}
             disabled={pending || row.index === 0}
             onClick={() => move(row.original, "up")}
@@ -52,7 +53,8 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
           </Button>
           <Button
             variant="ghost"
-            size="icon-xs"
+            size="icon"
+            className="-my-1"
             aria-label={`Move ${row.original.name} down`}
             disabled={pending || row.index === roles.length - 1}
             onClick={() => move(row.original, "down")}

@@ -1,7 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { changePasswordSchema, loginSchema, setPasswordSchema } from "@/features/auth/schema";
+import { changePasswordSchema, firstChangePasswordIssue, loginSchema, type ChangePasswordField, setPasswordSchema } from "@/features/auth/schema";
+import { safeNextPath } from "@/lib/safe-next-path";
 import { err, ok, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,7 +22,8 @@ export async function signIn(_prev: Result<null> | null, formData: FormData): Pr
     return err("Wrong email or password. Check them and try again.");
   }
 
-  redirect("/dashboard");
+  // The page the visitor wanted before signing in; re-validated here because the form field is client-controlled.
+  redirect(safeNextPath(formData.get("next")) ?? "/dashboard");
 }
 
 export async function signOut(): Promise<void> {
@@ -46,8 +48,10 @@ export async function setPassword(_prev: Result<null> | null, formData: FormData
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? LINK_ERROR);
 
   const supabase = await createClient();
-  const { error: linkError } = await supabase.auth.verifyOtp({ token_hash: parsed.data.tokenHash, type: parsed.data.type });
+  const { data: verifyData, error: linkError } = await supabase.auth.verifyOtp({ token_hash: parsed.data.tokenHash, type: parsed.data.type });
   if (linkError) return err(LINK_ERROR);
+
+  const email = verifyData?.user?.email ?? (await supabase.auth.getUser()).data.user?.email ?? "";
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   // verifyOtp already opened a session: close it whether or not the save worked, so nobody stays signed in without a password.
@@ -55,17 +59,25 @@ export async function setPassword(_prev: Result<null> | null, formData: FormData
   // The token is spent by now, so a retry needs a new link.
   if (error) return err("We could not save that password. Ask your admin for a new link, then choose a different one.");
 
-  redirect("/login?passwordSet=1");
+  const emailParam = email ? `&email=${encodeURIComponent(email)}` : "";
+  redirect(`/login?passwordSet=1${emailParam}`);
 }
 
+export type ChangePasswordState = { ok: true; data: null } | { ok: false; error: string; field?: ChangePasswordField };
+
+const fieldErr = (error: string, field?: ChangePasswordField): ChangePasswordState => ({ ok: false, error, field });
+
 /** Changes the password of the signed-in user after re-checking the current one. Never redirects. */
-export async function changePassword(_prev: Result<null> | null, formData: FormData): Promise<Result<null> | null> {
+export async function changePassword(_prev: ChangePasswordState | null, formData: FormData): Promise<ChangePasswordState | null> {
   const parsed = changePasswordSchema.safeParse({
     currentPassword: formData.get("currentPassword"),
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword"),
   });
-  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Check the form and try again.");
+  if (!parsed.success) {
+    const { message, field } = firstChangePasswordIssue(parsed.error);
+    return fieldErr(message, field);
+  }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -74,10 +86,10 @@ export async function changePassword(_prev: Result<null> | null, formData: FormD
     email: user.email,
     password: parsed.data.currentPassword,
   });
-  if (verifyError) return err("The current password is not correct.");
+  if (verifyError) return fieldErr("The current password is not correct.", "currentPassword");
 
   const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
-  if (error) return err("We could not save that password. Choose a different one.");
+  if (error) return fieldErr("We could not save that password. Choose a different one.", "password");
 
   return ok(null);
 }

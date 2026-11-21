@@ -32,3 +32,14 @@ describe("calculateCompletionKpis", () => {
     expect(calculateCompletionKpis(records, NOW).doneThisQuarter).toBe(0);
   });
 });
+
+describe("calculateCompletionKpis: only Approved completions count", () => {
+  it("ignores Waiting and Returned completions", () => {
+    const records = [
+      completion({ id: "a", status: "done", issuedDate: "2026-11-02" }),
+      completion({ id: "b", status: "done", issuedDate: "2026-11-03", approval: "waiting" }),
+      completion({ id: "c", status: "done", issuedDate: "2026-11-04", approval: "returned", approvalNote: "Wrong date" }),
+    ];
+    expect(calculateCompletionKpis(records, NOW)).toEqual({ doneThisMonth: 1, doneThisQuarter: 1, doneTotal: 1, inProgress: 0 });
+  });
+});

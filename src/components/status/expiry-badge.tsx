@@ -37,17 +37,22 @@ export function ExpiryBadge({
   status,
   daysToExpiry,
   expiryDate,
+  kind,
   className,
+  counted = true,
 }: {
   status: string | null;
   daysToExpiry: number | null;
   expiryDate: string | null;
+  kind?: "exam" | "completion";
   className?: string;
+  /** False for a Completed item still waiting, returned or renewed: it holds no live credential, so no live dot. */
+  counted?: boolean;
 }) {
   const expiryStatus = toExpiryStatus(status);
   const { tone, label } = expiryMeta(expiryStatus);
   const Icon = TONE_ICON[tone];
-  const detail = expiryDetail({ status: expiryStatus, daysToExpiry, expiryDate });
+  const detail = expiryDetail({ status: expiryStatus, daysToExpiry, expiryDate, kind });
 
   return (
     <Tooltip>
@@ -63,6 +68,7 @@ export function ExpiryBadge({
       <TooltipTrigger
         render={
           <span
+            data-status-tone={tone}
             className={cn(
               "inline-flex h-6 items-center gap-1 rounded-sm border px-1.5 text-caption font-medium whitespace-nowrap",
               TONE_CLASS[tone],
@@ -71,9 +77,10 @@ export function ExpiryBadge({
           />
         }
       >
+        {tone !== "na" && counted && <span className="vault-live-dot" aria-hidden />}
         <Icon aria-hidden className="size-3.5" />
         {label}
-        <span className="sr-only">, {detail}</span>
+        {detail !== label && <span className="sr-only">, {detail}</span>}
       </TooltipTrigger>
       <TooltipContent>{detail}</TooltipContent>
     </Tooltip>

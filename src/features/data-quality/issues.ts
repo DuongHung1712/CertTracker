@@ -5,11 +5,20 @@ import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-qual
 
 /** `href` is the screen where the finding is fixed; the list pages have no deep link to a single row. */
 export const ISSUE_META: Record<IssueType, { label: string; href: string }> = {
-  overdue_exam: { label: "Exam overdue", href: "/records" },
+  overdue_exam: { label: "Exam overdue", href: "/records?tab=learning" },
   done_no_evidence: { label: "Missing evidence", href: "/records" },
   member_no_team: { label: NO_TEAM_LABEL, href: "/members" },
   certificate_no_validity: { label: "Exam validity not set", href: "/courses" },
 };
+
+/** Where "Open" goes: the list page, already searched for the person (or exam certificate) the finding is about. */
+export function issueHref(row: IssueRow): string {
+  const { href } = ISSUE_META[row.type];
+  const subject = row.type === "certificate_no_validity" ? row.certificateName : row.memberName;
+  if (!subject) return href;
+  const tab = row.type === "certificate_no_validity" ? "tab=certificates&" : "";
+  return `${href}${href.includes("?") ? "&" : "?"}${tab}search=${encodeURIComponent(subject)}`;
+}
 
 export function describeIssue(row: IssueRow): string {
   switch (row.type) {

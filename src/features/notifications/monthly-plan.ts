@@ -1,5 +1,4 @@
 import { NO_TEAM_LABEL } from "@/components/status/labels";
-import { ratePercent } from "@/features/dashboard/metrics";
 import {
   buildExpiryItems,
   byUrgency,
@@ -7,6 +6,7 @@ import {
   normalizeEmail,
   type ExpiryItem,
 } from "@/features/notifications/expiry-plan";
+import { isCounted } from "@/features/records/kind";
 import { monthRange } from "@/features/notifications/period";
 import type { Snapshot, SnapshotMember, SnapshotRecord, StaffUser } from "@/features/notifications/types";
 
@@ -23,7 +23,6 @@ export type Kpi = {
   expired: number;
   issuedInMonth: number;
   expiredInMonth: number;
-  completionRate: number | null;
 };
 export type TeamKpi = { teamId: string | null; teamName: string; kpi: Kpi };
 export type MonthlyReport = {
@@ -41,7 +40,8 @@ const within = (date: string | null, start: string, end: string) => date !== nul
 
 function kpiFor(members: SnapshotMember[], records: SnapshotRecord[], range: { start: string; end: string }): Kpi {
   const ids = new Set(members.map((m) => m.id));
-  const mine = records.filter((r) => ids.has(r.memberId));
+  // Waiting and Returned items are in no number: only Approved Completed items count.
+  const mine = records.filter((r) => ids.has(r.memberId) && isCounted(r));
   const done = mine.filter((r) => r.status === "done");
   return {
     members: members.length,
@@ -54,7 +54,6 @@ function kpiFor(members: SnapshotMember[], records: SnapshotRecord[], range: { s
     expired: done.filter((r) => r.expiryStatus === "Expired").length,
     issuedInMonth: done.filter((r) => within(r.issuedDate, range.start, range.end)).length,
     expiredInMonth: done.filter((r) => r.expiryStatus === "Expired" && within(r.expiryDate, range.start, range.end)).length,
-    completionRate: ratePercent(done.length, mine.length),
   };
 }
 
