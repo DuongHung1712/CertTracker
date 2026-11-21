@@ -327,13 +327,13 @@ export function RecordSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="flex w-full flex-col sm:max-w-md">
+      <SheetContent className="flex w-full flex-col data-[side=right]:w-full sm:max-w-md">
         <SheetHeader>
           <SheetTitle className="text-section-title">{recordSheetTitle(!!editing)}</SheetTitle>
         </SheetHeader>
         <form
           noValidate
-          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
+          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
           onSubmit={form.handleSubmit(onSubmit)}
         >
           {editing?.approval === "returned" && (
@@ -598,7 +598,7 @@ export function RecordSheet({
               {errors.root.message}
             </p>
           )}
-          <SheetFooter className="flex-row items-center justify-between gap-2 px-0 pt-2 border-t border-border">
+          <SheetFooter className="sticky bottom-0 mt-auto flex-row items-center justify-between gap-2 border-t border-border bg-popover px-0 pt-2 pb-4">
             {editing && canDeleteCurrent ? (
               <Button
                 type="button"

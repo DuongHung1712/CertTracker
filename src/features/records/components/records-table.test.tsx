@@ -221,6 +221,13 @@ describe("RecordsTable member draft delete", () => {
     const approvedMenu = await getMenu(/Actions for Me · Approved Exam/);
     expect(approvedMenu).not.toContain("Delete");
   });
+
+  it("asks a member to confirm before deleting their draft", async () => {
+    render(<RecordsTable records={[DRAFT]} memberOptions={[]} certificateOptions={[]} studyCourses={[]} mode="self" canDelete={false} showCompanyFields={false} />);
+    await getMenu(/Actions for Me · Draft Exam/);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    expect(await screen.findByRole("alertdialog", { name: /Delete the Draft Exam/ })).toBeTruthy();
+  });
 });
 
 describe("RecordsTable status of a certificate (decision #72)", () => {

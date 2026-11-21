@@ -625,18 +625,17 @@ export function RecordsTable({
           onConfirm={handleBulkDelete}
         />
       )}
-      {canDelete && (
-        <ConfirmDialog
-          open={!!confirming}
-          onOpenChange={(open) => !open && setConfirming(null)}
-          title={confirming ? `Delete the ${confirming.certificateName} ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]} of ${confirming.memberName}?` : ""}
-          description={`The ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"} and its evidence file will be deleted. This cannot be undone.`}
-          confirmLabel={`Delete ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"}`}
-          pendingLabel="Deleting…"
-          pending={pending}
-          onConfirm={handleDelete}
-        />
-      )}
+      {/* Members delete their own drafts and returned items from the row menu too, so this is not gated by canDelete. */}
+      <ConfirmDialog
+        open={!!confirming}
+        onOpenChange={(open) => !open && setConfirming(null)}
+        title={confirming ? `Delete the ${confirming.certificateName} ${CERTIFICATE_KIND_NOUN[confirming.certificateKind]} of ${confirming.memberName}?` : ""}
+        description={`The ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"} and its evidence file will be deleted. This cannot be undone.`}
+        confirmLabel={`Delete ${confirming ? CERTIFICATE_KIND_NOUN[confirming.certificateKind] : "certificate"}`}
+        pendingLabel="Deleting…"
+        pending={pending}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }
