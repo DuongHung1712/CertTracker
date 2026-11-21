@@ -34,7 +34,7 @@ describe("Member dashboard and the journey (decision #72)", () => {
     render(view());
     await user.click(screen.getAllByRole("button", { name: /Renew/ })[0]!);
     expect(screen.getByRole("heading", { name: "Add learning" })).toBeTruthy();
-    expect(screen.getByRole<HTMLInputElement>("combobox", { name: /^Exam you are preparing for/ }).value).toBe("AWS SAA");
+    expect(screen.getByRole<HTMLInputElement>("combobox", { name: /^Exam/ }).value).toBe("AWS SAA");
   });
 
   it("lists certificates only: no In progress tab, no Mark completed", () => {
