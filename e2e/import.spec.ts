@@ -58,9 +58,9 @@ test("admin imports the legacy workbook", async ({ page }) => {
   await upload(page, FIRST_FILE, Buffer.from(buildLegacyWorkbook()));
   await expect(page).toHaveURL(BATCH_URL);
 
-  // Bình's row 6 has no course studied, so it is a new learning item beside her seed item on the NVIDIA course
-  // (decision #72: an open item is matched by member, course and exam target).
-  await expectCounts(page, 4, 1, 0, 3);
+  // Bình's row 6 targets the NVIDIA exam, so it updates her open seed item for that exam
+  // (decision #74: one open learning item per member and exam).
+  await expectCounts(page, 3, 2, 0, 3);
   // The Error pill filters the preview down to the failing rows.
   await page.getByRole("button", { name: "Error 3", exact: true }).click();
   await expect(page.getByRole("button", { name: "Error 3", exact: true })).toHaveAttribute("aria-pressed", "true");
@@ -88,7 +88,7 @@ test("admin imports the legacy workbook", async ({ page }) => {
   const confirm = dialog.getByRole("button", { name: "Import 5 rows" });
   await expect(confirm).toHaveClass(/(^| )bg-primary( |$)/);
   await confirm.click();
-  await expect(page.getByText("Imported: created 4, updated 1")).toBeVisible();
+  await expect(page.getByText("Imported: created 3, updated 2")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: /Imported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}/ })).toBeVisible();
 
   // Hà's row is Not started, so it became a learning item; Châu's Completed Azure row is a certificate.
@@ -118,7 +118,7 @@ test("re-importing the same file changes nothing", async ({ page }) => {
   const committed = page.getByRole("row").filter({ hasText: FIRST_FILE });
   const discarded = page.getByRole("row").filter({ hasText: SECOND_FILE });
   await expect(committed).toContainText("Imported");
-  await expect(committed).toContainText("Created 4 · Updated 1");
+  await expect(committed).toContainText("Created 3 · Updated 2");
   await expect(discarded).toContainText("Discarded");
   await expect(committed.getByRole("link", { name: /^View/ })).toBeVisible();
 });
@@ -160,7 +160,7 @@ test("a learning row keeps any course; on a certificate row a course that does n
   try {
     const sheet = XLSX.utils.aoa_to_sheet([
       ["Email", "Certificate", "Provider", "Course studied", "Status", "Progress (%)", "Ngày cấp"],
-      // Not started: a learning item (decision #72), new beside Châu's self-study item since it names a course.
+      // Not started: a learning item. Châu's open self-study item for this exam takes the course (decision #74).
       ["member@certtracker.test", "AWS Solutions Architect Associate", "AWS", unrelatedName, "Not started", 0, ""],
       // Completed: a certificate, whose course studied must prepare for it.
       ["binh@certtracker.test", "NVIDIA Generative AI LLMs", "NVIDIA", unrelatedName, "Completed", 100, "01/08/2025"],
@@ -170,12 +170,12 @@ test("a learning row keeps any course; on a certificate row a course that does n
     await signIn(page, "admin@certtracker.test");
     await upload(page, `studied-${RUN}.xlsx`, Buffer.from(XLSX.write(book, { type: "buffer", bookType: "xlsx" }) as Buffer));
     await expect(page).toHaveURL(BATCH_URL);
-    await expectCounts(page, 1, 0, 0, 1);
+    await expectCounts(page, 0, 1, 0, 1);
     await expect(previewRow(page, 3)).toContainText(`Course studied: "${unrelatedName}" does not prepare for "NVIDIA Generative AI LLMs".`);
 
     await page.getByRole("button", { name: "Import 1 row" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Import 1 row" }).click();
-    await expect(page.getByText("Imported: created 1, updated 0")).toBeVisible();
+    await expect(page.getByText("Imported: created 0, updated 1")).toBeVisible();
     const { data: item } = await admin.from("learning_items").select("status").eq("member_id", CHAU).eq("target_certificate_id", SAA).eq("course_id", unrelated!.id).single();
     expect(item?.status).toBe("not_started");
   } finally {
