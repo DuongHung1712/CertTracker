@@ -25,7 +25,6 @@ export default async function CataloguePage({
     listCourses(),
     listCertificates(),
   ]);
-  const examOptions = certificates.filter((c) => c.kind === "exam").map((c) => ({ id: c.id, name: c.name }));
   const preparedBy: Record<string, string[]> = {};
   for (const course of courses) {
     if (course.preparesForId) (preparedBy[course.preparesForId] ??= []).push(course.name);
@@ -64,7 +63,7 @@ export default async function CataloguePage({
             canManage={isAdmin}
           />
         }
-        courses={<CoursesTable courses={courses} certificates={examOptions} providers={providers} certTypes={certTypes} canManage={isAdmin} />}
+        courses={<CoursesTable courses={courses} providers={providers} certTypes={certTypes} canManage={isAdmin} />}
       />
       {isAdmin && (
         <>

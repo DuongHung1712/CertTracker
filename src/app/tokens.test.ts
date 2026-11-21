@@ -142,3 +142,39 @@ describe("Credential Vault tokens", () => {
     }
   });
 });
+
+// Nordic Heritage (data-style="nordic") provides warm linen & terracotta styling.
+describe("Nordic Heritage tokens", () => {
+  const nordic = readTokens(String.raw`html\[data-style="nordic"\]`);
+  const nordicDark = readTokens(String.raw`html\[data-style="nordic"\]\.dark`);
+  const modes = [
+    { name: "light", own: nordic, base: tokens, inputBg: nordic.card },
+    { name: "dark", own: nordicDark, base: darkTokens, inputBg: "#151815" },
+  ];
+
+  it.each(modes)("$name: body text reaches 4.5:1 on the nordic surfaces", ({ own }) => {
+    for (const surface of ["background", "card"]) {
+      expect(contrastRatio(own.foreground, own[surface])).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio(own["muted-foreground"], own[surface])).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it.each(modes)("$name: the input border reaches 3:1 against the page, the card and the field", ({ own, inputBg }) => {
+    for (const surface of [own.background, own.card, inputBg]) {
+      expect(contrastRatio(own.input, surface)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it.each(modes)("$name: primary and ring reach contrast guidelines on card and background", ({ own }) => {
+    expect(contrastRatio(own["primary-foreground"], own.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own.primary, own.card)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own.primary, own.background)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own.ring, own.card)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(own.ring, own.background)).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(modes)("$name: sidebar and secondary surfaces reach WCAG AA contrast", ({ own }) => {
+    expect(contrastRatio(own["sidebar-foreground"], own.sidebar)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own["secondary-foreground"], own.secondary)).toBeGreaterThanOrEqual(4.5);
+  });
+});

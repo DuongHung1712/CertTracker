@@ -214,25 +214,3 @@ export async function removeEvidence(input: { id: string }): Promise<Result<null
   return ok(null);
 }
 
-/** Quickly updates study progress (%) on an in-progress training record. Max progress is 99% (100% requires status to be completed). */
-export async function updateRecordProgress(id: string, progress: number): Promise<Result<null>> {
-  const parsed = idSchema.safeParse({ id });
-  if (!parsed.success) return err("Invalid data");
-  if (typeof progress !== "number" || Number.isNaN(progress) || progress < 0 || progress > 99) {
-    return err("Progress must be between 0 and 99%");
-  }
-  const rounded = Math.round(progress);
-  const supabase = await createClient();
-  const { data: rows, error } = await supabase
-    .from("training_records")
-    .update({ progress: rounded })
-    .eq("id", parsed.data.id)
-    .eq("status", "in_progress")
-    .select("id");
-  if (error) return err(recordErrorMessage(error));
-  const guard = assertAffected(rows);
-  if (guard) return guard;
-  revalidate();
-  revalidatePath("/dashboard");
-  return ok(null);
-}

@@ -52,18 +52,19 @@ async function addCertificate(page: Page, fields: { name: string; kind: "Exam" |
   return dialog;
 }
 
-async function fillCourseBasics(page: Page, courseName: string) {
+/** A plain course unless `grantsCompletion`: the switch is on by default (a course normally ends in a completion). */
+async function fillCourseBasics(page: Page, courseName: string, grantsCompletion = false) {
   await page.getByRole("button", { name: "Add course" }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel(fieldLabel("Name")).fill(courseName);
   await pickOption(page, dialog, fieldLabel("Provider"), "AWS");
+  if (!grantsCompletion) await dialog.getByRole("switch", { name: "This course grants a course completion" }).click();
   return dialog;
 }
 
-async function addCourse(page: Page, name: string, preparesFor?: string) {
+async function addCourse(page: Page, name: string) {
   await openTab(page, "Courses");
   const dialog = await fillCourseBasics(page, name);
-  if (preparesFor) await pickOption(page, dialog, "Prepares for", preparesFor);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
 }
@@ -99,7 +100,9 @@ async function expectReadOnlyCatalogue(page: Page, names?: { examName: string; c
   await expect(page.getByRole("heading", { name: "Providers" })).toHaveCount(0);
 }
 
-test("admin adds an exam certificate and a course that prepares for it; a member only reads both", async ({ page }) => {
+test("admin adds an exam certificate and a course; a member only reads both", async ({ page }) => {
+  // Two sign-ins and two saves: past 30 s on CI's dev server.
+  test.setTimeout(60_000);
   await signIn(page, ADMIN);
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Catalogue" }).click();
   await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();
@@ -114,14 +117,10 @@ test("admin adds an exam certificate and a course that prepares for it; a member
   await expect(rowOf(page, examName).getByText("Exam", { exact: true })).toBeVisible();
   await expect(rowOf(page, examName).getByText("No expiry")).toBeVisible();
 
-  await addCourse(page, courseName, examName);
+  // Decision #72: a course no longer names the exam it prepares for; a learning item links the two.
+  await addCourse(page, courseName);
   await searchFor(page, courseName);
-  await expect(rowOf(page, courseName).getByRole("cell", { name: examName, exact: true })).toBeVisible();
-
-  // The exam lists the course that prepares for it in the "Course" column.
-  await openTab(page, "Certificates");
-  await searchFor(page, examName);
-  await expect(rowOf(page, examName).getByRole("cell", { name: `Prepared by: ${courseName}`, exact: true })).toBeVisible();
+  await expect(rowOf(page, courseName)).toBeVisible();
 
   await signOut(page);
   await signIn(page, MEMBER);
@@ -225,7 +224,7 @@ test("a completion form has no Validity field and saves without one; an exam kee
   expect(saved.data?.validity_months).toBeNull();
 });
 
-test("the course sheet lists Prepares for before the cost, the link last, and says what is required", async ({ page }) => {
+test("the course sheet lists the cost and duration before the link, and says what is required", async ({ page }) => {
   await signIn(page, ADMIN);
   await page.goto("/courses");
   await openTab(page, "Courses");
@@ -233,7 +232,8 @@ test("the course sheet lists Prepares for before the cost, the link last, and sa
   const dialog = page.getByRole("dialog");
   await expect(dialog.getByText("* Required")).toBeVisible();
   const ys = async (label: string | RegExp) => (await dialog.getByLabel(label, { exact: typeof label === "string" }).boundingBox())!.y;
-  expect(await ys("Prepares for")).toBeLessThan(await ys("Cost"));
+  expect(await ys("Cost")).toBeLessThan(await ys("Course link"));
+  await expect(dialog.getByLabel("Prepares for")).toHaveCount(0);
   expect(await ys("Duration (hours)")).toBeLessThan(await ys("Course link"));
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Provider is required")).toBeVisible();
@@ -368,13 +368,14 @@ test("admin creates a course and its course completion in one step; a member and
   await page.goto("/courses");
   await openTab(page, "Courses");
   const name = track(`QA One Step ${Date.now()}`);
-  const dialog = await fillCourseBasics(page, name);
-  // Off by default: no completion fields; Escape resets the switch.
+  const dialog = await fillCourseBasics(page, name, true);
+  // On by default: the completion fields show; switching off hides them; Escape resets the switch.
   const toggle = dialog.getByRole("switch", { name: "This course grants a course completion" });
-  await expect(toggle).not.toBeChecked();
+  await expect(toggle).toBeChecked();
+  await expect(dialog.getByText("Leave empty to use the course name.")).toBeVisible();
+  await toggle.click();
   await expect(dialog.getByLabel(fieldLabel("Completion type"))).toHaveCount(0);
   await toggle.click();
-  await expect(dialog.getByText("Leave empty to use the course name.")).toBeVisible();
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Type is required")).toBeVisible();
   await pickOption(page, dialog, fieldLabel("Completion type"), "Cloud");
@@ -404,7 +405,7 @@ test("admin creates a course and its course completion in one step; a member and
   await again.getByRole("switch", { name: "This course grants a course completion" }).click();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Add course" }).click();
-  await expect(page.getByRole("dialog").getByRole("switch", { name: "This course grants a course completion" })).not.toBeChecked();
+  await expect(page.getByRole("dialog").getByRole("switch", { name: "This course grants a course completion" })).toBeChecked();
   await page.keyboard.press("Escape");
 
   await signOut(page);

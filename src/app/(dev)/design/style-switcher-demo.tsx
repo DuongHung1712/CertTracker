@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Award, Check, Layers, Monitor, Moon, Palette, RefreshCw, ShieldCheck, Sun } from "lucide-react";
+import { Award, Check, Layers, Monitor, Moon, Palette, RefreshCw, ShieldCheck, Sun, TreePine } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,7 @@ export function StyleSwitcherDemo() {
   const styleIcons: Record<ThemeStyle, React.ReactNode> = {
     classic: <Layers className="size-5 text-primary" />,
     vault: <ShieldCheck className="size-5 text-primary" />,
+    nordic: <TreePine className="size-5 text-primary" />,
   };
 
   return (
@@ -29,7 +30,7 @@ export function StyleSwitcherDemo() {
             <Palette className="size-5 text-primary" />
             <h3 className="text-section-title font-semibold">Dual-Axis Theme Engine</h3>
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-              2 Styles &times; 3 Modes
+              3 Styles &times; 3 Modes
             </span>
           </div>
           <p className="text-caption text-muted-foreground">
@@ -48,7 +49,9 @@ export function StyleSwitcherDemo() {
             className="flex items-center gap-1.5 font-medium"
           >
             <RefreshCw className="size-3.5" />
-            <span>Switch to {style === "classic" ? "Credential Vault" : "Classic Swiss"}</span>
+            <span>
+              Switch to {style === "classic" ? "Credential Vault" : style === "vault" ? "Nordic Heritage" : "Classic Swiss"}
+            </span>
           </Button>
 
           {/* Color Mode Switcher */}
@@ -93,8 +96,8 @@ export function StyleSwitcherDemo() {
         </div>
       </div>
 
-      {/* 2 Visual Style Selection Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {/* 3 Visual Style Selection Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         {styles.map((item) => {
           const isSelected = style === item.id;
           return (
@@ -161,6 +164,22 @@ export function StyleSwitcherDemo() {
                     </span>
                   </>
                 )}
+                {item.id === "nordic" && (
+                  <>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                      Linen & Terracotta
+                    </span>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                      Deep pine green
+                    </span>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                      Warm sand borders
+                    </span>
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                      Zero gradients
+                    </span>
+                  </>
+                )}
               </div>
             </button>
           );
@@ -177,6 +196,8 @@ export function StyleSwitcherDemo() {
               <p className="text-caption text-muted-foreground">
                 {style === "vault"
                   ? "Vault rule: solid precision border with crisp focus ring and high-contrast hover feedback."
+                  : style === "nordic"
+                  ? "Nordic rule: warm deep pine primary, terracotta focus indicators, and warm sand borders."
                   : "Classic rule: clean flat Swiss tokens, standard 6px radius, and zero drop shadow."}
               </p>
             </div>
@@ -229,6 +250,8 @@ export function StyleSwitcherDemo() {
             <p className="text-caption text-muted-foreground">
               {style === "vault"
                 ? "Vault rule: precision 1px solid border with uppercase monospace credential tags."
+                : style === "nordic"
+                ? "Nordic rule: warm sand input borders with terracotta focus ring and craft typography."
                 : "Classic rule: standard neutral border-input token with clean typographic labels."}
             </p>
           </div>
@@ -238,7 +261,11 @@ export function StyleSwitcherDemo() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="poc-interactive-input">Credential Identifier</Label>
                 <span className="font-mono text-[11px] text-muted-foreground">
-                  {style === "vault" ? "[REGISTRY: VAULT-SEC-8829]" : "Format: CERT-YYYY-ORG"}
+                  {style === "vault"
+                    ? "[REGISTRY: VAULT-SEC-8829]"
+                    : style === "nordic"
+                    ? "[HERITAGE: NOR-8829]"
+                    : "Format: CERT-YYYY-ORG"}
                 </span>
               </div>
               <Input
@@ -263,7 +290,7 @@ export function StyleSwitcherDemo() {
           <div>
             <h4 className="text-body font-semibold">Solid Sticky Table Cells & Headers</h4>
             <p className="text-caption text-muted-foreground">
-              Both Classic and Credential Vault maintain <strong>100% solid, opaque table backgrounds</strong> so scrolled rows never bleed through headers or pinned columns.
+              Classic, Credential Vault, and Nordic Heritage maintain <strong>100% solid, opaque table backgrounds</strong> so scrolled rows never bleed through headers or pinned columns.
             </p>
           </div>
           <span className="rounded bg-primary/10 px-2.5 py-1 text-caption font-mono font-medium text-primary">
@@ -372,7 +399,9 @@ export function StyleSwitcherDemo() {
             <p className="text-[11px] text-muted-foreground">
               {style === "vault"
                 ? "Vault mode active: 1px solid precision verification border with solid emerald indicator pulse."
-                : "Switch to 'Credential Vault' style above to inspect authentic security styling."}
+                : style === "nordic"
+                ? "Nordic mode active: 1px solid warm sand border with terracotta accent focus."
+                : "Switch to 'Credential Vault' or 'Nordic Heritage' style above to inspect style nuances."}
             </p>
           </div>
         </div>
@@ -435,11 +464,14 @@ export function StyleSwitcherDemo() {
             <p className="text-[11px] text-muted-foreground">
               {style === "vault"
                 ? "Vault mode active: Real-time solid status dot pulses indicate credential lifecycle states."
-                : "Switch to 'Credential Vault' style above to activate live status dot indicators."}
+                : style === "nordic"
+                ? "Nordic mode active: Warm earthy status badges with high-contrast text and zero gradients."
+                : "Switch to 'Credential Vault' or 'Nordic Heritage' style above to activate live status dot indicators."}
             </p>
           </div>
         </div>
       </div>
+
     </div>
   );
 }

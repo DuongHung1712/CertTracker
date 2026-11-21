@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
@@ -13,9 +14,11 @@ import { FilterBar } from "@/components/data/filter-bar";
 import { rowActionsColumn } from "@/components/data/row-actions-column";
 import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
 import type { SelectOption } from "@/components/option-select";
+import { CatalogueStatusBadge } from "@/components/status/record-status";
 import { Badge } from "@/components/ui/badge";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { deleteCourse } from "@/features/courses/actions";
+import { approveCourse, deleteCourse, rejectCourse } from "@/features/courses/actions";
 import { CourseSheet } from "@/features/courses/components/course-sheet";
 import { courseDeleteDescription } from "@/features/courses/schema";
 import { formatMoney, type Currency } from "@/lib/money";
@@ -35,18 +38,17 @@ type Course = {
   estHours: number | null;
   url: string | null;
   refundConditions: string | null;
+  /** A member's proposal waits for an admin (decision #72). */
+  catalogueStatus: "approved" | "pending" | "rejected";
 };
 
 export function CoursesTable({
   courses,
-  certificates,
   providers,
   certTypes,
   canManage,
 }: {
   courses: Course[];
-  /** Exam certificates a course can prepare for. */
-  certificates: SelectOption[];
   providers: SelectOption[];
   certTypes: SelectOption[];
   canManage: boolean;
@@ -59,14 +61,30 @@ export function CoursesTable({
     successMessage: (course) => `Deleted course ${course.name}`,
   });
 
+  async function review(course: Course, decision: "approve" | "reject") {
+    // Approving also creates the completion certificate the course grants (owner default: on).
+    const result = decision === "approve" ? await approveCourse({ id: course.id, grantsCompletion: true }) : await rejectCourse({ id: course.id });
+    if (result.ok) toast.success(decision === "approve" ? `Approved ${course.name}` : `Rejected ${course.name}`);
+    else toast.error(result.error);
+  }
+
   const rows = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return courses;
-    return courses.filter((c) => `${c.name} ${c.providerName} ${c.preparesForName ?? ""} ${c.grantsCertificateName ?? ""}`.toLowerCase().includes(q));
+    return courses.filter((c) => `${c.name} ${c.providerName} ${c.grantsCertificateName ?? ""}`.toLowerCase().includes(q));
   }, [courses, search]);
 
   const columns: ColumnDef<Course, unknown>[] = [
-    { accessorKey: "name", header: "Name", cell: ({ row }) => <TruncatedCell text={row.original.name} /> },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <span className="flex min-w-0 items-center gap-1.5">
+          <TruncatedCell text={row.original.name} />
+          <CatalogueStatusBadge status={row.original.catalogueStatus} />
+        </span>
+      ),
+    },
     { accessorKey: "providerName", header: "Provider", cell: ({ row }) => <TruncatedCell text={row.original.providerName} /> },
     {
       accessorKey: "estHours",
@@ -109,7 +127,6 @@ export function CoursesTable({
       enableSorting: false,
       cell: ({ row }) => <ExternalLinkCell url={row.original.url} label={`Open link for ${row.original.name}`} />,
     },
-    { accessorKey: "preparesForName", header: "Prepares for", cell: ({ row }) => <TruncatedCell text={row.original.preparesForName ?? "—"} /> },
     {
       accessorKey: "grantsCertificateName",
       header: "Grants",
@@ -124,6 +141,13 @@ export function CoursesTable({
               setSheetOpen(true);
             },
             onDelete: removal.request,
+            extraItems: (row) =>
+              row.catalogueStatus === "pending" ? (
+                <>
+                  <DropdownMenuItem onClick={() => void review(row, "approve")}>Approve</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => void review(row, "reject")}>Reject</DropdownMenuItem>
+                </>
+              ) : null,
           }),
         ]
       : []),
@@ -190,7 +214,6 @@ export function CoursesTable({
                   }
                 : null
             }
-            certificates={certificates}
             providers={providers}
             certTypes={certTypes}
           />

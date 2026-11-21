@@ -47,15 +47,18 @@ insert into public.training_records (member_id, certificate_id, status, progress
   ('aaaaaaaa-0000-0000-0000-000000000002', '99999999-0000-0000-0000-000000000002', 'in_progress',  40, null),                     -- completion, in progress
   ('aaaaaaaa-0000-0000-0000-000000000001', '99999999-0000-0000-0000-000000000003', 'done',        100, public.vn_today() - 400);  -- completion with validity, long past
 
+-- Open records become learning items, exactly as migration 20261120000003 does (decision #72).
+do $mv$ begin perform public.move_open_records_to_learning(); end $mv$;
+
 -- Totals count every kind; the expiry buckets count exam certificates only; the completion columns add up the rest.
--- done_records (3) = 1 exam in the buckets + 2 completions; in_progress_records (2) = 1 exam + 1 completion.
+-- total_records = certificates only (decision #72); in_progress_records (2) are learning items: 1 exam target + 1 course.
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000a');
 select results_eq(
   $$select total_members, total_records, done_records, in_progress_records, not_started_records,
            active_certs, expiring_60_certs, expiring_soon_certs, expired_certs, no_expiry_certs,
            completion_done_records, completion_in_progress_records
       from public.dashboard_kpis()$$,
-  $$values (2, 5, 3, 2, 0, 1, 0, 0, 0, 0, 2, 1)$$,
+  $$values (2, 3, 3, 2, 0, 1, 0, 0, 0, 0, 2, 1)$$,
   'admin: expiry buckets hold exams only, completions have their own columns, nothing is counted twice');
 reset role;
 
@@ -63,14 +66,14 @@ select pg_temp.login_as('a0000000-0000-0000-0000-00000000000b');
 select results_eq(
   $$select total_records, active_certs, expired_certs, completion_done_records, completion_in_progress_records
       from public.dashboard_kpis()$$,
-  $$values (5, 1, 0, 2, 1)$$, 'manager: the same org-wide numbers by kind');
+  $$values (3, 1, 0, 2, 1)$$, 'manager: the same org-wide numbers by kind');
 reset role;
 
 select pg_temp.login_as('a0000000-0000-0000-0000-00000000000c');
 select results_eq(
   $$select total_records, active_certs, expired_certs, completion_done_records, completion_in_progress_records
       from public.dashboard_kpis()$$,
-  $$values (5, 1, 0, 2, 1)$$, 'member: scope unchanged, the same org-wide numbers (RLS would show one row)');
+  $$values (3, 1, 0, 2, 1)$$, 'member: scope unchanged, the same org-wide numbers (RLS would show one row)');
 reset role;
 
 select pg_temp.login_as('a0000000-0000-0000-0000-0000000000ff');   -- signed in but has no profile

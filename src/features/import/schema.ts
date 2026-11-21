@@ -46,7 +46,7 @@ export const normalizedRefsSchema = z
         costCurrency: z.string().nullish().catch(undefined),
         estHours: z.number().nullish().catch(undefined),
       }),
-    ]),
+    ]).nullable(), // null: a learning row with only a course (decision #72)
   })
   .nullable()
   .catch(null);

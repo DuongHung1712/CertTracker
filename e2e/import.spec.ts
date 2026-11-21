@@ -58,6 +58,8 @@ test("admin imports the legacy workbook", async ({ page }) => {
   await upload(page, FIRST_FILE, Buffer.from(buildLegacyWorkbook()));
   await expect(page).toHaveURL(BATCH_URL);
 
+  // Bình's row 6 targets the NVIDIA exam, so it updates her open seed item for that exam
+  // (decision #74: one open learning item per member and exam).
   await expectCounts(page, 3, 2, 0, 3);
   // The Error pill filters the preview down to the failing rows.
   await page.getByRole("button", { name: "Error 3", exact: true }).click();
@@ -89,10 +91,12 @@ test("admin imports the legacy workbook", async ({ page }) => {
   await expect(page.getByText("Imported: created 3, updated 2")).toBeVisible();
   await expect(page.getByRole("alert").filter({ hasText: /Imported \d{2}\/\d{2}\/\d{4} at \d{2}:\d{2}/ })).toBeVisible();
 
-  await page.goto("/records");
-  await expect(page.getByRole("button", { name: /Phạm Thu Hà/ }).first()).toBeVisible();
-  // The course cell also holds the provider ("Azure Fundamentals Microsoft"), so match the row.
+  // Hà's row is Not started, so it became a learning item; Châu's Completed Azure row is a certificate.
+  await page.goto("/records?tab=learning");
+  // The item cell also holds the provider ("Azure Fundamentals Microsoft"), so match the row.
   await expect(page.getByRole("row").filter({ hasText: "Phạm Thu Hà" }).filter({ hasText: "Azure Fundamentals" })).toBeVisible();
+  await page.goto("/records");
+  await expect(page.getByRole("row").filter({ hasText: "Lê Minh Châu" }).filter({ hasText: "Azure Fundamentals" })).toBeVisible();
 });
 
 test("re-importing the same file changes nothing", async ({ page }) => {
@@ -140,26 +144,26 @@ test("a new certificate with a cost brings its own course, shown in the preview 
   await expect(page.getByText("Imported: created 1, updated 0")).toBeVisible();
   const { data: course } = await admin.from("courses").select("id, prepares_for_id, cost, cost_currency, est_hours").like("name", `Microsoft Priced Exam ${RUN}`).single();
   expect(course).toMatchObject({ cost: 165, cost_currency: "USD", est_hours: 20 });
-  // Spec 4.4: the new course is the course studied of the imported record.
+  // Spec 4.4: the new course is the course of the imported row, a learning item since it is Not started (decision #72).
   const AN = "5eed0000-0000-0000-0000-00000000b001";
-  const { data: record } = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", course!.prepares_for_id!).single();
-  expect(record?.course_id).toBe(course?.id);
+  const { data: item } = await admin.from("learning_items").select("course_id").eq("member_id", AN).eq("target_certificate_id", course!.prepares_for_id!).single();
+  expect(item?.course_id).toBe(course?.id);
 });
 
-test("a course studied is saved on the record, and a course that does not prepare for the certificate is a row error", async ({ page }) => {
+test("a learning row keeps any course; on a certificate row a course that does not prepare for it is a row error", async ({ page }) => {
   test.setTimeout(90_000);
   const SAA = "5eed0000-0000-0000-0000-00000000e001";
   const AWS_PROVIDER = "5eed0000-0000-0000-0000-00000000c101";
   const CHAU = "5eed0000-0000-0000-0000-00000000b003";
-  const courseName = `Studied E2E ${RUN}`;
   const unrelatedName = `Unrelated E2E ${RUN}`;
-  const { data: course } = await admin.from("courses").insert({ name: courseName, provider_id: AWS_PROVIDER, prepares_for_id: SAA }).select("id").single();
   const { data: unrelated } = await admin.from("courses").insert({ name: unrelatedName, provider_id: AWS_PROVIDER }).select("id").single();
   try {
     const sheet = XLSX.utils.aoa_to_sheet([
-      ["Email", "Certificate", "Provider", "Course studied", "Status", "Progress (%)"],
-      ["member@certtracker.test", "AWS Solutions Architect Associate", "AWS", courseName, "Not started", 0],
-      ["binh@certtracker.test", "NVIDIA Generative AI LLMs", "NVIDIA", unrelatedName, "In progress", 40],
+      ["Email", "Certificate", "Provider", "Course studied", "Status", "Progress (%)", "Ngày cấp"],
+      // Not started: a learning item. Châu's open self-study item for this exam takes the course (decision #74).
+      ["member@certtracker.test", "AWS Solutions Architect Associate", "AWS", unrelatedName, "Not started", 0, ""],
+      // Completed: a certificate, whose course studied must prepare for it.
+      ["binh@certtracker.test", "NVIDIA Generative AI LLMs", "NVIDIA", unrelatedName, "Completed", 100, "01/08/2025"],
     ]);
     const book = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(book, sheet, "Sheet1");
@@ -172,12 +176,14 @@ test("a course studied is saved on the record, and a course that does not prepar
     await page.getByRole("button", { name: "Import 1 row" }).click();
     await page.getByRole("alertdialog").getByRole("button", { name: "Import 1 row" }).click();
     await expect(page.getByText("Imported: created 0, updated 1")).toBeVisible();
-    const { data: record } = await admin.from("training_records").select("course_id").eq("member_id", CHAU).eq("certificate_id", SAA).single();
-    expect(record?.course_id).toBe(course?.id);
+    const { data: item } = await admin.from("learning_items").select("status").eq("member_id", CHAU).eq("target_certificate_id", SAA).eq("course_id", unrelated!.id).single();
+    expect(item?.status).toBe("not_started");
   } finally {
-    // The seed restore in afterAll gives Châu's record its own course back; here only the courses go, errors included.
-    for (const created of [course, unrelated]) {
+    // Items first (a course is restricted while an item names it); the seed restore in afterAll puts Châu's item back.
+    for (const created of [unrelated]) {
       if (!created) continue;
+      const items = await admin.from("learning_items").delete().eq("course_id", created.id);
+      if (items.error) throw new Error(`delete e2e items: ${items.error.message}`);
       const { error } = await admin.from("courses").delete().eq("id", created.id);
       if (error) throw new Error(`delete e2e course: ${error.message}`);
     }

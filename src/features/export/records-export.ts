@@ -5,12 +5,19 @@ import { expiryMeta, toExpiryStatus } from "@/components/status/expiry";
 import { CERTIFICATE_KIND_LABEL } from "@/features/certificates/schema";
 import { toCsv } from "@/features/export/csv";
 import { isoToExcelSerial } from "@/features/import/clean";
+import { learningAsJourneyRecords } from "@/features/learning/journey";
+import type { LearningRow } from "@/features/learning/queries";
 import type { RecordRow } from "@/features/records/queries";
 import { REFUND_STATUS_LABEL } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
 
 /** A record plus the career profile of its member (from `v_member_profiles`). */
-export type ExportRow = RecordRow & { careerRoleName: string | null; yoeYears: number | null };
+export type ExportRow = RecordRow & {
+  careerRoleName: string | null;
+  yoeYears: number | null;
+  /** Decision #72: absent = decided by status (Completed is a certificate, anything else a learning item). */
+  itemType?: "certificate" | "learning";
+};
 
 export type CareerProfile = { careerRoleName: string | null; yoeYears: number | null };
 
@@ -19,6 +26,30 @@ export function withCareerColumns(rows: RecordRow[], profiles: Map<string, Caree
   return rows.map((row) => {
     const profile = profiles.get(row.memberId);
     return { ...row, careerRoleName: profile?.careerRoleName ?? null, yoeYears: profile?.yoeYears ?? null };
+  });
+}
+
+/**
+ * Open learning items as export rows (decision #72). Finished items are history and stay out: a re-import
+ * matches open items only, so writing them would create a second copy. The Certificate cell holds the exam
+ * target (empty for a course-only item) and Course studied the course, which is how the import reads them back.
+ */
+export function learningExportRows(items: LearningRow[], profiles: Map<string, CareerProfile>): ExportRow[] {
+  const open = items.filter((item) => item.status !== "done");
+  return learningAsJourneyRecords(open).map((row, i) => {
+    const item = open[i];
+    const profile = profiles.get(item.memberId);
+    return {
+      ...row,
+      certificateId: item.targetCertificateId ?? "",
+      certificateName: item.targetCertificateName ?? "",
+      certificateKind: "exam",
+      providerName: null,
+      plannedExamDate: item.plannedDate,
+      careerRoleName: profile?.careerRoleName ?? null,
+      yoeYears: profile?.yoeYears ?? null,
+      itemType: "learning",
+    } satisfies ExportRow;
   });
 }
 
@@ -68,6 +99,12 @@ export const EXPORT_COLUMNS: ExportColumn[] = [
   { header: "Registered through the company", kind: "text", value: (r) => (r.viaCompany ? "Yes" : "No") },
   { header: "Refund status", kind: "text", value: (r) => REFUND_STATUS_LABEL[r.refundStatus] },
   { header: "Notes", kind: "text", value: (r) => r.notes, width: 40 },
+  // Last, so the columns before it keep their place for older files (decision #26).
+  {
+    header: "Item type",
+    kind: "text",
+    value: (r) => ((r.itemType ?? (r.status === "done" ? "certificate" : "learning")) === "learning" ? "Learning" : "Certificate"),
+  },
 ];
 
 const HEADERS = EXPORT_COLUMNS.map((column) => column.header);

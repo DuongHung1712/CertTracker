@@ -37,7 +37,6 @@ const kpi = (over: Partial<Kpi> = {}): Kpi => ({
   expired: 2,
   issuedInMonth: 7,
   expiredInMonth: 1,
-  completionRate: 75,
   ...over,
 });
 const reportOf = (over: Partial<MonthlyReport> = {}): MonthlyReport => ({
@@ -221,12 +220,9 @@ describe("MonthlyReportEmail", () => {
     expect(html).not.toContain("Figures for the whole organisation.");
   });
 
-  it("shows — for an unknown completion rate and a percentage otherwise", async () => {
-    const none = await renderReport(reportOf({ overall: kpi({ done: 0, records: 0, completionRate: null }), teams: [], upcoming: [] }));
-    expect(none.html).toContain("0 (—)");
+  it("shows the completed count without a rate (decision #72: done and in progress are separate lists now)", async () => {
     const some = await renderReport(reportOf());
-    expect(some.html).toContain("30 (75%)");
-    expect(some.html).toContain("75%");
+    expect(some.html).not.toContain("75%");
   });
 
   it("lists teams and upcoming items, and drops those sections when empty", async () => {

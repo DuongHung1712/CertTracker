@@ -6,6 +6,17 @@ import {
   removeSeedManagerProgramScope,
   SEED_PROGRAM_NAME,
 } from "./support/manager-scopes";
+import { signInAsSeedAdmin } from "./support/restore-seed";
+
+// The end-to-end test creates a centre and a program; left behind, they pile up run after run until the new row
+// lands on page 2 of the Centres table and the test can no longer see it.
+test.afterEach(async () => {
+  const admin = await signInAsSeedAdmin();
+  const programs = await admin.from("programs").delete().like("name", "Program E2E %");
+  if (programs.error) throw new Error(`remove e2e programs: ${programs.error.message}`);
+  const centres = await admin.from("dcs").delete().like("name", "DC E2E %");
+  if (centres.error) throw new Error(`remove e2e centres: ${centres.error.message}`);
+});
 
 test("admin manages the org tree end to end", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");

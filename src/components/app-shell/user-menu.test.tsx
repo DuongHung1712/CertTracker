@@ -65,7 +65,7 @@ describe("UserMenu Visual Style & Theme Switcher", () => {
     expect(screen.getByText("Sign out")).toBeDefined();
   });
 
-  it("exposes only Classic Swiss and Credential Vault visual styles in Visual Style submenu", () => {
+  it("exposes Classic Swiss, Credential Vault, and Nordic Heritage in Visual Style submenu", () => {
     renderUserMenu("admin@certtracker.vn", "admin");
     const trigger = screen.getByRole("button", { name: /Account:/i });
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
@@ -73,9 +73,10 @@ describe("UserMenu Visual Style & Theme Switcher", () => {
     const styleTrigger = screen.getByText("Visual Style");
     fireEvent.keyDown(styleTrigger, { key: "ArrowRight" });
 
-    // Verify only the 2 supported styles exist
+    // Verify all 3 supported styles exist
     expect(screen.getByText("Classic Swiss")).toBeDefined();
     expect(screen.getByText("Credential Vault")).toBeDefined();
+    expect(screen.getByText("Nordic Heritage")).toBeDefined();
 
     // Verify obsolete exploratory styles are completely gone from the DOM
     expect(screen.queryByText("Aurora Glass")).toBeNull();
@@ -94,5 +95,36 @@ describe("UserMenu Visual Style & Theme Switcher", () => {
     fireEvent.click(vaultOption);
 
     expect(document.documentElement.getAttribute("data-style")).toBe("vault");
+  });
+
+  it("switches visual style to Nordic Heritage on selecting the nordic option", () => {
+    renderUserMenu("admin@certtracker.vn", "admin");
+    const trigger = screen.getByRole("button", { name: /Account:/i });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+
+    const styleTrigger = screen.getByText("Visual Style");
+    fireEvent.keyDown(styleTrigger, { key: "ArrowRight" });
+
+    const nordicOption = screen.getByText("Nordic Heritage");
+    fireEvent.click(nordicOption);
+
+    expect(document.documentElement.getAttribute("data-style")).toBe("nordic");
+  });
+
+  it("switches visual style back to Classic Swiss from Nordic Heritage", () => {
+    localStorage.setItem("certtracker-style", "nordic");
+    document.documentElement.setAttribute("data-style", "nordic");
+
+    renderUserMenu("admin@certtracker.vn", "admin");
+    const trigger = screen.getByRole("button", { name: /Account:/i });
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+
+    const styleTrigger = screen.getByText("Visual Style");
+    fireEvent.keyDown(styleTrigger, { key: "ArrowRight" });
+
+    const classicOption = screen.getByText("Classic Swiss");
+    fireEvent.click(classicOption);
+
+    expect(document.documentElement.getAttribute("data-style")).toBe("classic");
   });
 });

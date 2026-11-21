@@ -50,7 +50,7 @@ describe("ISSUE_META", () => {
 
 describe("issueHref", () => {
   it("opens records, members and the certificates tab searched for the subject", () => {
-    expect(issueHref(row({ type: "overdue_exam", memberName: "An Binh" }))).toBe("/records?search=An%20Binh");
+    expect(issueHref(row({ type: "overdue_exam", memberName: "An Binh" }))).toBe("/records?tab=learning&search=An%20Binh");
     expect(issueHref(row({ type: "member_no_team", memberName: "An Binh" }))).toBe("/members?search=An%20Binh");
     expect(issueHref(row({ type: "certificate_no_validity", certificateName: "AWS SAA & more" }))).toBe(
       "/courses?tab=certificates&search=AWS%20SAA%20%26%20more",

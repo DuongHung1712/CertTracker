@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { PageHeader } from "@/components/app-shell/page-header";
-import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
+import type { ComboboxOption } from "@/components/entity-combobox";
 import { Button } from "@/components/ui/button";
 import { ComplianceCopilotWidget } from "@/features/dashboard/components/member/compliance-copilot-widget";
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
@@ -11,14 +11,13 @@ import { MemberCertificatesList } from "@/features/dashboard/components/member/m
 import { MemberKpiCards } from "@/features/dashboard/components/member/member-kpi-cards";
 import { MemberProfileCard } from "@/features/dashboard/components/member/member-profile-card";
 import { Section, SectionError } from "@/features/dashboard/components/section";
-import {
-  calculateMemberKpis,
-  getAttentionRecord,
-} from "@/features/dashboard/member-metrics";
+import { calculateMemberKpis, getAttentionRecord } from "@/features/dashboard/member-metrics";
 import { ExportLinks } from "@/features/export/components/export-links";
+import { LearningSheet } from "@/features/learning/components/learning-sheet";
+import type { CourseOption } from "@/features/learning/queries";
+import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import type { RecordRow } from "@/features/records/queries";
-import type { RecordStatus } from "@/components/status/labels";
 
 export function MemberDashboardView({
   fullName,
@@ -27,9 +26,12 @@ export function MemberDashboardView({
   yoeYears,
   memberId,
   records,
+  journey,
   recordsError,
   certificateOptions,
   studyCourses,
+  courses,
+  examOptions,
   subtitle,
 }: {
   fullName: string;
@@ -37,33 +39,28 @@ export function MemberDashboardView({
   careerRoleName: string | null;
   yoeYears: number | null;
   memberId: string;
+  /** Certificates (results). */
   records: RecordRow[];
+  /** Open learning items as journey rows (features/learning/journey.ts): counted, never listed as certificates. */
+  journey: RecordRow[];
   recordsError?: string;
   certificateOptions: CertificateChoice[];
   studyCourses: StudyCourse[];
+  courses: CourseOption[];
+  examOptions: ComboboxOption[];
   /** Greeting and "figures as of" time, worked out on the server so the first render matches on the client. */
   subtitle: string;
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<RecordRow | null>(null);
-  // Set by "Mark completed" only; every other way of opening the sheet clears it.
-  const [presetStatus, setPresetStatus] = useState<RecordStatus | undefined>(undefined);
-  const [presetCertificateId, setPresetCertificateId] = useState<string | undefined>(undefined);
+  // Renewing plans the next attempt as a learning item for that exam (decision #72).
+  const [renewExamId, setRenewExamId] = useState<string | null>(null);
 
-  const memberKpis = calculateMemberKpis(records);
-  const attention = getAttentionRecord(records);
-
-  function handleRenewCredential(record: RecordRow) {
-    setEditingRecord(null);
-    setPresetCertificateId(record.certificateId);
-    setPresetStatus("in_progress");
-    setSheetOpen(true);
-  }
+  const memberKpis = calculateMemberKpis([...records, ...journey]);
+  const attention = getAttentionRecord([...records, ...journey]);
 
   function handleAddCertificate() {
     setEditingRecord(null);
-    setPresetCertificateId(undefined);
-    setPresetStatus(undefined);
     setSheetOpen(true);
   }
 
@@ -77,7 +74,7 @@ export function MemberDashboardView({
             <ExportLinks />
             <Button size="sm" onClick={handleAddCertificate} className="gap-1.5">
               <Plus className="size-4" aria-hidden="true" />
-              <span>Add certificate or course completion</span>
+              <span>Add certificate</span>
             </Button>
           </div>
         }
@@ -85,29 +82,17 @@ export function MemberDashboardView({
 
       <RecordsRealtime />
 
-      {/* Decluttered 2-Column Workspace Layout */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left Column: Profile with integrated Focus Area & Career Growth */}
         <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-4">
-          <MemberProfileCard
-            fullName={fullName}
-            teamName={teamName}
-            careerRoleName={careerRoleName}
-            yoeYears={yoeYears}
-          />
+          <MemberProfileCard fullName={fullName} teamName={teamName} careerRoleName={careerRoleName} yoeYears={yoeYears} />
         </div>
 
-        {/* Right Column: Hero KPIs (Overview), Attention Banner, Registered Records */}
         <div className="flex flex-col gap-6 lg:col-span-8 xl:col-span-8">
           <Section title="Overview">
-            {recordsError ? (
-              <SectionError title="Overview" />
-            ) : (
-              <MemberKpiCards kpis={memberKpis} />
-            )}
+            {recordsError ? <SectionError title="Overview" /> : <MemberKpiCards kpis={memberKpis} />}
           </Section>
 
-          <MemberAttentionBanner attention={attention} onRenew={handleRenewCredential} />
+          <MemberAttentionBanner attention={attention} onRenew={(record) => setRenewExamId(record.certificateId)} />
 
           {recordsError ? (
             <SectionError title="My learning" />
@@ -119,27 +104,26 @@ export function MemberDashboardView({
               studyCourses={studyCourses}
               memberId={memberId}
               sheetOpen={sheetOpen}
-              onSheetOpenChange={(open) => {
-                setSheetOpen(open);
-                if (!open) {
-                  setPresetCertificateId(undefined);
-                  setPresetStatus(undefined);
-                }
-              }}
+              onSheetOpenChange={setSheetOpen}
               editingRecord={editingRecord}
-              presetStatus={presetStatus}
-              presetCertificateId={presetCertificateId}
-              onEditRecord={(record, preset) => {
-                setEditingRecord(record);
-                setPresetCertificateId(undefined);
-                setPresetStatus(preset);
-              }}
+              onEditRecord={setEditingRecord}
             />
           )}
         </div>
       </div>
 
-      {/* Floating Copilot Chatbot Widget in Bottom-Right */}
+      <LearningSheet
+        key={renewExamId ?? "none"}
+        open={renewExamId !== null}
+        onOpenChange={(open) => !open && setRenewExamId(null)}
+        editing={null}
+        fixedMemberId={memberId}
+        viewerMemberId={memberId}
+        courses={courses}
+        examOptions={examOptions}
+        presetTargetCertificateId={renewExamId ?? undefined}
+      />
+
       <ComplianceCopilotWidget />
     </div>
   );

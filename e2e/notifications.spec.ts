@@ -209,16 +209,17 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
   const yesterday = todayVn(new Date(Date.now() - 24 * 60 * 60 * 1000));
   const adminDb = await signInAsSeedUser("admin@certtracker.test");
 
-  // Châu (Team Cloud) and Bình (Team AI) each get an exam planned yesterday; both are removed in `finally`.
+  // Châu (Team Cloud) and Bình (Team AI) each get a learning item with an exam planned yesterday (decision #72);
+  // both are removed in `finally`.
   const inserted = await adminDb
-    .from("training_records")
+    .from("learning_items")
     .insert([
-      { member_id: MEMBER_CHAU, certificate_id: COURSE_NVIDIA, status: "not_started", progress: 0, planned_exam_date: yesterday },
-      { member_id: MEMBER_BINH, certificate_id: COURSE_AWS, status: "not_started", progress: 0, planned_exam_date: yesterday },
+      { member_id: MEMBER_CHAU, target_certificate_id: COURSE_NVIDIA, status: "not_started", progress: 0, planned_date: yesterday },
+      { member_id: MEMBER_BINH, target_certificate_id: COURSE_AWS, status: "not_started", progress: 0, planned_date: yesterday },
     ])
     .select("id");
   if (inserted.error || inserted.data?.length !== 2) {
-    throw new Error(`Could not create the overdue records: ${inserted.error?.message ?? "unexpected row count"}`);
+    throw new Error(`Could not create the overdue items: ${inserted.error?.message ?? "unexpected row count"}`);
   }
   const ids = inserted.data.map((r) => r.id);
 
@@ -268,11 +269,11 @@ test("data quality shows overdue exams by role", async ({ browser }) => {
       await member.close();
     }
   } finally {
-    await adminDb.from("training_records").delete().in("id", ids);
-    // RLS turns a forbidden delete into a silent no-op, so prove the records are gone.
-    const left = await adminDb.from("training_records").select("id").in("id", ids);
+    await adminDb.from("learning_items").delete().in("id", ids);
+    // RLS turns a forbidden delete into a silent no-op, so prove the items are gone.
+    const left = await adminDb.from("learning_items").select("id").in("id", ids);
     if (left.error || (left.data?.length ?? 0) > 0) {
-      throw new Error(`The overdue test records were not removed: ${left.error?.message ?? `${left.data?.length} left`}`);
+      throw new Error(`The overdue test items were not removed: ${left.error?.message ?? `${left.data?.length} left`}`);
     }
   }
 });
