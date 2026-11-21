@@ -101,6 +101,8 @@ async function expectReadOnlyCatalogue(page: Page, names?: { examName: string; c
 }
 
 test("admin adds an exam certificate and a course; a member only reads both", async ({ page }) => {
+  // Two sign-ins and two saves: past 30 s on CI's dev server.
+  test.setTimeout(60_000);
   await signIn(page, ADMIN);
   await page.getByRole("navigation", { name: "Main navigation" }).getByRole("link", { name: "Catalogue" }).click();
   await expect(page.getByRole("heading", { name: "Catalogue" })).toBeVisible();

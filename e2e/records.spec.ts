@@ -484,9 +484,18 @@ test("member uploads, opens and removes evidence on their own certificate", asyn
 test("the Learning tab updates live for another user", async ({ page }) => {
   const admin = await signInAsSeedAdmin();
   await signIn(page, "manager@certtracker.test");
+  // The row renders on the server before the browser joins the Realtime channel; an update sent earlier is
+  // missed (seen on CI). Wait for the server's "Subscribed to PostgreSQL" frame first.
+  let subscribed = false;
+  page.on("websocket", (ws) =>
+    ws.on("framereceived", (frame) => {
+      if (String(frame.payload).includes("Subscribed to PostgreSQL")) subscribed = true;
+    }),
+  );
   await page.goto("/records?tab=learning");
   const row = recordRow(page, "Lê Minh Châu", AWS);
   await expect(row).toContainText("Not started");
+  await expect.poll(() => subscribed, { timeout: 15_000 }).toBe(true);
   try {
     // Someone else (here the admin, straight in the database) updates Châu's item.
     const started = await admin.from("learning_items").update({ status: "in_progress", progress: 55 }).eq("member_id", CHAU).select("id");
