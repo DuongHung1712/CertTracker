@@ -70,7 +70,8 @@ describe("PlannedExamsList", () => {
       makeRecord({
         memberName: "Trần Thị Bình",
         certificateName: "NVIDIA AI",
-        plannedExamDate: "2026-11-20",
+        // Relative to today: a fixed date silently fell out of the 60-day window.
+        plannedExamDate: new Date(Date.now() + 10 * 86_400_000).toISOString().slice(0, 10),
       }),
     ];
     const html = renderToStaticMarkup(<PlannedExamsList records={records} />);

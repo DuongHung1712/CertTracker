@@ -53,6 +53,9 @@ insert into public.training_records (id, member_id, certificate_id, status, prog
   ('d9000000-0000-0000-0000-0000000000e8', 'd9000000-0000-0000-0000-00000000b001', 'd9000000-0000-0000-0000-00000000e004', 'done', 100, null, public.vn_today() - 1, '   ', null),
   ('d9000000-0000-0000-0000-0000000000e9', 'd9000000-0000-0000-0000-00000000b002', 'd9000000-0000-0000-0000-00000000e004', 'done', 100, public.vn_today() - 30, public.vn_today() - 2, 'https://example.test/c2', null);
 
+-- Open records become learning items, exactly as migration 20261120000003 does (decision #72).
+do $mv$ begin perform public.move_open_records_to_learning(); end $mv$;
+
 -- Admin
 select pg_temp.login_as('d9000000-0000-0000-0000-00000000f00a');
 select results_eq(

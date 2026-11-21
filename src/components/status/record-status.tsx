@@ -48,7 +48,7 @@ export function CatalogueStatusBadge({ status }: { status?: "approved" | "pendin
         className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm border-status-expiring-soon-border bg-status-expiring-soon-bg text-caption text-status-expiring-soon-fg"
       >
         <Hourglass aria-hidden className="size-3" />
-        Pending Approval
+        Awaiting admin approval
       </Badge>
     );
   }

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Role } from "@/components/status/labels";
+import { learningItemTitle } from "@/features/learning/journey";
 import type { Snapshot, SnapshotRecord } from "@/features/notifications/types";
 import { fetchAllRows } from "@/lib/supabase/fetch-all";
 import type { Database } from "@/types/database";
@@ -9,7 +10,7 @@ import type { Database } from "@/types/database";
  * scope each recipient's data). Row counts are small, but PostgREST caps responses at 1000 rows, so page.
  */
 export async function loadSnapshot(client: SupabaseClient<Database>): Promise<Snapshot> {
-  const [members, teams, staff, records] = await Promise.all([
+  const [members, teams, staff, records, learning] = await Promise.all([
     fetchAllRows((from, to) =>
       client.from("members").select("id, code, full_name, email, team_id, is_active").order("id").range(from, to),
     ),
@@ -19,6 +20,15 @@ export async function loadSnapshot(client: SupabaseClient<Database>): Promise<Sn
       client
         .from("v_training_records")
         .select("id, member_id, status, approval, renewed, certificate_name, issued_date, expiry_date, days_to_expiry, expiry_status")
+        .order("id")
+        .range(from, to),
+    ),
+    // The open journey (decision #72): counted as in progress / not started, never as a certificate.
+    fetchAllRows((from, to) =>
+      client
+        .from("v_learning_items")
+        .select("id, member_id, status, target_certificate_name, course_name")
+        .neq("status", "done")
         .order("id")
         .range(from, to),
     ),
@@ -44,6 +54,18 @@ export async function loadSnapshot(client: SupabaseClient<Database>): Promise<Sn
             },
           ]
         : [],
+    ).concat(
+      learning.flatMap((l): SnapshotRecord[] =>
+        l.id && l.member_id && l.status && l.status !== "done"
+          ? [
+              {
+                id: l.id, memberId: l.member_id, status: l.status, approval: null, renewed: false,
+                certificateName: learningItemTitle({ targetCertificateName: l.target_certificate_name, courseName: l.course_name }),
+                issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A",
+              },
+            ]
+          : [],
+      ),
     ),
   };
 }

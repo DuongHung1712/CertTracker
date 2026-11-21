@@ -53,21 +53,37 @@ const BINH_EXAM_IN_DAYS = 20;
 const addDays = (iso: string, days: number): string => new Date(Date.parse(iso) + days * DAY_MS).toISOString().slice(0, 10);
 
 /**
- * The three seed records as `supabase/seed.sql` writes them, with its relative dates counted from today. Computed,
+ * The seed certificate (An–AWS) as `supabase/seed.sql` writes it, with its relative dates counted from today. Computed,
  * not captured, so the restore works on a database that has run before and never needs `db reset` (which breaks the
  * storage index locally). The ids and values below mirror `supabase/seed.sql` and must stay in sync with it.
  */
 function seedRecords(today: string): SeedRecord[] {
   const untouched = { certificate_url: null, evidence_path: null, via_company: false, refund_status: "n_a", notes: null } as const;
-  const [an, binh, chau] = SEED_MEMBER_IDS;
-  // Each seed record studied the course that shares its certificate's id.
-  const [saa, nvidia] = SEED_COURSE_IDS;
-  const records: SeedRecord[] = [
-    { member_id: an!, certificate_id: saa!, course_id: saa!, status: "done", progress: 100, issued_date: addDays(today, -AN_ISSUED_DAYS_AGO), planned_exam_date: null, ...untouched },
-    { member_id: binh!, certificate_id: nvidia!, course_id: nvidia!, status: "in_progress", progress: 40, issued_date: null, planned_exam_date: addDays(today, BINH_EXAM_IN_DAYS), ...untouched },
-    { member_id: chau!, certificate_id: saa!, course_id: saa!, status: "not_started", progress: 0, issued_date: null, planned_exam_date: null, ...untouched },
+  const [saa] = SEED_COURSE_IDS;
+  return [
+    { member_id: SEED_MEMBER_IDS[0]!, certificate_id: saa!, course_id: saa!, status: "done", progress: 100, issued_date: addDays(today, -AN_ISSUED_DAYS_AGO), planned_exam_date: null, ...untouched },
   ];
-  return records.sort((x, y) => `${x.member_id}${x.certificate_id}`.localeCompare(`${y.member_id}${y.certificate_id}`));
+}
+
+type SeedLearning = Pick<
+  Database["public"]["Tables"]["learning_items"]["Insert"],
+  "member_id" | "course_id" | "target_certificate_id" | "status" | "progress" | "planned_date"
+>;
+
+/** The seed's learning items (decision #72): Bình studies the NVIDIA course for its exam; Châu plans AWS on her own. */
+function seedLearning(today: string): SeedLearning[] {
+  const [, binh, chau] = SEED_MEMBER_IDS;
+  const [saa, nvidia] = SEED_COURSE_IDS;
+  return [
+    { member_id: binh!, course_id: nvidia!, target_certificate_id: nvidia!, status: "in_progress", progress: 40, planned_date: addDays(today, BINH_EXAM_IN_DAYS) },
+    { member_id: chau!, course_id: null, target_certificate_id: saa!, status: "not_started", progress: 0, planned_date: null },
+  ];
+}
+
+/** Replaces every learning item of the seed members with the seed's two. */
+export async function restoreSeedLearning(client: Client): Promise<void> {
+  check(await client.from("learning_items").delete().in("member_id", SEED_MEMBER_IDS).select("id"), "delete seed members' learning items");
+  check(await client.from("learning_items").insert(seedLearning(todayVn())).select("id"), "insert seed learning items");
 }
 
 /** The Playwright process does not load `.env.local` (only Next does), so read it here when the env is not set. */
@@ -148,6 +164,13 @@ export async function restoreSeed(client: Client, seedRecords: SeedRecord[]): Pr
   check(await client.from("import_batches").delete().not("id", "is", null).select("id"), "delete import batches");
 
   const { memberIds, providerIds, courseIds, certificateIds } = await importedIds(client);
+  // Learning items reference courses and certificates (on delete restrict), so they go first.
+  if (memberIds.length > 0) check(await client.from("learning_items").delete().in("member_id", memberIds).select("id"), "delete imported member items");
+  if (certificateIds.length > 0) {
+    check(await client.from("learning_items").delete().in("target_certificate_id", certificateIds).select("id"), "delete imported exam items");
+  }
+  if (courseIds.length > 0) check(await client.from("learning_items").delete().in("course_id", courseIds).select("id"), "delete imported course items");
+  await restoreSeedLearning(client);
   if (memberIds.length > 0) {
     check(await client.from("training_records").delete().in("member_id", memberIds).select("id"), "delete imported member records");
   }
@@ -160,7 +183,7 @@ export async function restoreSeed(client: Client, seedRecords: SeedRecord[]): Pr
   if (providerIds.length > 0) check(await client.from("providers").delete().in("id", providerIds).select("id"), "delete imported providers");
   if (memberIds.length > 0) check(await client.from("members").delete().in("id", memberIds).select("id"), "delete imported member");
 
-  // Seed records the import updated (An: issued date; Bình: progress, planned date, notes; any: course studied).
+  // The seed certificate the import updated (An: issued date).
   for (const { member_id, certificate_id, ...seed } of seedRecords) {
     const updated = check(
       await client.from("training_records").update(seed).eq("member_id", member_id).eq("certificate_id", certificate_id).select("id"),
@@ -181,4 +204,6 @@ export async function restoreSeed(client: Client, seedRecords: SeedRecord[]): Pr
   if (total.length !== seedRecords.length) throw new Error(`Expected ${seedRecords.length} training records after restore, found ${total.length}.`);
   const now = await readSeedRecords(client);
   if (!isDeepStrictEqual(now, seedRecords)) throw new Error("Seed records were not restored.");
+  const items = check(await client.from("learning_items").select("id").in("member_id", SEED_MEMBER_IDS), "verify seed learning items");
+  if (items.length !== 2) throw new Error(`Expected 2 seed learning items after restore, found ${items.length}.`);
 }

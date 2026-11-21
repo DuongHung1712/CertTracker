@@ -40,6 +40,8 @@ export function RecordsRealtime() {
       channel = supabase
         .channel(`training-records-${crypto.randomUUID()}`)
         .on("postgres_changes", { event: "*", schema: "public", table: "training_records" }, refresh)
+        // Learning items share the page (decision #72); same "something changed" signal.
+        .on("postgres_changes", { event: "*", schema: "public", table: "learning_items" }, refresh)
         .subscribe();
     }
     void subscribe();

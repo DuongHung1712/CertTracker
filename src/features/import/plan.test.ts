@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ImportTable, Cell } from "@/features/import/clean";
-import { buildImportPlan, preferredRecords, reconcileRecord, type ExistingRecord, type ImportLookups } from "@/features/import/plan";
+import { buildImportPlan, preferredRecords, reconcileRecord, routeImportRow, type ExistingRecord, type ImportLookups } from "@/features/import/plan";
 import { buildLegacyWorkbook, LEGACY_EXPECTED } from "@/features/import/__fixtures__/legacy-workbook";
 import { readImportTable } from "@/features/import/workbook";
 
@@ -36,6 +36,10 @@ const LOOKUPS: ImportLookups = {
   records: [
     { id: "r-1", memberId: "m-an", certificateId: "c-saa", courseId: null, status: "in_progress", progress: 40, plannedExamDate: "2026-12-01", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: "cũ" },
   ],
+  // The same open item as r-1 after migration 20261120000003: in-progress rows now match learning items.
+  learningItems: [
+    { id: "r-1", memberId: "m-an", courseId: null, targetCertificateId: "c-saa", status: "in_progress", progress: 40, plannedDate: "2026-12-01", finishedDate: null, notes: "cũ" },
+  ],
 };
 
 const row = (overrides: Partial<Record<string, Cell>>): Cell[] => {
@@ -61,7 +65,7 @@ describe("buildImportPlan", () => {
     const plan = buildImportPlan(
       table([
         row({ "Họ tên": "Hà", Email: "ha@x.vn", Team: "team ai", "Khóa học": "Azure  Fundamentals", "Nhà cung cấp": "Microsoft", Loại: "Security", "Thời hạn": "24 tháng" }),
-        row({ "Họ tên": "Hà", Email: "HA@X.VN", "Khóa học": "azure fundamentals ", "Nhà cung cấp": "microsoft", Loại: "security", "Trạng thái": "xong", "Tiến độ": 100, "Ngày cấp": "01/08/2025", Team: "Team AI" }),
+        row({ "Họ tên": "Hà", Email: "HA@X.VN", "Khóa học": "azure fundamentals ", "Nhà cung cấp": "microsoft", Loại: "security", Team: "Team AI" }),
       ]),
       LOOKUPS,
       TODAY,
@@ -157,9 +161,9 @@ describe("buildImportPlan", () => {
       TODAY,
     ).rows;
     expect(planned!.errors).toEqual([
+      'Trạng thái: "Failed" is not a known status. Use Completed, In progress or Not started.',
       'Khóa học: "Shared Name" matches more than one certificate. Fill in the Provider column to pick one.',
       'Course studied: "No Such Course" not found.',
-      'Trạng thái: "Failed" is not a known status. Use Completed, In progress or Not started.',
     ]);
   });
 
@@ -260,30 +264,43 @@ describe("buildImportPlan edge cases", () => {
     const planOne = (studied: Cell, overrides: Partial<Record<string, Cell>> = {}) =>
       buildImportPlan(table([row({ "Course studied": studied, ...overrides })]), LOOKUPS, TODAY).rows[0]!;
 
-    it("names a course that prepares for the certificate and marks the update", () => {
+    const DONE = { "Trạng thái": "xong", "Tiến độ": 100, "Ngày cấp": "01/08/2025" };
+
+    it("puts the course and the exam in one learning item", () => {
       const planned = planOne("SAA Bootcamp");
       expect(planned.errors).toEqual([]);
-      expect(planned.normalized!.courseStudied).toEqual({ id: "k-prep" });
+      expect(planned.normalized).toMatchObject({ kind: "learning", course: { id: "c-saa" }, courseStudied: { id: "k-prep" } });
+      // The member already has an open item for AWS SAA (self-study): one open item per exam, so it is updated.
       expect(planned.action).toBe("update");
+    });
+
+    it("updates the open item when only the course studied is new", () => {
+      // Same status and progress as the open self-study item r-1: the course alone is a change.
+      expect(planOne("SAA Bootcamp", { "Tiến độ": 40 }).action).toBe("update");
+      expect(planOne(null, { "Tiến độ": 40 }).action).toBe("skip");
     });
 
     it("leaves an old row (no Course studied) without courseStudied", () => {
       expect(planOne(null).normalized!).not.toHaveProperty("courseStudied");
     });
 
-    it("refuses a course that does not prepare for the certificate, with the spec message", () => {
-      const planned = planOne("Other Bootcamp");
+    it("accepts any course on a learning row: prepares-for no longer limits it", () => {
+      expect(planOne("Other Bootcamp").errors).toEqual([]);
+    });
+
+    it("refuses, on a Completed row, a course that does not prepare for the certificate, with the spec message", () => {
+      const planned = planOne("Other Bootcamp", DONE);
       expect(planned).toMatchObject({ action: "skip", normalized: null });
       expect(planned.errors).toContain('Course studied: "Other Bootcamp" does not prepare for "AWS SAA".');
     });
 
     it("names the certificate as the catalogue spells it, not as the file does", () => {
-      expect(planOne("Other Bootcamp", { "Khóa học": "aws saa" }).errors).toContain('Course studied: "Other Bootcamp" does not prepare for "AWS SAA".');
+      expect(planOne("Other Bootcamp", { "Khóa học": "aws saa", ...DONE }).errors).toContain('Course studied: "Other Bootcamp" does not prepare for "AWS SAA".');
     });
 
-    it("refuses an unknown course and any course for a new certificate", () => {
+    it("refuses an unknown course, and any course for a new certificate on a Completed row", () => {
       expect(planOne("No Such Course").errors).toContain('Course studied: "No Such Course" not found.');
-      expect(planOne("SAA Bootcamp", { "Khóa học": "Brand New" }).errors).toContain('Course studied: "SAA Bootcamp" does not prepare for "Brand New".');
+      expect(planOne("SAA Bootcamp", { "Khóa học": "Brand New", ...DONE }).errors).toContain('Course studied: "SAA Bootcamp" does not prepare for "Brand New".');
     });
 
     it("accepts the course that grants a completion certificate", () => {
@@ -471,7 +488,7 @@ describe("commit_import safety of emitted records", () => {
 
 describe("notes keep their line breaks", () => {
   it("treats a multi-line note identical to the database as unchanged", () => {
-    const lookups: ImportLookups = { ...LOOKUPS, records: [{ ...LOOKUPS.records[0]!, notes: "dòng 1\ndòng 2" }] };
+    const lookups: ImportLookups = { ...LOOKUPS, learningItems: [{ ...LOOKUPS.learningItems[0]!, notes: "dòng 1\ndòng 2" }] };
     const [planned] = buildImportPlan(table([row({ "Tiến độ": 40, "Ghi chú": "dòng 1\r\ndòng 2" })]), lookups, TODAY).rows;
     expect(planned).toMatchObject({ action: "skip", errors: [] });
   });
@@ -545,6 +562,11 @@ it("produces the documented plan for the legacy fixture against seed-like lookup
       { id: "r2", memberId: "binh", certificateId: "nv", courseId: null, status: "in_progress", progress: 40, plannedExamDate: "2026-10-20", issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
       { id: "r3", memberId: "chau", certificateId: "saa", courseId: null, status: "not_started", progress: 0, plannedExamDate: null, issuedDate: null, certificateUrl: null, viaCompany: false, refundStatus: "n_a", notes: null },
     ],
+    // r2 and r3 after migration 20261120000003: open records are learning items with the certificate as target.
+    learningItems: [
+      { id: "r2", memberId: "binh", courseId: null, targetCertificateId: "nv", status: "in_progress", progress: 40, plannedDate: "2026-10-20", finishedDate: null, notes: null },
+      { id: "r3", memberId: "chau", courseId: null, targetCertificateId: "saa", status: "not_started", progress: 0, plannedDate: null, finishedDate: null, notes: null },
+    ],
   };
   const read = readImportTable(buildLegacyWorkbook());
   if (!read.ok) throw new Error(read.error);
@@ -572,5 +594,71 @@ describe("preferredRecords", () => {
     const active = { ...base, id: "r0", status: "in_progress" as const, progress: 40, issuedDate: null };
     expect(preferredRecords([later, base]).get("m|c")?.id).toBe("r2");
     expect(preferredRecords([base, active, later]).get("m|c")?.id).toBe("r0");
+  });
+});
+
+describe("learning rows (decision #72)", () => {
+  const LHEADERS = ["Email", "Item type", "Khóa học", "Nhà cung cấp", "Course studied", "Trạng thái", "Tiến độ", "Ngày thi", "Ngày cấp", "Ghi chú"];
+  const ltable = (rows: Cell[][]): ImportTable => {
+    const fields: Record<string, string> = {
+      Email: "email", "Item type": "recordType", "Khóa học": "courseName", "Nhà cung cấp": "provider", "Course studied": "courseStudied",
+      "Trạng thái": "status", "Tiến độ": "progress", "Ngày thi": "plannedExamDate", "Ngày cấp": "issuedDate", "Ghi chú": "notes",
+    };
+    const map = Object.fromEntries(LHEADERS.map((h, i) => [fields[h], i]));
+    return { sheetName: "S", headerRowNumber: 1, headers: LHEADERS, map, unknownColumns: [], rows: rows.map((cells, i) => ({ rowNumber: i + 2, cells })), date1904: false };
+  };
+  const lrow = (o: Partial<Record<string, Cell>>): Cell[] => {
+    const base: Record<string, Cell> = { Email: "an@x.vn", "Item type": "Learning", "Khóa học": null, "Nhà cung cấp": null, "Course studied": "SAA Bootcamp", "Trạng thái": "In progress", "Tiến độ": 30, "Ngày thi": null, "Ngày cấp": null, "Ghi chú": null, ...o };
+    return LHEADERS.map((h) => base[h] ?? null);
+  };
+  const OPEN_ITEM = { id: "li-1", memberId: "m-an", courseId: "k-prep", targetCertificateId: null, status: "in_progress" as const, progress: 30, plannedDate: null, finishedDate: null, notes: null };
+
+  it("routes by record type, else by status", () => {
+    expect(routeImportRow({ recordType: "learning", status: "done" })).toBe("learning");
+    expect(routeImportRow({ recordType: null, status: "in_progress" })).toBe("learning");
+    expect(routeImportRow({ recordType: null, status: "done" })).toBe("certificate");
+    expect(routeImportRow({ recordType: "certificate", status: "done" })).toBe("certificate");
+  });
+
+  it("creates a course-only learning item without a certificate", () => {
+    const [planned] = buildImportPlan(ltable([lrow({})]), { ...LOOKUPS, learningItems: [] }, TODAY).rows;
+    expect(planned).toMatchObject({ action: "create", errors: [] });
+    expect(planned!.normalized).toMatchObject({ kind: "learning", course: null, courseStudied: { id: "k-prep" } });
+  });
+
+  it("updates the open learning item it matches, and skips an identical one", () => {
+    const lookups = { ...LOOKUPS, learningItems: [OPEN_ITEM] };
+    expect(buildImportPlan(ltable([lrow({ "Tiến độ": 60 })]), lookups, TODAY).rows[0]!.action).toBe("update");
+    expect(buildImportPlan(ltable([lrow({})]), lookups, TODAY).rows[0]).toMatchObject({ action: "skip", errors: [] });
+  });
+
+  it("uses the certificate as the exam target of a learning row", () => {
+    const [planned] = buildImportPlan(ltable([lrow({ "Course studied": null, "Khóa học": "AWS SAA" })]), { ...LOOKUPS, learningItems: [] }, TODAY).rows;
+    expect(planned!.normalized).toMatchObject({ kind: "learning", course: { id: "c-saa" } });
+  });
+
+  it("needs a certificate or a course on a learning row", () => {
+    const [planned] = buildImportPlan(ltable([lrow({ "Course studied": null })]), { ...LOOKUPS, learningItems: [] }, TODAY).rows;
+    expect(planned!.action).toBe("skip");
+    expect(planned!.errors.join(" ")).toMatch(/Certificate or Course studied is required/);
+  });
+
+  it("rejects a certificate row that is not completed", () => {
+    const [planned] = buildImportPlan(ltable([lrow({ "Item type": "Certificate", "Khóa học": "AWS SAA", "Course studied": null })]), { ...LOOKUPS, learningItems: [] }, TODAY).rows;
+    expect(planned!.errors.join(" ")).toMatch(/a certificate is Completed/);
+  });
+});
+
+describe("an open course-certificate row becomes an item on its course (final review)", () => {
+  it("puts the granting course in courseStudied and leaves the exam target empty", () => {
+    const lookups: ImportLookups = {
+      ...LOOKUPS,
+      certificates: [...LOOKUPS.certificates, { id: "c-ml", name: "ML Specialization", providerId: "p-aws", certTypeId: null, validityMonths: null, ...NO_COST, grantsCourseId: "k-ml" }],
+      studyCourses: [...LOOKUPS.studyCourses, { id: "k-ml", name: "ML Course", preparesForId: null, grantsId: "c-ml", ...NO_COST }],
+      learningItems: [],
+    };
+    const [planned] = buildImportPlan(table([row({ "Khóa học": "ML Specialization", "Trạng thái": "Đang học", "Tiến độ": 30 })]), lookups, TODAY).rows;
+    expect(planned).toMatchObject({ action: "create", errors: [] });
+    expect(planned!.normalized).toMatchObject({ kind: "learning", course: null, courseStudied: { id: "k-ml" } });
   });
 });

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, renderHook, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   StyleProvider,
   useThemeStyle,
@@ -9,6 +9,7 @@ import {
   setStoredThemeStyle,
   toggleStoredThemeStyle,
   STYLE_STORAGE_KEY,
+  STYLE_INIT_SCRIPT,
   THEME_STYLES,
 } from "./style-provider";
 
@@ -20,6 +21,7 @@ function TestConsumer() {
       <div data-testid="styles-count">{styles.length}</div>
       <button onClick={() => setStyle("vault")}>Set Vault</button>
       <button onClick={() => setStyle("classic")}>Set Classic</button>
+      <button onClick={() => setStyle("nordic")}>Set Nordic</button>
       <button onClick={toggleStyle}>Toggle Style</button>
       <input data-testid="test-input" placeholder="type here" />
     </div>
@@ -44,7 +46,7 @@ describe("StyleProvider & useThemeStyle", () => {
     );
   });
 
-  it("defaults to classic style and exposes exactly 2 THEME_STYLES (classic & vault)", () => {
+  it("defaults to classic style and exposes exactly 3 THEME_STYLES (classic, vault & nordic)", () => {
     render(
       <StyleProvider>
         <TestConsumer />
@@ -52,8 +54,8 @@ describe("StyleProvider & useThemeStyle", () => {
     );
 
     expect(screen.getByTestId("current-style").textContent).toBe("classic");
-    expect(screen.getByTestId("styles-count").textContent).toBe("2");
-    expect(THEME_STYLES.map((s) => s.id)).toEqual(["classic", "vault"]);
+    expect(screen.getByTestId("styles-count").textContent).toBe("3");
+    expect(THEME_STYLES.map((s) => s.id)).toEqual(["classic", "vault", "nordic"]);
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
   });
 
@@ -83,13 +85,18 @@ describe("StyleProvider & useThemeStyle", () => {
     expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("vault");
     expect(document.documentElement.getAttribute("data-style")).toBe("vault");
 
+    await user.click(screen.getByRole("button", { name: "Set Nordic" }));
+    expect(screen.getByTestId("current-style").textContent).toBe("nordic");
+    expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("nordic");
+    expect(document.documentElement.getAttribute("data-style")).toBe("nordic");
+
     await user.click(screen.getByRole("button", { name: "Set Classic" }));
     expect(screen.getByTestId("current-style").textContent).toBe("classic");
     expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("classic");
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
   });
 
-  it("toggles between classic and vault using toggleStyle", async () => {
+  it("cycles between classic, vault, and nordic using toggleStyle", async () => {
     const user = userEvent.setup();
     render(
       <StyleProvider>
@@ -105,7 +112,13 @@ describe("StyleProvider & useThemeStyle", () => {
     expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("vault");
     expect(document.documentElement.getAttribute("data-style")).toBe("vault");
 
-    // Toggle 2: vault -> classic
+    // Toggle 2: vault -> nordic
+    await user.click(screen.getByRole("button", { name: "Toggle Style" }));
+    expect(screen.getByTestId("current-style").textContent).toBe("nordic");
+    expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("nordic");
+    expect(document.documentElement.getAttribute("data-style")).toBe("nordic");
+
+    // Toggle 3: nordic -> classic
     await user.click(screen.getByRole("button", { name: "Toggle Style" }));
     expect(screen.getByTestId("current-style").textContent).toBe("classic");
     expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("classic");
@@ -193,7 +206,7 @@ describe("StyleProvider & useThemeStyle", () => {
     expect(result.current.style).toBe("classic");
   });
 
-  it("toggles style on Alt+V keyboard shortcut, but ignores keystrokes inside input fields", async () => {
+  it("cycles styles on Alt+V keyboard shortcut, but ignores keystrokes inside input fields", async () => {
     const user = userEvent.setup();
     render(
       <StyleProvider>
@@ -213,10 +226,123 @@ describe("StyleProvider & useThemeStyle", () => {
     await user.keyboard("{Alt>}v{/Alt}");
     expect(screen.getByTestId("current-style").textContent).toBe("vault");
 
-    // Blur input and press Alt+V -> toggles back to classic
+    // Blur input and press Alt+V -> toggles to nordic
     await user.tab();
     await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("nordic");
+
+    // Press Alt+V again -> cycles back to classic
+    await user.keyboard("{Alt>}v{/Alt}");
     expect(screen.getByTestId("current-style").textContent).toBe("classic");
+  });
+
+  it("handles rapid Alt+V shortcut keystrokes cleanly cycling through all 3 styles repeatedly", async () => {
+    const user = userEvent.setup();
+    render(
+      <StyleProvider>
+        <TestConsumer />
+      </StyleProvider>,
+    );
+
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+
+    // Rapid double cycle: classic -> vault -> nordic -> classic -> vault -> nordic -> classic
+    await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+    await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("nordic");
+    await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+    await user.keyboard("{Alt>}V{/Alt}"); // uppercase V test
+    expect(screen.getByTestId("current-style").textContent).toBe("vault");
+    await user.keyboard("{Alt>}V{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("nordic");
+    await user.keyboard("{Alt>}v{/Alt}");
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+  });
+
+  it("does not cycle styles when Alt is accompanied by Ctrl or Meta keys", async () => {
+    const user = userEvent.setup();
+    render(
+      <StyleProvider>
+        <TestConsumer />
+      </StyleProvider>,
+    );
+
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+
+    await user.keyboard("{Control>}{Alt>}v{/Alt}{/Control}");
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+
+    await user.keyboard("{Meta>}{Alt>}v{/Alt}{/Meta}");
+    expect(screen.getByTestId("current-style").textContent).toBe("classic");
+  });
+
+  describe("STYLE_INIT_SCRIPT inline anti-FOUC script", () => {
+    it("sets data-style='nordic' before hydration when localStorage has 'nordic'", () => {
+      localStorage.setItem(STYLE_STORAGE_KEY, "nordic");
+      document.documentElement.removeAttribute("data-style");
+
+      // Execute exact head script
+      // eslint-disable-next-line no-eval
+      eval(STYLE_INIT_SCRIPT);
+
+      expect(document.documentElement.getAttribute("data-style")).toBe("nordic");
+    });
+
+    it("sets data-style='vault' before hydration when localStorage has 'vault'", () => {
+      localStorage.setItem(STYLE_STORAGE_KEY, "vault");
+      document.documentElement.removeAttribute("data-style");
+
+      // eslint-disable-next-line no-eval
+      eval(STYLE_INIT_SCRIPT);
+
+      expect(document.documentElement.getAttribute("data-style")).toBe("vault");
+    });
+
+    it("sets data-style='classic' before hydration when localStorage has 'classic'", () => {
+      localStorage.setItem(STYLE_STORAGE_KEY, "classic");
+      document.documentElement.removeAttribute("data-style");
+
+      // eslint-disable-next-line no-eval
+      eval(STYLE_INIT_SCRIPT);
+
+      expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+    });
+
+    it("falls back to 'classic' when localStorage has unknown or obsolete value", () => {
+      localStorage.setItem(STYLE_STORAGE_KEY, "aurora");
+      document.documentElement.removeAttribute("data-style");
+
+      // eslint-disable-next-line no-eval
+      eval(STYLE_INIT_SCRIPT);
+
+      expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+    });
+
+    it("falls back to 'classic' on empty/null localStorage", () => {
+      localStorage.removeItem(STYLE_STORAGE_KEY);
+      document.documentElement.removeAttribute("data-style");
+
+      // eslint-disable-next-line no-eval
+      eval(STYLE_INIT_SCRIPT);
+
+      expect(document.documentElement.getAttribute("data-style")).toBe("classic");
+    });
+
+    it("silently swallows exceptions when localStorage is disabled or throws", () => {
+      document.documentElement.setAttribute("data-style", "classic");
+      const getItemSpy = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+        throw new Error("SecurityError: Access is denied");
+      });
+
+      expect(() => {
+        // eslint-disable-next-line no-eval
+        eval(STYLE_INIT_SCRIPT);
+      }).not.toThrow();
+
+      getItemSpy.mockRestore();
+    });
   });
 
   describe("standalone theme helper functions", () => {
@@ -226,11 +352,17 @@ describe("StyleProvider & useThemeStyle", () => {
       localStorage.setItem(STYLE_STORAGE_KEY, "vault");
       expect(getStoredThemeStyle()).toBe("vault");
 
+      localStorage.setItem(STYLE_STORAGE_KEY, "nordic");
+      expect(getStoredThemeStyle()).toBe("nordic");
+
       document.documentElement.setAttribute("data-style", "classic");
       expect(getStoredThemeStyle()).toBe("classic");
 
       document.documentElement.setAttribute("data-style", "vault");
       expect(getStoredThemeStyle()).toBe("vault");
+
+      document.documentElement.setAttribute("data-style", "nordic");
+      expect(getStoredThemeStyle()).toBe("nordic");
     });
 
     it("setStoredThemeStyle updates DOM, localStorage, and dispatches certtracker-style-change event", () => {
@@ -244,6 +376,11 @@ describe("StyleProvider & useThemeStyle", () => {
       expect(document.documentElement.getAttribute("data-style")).toBe("vault");
       expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("vault");
       expect(eventDetail).toBe("vault");
+
+      setStoredThemeStyle("nordic");
+      expect(document.documentElement.getAttribute("data-style")).toBe("nordic");
+      expect(localStorage.getItem(STYLE_STORAGE_KEY)).toBe("nordic");
+      expect(eventDetail).toBe("nordic");
 
       setStoredThemeStyle("classic");
       expect(document.documentElement.getAttribute("data-style")).toBe("classic");
@@ -270,6 +407,13 @@ describe("StyleProvider & useThemeStyle", () => {
       expect(document.documentElement.getAttribute("data-style")).toBe("vault");
 
       act(() => {
+        setStoredThemeStyle("nordic");
+      });
+
+      expect(screen.getByTestId("current-style").textContent).toBe("nordic");
+      expect(document.documentElement.getAttribute("data-style")).toBe("nordic");
+
+      act(() => {
         setStoredThemeStyle("classic");
       });
 
@@ -277,14 +421,18 @@ describe("StyleProvider & useThemeStyle", () => {
       expect(document.documentElement.getAttribute("data-style")).toBe("classic");
     });
 
-    it("toggleStoredThemeStyle toggles between classic and vault programmatically", () => {
+    it("toggleStoredThemeStyle cycles between classic, vault, and nordic programmatically", () => {
       setStoredThemeStyle("classic");
       const next1 = toggleStoredThemeStyle();
       expect(next1).toBe("vault");
       expect(document.documentElement.getAttribute("data-style")).toBe("vault");
 
       const next2 = toggleStoredThemeStyle();
-      expect(next2).toBe("classic");
+      expect(next2).toBe("nordic");
+      expect(document.documentElement.getAttribute("data-style")).toBe("nordic");
+
+      const next3 = toggleStoredThemeStyle();
+      expect(next3).toBe("classic");
       expect(document.documentElement.getAttribute("data-style")).toBe("classic");
     });
   });

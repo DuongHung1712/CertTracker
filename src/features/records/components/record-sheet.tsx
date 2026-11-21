@@ -10,7 +10,6 @@ import { DateField } from "@/components/date-field";
 import { EntityCombobox, type ComboboxOption } from "@/components/entity-combobox";
 import { FileDropzone } from "@/components/file-dropzone";
 import { RequiredMark } from "@/components/required-mark";
-import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,18 +25,15 @@ import { CatalogueStatusBadge } from "@/components/status/record-status";
 import { ProposeCertificateDialog } from "@/features/certificates/components/propose-certificate-dialog";
 import { createRecord, deleteRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
 import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
-import { CourseStudiedField } from "@/features/records/components/course-studied-field";
 import { CERTIFICATE_KIND_NOUN, type CertificateKind } from "@/features/certificates/schema";
-import { ADD_KIND_CHOICES, isRecordDeletableByMember, issuedDateHint, issuedDateLabel, plannedDateLabel, recordSavedMessage, recordSheetTitle, type ApprovalState } from "@/features/records/kind";
+import { ADD_KIND_CHOICES, isRecordDeletableByMember, issuedDateHint, issuedDateLabel, recordSavedMessage, recordSheetTitle, type ApprovalState } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import {
-  RECORD_STATUSES,
   recordSchema,
   REFUND_STATUS_LABEL,
   REFUND_STATUSES,
   type RecordInput,
 } from "@/features/records/schema";
-import { valuesOnStatusChange, visibleFields } from "@/features/records/status-fields";
 import { todayVn } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
 import { EVIDENCE_ACCEPT, EVIDENCE_WRONG_TYPE_MESSAGE, MAX_EVIDENCE_BYTES, sniffEvidenceType } from "@/lib/storage/evidence";
@@ -59,7 +55,6 @@ export function RecordSheet({
   showCompanyFields,
   canAddToCatalogue = false,
   fixedMemberId,
-  presetStatus,
   presetCertificateId,
   records,
   onEditExisting,
@@ -71,8 +66,6 @@ export function RecordSheet({
   records?: RecordRow[];
   /** Opens the existing row in this sheet; shown with the duplicate message. */
   onEditExisting?: (record: RecordRow) => void;
-  /** Opens an existing row with this status already chosen (the "Mark completed" shortcut); the user still fills the rest. */
-  presetStatus?: RecordStatus;
   /** Pre-selects a certificate (e.g. initiating renewal for an expiring/expired certificate). */
   presetCertificateId?: string;
   open: boolean;
@@ -119,8 +112,6 @@ export function RecordSheet({
   const rootErrorRef = useRef<HTMLParagraphElement>(null);
   /** The refund value typed before the company switch went off, restored when it goes back on. */
   const lastRefundRef = useRef<(typeof REFUND_STATUSES)[number]>("n_a");
-  /** Progress typed while In progress, restored when the status comes back to it (null: use the saved row's). */
-  const lastProgressRef = useRef<number | null>(null);
 
   // `listMemberOptions` returns active members only; the member of the row being edited may be
   // inactive, and the (disabled) picker must still show their name.
@@ -131,14 +122,13 @@ export function RecordSheet({
 
   const values = useMemo<FormValues>(() => {
     if (editing) {
-      const preset = presetStatus && presetStatus !== editing.status ? valuesOnStatusChange(presetStatus, editing) : null;
       return {
         memberId: editing.memberId,
         certificateId: editing.certificateId,
         courseId: editing.courseId ?? "",
-        status: presetStatus ?? editing.status,
-        progress: preset?.progress ?? editing.progress,
-        plannedExamDate: editing.plannedExamDate && !preset?.clear.includes("plannedExamDate") ? formatDate(editing.plannedExamDate) : "",
+        status: "done",
+        progress: 100,
+        plannedExamDate: editing.plannedExamDate ? formatDate(editing.plannedExamDate) : "",
         issuedDate: editing.issuedDate ? formatDate(editing.issuedDate) : "",
         certificateUrl: editing.certificateUrl ?? "",
         notes: editing.notes ?? "",
@@ -149,15 +139,15 @@ export function RecordSheet({
       memberId: fixedMemberId ?? "",
       certificateId: presetCertificateId ?? "",
       courseId: "",
-      status: presetStatus ?? "not_started",
-      progress: 0,
+      status: "done",
+      progress: 100,
       plannedExamDate: "",
       issuedDate: "",
       certificateUrl: "",
       notes: "",
       ...(showCompanyFields ? { viaCompany: false, refundStatus: "n_a" as const } : {}),
     };
-  }, [editing, fixedMemberId, showCompanyFields, presetStatus, presetCertificateId]);
+  }, [editing, fixedMemberId, showCompanyFields, presetCertificateId]);
 
   // `recordSchema` coerces/preprocesses several fields, so its input and output types diverge —
   // same three-generic form as course-sheet.tsx.
@@ -167,11 +157,6 @@ export function RecordSheet({
     // A realtime refresh may change `editing` under an open sheet: fields the user has touched must survive.
     resetOptions: { keepDirtyValues: true },
   });
-
-  // A new sheet or another record starts with no remembered values.
-  useEffect(() => {
-    lastProgressRef.current = null;
-  }, [open, editing?.id]);
 
   // Every way of closing (Cancel, Esc, overlay, successful save) goes through here, so a reopened
   // sheet never shows stale edits or a leftover file.
@@ -215,7 +200,7 @@ export function RecordSheet({
     }
 
     let uploadError: string | null = null;
-    if (file && input.status === "done") {
+    if (file) {
       const body = new FormData();
       body.set("recordId", recordId);
       body.set("file", file);
@@ -249,8 +234,6 @@ export function RecordSheet({
   }
 
   const errors = form.formState.errors;
-  const status = useWatch({ control: form.control, name: "status" });
-  const shown = visibleFields(status);
   const certificateId = useWatch({ control: form.control, name: "certificateId" });
   const courseId = useWatch({ control: form.control, name: "courseId" });
   const memberId = useWatch({ control: form.control, name: "memberId" });
@@ -297,19 +280,17 @@ export function RecordSheet({
     handleOpenChange(false);
   }
   const targetMemberId = fixedMemberId ?? memberId;
-  const activeExisting = records?.find(
-    (record) => record.memberId === targetMemberId && record.certificateId === certificateId && record.status !== "done",
-  );
-  const doneDuplicates = records?.filter(
-    (record) => record.memberId === targetMemberId && record.certificateId === certificateId && record.status === "done",
-  );
   const formIssuedDate = useWatch({ control: form.control, name: "issuedDate" });
-
+  // Same member, certificate and issue date as a saved certificate (the form holds dd/MM/yyyy, rows hold ISO).
   const duplicate = editing || !certificateId
     ? undefined
-    : status === "done"
-      ? (activeExisting ?? doneDuplicates?.find((r) => r.issuedDate && r.issuedDate === formIssuedDate))
-      : activeExisting;
+    : records?.find(
+        (r) =>
+          r.memberId === targetMemberId &&
+          r.certificateId === certificateId &&
+          r.issuedDate !== null &&
+          formatDate(r.issuedDate) === formIssuedDate,
+      );
 
   // A failed save is announced and focused, so a keyboard or screen-reader user lands on the reason.
   const rootError = errors.root?.message;
@@ -346,13 +327,13 @@ export function RecordSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="flex w-full flex-col sm:max-w-md">
+      <SheetContent className="flex w-full flex-col data-[side=right]:w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="text-section-title">{recordSheetTitle(!!editing, kind)}</SheetTitle>
+          <SheetTitle className="text-section-title">{recordSheetTitle(!!editing)}</SheetTitle>
         </SheetHeader>
         <form
           noValidate
-          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4 pb-4"
+          className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
           onSubmit={form.handleSubmit(onSubmit)}
         >
           {editing?.approval === "returned" && (
@@ -418,7 +399,7 @@ export function RecordSheet({
           <Field>
             <div className="flex items-center justify-between">
               <FieldLabel htmlFor="record-certificate">
-                {kind === "exam" ? "Certificate" : "Course completion"}
+                {kind === "exam" ? "Certificate" : "Course certificate"}
                 <RequiredMark />
               </FieldLabel>
               {certificate?.catalogueStatus && certificate.catalogueStatus !== "approved" && (
@@ -430,10 +411,10 @@ export function RecordSheet({
               value={certificateId}
               onChange={handleCertificateChange}
               options={kindCertificates}
-              placeholder={kind === "exam" ? "Choose a certificate" : "Choose a completion"}
-              emptyText={kind === "exam" ? "No certificates found" : "No course completions found"}
+              placeholder={kind === "exam" ? "Choose a certificate" : "Choose a course certificate"}
+              emptyText={kind === "exam" ? "No certificates found" : "No course certificates found"}
               emptyAction={{
-                label: kind === "exam" ? "Propose a new certificate" : "Propose a new course completion",
+                label: kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate",
                 onClick: (query) => handleOpenPropose(query),
               }}
               aria-invalid={!!errors.certificateId}
@@ -474,151 +455,50 @@ export function RecordSheet({
                     className="h-auto p-0 text-caption font-medium text-primary underline underline-offset-2"
                     onClick={() => handleOpenPropose()}
                   >
-                    + {kind === "exam" ? "Propose a new certificate" : "Propose a new course completion"}
+                    + {kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate"}
                   </Button>
                 </span>
               )}
             </FieldDescription>
-            <FieldError errors={[errors.certificateId && kind === "completion" ? { ...errors.certificateId, message: "Choose a course completion" } : errors.certificateId]} />
+            <FieldError errors={[errors.certificateId && kind === "completion" ? { ...errors.certificateId, message: "Choose a course certificate" } : errors.certificateId]} />
           </Field>
-          <CourseStudiedField
-            kind={kind}
-            certificate={certificate}
-            courses={studyCourses}
-            saved={editing?.courseId ? { id: editing.courseId, name: editing.courseName ?? "", certificateId: editing.certificateId } : null}
-            value={String(courseId ?? "")}
-            onChange={(next) => form.setValue("courseId", next, { shouldDirty: true })}
-          />
           <Field>
-            <FieldLabel htmlFor="record-status">
-              Status
-              <RequiredMark />
-            </FieldLabel>
             <Controller
               control={form.control}
-              name="status"
+              name="issuedDate"
               render={({ field }) => (
-                <Select
-                  value={field.value}
-                  onValueChange={(next) => {
-                    if (!next) return;
-                    const previous = field.value;
-                    field.onChange(next);
-                    // Progress is forced while hidden; keep what was typed so coming back to In progress restores it.
-                    if (previous === "in_progress") lastProgressRef.current = Number(form.getValues("progress"));
-                    const typedProgress = previous === "in_progress" ? Number(form.getValues("progress")) : (lastProgressRef.current ?? editing?.progress ?? 0);
-                    const change = valuesOnStatusChange(next, { progress: typedProgress });
-                    form.setValue("progress", change.progress);
-                    // Dirty, so a live update of the record cannot restore a value the user cleared.
-                    for (const name of change.clear) form.setValue(name, "", { shouldDirty: true });
-                    if (next !== "done") {
-                      setFile(null);
-                      setFileError(null);
-                    }
-                    form.clearErrors(["progress", ...change.clear]);
-                  }}
-                >
-                  <SelectTrigger id="record-status" aria-invalid={!!errors.status} aria-required>
-                    {/* Base UI's SelectValue renders the raw value by default; map it back to the label. */}
-                    <SelectValue placeholder="Choose a status">
-                      {(value: (typeof RECORD_STATUSES)[number]) => RECORD_STATUS_LABEL[value] ?? "Choose a status"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {RECORD_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {RECORD_STATUS_LABEL[status]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <DateField
+                  id="record-issued"
+                  label={issuedDateLabel(kind)}
+                  name={field.name}
+                  value={String(field.value ?? "")}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  max={todayVn()}
+                  invalid={!!errors.issuedDate}
+                  required
+                  describedBy="record-issued-hint"
+                />
               )}
             />
-            {!editing && kind === "exam" && (
-              <FieldDescription>Already passed it? Choose Completed to add the date and your proof.</FieldDescription>
-            )}
-            <FieldError errors={[errors.status]} />
+            <FieldDescription id="record-issued-hint">
+              {issuedDateHint(kind)}
+            </FieldDescription>
+            <FieldError errors={[errors.issuedDate]} />
           </Field>
-          {shown.progress && (
-            <Field>
-              <FieldLabel htmlFor="record-progress">
-                Progress (%)
-                <RequiredMark />
-              </FieldLabel>
-              <Input
-                id="record-progress"
-                type="number"
-                min={0}
-                max={100}
-                className="h-9"
-                {...form.register("progress")}
-                aria-invalid={!!errors.progress}
-                aria-required
-              />
-              <FieldError errors={[errors.progress]} />
-            </Field>
-          )}
-          {shown.plannedExamDate && (
-            <Field>
-              <Controller
-                control={form.control}
-                name="plannedExamDate"
-                render={({ field }) => (
-                  <DateField
-                    id="record-planned"
-                    label={plannedDateLabel(kind)}
-                    name={field.name}
-                    value={String(field.value ?? "")}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    invalid={!!errors.plannedExamDate}
-                  />
-                )}
-              />
-              <FieldError errors={[errors.plannedExamDate]} />
-            </Field>
-          )}
-          {shown.issuedDate && (
-            <Field>
-              <Controller
-                control={form.control}
-                name="issuedDate"
-                render={({ field }) => (
-                  <DateField
-                    id="record-issued"
-                    label={issuedDateLabel(kind)}
-                    name={field.name}
-                    value={String(field.value ?? "")}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    max={todayVn()}
-                    invalid={!!errors.issuedDate}
-                    required
-                    describedBy="record-issued-hint"
-                  />
-                )}
-              />
-              <FieldDescription id="record-issued-hint">
-                {issuedDateHint(kind)}
-              </FieldDescription>
-              <FieldError errors={[errors.issuedDate]} />
-            </Field>
-          )}
-          {shown.certificateUrl && (
-            <Field>
-              <FieldLabel htmlFor="record-url">{kind === "exam" ? "Certificate link" : "Course completion link"}</FieldLabel>
-              <Input
-                id="record-url"
-                type="url"
-                className="h-9"
-                {...form.register("certificateUrl")}
-                aria-invalid={!!errors.certificateUrl}
-                aria-describedby="record-url-hint"
-              />
-              <FieldDescription id="record-url-hint">Link to the public badge or verification page.</FieldDescription>
-              <FieldError errors={[errors.certificateUrl]} />
-            </Field>
-          )}
+          <Field>
+            <FieldLabel htmlFor="record-url">{kind === "exam" ? "Certificate link" : "Course certificate link"}</FieldLabel>
+            <Input
+              id="record-url"
+              type="url"
+              className="h-9"
+              {...form.register("certificateUrl")}
+              aria-invalid={!!errors.certificateUrl}
+              aria-describedby="record-url-hint"
+            />
+            <FieldDescription id="record-url-hint">Link to the public badge or verification page.</FieldDescription>
+            <FieldError errors={[errors.certificateUrl]} />
+          </Field>
           {showCompanyFields && (
             <>
               <Field orientation="horizontal">
@@ -678,49 +558,47 @@ export function RecordSheet({
               <FieldError errors={[errors.notes]} />
             </Field>
           )}
-          {shown.evidence && (
-            <Field>
-              <FieldLabel htmlFor="record-evidence">Evidence</FieldLabel>
-              <FieldDescription id="record-evidence-hint">{evidenceHint(!showCompanyFields)}</FieldDescription>
-              <FileDropzone
-                id="record-evidence"
-                file={file}
-                onChange={(next) => {
-                  setFile(next);
-                  setFileError(null);
-                }}
-                accept={EVIDENCE_ACCEPT}
-                maxBytes={MAX_EVIDENCE_BYTES}
-                onReject={setFileError}
-              />
-              {fileError && (
-                <p role="alert" className="text-caption text-destructive">
-                  {fileError}
-                </p>
-              )}
-              {editing?.hasEvidence && (
-                <div className="flex items-center justify-between gap-2">
-                  <a
-                    href={`/api/records/${editing.id}/evidence`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-body text-primary underline underline-offset-2"
-                  >
-                    View current evidence
-                  </a>
-                  <Button type="button" variant="ghost" size="sm" disabled={removingEvidence} onClick={handleRemoveEvidence}>
-                    Remove evidence
-                  </Button>
-                </div>
-              )}
-            </Field>
-          )}
+          <Field>
+            <FieldLabel htmlFor="record-evidence">Evidence</FieldLabel>
+            <FieldDescription id="record-evidence-hint">{evidenceHint(!showCompanyFields)}</FieldDescription>
+            <FileDropzone
+              id="record-evidence"
+              file={file}
+              onChange={(next) => {
+                setFile(next);
+                setFileError(null);
+              }}
+              accept={EVIDENCE_ACCEPT}
+              maxBytes={MAX_EVIDENCE_BYTES}
+              onReject={setFileError}
+            />
+            {fileError && (
+              <p role="alert" className="text-caption text-destructive">
+                {fileError}
+              </p>
+            )}
+            {editing?.hasEvidence && (
+              <div className="flex items-center justify-between gap-2">
+                <a
+                  href={`/api/records/${editing.id}/evidence`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-body text-primary underline underline-offset-2"
+                >
+                  View current evidence
+                </a>
+                <Button type="button" variant="ghost" size="sm" disabled={removingEvidence} onClick={handleRemoveEvidence}>
+                  Remove evidence
+                </Button>
+              </div>
+            )}
+          </Field>
           {errors.root && (
             <p ref={rootErrorRef} tabIndex={-1} role="alert" className="text-caption text-destructive outline-none">
               {errors.root.message}
             </p>
           )}
-          <SheetFooter className="flex-row items-center justify-between gap-2 px-0 pt-2 border-t border-border">
+          <SheetFooter className="sticky bottom-0 mt-auto flex-row items-center justify-between gap-2 border-t border-border bg-popover px-0 pt-2 pb-4">
             {editing && canDeleteCurrent ? (
               <Button
                 type="button"

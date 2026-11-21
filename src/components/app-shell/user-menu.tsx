@@ -1,10 +1,10 @@
 "use client";
 
-import { ChevronDown, Layers, Monitor, Moon, Palette, ShieldCheck, Sun, User } from "lucide-react";
+import { ChevronDown, Monitor, Moon, Palette, Sun, User } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useTransition } from "react";
-import { useThemeStyle, type ThemeStyle } from "@/components/style-provider";
+import { isThemeStyle, THEME_STYLES, useThemeStyle } from "@/components/style-provider";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -74,15 +74,13 @@ export function UserMenu({ email, role }: { email: string; role: Role }) {
             <span>Visual Style</span>
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent>
-            <DropdownMenuRadioGroup value={style} onValueChange={(val) => setStyle(val as ThemeStyle)}>
-              <DropdownMenuRadioItem value="classic">
-                <Layers aria-hidden className="size-4" />
-                <span>Classic Swiss</span>
-              </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="vault">
-                <ShieldCheck aria-hidden className="size-4" />
-                <span>Credential Vault</span>
-              </DropdownMenuRadioItem>
+            <DropdownMenuRadioGroup value={style} onValueChange={(val) => isThemeStyle(val) && setStyle(val)}>
+              {THEME_STYLES.map(({ id, label, icon: Icon }) => (
+                <DropdownMenuRadioItem key={id} value={id}>
+                  <Icon aria-hidden className="size-4" />
+                  <span>{label}</span>
+                </DropdownMenuRadioItem>
+              ))}
             </DropdownMenuRadioGroup>
           </DropdownMenuSubContent>
         </DropdownMenuSub>

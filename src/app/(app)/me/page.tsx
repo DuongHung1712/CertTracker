@@ -4,14 +4,19 @@ import { EmptyState } from "@/components/data/empty-state";
 import { getCurrentUser } from "@/features/auth/queries";
 import { parseMemberView } from "@/features/dashboard/member-metrics";
 import { ExportLinks } from "@/features/export/components/export-links";
+import { LearningTable } from "@/features/learning/components/learning-table";
+import { LearningTabs } from "@/features/learning/components/learning-tabs";
+import { parseLearningTab } from "@/features/learning/tab";
+import { toExamOptions } from "@/features/learning/exam-options";
+import { listCourseOptions, listLearningItems } from "@/features/learning/queries";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
 import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
 
-const MY_LEARNING_DESCRIPTION = "Your exam certificates and course completions: planned, in progress or done.";
+const MY_LEARNING_DESCRIPTION = "Your certificates, and the courses and exams you are working on.";
 
-export default async function MePage({ searchParams }: { searchParams: Promise<{ view?: string | string[] }> }) {
-  const { view } = await searchParams;
+export default async function MePage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; tab?: string | string[] }> }) {
+  const { view, tab } = await searchParams;
   const initialView = parseMemberView(view);
   const user = await getCurrentUser();
   if (!user) redirect("/login");
@@ -28,10 +33,12 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
     );
   }
 
-  const [records, certificateOptions, studyCourses] = await Promise.all([
+  const [records, certificateOptions, studyCourses, items, courses] = await Promise.all([
     listRecords({ memberId: user.memberId }),
     listCertificateOptions(),
     listStudyCourses(),
+    listLearningItems({ memberId: user.memberId }),
+    listCourseOptions(),
   ]);
 
   return (
@@ -43,18 +50,28 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
         actions={user.role === "member" ? <ExportLinks /> : undefined}
       />
       <RecordsRealtime />
-      <RecordsTable
-        // The dashboard tiles open this page with ?view=<tile>; the key remounts the table when it changes.
-        key={initialView ?? "all"}
-        initialView={initialView}
-        records={records}
-        memberOptions={[]}
-        certificateOptions={certificateOptions}
-        studyCourses={studyCourses}
-        mode="self"
-        fixedMemberId={user.memberId}
-        canDelete={user.role !== "member"}
-        showCompanyFields={user.role !== "member"}
+      <LearningTabs
+        initialTab={parseLearningTab(tab)}
+        certificatesCount={records.length}
+        learningCount={items.length}
+        certificates={
+          <RecordsTable
+            // The dashboard tiles open this page with ?view=<tile>; the key remounts the table when it changes.
+            key={initialView ?? "all"}
+            initialView={initialView}
+            records={records}
+            memberOptions={[]}
+            certificateOptions={certificateOptions}
+            studyCourses={studyCourses}
+            mode="self"
+            fixedMemberId={user.memberId}
+            canDelete={user.role !== "member"}
+            showCompanyFields={user.role !== "member"}
+          />
+        }
+        learning={
+          <LearningTable rows={items} mode="self" fixedMemberId={user.memberId} courses={courses} examOptions={toExamOptions(certificateOptions)} viewerMemberId={user.memberId} certificateOptions={certificateOptions} studyCourses={studyCourses} />
+        }
       />
     </div>
   );

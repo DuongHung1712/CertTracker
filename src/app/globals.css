@@ -268,8 +268,8 @@ input:-webkit-autofill:focus {
 }
 
 /* ==========================================================================
-   MULTI-STYLE THEME SYSTEM: Classic Swiss & Credential Vault
-   Dual-axis theme engine: Color Mode (Light / Dark / System) × Visual Style (classic / vault)
+   MULTI-STYLE THEME SYSTEM: Classic Swiss, Credential Vault & Nordic Heritage
+   Dual-axis theme engine: Color Mode (Light / Dark / System) × Visual Style (classic / vault / nordic)
    Anti-slop principles: 100% solid colors, zero gradient colors, zero FOUC.
    ========================================================================== */
 
@@ -732,3 +732,236 @@ html[data-style="vault"] .vault-dot-red {
     animation: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Nordic Heritage (`nordic`)
+   Warm tactile craft & heritage aesthetics (Linen & Terracotta):
+   - Natural linen/beige ground & deep forest pine green
+   - Solid crisp 1px warm sand / forest borders
+   - Warm charcoal / cream typography with WCAG AA >= 4.5:1 contrast
+   - Terracotta burnt orange accents for focus rings, targets & gap badges
+   - 100% solid opaque table headers and sticky cells (zero bleed-through)
+   - STRICT ANTI-SLOP & ZERO GRADIENTS: 100% solid colors
+   -------------------------------------------------------------------------- */
+
+/* Nordic design tokens: Light mode (warm linen & terracotta) */
+html[data-style="nordic"] {
+  --background: #F7F5EE;
+  --foreground: #1C1E1B;
+  --card: #FFFFFF;
+  --card-foreground: #1C1E1B;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1E1B;
+  --primary: #0E4D45;
+  --primary-foreground: #FFFFFF;
+  --primary-foreground-muted: #D8E4E0;
+  --primary-hover: #093933;
+  --secondary: #EFECE4;
+  --secondary-foreground: #1C1E1B;
+  --muted: #EFECE4;
+  --muted-foreground: #555C54;
+  --accent: #E5EFEA;
+  --accent-foreground: #0E4D45;
+  --destructive: #B42318;
+  --border: #E2DDD0;
+  --input: #7D847B;
+  --ring: #D95A1E;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1C1E1B;
+  --sidebar-primary: #0E4D45;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E5EFEA;
+  --sidebar-accent-foreground: #0E4D45;
+  --sidebar-border: #E2DDD0;
+  --sidebar-ring: #D95A1E;
+}
+
+/* Nordic design tokens: Dark mode (deep roast charcoal & glowing terracotta) */
+html[data-style="nordic"].dark {
+  --background: #151815;
+  --foreground: #ECE8DD;
+  --card: #1C201C;
+  --card-foreground: #ECE8DD;
+  --popover: #1C201C;
+  --popover-foreground: #ECE8DD;
+  --primary: #339987;
+  --primary-foreground: #0D1510;
+  --primary-foreground-muted: #16241E;
+  --primary-hover: #3EB29E;
+  --secondary: #232823;
+  --secondary-foreground: #ECE8DD;
+  --muted: #232823;
+  --muted-foreground: #9EABA0;
+  --accent: #172B24;
+  --accent-foreground: #4AD9BF;
+  --destructive: #F87171;
+  --border: #2C322C;
+  --input: #5C705E;
+  --ring: #EA6C2D;
+
+  --sidebar: #131613;
+  --sidebar-foreground: #ECE8DD;
+  --sidebar-primary: #339987;
+  --sidebar-primary-foreground: #0D1510;
+  --sidebar-accent: #172B24;
+  --sidebar-accent-foreground: #4AD9BF;
+  --sidebar-border: #2C322C;
+  --sidebar-ring: #EA6C2D;
+}
+
+/* Light mode Nordic Heritage: solid warm linen ground (zero gradient) */
+html[data-style="nordic"] body {
+  background-color: #F7F5EE;
+  background-image: none !important;
+}
+
+/* Dark mode Nordic Heritage: solid deep roast charcoal ground (zero gradient) */
+html[data-style="nordic"].dark body {
+  background-color: #151815;
+  background-image: none !important;
+}
+
+/* Let the solid body ground show through sidebar inset in Nordic mode */
+html[data-style="nordic"] [data-slot="sidebar-inset"] {
+  background-color: transparent !important;
+}
+
+/* Nordic Cards & Containers: crisp high-precision 1px warm sand / forest borders */
+html[data-style="nordic"] .bg-card,
+html[data-style="nordic"] [data-slot="card"],
+html[data-style="nordic"] [data-slot="vault-card"],
+html[data-style="nordic"] [role="dialog"],
+html[data-style="nordic"] [role="menu"],
+html[data-style="nordic"] .vault-card {
+  background-color: #FFFFFF;
+  border-color: #E2DDD0;
+  box-shadow: 0 1px 3px rgba(28, 30, 27, 0.04);
+  transition: border-color 0.15s ease;
+}
+
+html[data-style="nordic"].dark .bg-card,
+html[data-style="nordic"].dark [data-slot="card"],
+html[data-style="nordic"].dark [data-slot="vault-card"],
+html[data-style="nordic"].dark [role="dialog"],
+html[data-style="nordic"].dark [role="menu"],
+html[data-style="nordic"].dark .vault-card {
+  background-color: #1C201C;
+  border-color: #2C322C;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.15s ease;
+}
+
+html[data-style="nordic"] .vault-card:hover {
+  border-color: rgba(14, 77, 69, 0.4);
+}
+
+html[data-style="nordic"].dark .vault-card:hover {
+  border-color: rgba(51, 153, 135, 0.5);
+}
+
+/* Nordic buttons: solid deep pine green with terracotta focus ring */
+html[data-style="nordic"] [data-slot="button"][data-variant="default"],
+html[data-style="nordic"] button.bg-primary {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 2px rgba(14, 77, 69, 0.2);
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+html[data-style="nordic"] [data-slot="button"][data-variant="default"]:hover,
+html[data-style="nordic"] button.bg-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+html[data-style="nordic"].dark [data-slot="button"][data-variant="default"],
+html[data-style="nordic"].dark button.bg-primary {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+html[data-style="nordic"].dark [data-slot="button"][data-variant="default"]:hover,
+html[data-style="nordic"].dark button.bg-primary:hover {
+  background-color: var(--primary-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Nordic form inputs */
+html[data-style="nordic"] input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="file"]),
+html[data-style="nordic"] textarea,
+html[data-style="nordic"] select,
+html[data-style="nordic"] [data-slot="input"],
+html[data-style="nordic"] [data-slot="input-group"] {
+  border-color: var(--input);
+  transition: border-color 0.12s ease;
+}
+
+html[data-style="nordic"].dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([type="hidden"]):not([type="file"]),
+html[data-style="nordic"].dark textarea,
+html[data-style="nordic"].dark select,
+html[data-style="nordic"].dark [data-slot="input"],
+html[data-style="nordic"].dark [data-slot="input-group"] {
+  background-color: #151815;
+  border-color: var(--input);
+}
+
+html[data-style="nordic"] :is(input, textarea, select, [data-slot="input"]):focus-visible,
+html[data-style="nordic"] [data-slot="input-group"]:has([data-slot="input-group-control"]:focus-visible) {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+  border-color: var(--ring);
+}
+
+/* Nordic safe table cells: 100% solid & opaque, zero bleed-through */
+html[data-style="nordic"] thead,
+html[data-style="nordic"] thead th,
+html[data-style="nordic"] thead td,
+html[data-style="nordic"] table thead tr,
+html[data-style="nordic"] table th,
+html[data-style="nordic"] table td[class*="sticky"],
+html[data-style="nordic"] table td.sticky,
+html[data-style="nordic"] [data-sticky="true"],
+html[data-style="nordic"] .sticky-header,
+html[data-style="nordic"] .sticky {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-style="nordic"] thead th,
+html[data-style="nordic"] thead td,
+html[data-style="nordic"] table thead tr,
+html[data-style="nordic"] thead {
+  background-color: #EFECE4 !important;
+  border-bottom: 1px solid #E2DDD0;
+}
+
+html[data-style="nordic"] table td[class*="sticky"],
+html[data-style="nordic"] table td.sticky,
+html[data-style="nordic"] [data-sticky="true"]:not(th) {
+  background-color: #FFFFFF !important;
+}
+
+html[data-style="nordic"] tr:hover td[class*="sticky"],
+html[data-style="nordic"] tr:hover td.sticky {
+  background-color: #F4EFE6 !important;
+}
+
+html[data-style="nordic"].dark thead th,
+html[data-style="nordic"].dark thead td,
+html[data-style="nordic"].dark table thead tr,
+html[data-style="nordic"].dark thead {
+  background-color: #232823 !important;
+  border-bottom: 1px solid #2C322C;
+}
+
+html[data-style="nordic"].dark table td[class*="sticky"],
+html[data-style="nordic"].dark table td.sticky,
+html[data-style="nordic"].dark [data-sticky="true"]:not(th) {
+  background-color: #1C201C !important;
+}
+
+html[data-style="nordic"].dark tr:hover td[class*="sticky"],
+html[data-style="nordic"].dark tr:hover td.sticky {
+  background-color: #262D26 !important;
+}
+

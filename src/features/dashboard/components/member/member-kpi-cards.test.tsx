@@ -20,12 +20,12 @@ describe("MemberKpiCards tiles", () => {
     expect(htmlEmpty).toContain('href="/me?view=needs-action"');
     expect(htmlEmpty).toContain('href="/courses"');
     expect(htmlEmpty).toContain("Explore catalogue →");
-    expect(htmlEmpty).toContain('href="/me?view=up-next"');
+    expect(htmlEmpty).toContain('href="/me?tab=learning"');
 
     const htmlWithProgress = render([
       makeRecord({ id: "p1", status: "in_progress", progress: 30, certificateName: "AWS Dev" }),
     ]);
-    expect(htmlWithProgress).toContain('href="/me?view=in-progress"');
+    expect(htmlWithProgress).toContain('href="/me?tab=learning"');
     expect(htmlWithProgress).not.toMatch(/Study hours|Profile health|Active credentials/);
   });
 

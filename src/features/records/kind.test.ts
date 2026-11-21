@@ -55,11 +55,9 @@ describe("kind filter", () => {
     expect(kindCounts(rows)).toEqual({ all: 3, exam: 2, completion: 1 });
   });
 
-  it("words the sheet title and the saved message after the chosen kind, neutral before one is chosen", () => {
-    expect(recordSheetTitle(false, undefined)).toBe("Add certificate or course completion");
-    expect(recordSheetTitle(false, "exam")).toBe("Add certificate");
-    expect(recordSheetTitle(false, "completion")).toBe("Add course completion");
-    expect(recordSheetTitle(true, "completion")).toBe("Edit course completion");
+  it("titles the sheet as a certificate for both kinds, and words the saved message after the kind", () => {
+    expect(recordSheetTitle(false)).toBe("Add certificate");
+    expect(recordSheetTitle(true)).toBe("Edit certificate");
     expect(recordSavedMessage(true, "completion")).toBe("Saved course completion");
     expect(recordSavedMessage(false, "exam")).toBe("Added certificate");
     expect(recordSavedMessage(false, undefined)).toBe("Added certificate");

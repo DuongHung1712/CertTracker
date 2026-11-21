@@ -1,12 +1,15 @@
 "use client";
 
+import { Layers, ShieldCheck, TreePine, type LucideIcon } from "lucide-react";
 import * as React from "react";
 
-export type ThemeStyle = "classic" | "vault";
+export type ThemeStyle = "classic" | "vault" | "nordic";
 
 export interface StyleOption {
   id: ThemeStyle;
   label: string;
+  shortLabel: string;
+  icon: LucideIcon;
   tagline: string;
   description: string;
 }
@@ -15,6 +18,8 @@ export const THEME_STYLES: StyleOption[] = [
   {
     id: "classic",
     label: "Classic Swiss",
+    shortLabel: "Classic",
+    icon: Layers,
     tagline: "Dense, functional, paper & ink",
     description:
       "Original CertTracker design. Crisp flat borders, warm paper-white background, 6px radius, and zero unnecessary decorative ornament.",
@@ -22,18 +27,41 @@ export const THEME_STYLES: StyleOption[] = [
   {
     id: "vault",
     label: "Credential Vault",
+    shortLabel: "Vault",
+    icon: ShieldCheck,
     tagline: "Cryptographic security & physical credential",
     description:
       "Tailored for authentic credentials: crisp precision 1px borders, monospace security tags, solid high-contrast surfaces, and live status dots.",
   },
+  {
+    id: "nordic",
+    label: "Nordic Heritage",
+    shortLabel: "Nordic",
+    icon: TreePine,
+    tagline: "Warm linen, pine green & terracotta",
+    description:
+      "Warm tactile craft: natural linen ground, deep forest pine primary, warm sand borders, and terracotta accents with zero gradients.",
+  },
 ];
+
+const STYLE_IDS: string[] = THEME_STYLES.map((option) => option.id);
+
+export function isThemeStyle(value: unknown): value is ThemeStyle {
+  return typeof value === "string" && STYLE_IDS.includes(value);
+}
+
+/** The style after `current` in THEME_STYLES order, wrapping round. */
+export function nextThemeStyle(current: ThemeStyle): ThemeStyle {
+  const index = THEME_STYLES.findIndex((option) => option.id === current);
+  return THEME_STYLES[(index + 1) % THEME_STYLES.length].id;
+}
 
 export const STYLE_STORAGE_KEY = "certtracker-style";
 /** Dispatched on window by setStoredThemeStyle so every reader in this tab re-reads the style. */
 export const STYLE_CHANGE_EVENT = "certtracker-style-change";
 
 /** Inline script injected into <head> to prevent FOUC before React hydration */
-export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(s==='vault'||s==='classic'){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
+export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STYLE_STORAGE_KEY}');if(${JSON.stringify(STYLE_IDS)}.indexOf(s)>=0){document.documentElement.setAttribute('data-style',s);}else{document.documentElement.setAttribute('data-style','classic');}}catch(e){}})();`;
 
 /**
  * Pure helper function to get the current stored theme style from the DOM or localStorage.
@@ -42,12 +70,12 @@ export const STYLE_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${
 export function getStoredThemeStyle(): ThemeStyle {
   if (typeof document !== "undefined") {
     const attr = document.documentElement.getAttribute("data-style");
-    if (attr === "classic" || attr === "vault") return attr;
+    if (isThemeStyle(attr)) return attr;
   }
   if (typeof localStorage !== "undefined") {
     try {
       const stored = localStorage.getItem(STYLE_STORAGE_KEY);
-      if (stored === "classic" || stored === "vault") return stored;
+      if (isThemeStyle(stored)) return stored;
     } catch {
       // ignore
     }
@@ -60,7 +88,7 @@ export function getStoredThemeStyle(): ThemeStyle {
  * persist to localStorage, and dispatch a custom style change event.
  */
 export function setStoredThemeStyle(next: ThemeStyle): void {
-  if (next !== "classic" && next !== "vault") return;
+  if (!isThemeStyle(next)) return;
   if (typeof document !== "undefined") {
     document.documentElement.setAttribute("data-style", next);
   }
@@ -77,11 +105,11 @@ export function setStoredThemeStyle(next: ThemeStyle): void {
 }
 
 /**
- * Pure helper function to toggle between 'classic' and 'vault' styles.
+ * Pure helper function to move to the next style in THEME_STYLES order.
  */
 export function toggleStoredThemeStyle(): ThemeStyle {
   const current = getStoredThemeStyle();
-  const next: ThemeStyle = current === "classic" ? "vault" : "classic";
+  const next = nextThemeStyle(current);
   setStoredThemeStyle(next);
   return next;
 }
@@ -109,7 +137,7 @@ export function StyleProvider({
       // Another tab changed or cleared the stored style.
       const onStorage = (e: StorageEvent) => {
         if (e.key !== STYLE_STORAGE_KEY) return;
-        const next = e.newValue === "classic" || e.newValue === "vault" ? e.newValue : defaultStyle;
+        const next = isThemeStyle(e.newValue) ? e.newValue : defaultStyle;
         document.documentElement.setAttribute("data-style", next);
         onChange();
       };
@@ -133,7 +161,7 @@ export function StyleProvider({
       // localStorage may fail in restricted/private contexts
     }
     const attr = document.documentElement.getAttribute("data-style");
-    const next = stored === "classic" || stored === "vault" ? stored : attr === "classic" || attr === "vault" ? attr : defaultStyle;
+    const next = isThemeStyle(stored) ? stored : isThemeStyle(attr) ? attr : defaultStyle;
     document.documentElement.setAttribute("data-style", next);
     window.dispatchEvent(new CustomEvent(STYLE_CHANGE_EVENT, { detail: next }));
   }, [defaultStyle]);

@@ -32,6 +32,7 @@ vi.mock("@/features/records/queries", () => ({
   listCertificateOptions: vi.fn(async () => []),
   listStudyCourses: vi.fn(async () => []),
 }));
+vi.mock("@/features/learning/queries", () => ({ listLearningItems: vi.fn(async () => []), listCourseOptions: vi.fn(async () => []) }));
 // The member view pulls in server actions; the admin path never renders it.
 vi.mock("@/features/dashboard/components/member/member-dashboard-view", () => ({
   MemberDashboardView: () => null,

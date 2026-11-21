@@ -1,16 +1,19 @@
 "use client";
 
-import { Layers, ShieldCheck } from "lucide-react";
-import { useThemeStyle } from "@/components/style-provider";
+import { nextThemeStyle, THEME_STYLES, useThemeStyle, type ThemeStyle } from "@/components/style-provider";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
-/** One-click switch between the two visual styles. The root layout wraps every page in StyleProvider. */
+const ICON_TONE: Partial<Record<ThemeStyle, string>> = { vault: "text-status-active-fg", nordic: "text-primary" };
+const optionOf = (style: ThemeStyle) => THEME_STYLES.find((option) => option.id === style) ?? THEME_STYLES[0];
+
+/** One-click switch cycling between visual styles (Classic -> Vault -> Nordic -> Classic). */
 export function StyleToggle({ className }: { className?: string }) {
   const { style, toggleStyle } = useThemeStyle();
-  const isVault = style === "vault";
-  const targetLabel = isVault ? "Classic Swiss" : "Credential Vault";
-  const currentLabel = isVault ? "Credential Vault" : "Classic Swiss";
+  const meta = optionOf(style);
+  const next = optionOf(nextThemeStyle(meta.id));
+  const Icon = meta.icon;
 
   return (
     <Tooltip>
@@ -20,23 +23,19 @@ export function StyleToggle({ className }: { className?: string }) {
             variant="ghost"
             size="sm"
             onClick={toggleStyle}
-            aria-label={`Switch visual style to ${targetLabel} (currently ${currentLabel}). Shortcut: Alt+V`}
+            aria-label={`Switch visual style to ${next.label} (currently ${meta.label}). Shortcut: Alt+V`}
             className={className}
           >
-            {isVault ? (
-              <ShieldCheck aria-hidden className="size-4 text-status-active-fg" />
-            ) : (
-              <Layers aria-hidden className="size-4" />
-            )}
-            <span className="hidden text-caption font-medium lg:inline">{isVault ? "Vault" : "Classic"}</span>
+            <Icon aria-hidden className={cn("size-4", ICON_TONE[meta.id])} />
+            <span className="hidden text-caption font-medium lg:inline">{meta.shortLabel}</span>
           </Button>
         }
       />
       <TooltipContent side="bottom">
         <p className="text-caption">
-          Visual style: <span className="font-semibold">{currentLabel}</span>
+          Visual style: <span className="font-semibold">{meta.label}</span>
         </p>
-        <p className="text-caption text-muted-foreground">Click or press Alt+V to switch to {targetLabel}</p>
+        <p className="text-caption text-muted-foreground">Click or press Alt+V to switch to {next.label}</p>
       </TooltipContent>
     </Tooltip>
   );

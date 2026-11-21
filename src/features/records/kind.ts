@@ -1,4 +1,4 @@
-import { CERTIFICATE_KIND_NOUN, certificateSheetTitle, type CertificateKind } from "@/features/certificates/schema";
+import { CERTIFICATE_KIND_NOUN, type CertificateKind } from "@/features/certificates/schema";
 
 type WithKind = { certificateKind: CertificateKind };
 
@@ -35,7 +35,7 @@ export type KindFilter = (typeof KIND_FILTERS)[number];
 export const KIND_FILTER_LABEL: Record<KindFilter, string> = {
   all: "All",
   exam: "Exam certificates",
-  completion: "Course completions",
+  completion: "Course certificates",
 };
 
 export const isExam = (row: WithKind): boolean => row.certificateKind === "exam";
@@ -57,11 +57,9 @@ export const plannedDateLabel = (kind: CertificateKind): string =>
 export const plannedDateHeader = (filter: KindFilter): string =>
   filter === "all" ? "Planned date" : plannedDateLabel(filter);
 
-const NEUTRAL_ADD_TITLE = "Add certificate or course completion";
-
 /** Neutral until a certificate is chosen; after that a completion is never called a "certificate". */
-export const recordSheetTitle = (editing: boolean, kind: CertificateKind | undefined): string =>
-  kind ? certificateSheetTitle(editing, kind) : NEUTRAL_ADD_TITLE;
+/** Decision #72: the sheet only adds results, so it is a certificate whatever its kind. */
+export const recordSheetTitle = (editing: boolean): string => (editing ? "Edit certificate" : "Add certificate");
 
 export const recordSavedMessage = (editing: boolean, kind: CertificateKind | undefined): string =>
   `${editing ? "Saved" : "Added"} ${CERTIFICATE_KIND_NOUN[kind ?? "exam"]}`;
@@ -83,8 +81,8 @@ export const ADD_KIND_CHOICES: { kind: CertificateKind; label: string; hint: str
   },
   {
     kind: "completion",
-    label: "Course completion",
-    hint: "Courses and training programs with a completion certificate (Coursera, Udemy, internal...)",
+    label: "Course certificate",
+    hint: "Credential issued for completing a course (Coursera, Udemy, internal...)",
   },
 ];
 

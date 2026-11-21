@@ -22,7 +22,7 @@ export async function listCourses() {
     supabase
       .from("courses")
       .select(
-        "id, name, provider_id, refundable, cost, cost_currency, est_hours, url, refund_conditions, prepares_for_id, providers(name), prepares_for:certificates!courses_prepares_for_id_fkey(name), grants:certificates!certificates_course_id_fkey(name)",
+        "id, name, provider_id, refundable, cost, cost_currency, est_hours, url, refund_conditions, prepares_for_id, catalogue_status, proposed_provider, providers(name), prepares_for:certificates!courses_prepares_for_id_fkey(name), grants:certificates!certificates_course_id_fkey(name)",
       )
       .order("name")
       .order("id")
@@ -32,7 +32,7 @@ export async function listCourses() {
     id: row.id,
     name: row.name,
     providerId: row.provider_id,
-    providerName: row.providers?.name ?? "—",
+    providerName: row.providers?.name ?? row.proposed_provider ?? "—",
     preparesForId: row.prepares_for_id,
     preparesForName: row.prepares_for?.name ?? null,
     // certificates.course_id is unique, so a course grants at most one completion.
@@ -43,5 +43,6 @@ export async function listCourses() {
     estHours: row.est_hours,
     url: row.url,
     refundConditions: row.refund_conditions,
+    catalogueStatus: row.catalogue_status as "approved" | "pending" | "rejected",
   }));
 }

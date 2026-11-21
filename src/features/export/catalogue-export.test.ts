@@ -10,7 +10,7 @@ const exam: CertificateRow = {
 const completion: CertificateRow = { ...exam, id: "c1", name: "Intro done", kind: "completion", validityMonths: 12, courseId: "k1", courseName: "Intro" };
 const course = (over: Partial<Parameters<typeof courseExportRows>[0][number]>) => ({
   id: "k1", name: "Intro", providerId: "p", providerName: "AWS", preparesForId: null, preparesForName: null,
-  grantsCertificateName: null, refundable: false, cost: null, costCurrency: null, estHours: null, url: null, refundConditions: null,
+  grantsCertificateName: null, refundable: false, cost: null, costCurrency: null, estHours: null, url: null, refundConditions: null, catalogueStatus: "approved" as const,
   ...over,
 });
 

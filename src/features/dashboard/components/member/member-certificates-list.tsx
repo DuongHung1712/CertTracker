@@ -2,13 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Award, BookOpen, CircleCheck, Clock, FileText, Pencil, Plus, ShieldAlert, Trash2, type LucideIcon } from "lucide-react";
+import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert, Trash2, type LucideIcon } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/data/empty-state";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
-import { clampPercent, type RecordStatus } from "@/components/status/labels";
 import { ApprovalBadge, CatalogueStatusBadge, RecordStatusLabel } from "@/components/status/record-status";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,10 +19,10 @@ import {
   type MemberSort,
   type MemberTab,
 } from "@/features/dashboard/member-metrics";
-import { isApprovedDone, isRecordDeletableByMember, kindCounts, learningPath, plannedDateLabel } from "@/features/records/kind";
+import { isApprovedDone, isRecordDeletableByMember, kindCounts, learningPath } from "@/features/records/kind";
 import { CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { RecordSheet } from "@/features/records/components/record-sheet";
-import { deleteRecord, updateRecordProgress } from "@/features/records/actions";
+import { deleteRecord } from "@/features/records/actions";
 import type { RecordRow } from "@/features/records/queries";
 import { formatDate } from "@/lib/format";
 import { pluralize } from "@/lib/plural";
@@ -64,8 +63,6 @@ export function MemberCertificatesList({
   sheetOpen,
   onSheetOpenChange,
   editingRecord,
-  presetStatus,
-  presetCertificateId,
   onEditRecord,
 }: {
   fullName: string;
@@ -76,11 +73,7 @@ export function MemberCertificatesList({
   sheetOpen: boolean;
   onSheetOpenChange: (open: boolean) => void;
   editingRecord: RecordRow | null;
-  /** Status the sheet opens with ("Mark completed"); owned by the parent with `editingRecord`. */
-  presetStatus?: RecordStatus;
-  /** Certificate to pre-select (e.g. renewal flow). */
-  presetCertificateId?: string;
-  onEditRecord: (record: RecordRow | null, presetStatus?: RecordStatus) => void;
+  onEditRecord: (record: RecordRow | null) => void;
 }) {
   const [tab, setTab] = useState<MemberTab>("all");
   const [sort, setSort] = useState<MemberSort>("expiry");
@@ -90,39 +83,16 @@ export function MemberCertificatesList({
   const visibleRecords = filteredRecords.slice(0, 8);
   const hasMore = filteredRecords.length > 8;
 
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [progressOverrides, setProgressOverrides] = useState<Record<string, number>>({});
   const [confirmDeleteRecord, setConfirmDeleteRecord] = useState<RecordRow | null>(null);
   const [deleting, setDeleting] = useState(false);
-
-  async function handleQuickStep(recordId: string, currentProgress: number, step: number, certName: string) {
-    const nextProgress = Math.min(99, Math.max(0, currentProgress + step));
-    if (nextProgress === currentProgress) return;
-
-    setUpdatingId(recordId);
-    setProgressOverrides((prev) => ({ ...prev, [recordId]: nextProgress }));
-
-    const res = await updateRecordProgress(recordId, nextProgress);
-    setUpdatingId(null);
-    if (!res.ok) {
-      toast.error(res.error);
-      setProgressOverrides((prev) => {
-        const copy = { ...prev };
-        delete copy[recordId];
-        return copy;
-      });
-    } else {
-      toast.success(`Updated ${certName} progress to ${nextProgress}%`);
-    }
-  }
 
   function handleAdd() {
     onEditRecord(null);
     onSheetOpenChange(true);
   }
 
-  function handleEdit(record: RecordRow, preset?: RecordStatus) {
-    onEditRecord(record, preset);
+  function handleEdit(record: RecordRow) {
+    onEditRecord(record);
     onSheetOpenChange(true);
   }
 
@@ -169,9 +139,6 @@ export function MemberCertificatesList({
               <TabsTrigger value="expiring" className="text-caption">
                 {`Expiring within 60 days (${tabCounts.expiring})`}
               </TabsTrigger>
-              <TabsTrigger value="in_progress" className="text-caption">
-                {`In progress (${tabCounts.in_progress})`}
-              </TabsTrigger>
             </TabsList>
           </Tabs>
         )}
@@ -180,7 +147,7 @@ export function MemberCertificatesList({
       {records.length === 0 ? (
         <EmptyState
           title="Nothing added yet"
-          description="Planning an exam or a course? Add it now and update its status as you go."
+          description="Passed an exam or finished a course? Add the certificate with its proof."
           action={
             <Button onClick={handleAdd} size="sm">
               <Plus className="size-4" aria-hidden="true" />
@@ -196,7 +163,6 @@ export function MemberCertificatesList({
       ) : (
         <div className="flex flex-col gap-3">
           {visibleRecords.map((record) => {
-            const isInProgress = record.status === "in_progress";
             // Verified = counted (approved, not renewed) and still valid; a Waiting or Returned item is not.
             const isVerified =
               isApprovedDone(record) && (record.expiryStatus === "Active" || record.expiryStatus === "No Expiry");
@@ -278,23 +244,6 @@ export function MemberCertificatesList({
                         </Tooltip>
                       )}
 
-                      {record.status !== "done" && (
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleEdit(record, "done")}
-                                aria-label={`Mark ${record.certificateName} completed`}
-                              >
-                                <CircleCheck className="size-4" aria-hidden="true" />
-                              </Button>
-                            }
-                          />
-                          <TooltipContent side="top">Mark completed</TooltipContent>
-                        </Tooltip>
-                      )}
 
                       <Tooltip>
                         <TooltipTrigger
@@ -351,60 +300,6 @@ export function MemberCertificatesList({
                   </dl>
                 )}
 
-                {/* In Progress Study Progress Meter Row */}
-                {isInProgress && (
-                  <div className="flex flex-col gap-2 border-t border-border/50 pt-2 sm:flex-row sm:items-center sm:justify-between sm:pl-12">
-                    <div className="flex flex-col gap-1 flex-1 min-w-0">
-                      <div className="flex items-center justify-between text-caption">
-                        <span className="text-muted-foreground">Study progress</span>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={updatingId === record.id || (progressOverrides[record.id] ?? record.progress) >= 99}
-                              onClick={() => handleQuickStep(record.id, progressOverrides[record.id] ?? record.progress, 10, record.certificateName)}
-                              className="h-5 rounded px-1.5 font-mono text-label leading-none tabular-nums hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
-                              aria-label={`Add 10% progress to ${record.certificateName}`}
-                            >
-                              +10%
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              disabled={updatingId === record.id || (progressOverrides[record.id] ?? record.progress) >= 99}
-                              onClick={() => handleQuickStep(record.id, progressOverrides[record.id] ?? record.progress, 25, record.certificateName)}
-                              className="h-5 rounded px-1.5 font-mono text-label leading-none tabular-nums hover:border-primary/30 hover:bg-primary/10 hover:text-primary"
-                              aria-label={`Add 25% progress to ${record.certificateName}`}
-                            >
-                              +25%
-                            </Button>
-                          </div>
-                          <span className="font-mono font-medium text-foreground">
-                            {progressOverrides[record.id] ?? record.progress}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full bg-primary transition-all duration-300"
-                          style={{ width: `${clampPercent(progressOverrides[record.id] ?? record.progress)}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {record.plannedExamDate && (
-                      <div className="flex flex-col items-start sm:items-end text-caption text-muted-foreground shrink-0 sm:pl-4">
-                        <span className="text-caption">{plannedDateLabel(record.certificateKind)}</span>
-                        <span className="font-mono text-xs font-medium text-foreground">
-                          {formatDate(record.plannedExamDate)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -426,8 +321,6 @@ export function MemberCertificatesList({
         open={sheetOpen}
         onOpenChange={onSheetOpenChange}
         editing={editingRecord}
-        presetStatus={presetStatus}
-        presetCertificateId={presetCertificateId}
         memberOptions={[]}
         certificateOptions={certificateOptions}
         studyCourses={studyCourses}

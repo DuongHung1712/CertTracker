@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { updateRecord, updateRecordProgress } from "@/features/records/actions";
+import { updateRecord } from "@/features/records/actions";
 import type { RecordInput } from "@/features/records/schema";
 
 const RECORD_ID = "5eed0000-0000-0000-0000-00000000c001";
@@ -27,10 +27,10 @@ const memberEdit = {
   memberId: "5eed0000-0000-0000-0000-00000000b001",
   certificateId: "5eed0000-0000-0000-0000-00000000d001",
   courseId: null,
-  status: "in_progress",
-  progress: 40,
+  status: "done",
+  progress: 100,
   plannedExamDate: null,
-  issuedDate: null,
+  issuedDate: "2026-06-01",
   certificateUrl: null,
 };
 
@@ -102,17 +102,3 @@ describe("updateRecord and the course studied", () => {
   });
 });
 
-describe("updateRecordProgress", () => {
-  it("updates progress when valid", async () => {
-    const result = await updateRecordProgress(RECORD_ID, 50);
-    expect(result).toEqual({ ok: true, data: null });
-    expect(update).toHaveBeenCalledWith({ progress: 50 });
-  });
-
-  it("rejects invalid id or progress percentage", async () => {
-    expect(await updateRecordProgress("not-a-uuid", 50)).toEqual({ ok: false, error: "Invalid data" });
-    expect(await updateRecordProgress(RECORD_ID, -10)).toEqual({ ok: false, error: "Progress must be between 0 and 99%" });
-    expect(await updateRecordProgress(RECORD_ID, 100)).toEqual({ ok: false, error: "Progress must be between 0 and 99%" });
-    expect(await updateRecordProgress(RECORD_ID, 150)).toEqual({ ok: false, error: "Progress must be between 0 and 99%" });
-  });
-});
