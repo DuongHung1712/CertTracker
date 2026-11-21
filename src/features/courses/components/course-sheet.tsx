@@ -19,22 +19,18 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { CURRENCIES, toCurrency } from "@/lib/money";
 
-const NONE = "none";
 type Editing = (CourseInput & { id: string; grantsCertificateName?: string | null }) | null;
 
 export function CourseSheet({
   open,
   onOpenChange,
   editing,
-  certificates,
   providers,
   certTypes,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editing: Editing;
-  /** Exam certificates a course can prepare for. */
-  certificates: SelectOption[];
   providers: SelectOption[];
   /** Types the completion can have (create mode only). */
   certTypes: SelectOption[];
@@ -49,7 +45,8 @@ export function CourseSheet({
     estHours: null,
     url: null,
     refundConditions: null,
-    grantsCompletion: false,
+    // Owner 2026-11-20: a course normally ends in a completion certificate.
+    grantsCompletion: true,
     completionCertTypeId: "",
     completionUrl: null,
     completionName: null,
@@ -131,24 +128,6 @@ export function CourseSheet({
           )}
         />
         <FieldError errors={[form.formState.errors.providerId]} />
-      </Field>
-      <Field>
-        <FieldLabel htmlFor="course-prepares-for">Prepares for</FieldLabel>
-        <Controller
-          control={form.control}
-          name="preparesForId"
-          render={({ field }) => (
-            <OptionSelect
-              id="course-prepares-for"
-              value={typeof field.value === "string" && field.value ? field.value : NONE}
-              onChange={(value) => field.onChange(value === NONE ? null : value)}
-              options={[{ id: NONE, name: "None" }, ...certificates]}
-              placeholder="None"
-              invalid={!!form.formState.errors.preparesForId}
-            />
-          )}
-        />
-        <FieldError errors={[form.formState.errors.preparesForId]} />
       </Field>
       <div className="grid grid-cols-[1fr_8rem] gap-3">
         <Field>

@@ -40,7 +40,7 @@ describe("RecordsTable kind filter", () => {
     expect(screen.getByRole("tab", { name: "All (3)" })).toBeTruthy();
     expect(screen.getByRole("tab", { name: "Exam certificates (1)" })).toBeTruthy();
 
-    await userEvent.click(screen.getByRole("tab", { name: "Course completions (2)" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Course certificates (2)" }));
     expect(rowNames().join("|")).toContain("Intro to Terraform");
     expect(rowNames().join("|")).not.toContain("AWS Solutions Architect");
 
@@ -51,24 +51,24 @@ describe("RecordsTable kind filter", () => {
   it("self mode: names the planned date by the chosen kind and offers the add action for both kinds", async () => {
     render(table("self"));
     expect(screen.getByRole("columnheader", { name: "Planned date" })).toBeTruthy();
-    await userEvent.click(screen.getByRole("tab", { name: "Course completions (2)" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Course certificates (2)" }));
     expect(screen.getByRole("columnheader", { name: "Planned finish date" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Add certificate or course completion" })).toBeTruthy();
-    expect(screen.getByText("Planning an exam or a course? Add it now and update its status as you go.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Add certificate" })).toBeTruthy();
+    expect(screen.getByText("Passed an exam or finished a course? Add the certificate with its proof.")).toBeTruthy();
   });
 
   it("team mode: a Kind select, not tabs", async () => {
     render(table("team"));
     expect(screen.queryByRole("tab")).toBeNull();
     await userEvent.click(screen.getByRole("combobox", { name: "Kind" }));
-    await userEvent.click(await screen.findByRole("option", { name: "Course completions" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Course certificates" }));
     expect(rowNames().join("|")).not.toContain("AWS Solutions Architect");
     expect(rowNames()).toHaveLength(2);
   });
 
   it("Clear filters resets the kind", async () => {
     render(table("self"));
-    await userEvent.click(screen.getByRole("tab", { name: "Course completions (2)" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Course certificates (2)" }));
     await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(rowNames()).toHaveLength(3);
     expect(screen.getByRole("tab", { name: "All (3)" }).getAttribute("aria-selected")).toBe("true");
@@ -220,5 +220,24 @@ describe("RecordsTable member draft delete", () => {
 
     const approvedMenu = await getMenu(/Actions for Me · Approved Exam/);
     expect(approvedMenu).not.toContain("Delete");
+  });
+});
+
+describe("RecordsTable status of a certificate (decision #72)", () => {
+  it("shows the approval state, not Completed or a progress", () => {
+    render(table("self", [makeRecord({ id: "w1", certificateName: "Waiting Cert", approval: "waiting" })]));
+    const cells = within(screen.getAllByRole("row")[1]!).getAllByRole("cell").map((cell) => cell.textContent ?? "");
+    expect(cells.join("|")).toContain("Waiting for approval");
+    expect(cells.join("|")).not.toContain("Completed");
+  });
+
+  it("filters by approval state", async () => {
+    render(table("self", [
+      makeRecord({ id: "a1", certificateName: "Approved Cert", approval: "approved" }),
+      makeRecord({ id: "w1", certificateName: "Waiting Cert", approval: "waiting" }),
+    ]));
+    await userEvent.click(screen.getByRole("combobox", { name: "Status" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Waiting for approval" }));
+    expect(rowNames()).toEqual([expect.stringContaining("Waiting Cert")]);
   });
 });

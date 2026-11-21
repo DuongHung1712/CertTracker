@@ -11,8 +11,8 @@ import { FilterBar } from "@/components/data/filter-bar";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import { EXPIRY_STATUSES, expiryMeta } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
-import { NO_TEAM_LABEL, RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
-import { ApprovalBadge, CatalogueStatusBadge, RecordStatusLabel } from "@/components/status/record-status";
+import { NO_TEAM_LABEL } from "@/components/status/labels";
+import { ApprovalBadge, CatalogueStatusBadge } from "@/components/status/record-status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,16 +26,22 @@ import { inMemberView, MEMBER_VIEW_LABEL, type MemberView } from "@/features/das
 import { deleteRecord, deleteRecords, reviewRecord } from "@/features/records/actions";
 import { EvidenceCell } from "@/features/records/components/evidence-cell";
 import { RecordSheet } from "@/features/records/components/record-sheet";
-import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type KindFilter } from "@/features/records/kind";
+import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type ApprovalState, type KindFilter } from "@/features/records/kind";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
-import { MAX_BULK_DELETE, RECORD_STATUSES, reviewSchema } from "@/features/records/schema";
+import { MAX_BULK_DELETE, reviewSchema } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
 import { foldText } from "@/lib/text";
 
 /** A Base UI `Select` value must be a non-empty string, so "no filter" is a sentinel, not "". */
+const APPROVAL_FILTER_LABEL: Record<ApprovalState, string> = {
+  waiting: "Waiting for approval",
+  approved: "Approved",
+  returned: "Returned",
+};
+
 const ALL = "all";
-const ADD_HINT = "Planning an exam or a course? Add it now and update its status as you go.";
+const ADD_HINT = "Passed an exam or finished a course? Add the certificate with its proof.";
 /** Team filter value for rows without a team (`teamId === null`). */
 const NO_TEAM = "__no_team__";
 
@@ -116,7 +122,6 @@ export function RecordsTable({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<RecordRow | null>(null);
   const [pending, setPending] = useState(false);
-  const [presetStatus, setPresetStatus] = useState<RecordStatus | undefined>(undefined);
   const [selection, setSelection] = useState<RowSelectionState>({});
   const [bulkConfirming, setBulkConfirming] = useState(false);
 
@@ -153,15 +158,14 @@ export function RecordsTable({
       if (isTeam && teamFilter !== ALL) {
         if (teamFilter === NO_TEAM ? record.teamId !== null : record.teamName !== teamFilter) return false;
       }
-      if (statusFilter !== ALL && record.status !== statusFilter) return false;
+      if (statusFilter !== ALL && record.approval !== statusFilter) return false;
       if (expiryFilter !== ALL && record.expiryStatus !== expiryFilter) return false;
       return true;
     });
   }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter, kindFilter, view, waitingOnly, reviewerMemberId]);
 
-  function openEdit(id: string, preset?: RecordStatus) {
+  function openEdit(id: string) {
     setEditingId(id);
-    setPresetStatus(preset);
     setSheetOpen(true);
   }
 
@@ -261,9 +265,8 @@ export function RecordsTable({
         header: "Status",
         cell: ({ row }) => (
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
-            <RecordStatusLabel status={row.original.status} />
-            {row.original.status === "done" && <ApprovalBadge approval={row.original.approval} />}
-            {row.original.status === "in_progress" && <span className="text-muted-foreground">· {row.original.progress}%</span>}
+            {/* A certificate is a result (decision #72): only its approval changes. Expiry has its own column. */}
+            <ApprovalBadge approval={row.original.approval} />
           </span>
         ),
       },
@@ -318,10 +321,6 @@ export function RecordsTable({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-40">
                 <DropdownMenuItem onClick={() => openEdit(record.id)}>Edit</DropdownMenuItem>
-                {/* A completion needs an issue date, so this opens the sheet with the status preset instead of saving blind. */}
-                {record.status !== "done" && (
-                  <DropdownMenuItem onClick={() => openEdit(record.id, "done")}>Mark completed</DropdownMenuItem>
-                )}
                 {record.hasEvidence && (
                   <DropdownMenuItem
                     render={<a href={`/api/records/${record.id}/evidence`} target="_blank" rel="noopener noreferrer" />}
@@ -477,16 +476,14 @@ export function RecordsTable({
         <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL)}>
           <SelectTrigger aria-label="Status">
             <SelectValue>
-              {(value: string) =>
-                value === ALL ? "All statuses" : (RECORD_STATUS_LABEL[value as keyof typeof RECORD_STATUS_LABEL] ?? value)
-              }
+              {(value: string) => (value === ALL ? "All statuses" : (APPROVAL_FILTER_LABEL[value as ApprovalState] ?? value))}
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>All statuses</SelectItem>
-            {RECORD_STATUSES.map((status) => (
-              <SelectItem key={status} value={status}>
-                {RECORD_STATUS_LABEL[status]}
+            {(Object.keys(APPROVAL_FILTER_LABEL) as ApprovalState[]).map((state) => (
+              <SelectItem key={state} value={state}>
+                {APPROVAL_FILTER_LABEL[state]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -523,12 +520,11 @@ export function RecordsTable({
           disabled={certificateOptions.length === 0 || (isTeam && memberOptions.length === 0)}
           onClick={() => {
             setEditingId(null);
-            setPresetStatus(undefined);
             setSheetOpen(true);
           }}
         >
           <Plus aria-hidden className="size-4" />
-          Add certificate or course completion
+          Add certificate
         </Button>
       </FilterBar>
       {view && (
@@ -584,10 +580,8 @@ export function RecordsTable({
         fixedMemberId={fixedMemberId}
         viewerMemberId={reviewerMemberId ?? fixedMemberId}
         canDelete={canDelete}
-        presetStatus={presetStatus}
         records={records}
         onEditExisting={(record) => {
-          setPresetStatus(undefined);
           setEditingId(record.id);
         }}
       />

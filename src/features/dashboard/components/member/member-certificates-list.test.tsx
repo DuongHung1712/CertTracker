@@ -97,43 +97,13 @@ describe("[RED on 4a89dfd] MemberCertificatesList status tile (WP1: real expiry_
   });
 });
 
-describe("study progress bar", () => {
-  // I2: the bar uses the shared, rounding `clampPercent` from `@/components/status/labels`.
-  it("rounds and clamps the bar width", () => {
-    const studying = (id: string, certificateName: string, progress: number) =>
-      makeRecord({ id, certificateName, status: "in_progress", progress, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
-    const html = render([studying("p", "Course Partial", 47.6), studying("o", "Course Over", 140)]);
-    expect(html).toContain("width:48%");
-    expect(html).toContain("width:100%");
-    expect(html).not.toContain("width:47.6%");
-    expect(html).not.toContain("width:140%");
-  });
-  it("renders quick step buttons +10% and +25% on in-progress items", () => {
-    const studying = makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
-    const html = render([studying]);
-    expect(html).toContain("+10%");
-    expect(html).toContain("+25%");
-    expect(html).toContain('aria-label="Add 10% progress to Course Studying"');
-    expect(html).toContain('aria-label="Add 25% progress to Course Studying"');
-  });
-  it("disables quick step buttons when progress reaches 99%", () => {
-    const studying = makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress", progress: 99, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" });
-    const html = render([studying]);
-    expect(html).toMatch(/<button[^>]*disabled[^>]*aria-label="Add 10% progress to Course Studying"/);
-    expect(html).toMatch(/<button[^>]*disabled[^>]*aria-label="Add 25% progress to Course Studying"/);
-  });
-});
-
 describe("Mark completed action", () => {
-  it("is offered for items that are not completed and not for completed ones", () => {
+  it("is never offered: a certificate is a result, the journey is a learning item (decision #72)", () => {
     const html = render([
-      makeRecord({ id: "p", certificateName: "Course Studying", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
-      makeRecord({ id: "n", certificateName: "Course Planned", status: "not_started", progress: 0, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A" }),
+      makeRecord({ id: "r", certificateName: "Course Returned", status: "done", approval: "returned" }),
       doneRecord(120, { id: "d", certificateName: "Course Done" }),
     ]);
-    expect(html).toContain('aria-label="Mark Course Studying completed"');
-    expect(html).toContain('aria-label="Mark Course Planned completed"');
-    expect(html).not.toContain("Mark Course Done completed");
+    expect(html).not.toContain("completed\"");
   });
 });
 
@@ -157,7 +127,7 @@ describe("Delete draft action", () => {
     const html = render([
       makeRecord({ id: "p1", certificateName: "Proposed Course", certificateCatalogueStatus: "pending" }),
     ]);
-    expect(html).toContain("Pending Approval");
+    expect(html).toContain("Awaiting admin approval");
   });
 });
 

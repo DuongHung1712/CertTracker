@@ -193,3 +193,34 @@ export async function deleteCourse(input: { id: string }): Promise<Result<null>>
   revalidatePath("/courses");
   return ok(null);
 }
+
+const REVIEW_FORBIDDEN = "Only an admin can review a proposed course.";
+
+function reviewError(error: { code?: string | null; message: string }): string {
+  return error.code === "42501" ? REVIEW_FORBIDDEN : mapPostgresError(error);
+}
+
+/** Approve a course a member proposed (decision #72); with `grantsCompletion` its completion certificate is created too. */
+export async function approveCourse(input: { id: string; grantsCompletion: boolean }): Promise<Result<null>> {
+  const parsed = idSchema.safeParse({ id: input.id });
+  if (!parsed.success) return err("Invalid data");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("approve_course", { p_id: parsed.data.id, p_grants_completion: input.grantsCompletion === true });
+  if (error) return err(reviewError(error));
+  revalidatePath("/courses");
+  revalidatePath("/me");
+  revalidatePath("/records");
+  return ok(null);
+}
+
+export async function rejectCourse(input: { id: string }): Promise<Result<null>> {
+  const parsed = idSchema.safeParse(input);
+  if (!parsed.success) return err("Invalid data");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reject_course", { p_id: parsed.data.id });
+  if (error) return err(reviewError(error));
+  revalidatePath("/courses");
+  revalidatePath("/me");
+  revalidatePath("/records");
+  return ok(null);
+}

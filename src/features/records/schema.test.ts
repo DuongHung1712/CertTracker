@@ -4,15 +4,23 @@ import { recordRuleIssues, recordSchema } from "@/features/records/schema";
 const base = {
   memberId: "00000000-0000-0000-0000-000000000000",
   certificateId: "00000000-0000-0000-0000-000000000000",
-  status: "in_progress",
-  progress: 40,
+  status: "done",
+  progress: 100,
   plannedExamDate: "",
-  issuedDate: "",
+  issuedDate: "01/06/2026",
   certificateUrl: "",
   notes: "",
 };
 
 describe("recordSchema", () => {
+  it("accepts only a Completed certificate: the journey is a learning item (decision #72)", () => {
+    const result = recordSchema.safeParse({ ...base, status: "in_progress", progress: 40, issuedDate: "" });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues.map((issue) => issue.message)).toContain(
+      "A certificate is a result. Track a course or an exam you are preparing on the Learning tab.",
+    );
+  });
+
   it("requires a certificate and names the problem", () => {
     const result = recordSchema.safeParse({ ...base, certificateId: "" });
     expect(result.error?.issues[0]?.message).toBe("Choose a certificate");
@@ -30,7 +38,8 @@ describe("recordSchema", () => {
     const result = recordSchema.safeParse({ ...base, plannedExamDate: "15/03/2027" });
     expect(result.success).toBe(true);
     expect(result.data?.plannedExamDate).toBe("2027-03-15");
-    expect(result.data?.issuedDate).toBeNull();
+    expect(result.data?.issuedDate).toBe("2026-06-01");
+    expect(result.data?.certificateUrl).toBeNull();
     expect(result.data?.notes).toBeNull();
   });
 
@@ -63,7 +72,7 @@ describe("recordSchema", () => {
   });
 
   it("requires an issue date and 100% for a finished record", () => {
-    const result = recordSchema.safeParse({ ...base, status: "done", progress: 100 });
+    const result = recordSchema.safeParse({ ...base, status: "done", progress: 100, issuedDate: "" });
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.path).toEqual(["issuedDate"]);
   });

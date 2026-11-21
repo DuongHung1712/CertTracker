@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/features/auth/queries";
 import { listMemberCareers } from "@/features/career/queries";
-import { recordsToCsv, recordsToXlsx, withCareerColumns, type ExportRow } from "@/features/export/records-export";
+import { learningExportRows, recordsToCsv, recordsToXlsx, withCareerColumns, type ExportRow } from "@/features/export/records-export";
+import { listLearningItems } from "@/features/learning/queries";
 import { listRecords } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
 
@@ -19,8 +20,9 @@ export async function GET(request: Request) {
   let rows: ExportRow[];
   try {
     // admin: all, manager: their teams (+ own), member: own. The career profiles follow the same members RLS.
-    const [records, careers] = await Promise.all([listRecords(), listMemberCareers()]);
-    rows = withCareerColumns(records, careers);
+    const [records, careers, items] = await Promise.all([listRecords(), listMemberCareers(), listLearningItems()]);
+    // Certificates, then the open learning items (decision #72); the Item type column tells them apart.
+    rows = [...withCareerColumns(records, careers), ...learningExportRows(items, careers)];
   } catch (error) {
     // Includes fetchAllRows refusing to truncate at its row cap: an incomplete export must never look complete.
     console.error("export: could not load records", error);

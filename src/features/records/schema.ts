@@ -36,13 +36,13 @@ export const recordIdsSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, "Invalid data"),
 });
 
-const blankToNull = <T extends z.ZodTypeAny>(schema: T) =>
+export const blankToNull = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess(
     (value) => (value === undefined || (typeof value === "string" && value.trim() === "") ? null : value),
     schema.nullable(),
   );
 
-const optionalDate = (message: string) =>
+export const optionalDate = (message: string) =>
   blankToNull(
     z
       .string()
@@ -104,6 +104,10 @@ export const recordSchema = z
     notes: blankToNull(z.string().trim().max(2000, "Notes can have at most 2000 characters")),
   })
   .superRefine((value, ctx) => {
+    // Decision #72: training_records holds results; the journey is a learning item.
+    if (value.status !== "done") {
+      ctx.addIssue({ code: "custom", path: ["status"], message: "A certificate is a result. Track a course or an exam you are preparing on the Learning tab." });
+    }
     for (const issue of recordRuleIssues(value, todayVn())) {
       ctx.addIssue({ code: "custom", path: [issue.path], message: issue.message });
     }

@@ -17,7 +17,7 @@ export const MAX_IMPORT_ROWS = 2000;
 export const MAX_IMPORT_BYTES = 4 * 1024 * 1024;
 
 export const IMPORT_FIELDS = [
-  "memberName", "email", "team", "courseName", "provider", "certType", "validityMonths", "cost", "costCurrency", "estHours", "courseStudied", "status", "progress",
+  "memberName", "email", "team", "recordType", "courseName", "provider", "certType", "validityMonths", "cost", "costCurrency", "estHours", "courseStudied", "status", "progress",
   "plannedExamDate", "issuedDate", "certificateUrl", "viaCompany", "refundStatus", "notes",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
@@ -25,7 +25,7 @@ export type HeaderMap = Partial<Record<ImportField, number>>;
 
 /** The column name shown in messages and the columns guide; a message uses the file's own header when the column exists. */
 export const IMPORT_FIELD_LABEL: Record<ImportField, string> = {
-  memberName: "Full name", email: "Email", team: "Team", courseName: "Certificate", provider: "Provider", certType: "Certificate type",
+  memberName: "Full name", email: "Email", team: "Team", recordType: "Item type", courseName: "Certificate", provider: "Provider", certType: "Certificate type",
   validityMonths: "Validity (months)", cost: "Cost", costCurrency: "Currency", estHours: "Study hours", courseStudied: "Course studied",
   status: "Status", progress: "Progress (%)", plannedExamDate: "Planned exam date", issuedDate: "Issued date", certificateUrl: "Certificate link",
   viaCompany: "Registered through the company", refundStatus: "Refund status", notes: "Notes",
@@ -36,6 +36,8 @@ export const HEADER_ALIASES: Record<ImportField, string[]> = {
   memberName: ["ho ten", "ho va ten", "ten", "full name", "name", "thanh vien", "member", "nhan vien"],
   email: ["email", "e-mail", "mail", "email cong ty"],
   team: ["team", "nhom"],
+  // Not "type": that already means the certificate type.
+  recordType: ["item type", "loai muc"],
   courseName: ["khoa hoc", "ten khoa hoc", "chung chi", "ten chung chi", "course", "cert", "certification", "certificate"],
   provider: ["nha cung cap", "provider", "hang", "vendor", "to chuc cap"],
   certType: ["loai", "loai chung chi", "cert type", "certtype", "certificate type", "type", "linh vuc"],
@@ -123,6 +125,21 @@ const STATUS_LOOKUP = new Map<string, RecordStatus>(
 );
 
 /** Spec §6.3 `normalizeStatus`. */
+export type ImportRecordType = "certificate" | "learning";
+
+const RECORD_TYPE_LOOKUP = new Map<string, ImportRecordType>([
+  ["certificate", "certificate"], ["cert", "certificate"], ["chung chi", "certificate"],
+  ["learning", "learning"], ["course", "learning"], ["hoc tap", "learning"], ["dang hoc", "learning"],
+]);
+
+/** Record type: Certificate (a result) or Learning (a course or exam being prepared). Blank = decided by status. */
+export function normalizeRecordType(cell: Cell | undefined): Cleaned<ImportRecordType | null> {
+  const text = cellText(cell);
+  if (text === null) return ok(null);
+  const type = RECORD_TYPE_LOOKUP.get(foldText(text));
+  return type ? ok(type) : fail(`"${text}" is not an item type. Use Certificate or Learning.`);
+}
+
 export function normalizeStatus(cell: Cell | undefined): Cleaned<RecordStatus | null> {
   const text = cellText(cell);
   if (text === null) return ok(null);

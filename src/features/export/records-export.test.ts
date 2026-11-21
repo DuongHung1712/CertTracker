@@ -4,7 +4,8 @@ import { isoToExcelSerial, mapHeaders } from "@/features/import/clean";
 import { buildImportPlan, type ImportLookups } from "@/features/import/plan";
 import { readImportTable } from "@/features/import/workbook";
 import type { RecordRow } from "@/features/records/queries";
-import { EXPORT_COLUMNS, recordsToCsv, recordsToXlsx, withCareerColumns, type ExportRow } from "@/features/export/records-export";
+import { EXPORT_COLUMNS, learningExportRows, recordsToCsv, recordsToXlsx, withCareerColumns, type ExportRow } from "@/features/export/records-export";
+import type { LearningRow } from "@/features/learning/queries";
 
 const CRLF = String.fromCharCode(13, 10);
 const NOTE ="Dòng một\nDòng hai\n\nDòng bốn";
@@ -27,6 +28,12 @@ const baseRecord = (row: ExportRow) => ({
   viaCompany: row.viaCompany, refundStatus: row.refundStatus, notes: row.notes,
 });
 
+// Decision #72: a row that is not Completed is a learning item (the export writes Item type Learning).
+const baseLearning = (row: ExportRow) => ({
+  id: row.id, memberId: row.memberId, courseId: row.courseId, targetCertificateId: row.certificateId, status: row.status,
+  progress: row.progress, plannedDate: row.plannedExamDate, finishedDate: null, notes: row.notes,
+});
+
 const LOOKUPS: ImportLookups = {
   members: [{ id: "an", email: "an@x.vn", fullName: "Nguyễn Văn An", teamId: "cloud", isActive: true }],
   teams: [{ id: "cloud", name: "Team Cloud" }],
@@ -38,7 +45,8 @@ const LOOKUPS: ImportLookups = {
     { id: "az", name: "Azure AZ-900", providerId: "aws", certTypeId: "tc", validityMonths: 12, cost: null, costCurrency: null, estHours: 12 },
   ],
   studyCourses: [{ id: "k-saa", name: "SAA Bootcamp", preparesForId: "saa", grantsId: null, cost: 150, costCurrency: "USD", estHours: 40 }],
-  records: ROWS.map(baseRecord),
+  records: ROWS.filter((row) => row.status === "done").map(baseRecord),
+  learningItems: ROWS.filter((row) => row.status !== "done").map(baseLearning),
 };
 
 const actions = (rows: ExportRow[], lookups: ImportLookups = LOOKUPS) => {
@@ -47,7 +55,11 @@ const actions = (rows: ExportRow[], lookups: ImportLookups = LOOKUPS) => {
   return buildImportPlan(table.value, lookups, "2026-09-30").rows.map((row) => [row.action, row.errors]);
 };
 
-const lookupsFor = (rows: ExportRow[]): ImportLookups => ({ ...LOOKUPS, records: rows.map(baseRecord) });
+const lookupsFor = (rows: ExportRow[]): ImportLookups => ({
+  ...LOOKUPS,
+  records: rows.filter((row) => row.status === "done").map(baseRecord),
+  learningItems: rows.filter((row) => row.status !== "done").map(baseLearning),
+});
 
 describe("records export", () => {
   it("re-imports an exported workbook with zero changes (1% progress, leap day, multi-line note)", () => {
@@ -114,7 +126,7 @@ describe("records export", () => {
     const { map, unknown, duplicates } = mapHeaders(EXPORT_COLUMNS.map((c) => c.header));
     expect(duplicates).toEqual([]);
     expect(unknown).toEqual(["Code", "Career role", "YoE", "Kind", "Approval", "Expiry date", "Days left", "Expiry status"]);
-    expect(Object.keys(map)).toHaveLength(19);
+    expect(Object.keys(map)).toHaveLength(20);
   });
 
   it("puts Career role and YoE right after Team and writes their values", () => {
@@ -190,5 +202,31 @@ describe("records export", () => {
     expect(table.value.unknownColumns).toContain("Approval");
     const planned = buildImportPlan(table.value, LOOKUPS, "2026-09-30").rows;
     expect(planned.map((row) => [row.action, row.errors, row.warnings])).toEqual(rows.map(() => ["skip", [], []]));
+  });
+
+  it("writes Item type last: Certificate for a result, Learning for an open item (decision #72)", () => {
+    const headers = EXPORT_COLUMNS.map((c) => c.header);
+    expect(headers.at(-1)).toBe("Item type");
+    const lines = recordsToCsv(ROWS).split(CRLF);
+    expect(lines[1]!.endsWith(",Certificate")).toBe(true);
+    expect(lines[2]!.endsWith(",Learning")).toBe(true);
+  });
+
+  it("exports open learning items, course-only ones too, and they import back unchanged", () => {
+    const item: LearningRow = {
+      id: "li-1", memberId: "an", memberCode: "M001", memberName: "Nguyễn Văn An", memberEmail: "an@x.vn", teamId: "cloud", teamName: "Team Cloud",
+      courseId: "k-saa", courseName: "SAA Bootcamp", providerName: "Udemy", courseCatalogueStatus: "approved",
+      targetCertificateId: null, targetCertificateName: null, status: "in_progress", progress: 30,
+      plannedDate: "2026-12-20", finishedDate: null, notes: null, isSelfStudy: false,
+    };
+    const finished: LearningRow = { ...item, id: "li-2", status: "done", progress: 100, finishedDate: "2026-09-01" };
+    const rows = [ROWS[0]!, ...learningExportRows([item, finished], new Map())];
+    expect(rows).toHaveLength(2);
+    const lookups: ImportLookups = {
+      ...LOOKUPS,
+      records: [baseRecord(ROWS[0]!)],
+      learningItems: [{ id: "li-1", memberId: "an", courseId: "k-saa", targetCertificateId: null, status: "in_progress", progress: 30, plannedDate: "2026-12-20", finishedDate: null, notes: null }],
+    };
+    expect(actions(rows, lookups)).toEqual([["skip", []], ["skip", []]]);
   });
 });

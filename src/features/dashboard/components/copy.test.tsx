@@ -122,19 +122,6 @@ describe("[copy] member certificate list", () => {
     expect(html).not.toMatch(/Registered Records|certifications registered/);
   });
 
-  it("names study progress and the planned exam date plainly", () => {
-    const html = render([studying]);
-    expect(html).toContain("Study progress");
-    expect(html).toContain("Planned exam date");
-    expect(html).not.toMatch(/Curriculum coverage|Target exam date/);
-  });
-
-  it("calls the planned date of a course completion a planned finish date", () => {
-    const html = render([{ ...studying, certificateKind: "completion", certificateName: "Intro to Terraform" }]);
-    expect(html).toContain("Planned finish date");
-    expect(html).not.toContain("Planned exam date");
-  });
-
   it("names the expiring tab with the aggregate wording", () => {
     expect(render([doneRecord(45)])).toContain("Expiring within 60 days (1)");
   });

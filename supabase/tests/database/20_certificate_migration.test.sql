@@ -4,6 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(10);
 
+delete from public.learning_items;
 delete from public.training_records;
 delete from public.certificates;
 delete from public.courses;

@@ -1,5 +1,4 @@
 import { NO_TEAM_LABEL } from "@/components/status/labels";
-import { ratePercent } from "@/features/dashboard/metrics";
 import {
   buildExpiryItems,
   byUrgency,
@@ -24,7 +23,6 @@ export type Kpi = {
   expired: number;
   issuedInMonth: number;
   expiredInMonth: number;
-  completionRate: number | null;
 };
 export type TeamKpi = { teamId: string | null; teamName: string; kpi: Kpi };
 export type MonthlyReport = {
@@ -56,7 +54,6 @@ function kpiFor(members: SnapshotMember[], records: SnapshotRecord[], range: { s
     expired: done.filter((r) => r.expiryStatus === "Expired").length,
     issuedInMonth: done.filter((r) => within(r.issuedDate, range.start, range.end)).length,
     expiredInMonth: done.filter((r) => r.expiryStatus === "Expired" && within(r.expiryDate, range.start, range.end)).length,
-    completionRate: ratePercent(done.length, mine.length),
   };
 }
 

@@ -1,8 +1,8 @@
 import { RECORD_STATUS_LABEL, type RecordStatus } from "@/components/status/labels";
 import {
   cellText, detectProgressMode, IMPORT_FIELD_LABEL, IMPORT_FIELDS, normalizeBoolean, normalizeEmail, normalizeName, normalizeNotes, normalizeRefund,
-  normalizeStatus, normalizeUrl, parseCost, parseCurrency, parseImportDate, parseStudyHours, parseValidityMonths, progressToPercent,
-  type Cell, type Cleaned, type ImportField, type ImportTable, type ProgressMode,
+  normalizeRecordType, normalizeStatus, normalizeUrl, parseCost, parseCurrency, parseImportDate, parseStudyHours, parseValidityMonths, progressToPercent,
+  type Cell, type Cleaned, type ImportField, type ImportRecordType, type ImportTable, type ProgressMode,
 } from "@/features/import/clean";
 import { recordRuleIssues, type RefundStatus } from "@/features/records/schema";
 import type { Currency } from "@/lib/money";
@@ -16,6 +16,18 @@ export type ExistingRecord = {
   viaCompany: boolean; refundStatus: RefundStatus; notes: string | null;
 };
 
+/** An open (not done) learning item: an import row updates the one with the same member, course and exam target. */
+export type ExistingLearningItem = {
+  id: string; memberId: string; courseId: string | null; targetCertificateId: string | null; status: RecordStatus; progress: number;
+  plannedDate: string | null; finishedDate: string | null; notes: string | null;
+};
+
+export type ImportRowKind = ImportRecordType;
+
+/** Decision #72: an explicit Record type wins; otherwise a Completed row is a certificate and anything else a learning item. */
+export const routeImportRow = (row: { recordType: ImportRecordType | null; status: RecordStatus }): ImportRowKind =>
+  row.recordType ?? (row.status === "done" ? "certificate" : "learning");
+
 export type ImportLookups = {
   members: { id: string; email: string; fullName: string; teamId: string | null; isActive: boolean }[];
   teams: { id: string; name: string }[];
@@ -24,6 +36,8 @@ export type ImportLookups = {
   certificates: {
     id: string; name: string; providerId: string | null; certTypeId: string | null; validityMonths: number | null;
     cost: number | null; costCurrency: Currency | null; estHours: number | null;
+    /** A course certificate's granting course (certificates.course_id); absent or null for an exam. */
+    grantsCourseId?: string | null;
   }[];
   /** Courses a record can name as the course studied; "grantsId" is the completion a course grants. */
   studyCourses: {
@@ -31,6 +45,7 @@ export type ImportLookups = {
     cost: number | null; costCurrency: Currency | null; estHours: number | null;
   }[];
   records: ExistingRecord[];
+  learningItems: ExistingLearningItem[];
 };
 
 export type Ref = { id: string } | { name: string };
@@ -51,7 +66,14 @@ type NormalizedRecord = {
  * because stored batches use it; the value is a certificate. Cost, currency or hours on a new one make the commit
  * also create the self-preparing course studied; `courseStudied` names an existing course instead.
  */
-export type NormalizedRow = { member: MemberRef; course: CertificateRef; courseStudied?: { id: string }; record: NormalizedRecord };
+export type NormalizedRow = {
+  /** Absent in batches stored before decision #72: a certificate. A learning row's `course` is its exam target (or null). */
+  kind?: ImportRowKind;
+  member: MemberRef;
+  course: CertificateRef | null;
+  courseStudied?: { id: string };
+  record: NormalizedRecord;
+};
 
 export type PlannedRow = {
   rowNumber: number;
@@ -83,7 +105,7 @@ type Reconciled = { status: RecordStatus; progress: number; errors: string[]; wa
 /** Decision #22: status wins over progress; every correction leaves a warning. `existing` supplies a known issue date and progress. */
 export function reconcileRecord(
   input: ReconcileInput,
-  existing: ExistingRecord | null,
+  existing: Pick<ExistingRecord, "status" | "progress" | "issuedDate"> | null,
   today: string,
   column: (field: "progress" | "issuedDate", message: string) => string = (_field, message) => message,
 ): Reconciled {
@@ -107,7 +129,7 @@ export function reconcileRecord(
   return { ...aligned, errors, warnings };
 }
 
-function deriveProgress(status: RecordStatus, existing: ExistingRecord | null, warnings: string[]): number {
+function deriveProgress(status: RecordStatus, existing: Pick<ExistingRecord, "status" | "progress" | "issuedDate"> | null, warnings: string[]): number {
   if (status === "done") return 100;
   if (status === "not_started") return 0;
   if (existing?.status === "in_progress") return existing.progress;
@@ -161,12 +183,17 @@ type PlanContext = {
   certificatesByName: Map<string, ImportLookups["certificates"]>;
   studyCoursesByName: Map<string, ImportLookups["studyCourses"]>;
   recordsByKey: Map<string, ExistingRecord>;
+  learningByKey: Map<string, ExistingLearningItem>;
+  grantsCourseByCertificate: Map<string, string>;
   newMembers: Map<string, FirstNewMember>;
   newProviders: Map<string, string>;
   newCertTypes: Map<string, string>;
   newCertificates: Map<string, FirstNewCertificate>;
   seenRecords: Map<string, number>;
 };
+
+const learningKey = (memberId: string, courseId: string | null, targetId: string | null): string =>
+  `${memberId}|${courseId ?? ""}|${targetId ?? ""}`;
 
 /**
  * A member can hold several records of one certificate (renewals). The sheet has one row per member and
@@ -223,6 +250,12 @@ function createContext(table: ImportTable, lookups: ImportLookups, today: string
     certificatesByName: groupBy(lookups.certificates, (certificate) => foldText(certificate.name)),
     studyCoursesByName: groupBy(lookups.studyCourses, (course) => foldText(course.name)),
     recordsByKey: preferredRecords(lookups.records),
+    grantsCourseByCertificate: new Map(
+      lookups.certificates.flatMap((c) => (c.grantsCourseId ? [[c.id, c.grantsCourseId] as const] : [])),
+    ),
+    learningByKey: new Map(
+      lookups.learningItems.filter((item) => item.status !== "done").map((item) => [learningKey(item.memberId, item.courseId, item.targetCertificateId), item]),
+    ),
     newMembers: new Map(),
     newProviders: new Map(),
     newCertTypes: new Map(),
@@ -312,10 +345,10 @@ function resolveNewMemberTeam(ctx: PlanContext, teamText: string | null, issues:
 type CertificateResolution = { ref: CertificateRef | null; key: string | null; name: string | null };
 const NO_CERTIFICATE: CertificateResolution = { ref: null, key: null, name: null };
 
-function resolveCertificate(ctx: PlanContext, cells: RowCells, rowNumber: number, issues: Issues): CertificateResolution {
+function resolveCertificate(ctx: PlanContext, cells: RowCells, rowNumber: number, issues: Issues, optional = false): CertificateResolution {
   const name = normalizeName(cells.courseName);
   if (name === null) {
-    issues.errors.push(inColumn(ctx, "courseName", "a value is required."));
+    if (!optional) issues.errors.push(inColumn(ctx, "courseName", "a value is required."));
     return NO_CERTIFICATE;
   }
   const providerText = normalizeName(cells.provider);
@@ -514,6 +547,29 @@ function decideAction(record: NormalizedRecord, courseStudied: { id: string } | 
   return unchanged ? "skip" : "update";
 }
 
+function decideLearningAction(record: NormalizedRecord, existing: ExistingLearningItem | undefined): PlannedRow["action"] {
+  if (!existing) return "create";
+  const unchanged =
+    record.status === existing.status &&
+    record.progress === existing.progress &&
+    (record.plannedExamDate === null || record.plannedExamDate === existing.plannedDate) &&
+    (record.issuedDate === null || record.issuedDate === existing.finishedDate) &&
+    (record.notes === null || record.notes === existing.notes);
+  return unchanged ? "skip" : "update";
+}
+
+/** The course of a learning row, by name only: "prepares for" no longer limits it (decision #72). */
+function resolveLearningCourse(ctx: PlanContext, cells: RowCells, issues: Issues): { id: string } | null {
+  const name = normalizeName(cells.courseStudied);
+  if (name === null) return null;
+  const course = ctx.studyCoursesByName.get(foldText(name))?.[0];
+  if (!course) {
+    issues.errors.push(inColumn(ctx, "courseStudied", `"${name}" not found.`));
+    return null;
+  }
+  return { id: course.id };
+}
+
 function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows"][number]): PlannedRow {
   const cells = Object.fromEntries(
     IMPORT_FIELDS.map((field) => {
@@ -531,10 +587,69 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
     },
   };
 
-  const member = resolveMember(ctx, cells, source.rowNumber, issues);
-  const certificate = resolveCertificate(ctx, cells, source.rowNumber, issues);
-  const courseStudied = resolveCourseStudied(ctx, cells, certificate, issues);
+  const recordType = take(ctx, "recordType", normalizeRecordType(cells.recordType), issues, null);
   const record = readRecordCells(ctx, cells, issues);
+  const member = resolveMember(ctx, cells, source.rowNumber, issues);
+  const certificate = resolveCertificate(ctx, cells, source.rowNumber, issues, true);
+  const existingRecord =
+    member.ref !== null && certificate.ref !== null && hasId(member.ref) && hasId(certificate.ref)
+      ? ctx.recordsByKey.get(`${member.ref.id}|${certificate.ref.id}`)
+      : undefined;
+  // The kind needs a status before matching: the inference reconcileRecord makes, without its messages.
+  const firstStatus = reconcileRecord(record, existingRecord ?? null, ctx.today, () => "").status;
+  const kind = routeImportRow({ recordType, status: firstStatus });
+  if (kind === "certificate" && normalizeName(cells.courseName) === null) {
+    issues.errors.push(inColumn(ctx, "courseName", "a value is required."));
+  }
+  const skipped = (): PlannedRow => ({ ...base, normalized: null, action: "skip", ...issues });
+
+  if (kind === "learning") {
+    let course = resolveLearningCourse(ctx, cells, issues);
+    // A course certificate is never an exam target: the item follows the course that grants it (decision #72).
+    const grantingCourse =
+      certificate.ref !== null && hasId(certificate.ref) ? ctx.grantsCourseByCertificate.get(certificate.ref.id) : undefined;
+    const targetRef = grantingCourse ? null : certificate.ref;
+    if (grantingCourse) course ??= { id: grantingCourse };
+    if (normalizeName(cells.courseName) === null && normalizeName(cells.courseStudied) === null) {
+      issues.errors.push("Certificate or Course studied is required on a Learning row.");
+    }
+    if (member.email !== null) {
+      const recordKey = `${member.email}|learning|${course?.id ?? ""}|${targetRef === null ? "" : certificate.key ?? ""}`;
+      const firstRow = ctx.seenRecords.get(recordKey);
+      if (firstRow === undefined) ctx.seenRecords.set(recordKey, source.rowNumber);
+      else issues.errors.push(`Duplicate of row ${firstRow} (same email, course and certificate)`);
+    }
+    if (issues.errors.length > 0 || member.ref === null) return skipped();
+
+    const targetId = targetRef !== null && hasId(targetRef) ? targetRef.id : null;
+    const newTarget = targetRef !== null && targetId === null;
+    const existing =
+      hasId(member.ref) && !newTarget ? ctx.learningByKey.get(learningKey(member.ref.id, course?.id ?? null, targetId)) : undefined;
+    const reconciled = reconcileRecord(
+      record,
+      existing ? { status: existing.status, progress: existing.progress, issuedDate: existing.finishedDate } : null,
+      ctx.today,
+      (field, message) => inColumn(ctx, field, message),
+    );
+    issues.errors.push(...reconciled.errors);
+    issues.warnings.push(...reconciled.warnings);
+    if (issues.errors.length > 0) return skipped();
+
+    // A learning row's "Issued date" is the day the item was finished.
+    const issuedDate = reconciled.status === "done" ? record.issuedDate ?? existing?.finishedDate ?? null : record.issuedDate;
+    const normalizedRecord: NormalizedRecord = { ...record, status: reconciled.status, progress: reconciled.progress, issuedDate };
+    return {
+      ...base,
+      normalized: { kind: "learning", member: member.ref, course: targetRef, ...(course && { courseStudied: course }), record: normalizedRecord },
+      action: decideLearningAction(normalizedRecord, existing),
+      ...issues,
+    };
+  }
+
+  const courseStudied = resolveCourseStudied(ctx, cells, certificate, issues);
+  if (recordType === "certificate" && firstStatus !== "done") {
+    issues.errors.push(inColumn(ctx, "status", "a certificate is Completed. Use Item type Learning for a course or exam in progress."));
+  }
 
   if (member.email !== null && certificate.key !== null) {
     const recordKey = `${member.email}|${certificate.key}`;
@@ -543,10 +658,9 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
     else issues.errors.push(`Duplicate of row ${firstRow} (same email and certificate)`);
   }
 
-  const skipped = (): PlannedRow => ({ ...base, normalized: null, action: "skip", ...issues });
   if (issues.errors.length > 0 || member.ref === null || certificate.ref === null) return skipped();
 
-  const existing = hasId(member.ref) && hasId(certificate.ref) ? ctx.recordsByKey.get(`${member.ref.id}|${certificate.ref.id}`) : undefined;
+  const existing = existingRecord;
   const reconciled = reconcileRecord(record, existing ?? null, ctx.today, (field, message) => inColumn(ctx, field, message));
   issues.errors.push(...reconciled.errors);
   issues.warnings.push(...reconciled.warnings);
@@ -559,7 +673,7 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
   const normalizedRecord: NormalizedRecord = { ...record, status: reconciled.status, progress: reconciled.progress, issuedDate };
   return {
     ...base,
-    normalized: { member: member.ref, course: certificate.ref, ...(courseStudied && { courseStudied }), record: normalizedRecord },
+    normalized: { kind: "certificate", member: member.ref, course: certificate.ref, ...(courseStudied && { courseStudied }), record: normalizedRecord },
     action: decideAction(normalizedRecord, courseStudied, existing),
     ...issues,
   };
@@ -578,7 +692,7 @@ function collectNewEntities(rows: PlannedRow[]): ImportPlan["newEntities"] {
     if (row.action !== "create" || row.normalized === null) continue;
     const { member, course: certificate } = row.normalized;
     if (!hasId(member)) members.set(member.email, member.fullName);
-    if (hasId(certificate)) continue;
+    if (certificate === null || hasId(certificate)) continue;
     const providerKey = hasId(certificate.provider) ? certificate.provider.id : `new:${foldText(certificate.provider.name)}`;
     const key = `${providerKey}|${foldText(certificate.name)}`;
     certificates.set(key, certificate.name);

@@ -107,7 +107,7 @@ export function listNewEntities(rows: ImportRowView[], existing: ExistingNames =
     if (row.action !== "create" || row.errors.length > 0 || row.refs === null) continue;
     const { member, course } = row.refs;
     if ("email" in member) addEntry(maps.members, member.email.toLowerCase(), member.fullName, row.rowNo, member.email);
-    if (!("name" in course)) continue;
+    if (course === null || !("name" in course)) continue;
     const providerName = newName(course.provider);
     const certTypeName = newName(course.certType);
     if (providerName !== null) addEntry(maps.providers, foldText(providerName), providerName, row.rowNo);

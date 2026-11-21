@@ -3,36 +3,32 @@ import { fieldLabel, signIn } from "./helpers";
 import { recordRow } from "./support/pilot-member";
 import { signInAsSeedAdmin, signInAsSeedUser } from "./support/restore-seed";
 
-// E-11 and E-12 (spec 10.4). Châu (member@) completes the seed AWS item; the seed manager reviews it.
+// E-11 and E-12 (spec 10.4). Châu (member@) submits the AWS certificate for the seed AWS item; the seed manager reviews it.
 const AWS = "AWS Solutions Architect Associate";
 const CHAU = "5eed0000-0000-0000-0000-00000000b003";
 const AWS_ID = "5eed0000-0000-0000-0000-00000000e001";
 const NOTE = "QA the date does not match the proof";
 
-/** Châu–AWS back to the seed state (Not started, no proof file); a non-Completed row has no approval. */
+/** Châu back to the seed: one self-study AWS item, no AWS certificate (and no proof file). */
 async function restoreChauAwsSeed() {
   const admin = await signInAsSeedAdmin();
-  const record = await admin.from("training_records").select("evidence_path").eq("member_id", CHAU).eq("certificate_id", AWS_ID).single();
-  if (record.error) throw new Error(`read Châu–AWS: ${record.error.message}`);
-  if (record.data.evidence_path) {
-    const removed = await admin.storage.from("certificates").remove([record.data.evidence_path]);
+  const records = await admin.from("training_records").select("evidence_path").eq("member_id", CHAU).eq("certificate_id", AWS_ID);
+  if (records.error) throw new Error(`read Châu–AWS: ${records.error.message}`);
+  const files = records.data.flatMap((r) => (r.evidence_path ? [r.evidence_path] : []));
+  if (files.length > 0) {
+    const removed = await admin.storage.from("certificates").remove(files);
     if (removed.error) throw new Error(`remove proof: ${removed.error.message}`);
   }
-  const reset = await admin
-    .from("training_records")
-    .update({ status: "not_started", progress: 0, issued_date: null, evidence_path: null })
-    .eq("member_id", CHAU)
-    .eq("certificate_id", AWS_ID);
-  if (reset.error) throw new Error(`reset Châu–AWS: ${reset.error.message}`);
+  const deleted = await admin.from("training_records").delete().eq("member_id", CHAU).eq("certificate_id", AWS_ID);
+  if (deleted.error) throw new Error(`remove Châu–AWS: ${deleted.error.message}`);
+  const cleared = await admin.from("learning_items").delete().eq("member_id", CHAU);
+  if (cleared.error) throw new Error(`clear Châu items: ${cleared.error.message}`);
+  const seeded = await admin.from("learning_items").insert({ member_id: CHAU, target_certificate_id: AWS_ID, status: "not_started", progress: 0 });
+  if (seeded.error) throw new Error(`seed Châu item: ${seeded.error.message}`);
 }
 
 test.beforeEach(restoreChauAwsSeed);
 test.afterEach(restoreChauAwsSeed);
-
-async function pickSelect(page: Page, label: string, optionName: string) {
-  await page.getByRole("dialog").getByLabel(fieldLabel(label)).click();
-  await page.getByRole("option", { name: optionName, exact: true }).click();
-}
 
 async function openMenu(page: Page, name: string) {
   const row = recordRow(page, AWS);
@@ -59,15 +55,15 @@ test("E-11: member submits, manager returns, member fixes, manager approves; num
     await expect(heldValue(member)).toHaveText("0");
     await expect(waitingTile(manager).getByText("0", { exact: true })).toBeVisible();
 
-    // The member completes the item with proof: it waits.
-    await member.goto("/me");
-    await openMenu(member, "Edit");
-    await pickSelect(member, "Status", "Completed");
+    // The member passes the exam planned on the Learning tab and submits the certificate with proof: it waits.
+    await member.goto("/me?tab=learning");
+    await openMenu(member, "Submit certificate");
     const dialog = member.getByRole("dialog");
     await dialog.getByLabel(fieldLabel("Date passed")).fill("01/06/2026");
     await dialog.getByLabel("Evidence", { exact: true }).setInputFiles("e2e/fixtures/evidence.pdf");
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(member.getByText("Saved certificate. It is waiting for approval.")).toBeVisible();
+    await expect(member.getByText("Added certificate. It is waiting for approval.")).toBeVisible();
+    await member.goto("/me");
     await expect(recordRow(member, AWS)).toContainText("Waiting for approval");
     await member.goto("/dashboard");
     await expect(heldValue(member)).toHaveText("0");
@@ -116,13 +112,11 @@ test("E-11: member submits, manager returns, member fixes, manager approves; num
 });
 
 test("E-12: a member has no Approve or Return, and a direct call is refused", async ({ page }) => {
-  // A waiting item to look at.
+  // A waiting certificate to look at, added the way the member would (a member's certificate starts waiting).
   const admin = await signInAsSeedAdmin();
-  const prepared = await admin
+  const prepared = await (await signInAsSeedUser("member@certtracker.test"))
     .from("training_records")
-    .update({ status: "done", progress: 100, issued_date: "2026-06-01", approval: "waiting" })
-    .eq("member_id", CHAU)
-    .eq("certificate_id", AWS_ID);
+    .insert({ member_id: CHAU, certificate_id: AWS_ID, status: "done", progress: 100, issued_date: "2026-06-01" });
   if (prepared.error) throw new Error(`prepare waiting item: ${prepared.error.message}`);
 
   await signIn(page, "member@certtracker.test");

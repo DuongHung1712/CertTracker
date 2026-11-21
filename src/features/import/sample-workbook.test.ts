@@ -49,6 +49,7 @@ function lookupsFor(catalogue: CatalogueCourse[]): ImportLookups {
     })),
     studyCourses: [],
     records: [],
+    learningItems: [],
   };
 }
 
@@ -87,7 +88,7 @@ function rehearsalState(row: ImportPlan["rows"][number], lookups: ImportLookups)
   const { course, record } = row.normalized!;
   if (record.status === "in_progress") return "in progress";
   if (record.status === "not_started") return "not started";
-  const validityMonths = "id" in course ? lookups.certificates.find((c) => c.id === course.id)!.validityMonths : null;
+  const validityMonths = course !== null && "id" in course ? lookups.certificates.find((c) => c.id === course.id)!.validityMonths : null;
   return STATE_OF_EXPIRY[expiryStatusOn(record.issuedDate, validityMonths, TODAY)];
 }
 
@@ -143,7 +144,7 @@ describe("the rehearsal workbook imports cleanly", () => {
     const written = table.rows.map((row) => row.cells[column]);
     const expected = plan.rows.map(({ normalized }) => {
       const { course, record } = normalized!;
-      const validityMonths = "id" in course ? lookups.certificates.find((c) => c.id === course.id)!.validityMonths : null;
+      const validityMonths = course !== null && "id" in course ? lookups.certificates.find((c) => c.id === course.id)!.validityMonths : null;
       return expiryMeta(expiryStatusOn(record.issuedDate, validityMonths, TODAY)).label;
     });
     expect(written).toEqual(expected);
@@ -241,7 +242,7 @@ join public.providers p on p.name = v.provider;
 });
 
 describe("the downloadable import template", () => {
-  const EMPTY_LOOKUPS: ImportLookups = { members: [], teams: [], providers: [], certTypes: [], certificates: [], studyCourses: [], records: [] };
+  const EMPTY_LOOKUPS: ImportLookups = { members: [], teams: [], providers: [], certTypes: [], certificates: [], studyCourses: [], records: [], learningItems: [] };
   const plan = (bytes: Uint8Array) => buildImportPlan(readTable(bytes), EMPTY_LOOKUPS, TODAY);
   const committed = new Uint8Array(readFileSync("public/templates/certificates-import.xlsx"));
 

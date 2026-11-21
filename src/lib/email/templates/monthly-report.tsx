@@ -1,5 +1,4 @@
 import { Heading, Text } from "@react-email/components";
-import { formatRate } from "@/features/dashboard/metrics";
 import type { Kpi, MonthlyReport } from "@/features/notifications/monthly-plan";
 import { monthLabel } from "@/features/notifications/period";
 import { formatDate, formatNumber } from "@/lib/format";
@@ -14,7 +13,7 @@ function kpiRows(k: Kpi): Array<[label: string, value: string]> {
   return [
     ["Active members", formatNumber(k.members)],
     ["Certificates", formatNumber(k.records)],
-    ["Completed", `${formatNumber(k.done)} (${formatRate(k.completionRate)})`],
+    ["Completed", formatNumber(k.done)],
     ["In progress", formatNumber(k.inProgress)],
     ["Valid", formatNumber(k.valid)],
     ["Expiring within 60 days", formatNumber(k.expiring)],
@@ -69,7 +68,7 @@ export function MonthlyReportEmail({ report, appUrl, asOf }: { report: MonthlyRe
                 <tr key={t.teamId ?? "no-team"}>
                   <td style={styles.td}>{t.teamName}</td>
                   <td style={{ ...styles.td, ...num }}>{formatNumber(t.kpi.members)}</td>
-                  <td style={{ ...styles.td, ...num }}>{formatRate(t.kpi.completionRate)}</td>
+                  <td style={{ ...styles.td, ...num }}>{formatNumber(t.kpi.done)}</td>
                   <td style={{ ...styles.td, ...num }}>{formatNumber(t.kpi.valid)}</td>
                   <td style={{ ...styles.td, ...num }}>{formatNumber(t.kpi.expiring)}</td>
                   <td style={{ ...styles.td, ...num, color: t.kpi.expired > 0 ? c.expiredFg : c.foreground }}>
