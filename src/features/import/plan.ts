@@ -192,8 +192,9 @@ type PlanContext = {
   seenRecords: Map<string, number>;
 };
 
+// One open item per exam whatever its course; a course-only item per course (migration 20261120000010).
 const learningKey = (memberId: string, courseId: string | null, targetId: string | null): string =>
-  `${memberId}|${courseId ?? ""}|${targetId ?? ""}`;
+  targetId ? `${memberId}||${targetId}` : `${memberId}|${courseId ?? ""}|`;
 
 /**
  * A member can hold several records of one certificate (renewals). The sheet has one row per member and
@@ -547,9 +548,15 @@ function decideAction(record: NormalizedRecord, courseStudied: { id: string } | 
   return unchanged ? "skip" : "update";
 }
 
-function decideLearningAction(record: NormalizedRecord, existing: ExistingLearningItem | undefined): PlannedRow["action"] {
+function decideLearningAction(
+  record: NormalizedRecord,
+  course: { id: string } | null,
+  existing: ExistingLearningItem | undefined,
+): PlannedRow["action"] {
   if (!existing) return "create";
   const unchanged =
+    // no course named = "not provided": commit_import keeps the item's course
+    (course === null || course.id === existing.courseId) &&
     record.status === existing.status &&
     record.progress === existing.progress &&
     (record.plannedExamDate === null || record.plannedExamDate === existing.plannedDate) &&
@@ -614,10 +621,11 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
       issues.errors.push("Certificate or Course studied is required on a Learning row.");
     }
     if (member.email !== null) {
-      const recordKey = `${member.email}|learning|${course?.id ?? ""}|${targetRef === null ? "" : certificate.key ?? ""}`;
+      const examKey = targetRef === null ? "" : certificate.key ?? "";
+      const recordKey = `${member.email}|learning|${examKey ? "" : course?.id ?? ""}|${examKey}`;
       const firstRow = ctx.seenRecords.get(recordKey);
       if (firstRow === undefined) ctx.seenRecords.set(recordKey, source.rowNumber);
-      else issues.errors.push(`Duplicate of row ${firstRow} (same email, course and certificate)`);
+      else issues.errors.push(`Duplicate of row ${firstRow} (same email and ${examKey ? "exam" : "course"})`);
     }
     if (issues.errors.length > 0 || member.ref === null) return skipped();
 
@@ -641,7 +649,7 @@ function planRow(ctx: PlanContext, table: ImportTable, source: ImportTable["rows
     return {
       ...base,
       normalized: { kind: "learning", member: member.ref, course: targetRef, ...(course && { courseStudied: course }), record: normalizedRecord },
-      action: decideLearningAction(normalizedRecord, existing),
+      action: decideLearningAction(normalizedRecord, course, existing),
       ...issues,
     };
   }

@@ -21,16 +21,30 @@ describe("LearningTable", () => {
   it("shows a self-study item with its exam and progress", () => {
     render(<LearningTable rows={[row({})]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
     const cells = within(screen.getAllByRole("row")[1]!).getAllByRole("cell").map((cell) => cell.textContent ?? "");
-    expect(cells.join("|")).toContain("Self-study");
-    expect(cells.join("|")).toContain("HSK 3");
+    expect(cells[0]).toBe("HSK 3ExamSelf-study");
     expect(cells.join("|")).toContain("40%");
     expect(cells.join("|")).toContain("15/01/2027");
   });
 
+  it("tells a search with no match apart from an empty list", () => {
+    const view = render(<LearningTable rows={[]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
+    expect(screen.getByText("Nothing here yet")).toBeTruthy();
+    view.unmount();
+    render(<LearningTable rows={[row({})]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} initialSearch="zzz" />);
+    expect(screen.getByText("Nothing found")).toBeTruthy();
+  });
+
   it("marks a course that is still waiting for the admin", () => {
     render(<LearningTable rows={[row({ courseId: "c1", courseName: "My Coursera ML", courseCatalogueStatus: "pending", isSelfStudy: false })]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
-    expect(screen.getByText("My Coursera ML")).toBeTruthy();
+    expect(screen.getByText("with My Coursera ML · No provider")).toBeTruthy();
     expect(screen.getByText(/Awaiting admin approval/)).toBeTruthy();
+  });
+
+  it("leads a course item with the course and its completion certificate", () => {
+    render(<LearningTable rows={[row({ courseId: "c1", courseName: "Intro to agents", providerName: "Anthropic", courseCatalogueStatus: "approved", targetCertificateId: null, targetCertificateName: null, isSelfStudy: false })]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
+    const cells = within(screen.getAllByRole("row")[1]!).getAllByRole("cell").map((cell) => cell.textContent ?? "");
+    expect(cells[0]).toBe("Intro to agentsCourseAnthropic · completion certificate");
+    expect(screen.queryByRole("columnheader", { name: /Exam target/ })).toBeNull();
   });
 
   it("has no approve action in team mode: learning items are never approved", () => {

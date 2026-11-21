@@ -143,16 +143,20 @@ begin
       end if;
 
       if v_learning then
-        -- The open item with the same course and exam target (src/features/import/plan.ts learningKey).
+        -- The open item for the same exam, whatever its course; else for the same course with no exam
+        -- (src/features/import/plan.ts learningKey; one open item per exam, migration 20261120000010).
         select id into v_existing_id from public.learning_items
           where member_id = v_member_id
-            and course_id is not distinct from coalesce(v_studied_id, v_course_id)
-            and target_certificate_id is not distinct from v_cert_id
+            and case when v_cert_id is not null then target_certificate_id = v_cert_id
+                     else target_certificate_id is null
+                          and course_id is not distinct from coalesce(v_studied_id, v_course_id) end
             and status <> 'done'
           order by created_at desc, id desc
           limit 1;
         if v_existing_id is not null then
           update public.learning_items set
+            -- A course named in the sheet becomes how the member prepares (self-study gets a course); none keeps it.
+            course_id = coalesce(v_studied_id, v_course_id, course_id),
             status = (r->>'status')::public.record_status,
             progress = (r->>'progress')::int,
             planned_date = coalesce((r->>'plannedExamDate')::date, planned_date),

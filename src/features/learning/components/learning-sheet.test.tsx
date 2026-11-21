@@ -31,36 +31,102 @@ const sheet = (rows: LearningRow[] = []) => (
 afterEach(cleanup);
 
 describe("LearningSheet", () => {
-  it("asks for a course, an exam, or both", () => {
+  it("starts from an exam, with the course optional for self-study", () => {
     render(sheet());
     expect(screen.getByRole("heading", { name: "Add learning" })).toBeTruthy();
-    expect(screen.getByText("Pick a course, an exam, or both.")).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "An exam", selected: true })).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: /^Exam/ })).toBeTruthy();
+    expect(screen.getByRole<HTMLInputElement>("combobox", { name: /^Course/ }).placeholder).toBe("Self-study (no course)");
+    expect(screen.getByRole("textbox", { name: /^Planned exam date/ })).toBeTruthy();
   });
 
-  it("calls the planned date a planned exam date once an exam is chosen", async () => {
+  it("asks for the exam before saving an exam item", async () => {
+    const { createLearningItem } = await import("@/features/learning/actions");
+    vi.mocked(createLearningItem).mockClear();
     render(sheet());
-    expect(screen.getByRole("textbox", { name: /^Planned finish date/ })).toBeTruthy();
-    await userEvent.click(screen.getByRole("combobox", { name: /^Exam you are preparing for/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^Save/ }));
+    expect(await screen.findByText("Choose the exam you are preparing for")).toBeTruthy();
+    expect(createLearningItem).not.toHaveBeenCalled();
+  });
+
+  it("saves self-study for an exam with no course", async () => {
+    const { createLearningItem } = await import("@/features/learning/actions");
+    render(sheet());
+    await userEvent.click(screen.getByRole("combobox", { name: /^Exam/ }));
     await userEvent.click(screen.getByRole("option", { name: "AWS SAA" }));
-    expect(screen.getByRole("textbox", { name: /^Planned exam date/ })).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /^Save/ }));
+    await vi.waitFor(() =>
+      expect(createLearningItem).toHaveBeenCalledWith(expect.objectContaining({ targetCertificateId: EXAM.id, courseId: null })),
+    );
+  });
+
+  it("a course item has no exam field and a planned finish date", async () => {
+    render(sheet());
+    await userEvent.click(screen.getByRole("tab", { name: "A course" }));
+    expect(screen.queryByRole("combobox", { name: /^Exam/ })).toBeNull();
+    expect(screen.getByRole("textbox", { name: /^Planned finish date/ })).toBeTruthy();
   });
 
   it("warns about an open item for the same course and exam", async () => {
     render(sheet([open]));
     await userEvent.click(screen.getByRole("combobox", { name: /^Course/ }));
     await userEvent.click(screen.getByRole("option", { name: /AWS SAA on Udemy/ }));
-    expect(screen.getByText("You already have an open item for this. Edit it instead.")).toBeTruthy();
+    expect(screen.getByText("You already have an open item for AWS SAA on Udemy. Edit it instead.")).toBeTruthy();
   });
 
-  it("saves a new item for the member", async () => {
+  it("warns about an open item for the same exam, even with another course", async () => {
+    render(sheet([{ ...open, courseId: null, courseName: null, targetCertificateId: EXAM.id, targetCertificateName: EXAM.label, isSelfStudy: true }]));
+    await userEvent.click(screen.getByRole("combobox", { name: /^Course/ }));
+    await userEvent.click(screen.getByRole("option", { name: /AWS SAA on Udemy/ }));
+    expect(screen.queryByRole("alert")).toBeNull();
+    await userEvent.click(screen.getByRole("combobox", { name: /^Exam/ }));
+    await userEvent.click(screen.getByRole("option", { name: "AWS SAA" }));
+    expect(screen.getByText("You already have an open item for AWS SAA. Edit it instead.")).toBeTruthy();
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: /^Save/ }).disabled).toBe(true);
+  });
+
+  it("hints when the course is already tracked on its own", async () => {
+    render(sheet([open]));
+    await userEvent.click(screen.getByRole("combobox", { name: /^Exam/ }));
+    await userEvent.click(screen.getByRole("option", { name: "AWS SAA" }));
+    await userEvent.click(screen.getByRole("combobox", { name: /^Course/ }));
+    await userEvent.click(screen.getByRole("option", { name: /AWS SAA on Udemy/ }));
+    expect(screen.getByText(/You already track AWS SAA on Udemy as a course/)).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("saves a course item for the member", async () => {
     const { createLearningItem } = await import("@/features/learning/actions");
     render(sheet());
+    await userEvent.click(screen.getByRole("tab", { name: "A course" }));
     await userEvent.click(screen.getByRole("combobox", { name: /^Course/ }));
     await userEvent.click(screen.getByRole("option", { name: /AWS SAA on Udemy/ }));
     await userEvent.click(screen.getByRole("button", { name: /^Save/ }));
     await vi.waitFor(() =>
       expect(createLearningItem).toHaveBeenCalledWith(expect.objectContaining({ memberId: M, courseId: COURSE.id, status: "not_started" })),
     );
+  });
+});
+
+describe("LearningSheet goal and wording", () => {
+  it("starts from An exam again after the sheet is closed on A course", async () => {
+    const view = render(sheet());
+    await userEvent.click(screen.getByRole("tab", { name: "A course" }));
+    view.rerender(<LearningSheet open={false} onOpenChange={() => {}} editing={null} fixedMemberId={M} courses={[COURSE]} examOptions={[EXAM]} />);
+    view.rerender(sheet());
+    expect(screen.getByRole("tab", { name: "An exam", selected: true })).toBeTruthy();
+  });
+
+  it("speaks of the member, not you, when a manager adds for someone", async () => {
+    render(
+      <LearningSheet open onOpenChange={() => {}} editing={null} memberOptions={[{ id: M, label: "Jane" }]} viewerMemberId="5eed0000-0000-0000-0000-00000000b0ff"
+        courses={[COURSE]} examOptions={[EXAM]} rows={[{ ...open, courseId: null, courseName: null, targetCertificateId: EXAM.id, targetCertificateName: EXAM.label }]} />,
+    );
+    await userEvent.click(screen.getByRole("combobox", { name: /^Member/ }));
+    await userEvent.click(screen.getByRole("option", { name: /Jane/ }));
+    await userEvent.click(screen.getByRole("combobox", { name: /^Exam/ }));
+    await userEvent.click(screen.getByRole("option", { name: "AWS SAA" }));
+    expect(screen.getByText("This member already has an open item for AWS SAA. Edit it instead.")).toBeTruthy();
   });
 });
 

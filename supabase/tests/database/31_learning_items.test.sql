@@ -53,7 +53,8 @@ insert into public.providers (id, name) values ('00000000-0000-0000-0000-0000000
 insert into public.courses (id, name, provider_id)
   values ('31c00000-0000-0000-0000-000000000001', 'LI Course', '00000000-0000-0000-0000-000000003101') on conflict do nothing;
 insert into public.certificates (id, name, kind, provider_id) values
-  ('31e00000-0000-0000-0000-000000000001', 'LI Exam', 'exam', '00000000-0000-0000-0000-000000003101') on conflict do nothing;
+  ('31e00000-0000-0000-0000-000000000001', 'LI Exam', 'exam', '00000000-0000-0000-0000-000000003101'),
+  ('31e00000-0000-0000-0000-000000000003', 'LI Exam Two', 'exam', '00000000-0000-0000-0000-000000003101') on conflict do nothing;
 insert into public.certificates (id, name, kind, provider_id, course_id) values
   ('31e00000-0000-0000-0000-000000000002', 'LI Completion', 'completion', '00000000-0000-0000-0000-000000003101',
    '31c00000-0000-0000-0000-000000000001') on conflict do nothing;
@@ -72,7 +73,7 @@ select is(pg_temp.rows_changed($q$insert into public.learning_items (member_id, 
   values ('31000000-0000-0000-0000-000000000001', '31c00000-0000-0000-0000-000000000001')$q$), 1,
   'member adds a course item');
 select is(pg_temp.rows_changed($q$insert into public.learning_items (member_id, target_certificate_id, planned_date)
-  values ('31000000-0000-0000-0000-000000000001', '31e00000-0000-0000-0000-000000000001', '2027-01-15')$q$), 1,
+  values ('31000000-0000-0000-0000-000000000001', '31e00000-0000-0000-0000-000000000003', '2027-01-15')$q$), 1,
   'member adds a self-study item for an exam');
 select is(pg_temp.rows_changed($q$insert into public.learning_items (id, member_id, course_id, target_certificate_id)
   values ('31b00000-0000-0000-0000-000000000001', '31000000-0000-0000-0000-000000000001',

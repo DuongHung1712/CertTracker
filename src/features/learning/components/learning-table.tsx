@@ -27,7 +27,8 @@ import { foldText } from "@/lib/text";
 const ALL = "all";
 const STATUS_FILTER: SelectOption[] = [{ id: ALL, name: "All statuses" }, ...RECORD_STATUSES.map((status) => ({ id: status, name: RECORD_STATUS_LABEL[status] }))];
 
-const itemName = (row: LearningRow): string => row.courseName ?? "Self-study";
+// The goal leads (decision #72): the exam when there is one, else the course; the course is how you prepare.
+const itemName = (row: LearningRow): string => row.targetCertificateName ?? row.courseName ?? "Untitled";
 
 /** The journey list (decision #72): courses and exams being prepared for. Never approved, no evidence. */
 export function LearningTable({
@@ -91,24 +92,28 @@ export function LearningTable({
         id: "item",
         header: "Item",
         accessorFn: itemName,
-        cell: ({ row }) => (
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="flex items-center gap-1.5">
-              <span className="truncate font-medium">{itemName(row.original)}</span>
-              <CatalogueStatusBadge status={row.original.courseCatalogueStatus} />
-              {row.original.courseCatalogueStatus === "rejected" && (
-                <Badge variant="outline" className="rounded-sm">
-                  Not approved
+        cell: ({ row }) => {
+          const item = row.original;
+          const isExam = Boolean(item.targetCertificateName);
+          const provider = item.providerName ?? "No provider";
+          return (
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="flex items-center gap-1.5">
+                <span className="truncate font-medium">{itemName(item)}</span>
+                <Badge variant="outline" className="rounded-sm text-caption text-muted-foreground">
+                  {isExam ? "Exam" : "Course"}
                 </Badge>
-              )}
+              </span>
+              <span className="flex min-w-0 items-center gap-1.5 text-caption text-muted-foreground">
+                <span className="truncate">
+                  {!item.courseName ? "Self-study" : isExam ? `with ${item.courseName} · ${provider}` : `${provider} · completion certificate`}
+                </span>
+                <CatalogueStatusBadge status={item.courseCatalogueStatus} />
+              </span>
             </span>
-            {row.original.courseName && (
-              <span className="truncate text-caption text-muted-foreground">{row.original.providerName ?? "No provider"}</span>
-            )}
-          </span>
-        ),
+          );
+        },
       },
-      { id: "exam", header: "Exam target", accessorFn: (row) => row.targetCertificateName ?? "—" },
       {
         id: "status",
         header: "Status",
@@ -165,7 +170,13 @@ export function LearningTable({
         columns={columns}
         data={visible}
         getRowId={(row) => row.id}
-        empty={<EmptyState title="Nothing here yet" description="Add a course you follow or an exam you are preparing for." />}
+        empty={
+          rows.length === 0 ? (
+            <EmptyState title="Nothing here yet" description="Add a course you follow or an exam you are preparing for." />
+          ) : (
+            <EmptyState title="Nothing found" description="Try a different search or clear the filters." />
+          )
+        }
       />
       <LearningSheet
         open={sheetOpen}

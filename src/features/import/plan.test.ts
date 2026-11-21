@@ -270,7 +270,14 @@ describe("buildImportPlan edge cases", () => {
       const planned = planOne("SAA Bootcamp");
       expect(planned.errors).toEqual([]);
       expect(planned.normalized).toMatchObject({ kind: "learning", course: { id: "c-saa" }, courseStudied: { id: "k-prep" } });
-      expect(planned.action).toBe("create");
+      // The member already has an open item for AWS SAA (self-study): one open item per exam, so it is updated.
+      expect(planned.action).toBe("update");
+    });
+
+    it("updates the open item when only the course studied is new", () => {
+      // Same status and progress as the open self-study item r-1: the course alone is a change.
+      expect(planOne("SAA Bootcamp", { "Tiến độ": 40 }).action).toBe("update");
+      expect(planOne(null, { "Tiến độ": 40 }).action).toBe("skip");
     });
 
     it("leaves an old row (no Course studied) without courseStudied", () => {

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(6);
+select plan(8);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -67,6 +67,21 @@ select is(
     where member_id = '35000000-0000-0000-0000-000000000001' and target_certificate_id = '35000000-0000-0000-0000-0000000000e1'
       and course_id is null),
   1, 'it becomes a self-study item for that exam, and no certificate record is written');
+
+-- The same exam again, now with a course studied: the open item gets the course (one open item per exam, #74).
+select lives_ok($$select pg_temp.import_one('35b00000-0000-0000-0000-000000000004', jsonb_build_object(
+    'kind', 'learning',
+    'member', jsonb_build_object('id', '35000000-0000-0000-0000-000000000001'),
+    'course', jsonb_build_object('id', '35000000-0000-0000-0000-0000000000e1'),
+    'courseStudied', jsonb_build_object('id', '35000000-0000-0000-0000-0000000000c1'),
+    'record', jsonb_build_object('status', 'in_progress', 'progress', 10)))$$,
+  'an exam row with a course studied commits');
+reset role;
+select results_eq(
+  $$select count(*)::int, max(course_id::text)::uuid, max(progress) from public.learning_items
+    where member_id = '35000000-0000-0000-0000-000000000001' and target_certificate_id = '35000000-0000-0000-0000-0000000000e1'$$,
+  $$values (1, '35000000-0000-0000-0000-0000000000c1'::uuid, 10)$$,
+  'the self-study item for the exam is updated with the course, not duplicated');
 
 select * from finish();
 rollback;

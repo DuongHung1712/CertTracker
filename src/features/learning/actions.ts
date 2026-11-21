@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 const MESSAGES = {
   restricted: "The member, the course or the exam no longer exists. Reload the page and try again.",
   invalid: "Choose a course or an exam, and a finished date that is not in the future for a completed item.",
+  duplicate: "This member already has an open item for this exam. Edit that item instead.",
 };
 
 function revalidate() {

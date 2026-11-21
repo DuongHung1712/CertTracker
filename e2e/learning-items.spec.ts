@@ -77,6 +77,7 @@ test("self-study for an exam, submit the certificate, manager approves: only the
     await member.goto("/me?tab=learning");
     await member.getByRole("button", { name: "Add learning" }).click();
     const sheet = member.getByRole("dialog");
+    await sheet.getByRole("tab", { name: "A course" }).click();
     await sheet.getByLabel(fieldLabel("Course")).click();
     await member.getByRole("option", { name: new RegExp(COURSE) }).click();
     await sheet.getByRole("button", { name: "Save" }).click();
