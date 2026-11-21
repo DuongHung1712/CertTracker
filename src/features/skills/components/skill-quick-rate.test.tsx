@@ -11,16 +11,14 @@ describe("SkillQuickRate component", () => {
     const handleRate = vi.fn();
     render(
       <SkillQuickRate
-        skillId="skl-01"
         skillName="FastAPI & AsyncIO"
         currentLevel={3}
-        targetLevel={4}
         onRate={handleRate}
       />,
     );
 
     const radiogroup = screen.getByRole("radiogroup", {
-      name: /Rate proficiency for FastAPI & AsyncIO, currently level 3/i,
+      name: "Your level for FastAPI & AsyncIO",
     });
     expect(radiogroup).toBeDefined();
 
@@ -39,10 +37,8 @@ describe("SkillQuickRate component", () => {
 
     render(
       <SkillQuickRate
-        skillId="skl-01"
         skillName="FastAPI & AsyncIO"
         currentLevel={2}
-        targetLevel={3}
         onRate={handleRate}
       />,
     );
@@ -59,15 +55,13 @@ describe("SkillQuickRate component", () => {
 
     render(
       <SkillQuickRate
-        skillId="skl-01"
         skillName="FastAPI & AsyncIO"
         currentLevel={2}
         onRate={handleRate}
       />,
     );
 
-    const radiogroup = screen.getByRole("radiogroup");
-    radiogroup.focus();
+    screen.getByRole("radio", { checked: true }).focus();
 
     await user.keyboard("5");
     expect(handleRate).toHaveBeenCalledWith(5);
@@ -82,15 +76,13 @@ describe("SkillQuickRate component", () => {
 
     render(
       <SkillQuickRate
-        skillId="skl-01"
         skillName="FastAPI & AsyncIO"
         currentLevel={2}
         onRate={handleRate}
       />,
     );
 
-    const radiogroup = screen.getByRole("radiogroup");
-    radiogroup.focus();
+    screen.getByRole("radio", { checked: true }).focus();
 
     await user.keyboard("{ArrowRight}");
     expect(handleRate).toHaveBeenCalledWith(3);
@@ -99,23 +91,4 @@ describe("SkillQuickRate component", () => {
     expect(handleRate).toHaveBeenCalledWith(1);
   });
 
-  it("does not fire onRate when disabled", async () => {
-    const user = userEvent.setup();
-    const handleRate = vi.fn();
-
-    render(
-      <SkillQuickRate
-        skillId="skl-01"
-        skillName="FastAPI & AsyncIO"
-        currentLevel={2}
-        disabled={true}
-        onRate={handleRate}
-      />,
-    );
-
-    const level4Pill = screen.getByRole("radio", { name: /Level 4/i });
-    await user.click(level4Pill);
-
-    expect(handleRate).not.toHaveBeenCalled();
-  });
 });

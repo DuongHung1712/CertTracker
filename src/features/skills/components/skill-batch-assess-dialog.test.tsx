@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENTERPRISE_SKILL_CATALOG, SEED_SKILLS } from "../seed-data";
+import { ENTERPRISE_SKILL_CATALOG } from "../seed-data";
 import { SkillBatchAssessDialog } from "./skill-batch-assess-dialog";
 
 vi.mock("sonner", () => ({
@@ -25,14 +25,13 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={SEED_SKILLS}
-        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
-        onSaveBatch={vi.fn()}
+        skills={ENTERPRISE_SKILL_CATALOG}
+        onSave={vi.fn()}
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Quick Assess Stack" })).toBeDefined();
-    expect(screen.getByText(/Rated/)).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Rate many skills" })).toBeDefined();
+    expect(screen.getByText(/^\d+ of \d+ rated$/)).toBeDefined();
     // Default category is Backend & Systems, contains Distributed Systems
     expect(screen.getByText("Distributed Systems & Resilient Messaging")).toBeDefined();
   });
@@ -43,9 +42,8 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={SEED_SKILLS}
-        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
-        onSaveBatch={vi.fn()}
+        skills={ENTERPRISE_SKILL_CATALOG}
+        onSave={vi.fn()}
       />,
     );
 
@@ -58,7 +56,7 @@ describe("SkillBatchAssessDialog", () => {
     expect(screen.queryByText("Distributed Systems & Resilient Messaging")).toBeNull();
   });
 
-  it("updates skill level in batch dialog and saves on Apply Assessments", async () => {
+  it("updates skill level in batch dialog and saves on Save ratings", async () => {
     const user = userEvent.setup();
     const handleSaveBatch = vi.fn();
     const handleOpenChange = vi.fn();
@@ -67,9 +65,8 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={handleOpenChange}
-        skills={SEED_SKILLS}
-        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
-        onSaveBatch={handleSaveBatch}
+        skills={ENTERPRISE_SKILL_CATALOG}
+        onSave={handleSaveBatch}
       />,
     );
 
@@ -78,7 +75,7 @@ describe("SkillBatchAssessDialog", () => {
     await user.click(level4Radios[0]);
 
     // Click Apply Assessments button
-    const applyBtn = screen.getByRole("button", { name: /Apply Assessments/i });
+    const applyBtn = screen.getByRole("button", { name: "Save ratings" });
     await user.click(applyBtn);
 
     expect(handleSaveBatch).toHaveBeenCalled();
@@ -96,16 +93,15 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={SEED_SKILLS}
-        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
-        onSaveBatch={handleSaveBatch}
+        skills={ENTERPRISE_SKILL_CATALOG}
+        onSave={handleSaveBatch}
       />,
     );
 
-    const setL1Btn = screen.getByRole("button", { name: /Set L1 \(Theory\)/i });
+    const setL1Btn = screen.getByRole("button", { name: "Set all to 1" });
     await user.click(setL1Btn);
 
-    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Set domain skills to Level 1"));
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("set to level 1"));
   });
 
   it("filters skills when typing in search input", async () => {
@@ -114,13 +110,12 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={SEED_SKILLS}
-        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
-        onSaveBatch={vi.fn()}
+        skills={ENTERPRISE_SKILL_CATALOG}
+        onSave={vi.fn()}
       />,
     );
 
-    const searchInput = screen.getByPlaceholderText(/Filter stack/i);
+    const searchInput = screen.getByRole("searchbox", { name: "Search all skills" });
     await user.type(searchInput, "FastAPI");
 
     expect(screen.getByText("Python (FastAPI & AsyncIO)")).toBeDefined();
@@ -133,37 +128,31 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={SEED_SKILLS}
-        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
-        onSaveBatch={vi.fn()}
+        skills={ENTERPRISE_SKILL_CATALOG}
+        onSave={vi.fn()}
       />,
     );
 
-    const searchInput = screen.getByPlaceholderText(/Filter stack/i);
+    const searchInput = screen.getByRole("searchbox", { name: "Search all skills" });
     await user.type(searchInput, "NonExistentSkillXYZ");
 
-    expect(screen.getByText(/No skills found matching/i)).toBeDefined();
+    expect(screen.getByText(/No skills match/i)).toBeDefined();
   });
 
-  it("matches role targets and clears domain via domain actions", async () => {
+  it("clears the area via Set all to 0", async () => {
     const user = userEvent.setup();
     const { toast } = await import("sonner");
     render(
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={SEED_SKILLS}
-        allCatalogSkills={ENTERPRISE_SKILL_CATALOG}
-        onSaveBatch={vi.fn()}
+        skills={ENTERPRISE_SKILL_CATALOG}
+        onSave={vi.fn()}
       />,
     );
 
-    const matchTargetsBtn = screen.getByRole("button", { name: /Match Targets/i });
-    await user.click(matchTargetsBtn);
-    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Matched role targets"));
-
-    const clearBtn = screen.getByRole("button", { name: /Clear \(L0\)/i });
+    const clearBtn = screen.getByRole("button", { name: "Set all to 0" });
     await user.click(clearBtn);
-    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("Set domain skills to Level 0"));
+    expect(toast.success).toHaveBeenCalledWith(expect.stringContaining("set to level 0"));
   });
 });

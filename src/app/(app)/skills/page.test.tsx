@@ -49,8 +49,8 @@ describe("SkillsPage server component", () => {
     const html = renderToStaticMarkup(jsx);
 
     expect(html).toContain("My skills");
-    expect(html).toContain("See your skill levels next to your team&#x27;s standards");
-    expect(html).toContain("Standard Target Role");
+    expect(html).toContain("Rate each skill from 0 to 5");
+    expect(html).toContain("The skills below are the ones this role uses.");
     expect(html).toContain("Senior Software Engineer");
   });
 });

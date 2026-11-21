@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(15);
 
 create function pg_temp.login_as(uid uuid) returns void language plpgsql as $$
 begin
@@ -17,66 +17,83 @@ begin
 end;
 $$;
 
--- 1. Table existence checks
+-- Own fixtures: the demo skills live in seed.sql, not in the migration.
+insert into public.dcs (id, name) values ('00000000-0000-0000-0000-0000000030d1', 'SK DC') on conflict do nothing;
+insert into public.programs (id, name, dc_id)
+  values ('00000000-0000-0000-0000-0000000030f1', 'SK Program', '00000000-0000-0000-0000-0000000030d1') on conflict do nothing;
+insert into public.teams (id, name, program_id)
+  values ('30303030-0000-0000-0000-00000000000a', 'SK Team', '00000000-0000-0000-0000-0000000030f1') on conflict do nothing;
+insert into public.members (id, full_name, email, team_id, is_active) values
+  ('30000000-0000-0000-0000-000000000001', 'SK Member', 'sk1@test.local', '30303030-0000-0000-0000-00000000000a', true),
+  ('30000000-0000-0000-0000-000000000002', 'SK Other', 'sk2@test.local', '30303030-0000-0000-0000-00000000000a', true)
+  on conflict do nothing;
+insert into auth.users (id, email) values
+  ('30a00000-0000-0000-0000-000000000001', 'sk1@test.local'),
+  ('30a00000-0000-0000-0000-00000000000b', 'skmanager@test.local') on conflict do nothing;
+update public.profiles set role = 'member' where user_id = '30a00000-0000-0000-0000-000000000001';
+update public.profiles set role = 'manager' where user_id = '30a00000-0000-0000-0000-00000000000b';
+insert into public.manager_scopes (team_id, user_id)
+  values ('30303030-0000-0000-0000-00000000000a', '30a00000-0000-0000-0000-00000000000b');
+insert into public.skill_domains (id, name, slug, sort_order)
+  values ('30d00000-0000-0000-0000-000000000001', 'SK Domain', 'sk-domain', 3001);
+insert into public.skills (id, code, name, domain_id) values
+  ('30500000-0000-0000-0000-000000000001', 'SKL-SKT-01', 'SK Skill One', '30d00000-0000-0000-0000-000000000001'),
+  ('30500000-0000-0000-0000-000000000002', 'SKL-SKT-02', 'SK Skill Two', '30d00000-0000-0000-0000-000000000001');
+insert into public.member_skills (id, member_id, skill_id, current_level)
+  values ('30600000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', '30500000-0000-0000-0000-000000000001', 2);
+insert into public.member_skills (member_id, skill_id, current_level)
+  values ('30000000-0000-0000-0000-000000000002', '30500000-0000-0000-0000-000000000001', 3);
+
 select has_table('public', 'skill_domains', 'skill_domains table exists');
 select has_table('public', 'skills', 'skills table exists');
 select has_table('public', 'skill_certificate_links', 'skill_certificate_links table exists');
 select has_table('public', 'member_skills', 'member_skills table exists');
 
--- 2. Domain seed checks
-select isnt_empty('select 1 from public.skill_domains where slug = ''cloud''', 'cloud domain exists');
-select isnt_empty('select 1 from public.skill_domains where slug = ''devops''', 'devops domain exists');
-select isnt_empty('select 1 from public.skill_domains where slug = ''backend''', 'backend domain exists');
-select isnt_empty('select 1 from public.skill_domains where slug = ''frontend''', 'frontend domain exists');
-select isnt_empty('select 1 from public.skill_domains where slug = ''security''', 'security domain exists');
-select isnt_empty('select 1 from public.skill_domains where slug = ''data_ai''', 'data_ai domain exists');
-select isnt_empty('select 1 from public.skill_domains where slug = ''leadership''', 'leadership domain exists');
-
--- 3. Skills seed checks
-select isnt_empty('select 1 from public.skills where code = ''SKL-CLD-01''', 'AWS architecture skill exists');
-select isnt_empty('select 1 from public.skills where code = ''SKL-OPS-01''', 'Kubernetes skill exists');
-select isnt_empty('select 1 from public.skills where code = ''SKL-CLD-02''', 'Terraform skill exists');
-select isnt_empty('select 1 from public.skills where code = ''SKL-FED-01''', 'Next.js skill exists');
-select isnt_empty('select 1 from public.skills where code = ''SKL-FED-02''', 'TypeScript skill exists');
-select isnt_empty('select 1 from public.skills where code = ''SKL-BED-02''', 'PostgreSQL skill exists');
-select isnt_empty('select 1 from public.skills where code = ''SKL-SEC-01''', 'Security / CISSP skill exists');
-select isnt_empty('select 1 from public.skills where code = ''SKL-OPS-02''', 'CI/CD skill exists');
-
--- 4. Constraint checks
 select throws_ok(
   $$insert into public.skills (code, name, domain_id, benchmark_level)
-    values ('INVALID_CODE', 'Bad Skill', '5eed0000-0000-0000-0000-00000000d001', 3)$$,
-  '23514',
-  null,
-  'rejects invalid skill code pattern'
-);
-
+    values ('INVALID_CODE', 'Bad Skill', '30d00000-0000-0000-0000-000000000001', 3)$$,
+  '23514', null, 'rejects invalid skill code pattern');
 select throws_ok(
   $$insert into public.member_skills (member_id, skill_id, current_level)
-    values ('5eed0000-0000-0000-0000-00000000b001', '5eed0000-0000-0000-0000-00000000s001', 6)$$,
-  '23514',
-  null,
-  'rejects skill level > 5'
-);
+    values ('30000000-0000-0000-0000-000000000001', '30500000-0000-0000-0000-000000000002', 6)$$,
+  '23514', null, 'rejects skill level > 5');
 
--- 5. RLS checks for authenticated user
-perform pg_temp.login_as('5eed0000-0000-0000-0000-00000000f00c'); -- member@certtracker.test
-select is(
-  (select count(*)::int from public.skill_domains),
-  7,
-  'member can read all skill domains'
-);
+select pg_temp.login_as('30a00000-0000-0000-0000-000000000001');
+select isnt_empty('select 1 from public.skills where id = ''30500000-0000-0000-0000-000000000001''',
+  'member reads the skills catalogue');
+select is((select count(*)::int from public.member_skills where skill_id = '30500000-0000-0000-0000-000000000001'), 1,
+  'member reads only their own skill ratings');
+select lives_ok(
+  $$update public.member_skills set current_level = 3, verification_status = 'pending_review'
+    where id = '30600000-0000-0000-0000-000000000001'$$,
+  'member rates their own skill and asks for review');
+select throws_ok(
+  $$update public.member_skills set verification_status = 'certified' where id = '30600000-0000-0000-0000-000000000001'$$,
+  '42501', null, 'member cannot certify their own skill');
+select throws_ok(
+  $$update public.member_skills set reviewed_by = '30000000-0000-0000-0000-000000000002', reviewed_at = now()
+    where id = '30600000-0000-0000-0000-000000000001'$$,
+  '42501', null, 'member cannot stamp their own review');
+select throws_ok(
+  $$insert into public.member_skills (member_id, skill_id, current_level, verification_status)
+    values ('30000000-0000-0000-0000-000000000001', '30500000-0000-0000-0000-000000000002', 4, 'certified')$$,
+  '42501', null, 'member cannot add a skill already certified');
+select pg_temp.logout();
 
-select is(
-  (select count(*)::int from public.skills),
-  16,
-  'member can read all seeded skills'
-);
+select pg_temp.login_as('30a00000-0000-0000-0000-00000000000b');
+select lives_ok(
+  $$update public.member_skills set verification_status = 'certified', reviewed_at = now()
+    where id = '30600000-0000-0000-0000-000000000001'$$,
+  'manager certifies a skill in scope');
+select is((select verification_status from public.member_skills where id = '30600000-0000-0000-0000-000000000001'),
+  'certified', 'the certification is saved');
+select pg_temp.logout();
 
-select isnt_empty(
-  'select 1 from public.member_skills where member_id = ''5eed0000-0000-0000-0000-00000000b003''',
-  'member can read own member skills'
-);
+select pg_temp.login_as('30a00000-0000-0000-0000-000000000001');
+select lives_ok(
+  $$update public.member_skills set evidence_note = 'updated' where id = '30600000-0000-0000-0000-000000000001'$$,
+  'member edits a note on a certified skill without touching the review');
+select pg_temp.logout();
 
 select * from finish();
 rollback;

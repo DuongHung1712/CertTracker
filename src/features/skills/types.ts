@@ -38,7 +38,6 @@ export interface Skill {
   category: SkillCategory;
   description: string;
   currentLevel: SkillLevel;
-  targetLevel: SkillLevel; // Benchmark for member's role
   verification: VerificationStatus;
   certifiedProof?: CertifiedProof;
   yearsOfExperience: number;
@@ -53,8 +52,7 @@ export interface SkillStats {
   selfAssessedCount: number;
   pendingReviewCount: number;
   averageLevel: number;
-  targetMetCount: number;
-  gapCount: number;
+  strongCount: number;
   certifiedPercentage: number;
 }
 
@@ -63,13 +61,11 @@ export interface RoleBenchmark {
   teamName: string;
   experienceLevel: string;
   description: string;
-  overallTargetScore: number;
 }
 
 export type SkillSortOption =
   | "level-desc"
   | "level-asc"
-  | "gap-desc"
   | "name-asc"
   | "recent";
 
@@ -77,8 +73,7 @@ export type SkillVerificationFilter =
   | "all"
   | "certified"
   | "self_assessed"
-  | "pending_review"
-  | "gaps_only";
+  | "pending_review";
 
 export interface SkillFilterOptions {
   category: "all" | SkillCategory;

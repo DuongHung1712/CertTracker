@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateSkillStats, filterSkills, getCategoryCounts, getSkillGap, sortSkills } from "./metrics";
+import { calculateSkillStats, filterSkills, getCategoryCounts, rateSkill, sortSkills } from "./metrics";
 import { updateSkillAssessmentSchema } from "./schema";
 import { SEED_SKILLS } from "./seed-data";
 import type { Skill } from "./types";
@@ -15,7 +15,7 @@ describe("Skill metrics and calculations", () => {
     expect(stats.certifiedPercentage).toBe(50);
     expect(stats.averageLevel).toBeGreaterThanOrEqual(2.5);
     expect(stats.averageLevel).toBeLessThanOrEqual(4.0);
-    expect(stats.targetMetCount + stats.gapCount).toBe(16);
+    expect(stats.strongCount).toBe(SEED_SKILLS.filter((s) => s.currentLevel >= 4).length);
   });
 
   it("handles empty skill list gracefully without divide-by-zero", () => {
@@ -25,31 +25,7 @@ describe("Skill metrics and calculations", () => {
     expect(stats.certifiedCount).toBe(0);
     expect(stats.averageLevel).toBe(0);
     expect(stats.certifiedPercentage).toBe(0);
-    expect(stats.gapCount).toBe(0);
-  });
-
-  it("computes skill gap correctly", () => {
-    const mockSkillMet: Skill = {
-      id: "test-1",
-      code: "TEST-01",
-      name: "Test Skill",
-      category: "backend",
-      description: "Test description",
-      currentLevel: 4,
-      targetLevel: 3,
-      verification: "certified",
-      yearsOfExperience: 3,
-      lastEvaluatedAt: "2026-01-01",
-    };
-
-    const mockSkillGap: Skill = {
-      ...mockSkillMet,
-      currentLevel: 2,
-      targetLevel: 4,
-    };
-
-    expect(getSkillGap(mockSkillMet)).toBe(0);
-    expect(getSkillGap(mockSkillGap)).toBe(2);
+    expect(stats.strongCount).toBe(0);
   });
 
   it("filters skills by category accurately", () => {
@@ -72,13 +48,6 @@ describe("Skill metrics and calculations", () => {
 
     expect(certified.every((s) => s.verification === "certified")).toBe(true);
 
-    const gapsOnly = filterSkills(SEED_SKILLS, {
-      category: "all",
-      verification: "gaps_only",
-      query: "",
-    });
-
-    expect(gapsOnly.every((s) => s.currentLevel < s.targetLevel)).toBe(true);
   });
 
   it("filters skills by text search across name, code, description, and certificate", () => {
@@ -92,7 +61,7 @@ describe("Skill metrics and calculations", () => {
     expect(results.some((s) => s.name.includes("Kubernetes"))).toBe(true);
   });
 
-  it("sorts skills by level, gap, and name", () => {
+  it("sorts skills by level and name", () => {
     const sortedDesc = sortSkills(SEED_SKILLS, "level-desc");
     expect(sortedDesc[0].currentLevel).toBeGreaterThanOrEqual(sortedDesc[sortedDesc.length - 1].currentLevel);
 
@@ -112,10 +81,10 @@ describe("Skill metrics and calculations", () => {
 });
 
 describe("Skill assessment schema validation", () => {
-  it("validates valid assessment input with targetLevel", () => {
+  it("validates valid assessment input with newLevel", () => {
     const valid = {
       skillId: "skl-01",
-      targetLevel: 4,
+      newLevel: 4,
       evidenceNote: "Production lead on major platform launch",
       yearsOfExperience: 5,
       requestManagerReview: false,
@@ -153,7 +122,7 @@ describe("Skill assessment schema validation", () => {
   it("rejects level outside [0..5]", () => {
     const invalid = {
       skillId: "skl-01",
-      targetLevel: 6,
+      newLevel: 6,
       yearsOfExperience: 2,
     };
 
@@ -168,3 +137,22 @@ describe("Skill assessment schema validation", () => {
     expect(updateSkillAssessmentSchema.safeParse(negative).success).toBe(false);
   });
 });
+
+describe("rateSkill", () => {
+  const base: Skill = { ...SEED_SKILLS[0], certifiedProof: undefined, verification: "self_assessed" };
+
+  it("sends level 5 to manager review", () => {
+    expect(rateSkill(base, 5, "2026-11-19").verification).toBe("pending_review");
+  });
+
+  it("keeps a skill with a certificate certified below level 5", () => {
+    const certified = SEED_SKILLS.find((s) => s.certifiedProof)!;
+    expect(rateSkill(certified, 2, "2026-11-19").verification).toBe("certified");
+  });
+
+  it("marks other ratings self-assessed and stamps the date", () => {
+    const rated = rateSkill(base, 3, "2026-11-19");
+    expect(rated).toMatchObject({ currentLevel: 3, verification: "self_assessed", lastEvaluatedAt: "2026-11-19" });
+  });
+});
+

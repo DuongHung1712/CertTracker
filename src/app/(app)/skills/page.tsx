@@ -12,7 +12,7 @@ export default async function SkillsPage() {
     <div className="flex min-w-0 flex-col gap-6">
       <PageHeader
         title="My skills"
-        description="See your skill levels next to your team's standards and prove competency through certifications."
+        description="Rate each skill from 0 to 5 and back it up with certificates."
       />
       <SkillsView />
     </div>

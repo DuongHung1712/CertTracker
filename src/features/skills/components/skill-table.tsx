@@ -1,187 +1,73 @@
-import * as React from "react";
-import { Award, Clock, Info, ShieldCheck, UserCheck } from "lucide-react";
+import { categoryLabel } from "../metrics";
 import type { Skill, SkillLevel } from "../types";
 import { SkillLegendPopover } from "./skill-legend-popover";
 import { SkillQuickRate } from "./skill-quick-rate";
+import { SkillStatus } from "./skill-status";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface SkillTableProps {
   skills: Skill[];
   onViewDetails: (skill: Skill) => void;
   onAssess: (skill: Skill) => void;
-  onQuickRate?: (skillId: string, level: SkillLevel) => void;
+  onQuickRate: (skillId: string, level: SkillLevel) => void;
 }
 
-export function SkillTable({
-  skills,
-  onViewDetails,
-  onAssess,
-  onQuickRate,
-}: SkillTableProps) {
+export function SkillTable({ skills, onViewDetails, onAssess, onQuickRate }: SkillTableProps) {
   return (
-    <div className="relative overflow-x-auto rounded-lg border border-border bg-card">
-      <table className="w-full text-left text-table">
-        <thead className="border-b border-border bg-muted/60">
-          <tr>
-            <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
-              Code
-            </th>
-            <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
-              Skill &amp; Domain
-            </th>
-            <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
-              Category
-            </th>
-            <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
-              <div className="inline-flex items-center gap-1">
-                <span>Level &amp; Target</span>
-                <SkillLegendPopover align="start" side="bottom" />
-              </div>
-            </th>
-            <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
-              Verification
-            </th>
-            <th data-slot="table-head" className="px-2.5 py-1 text-label uppercase text-muted-foreground font-semibold">
-              Proof / Evidence
-            </th>
-            <th data-slot="table-head" className="px-2.5 py-1 text-right text-label uppercase text-muted-foreground font-semibold">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {skills.map((skill) => {
-            const isCertified = skill.verification === "certified";
-            const isPending = skill.verification === "pending_review";
-            const delta = skill.currentLevel - skill.targetLevel;
-            const meetsTarget = skill.currentLevel >= skill.targetLevel;
-
-            return (
-              <tr
-                key={skill.id}
-                className="group h-8 hover:bg-accent/40 transition-colors"
-              >
-                {/* Code */}
-                <td data-slot="table-cell" className="px-2.5 py-1 font-mono text-[11px] font-semibold text-muted-foreground whitespace-nowrap">
-                  <span className="vault-mono-tag">{skill.code}</span>
-                </td>
-
-                {/* Name */}
-                <td data-slot="table-cell" className="px-2.5 py-1 max-w-xs">
-                  <div className="flex flex-col">
-                    <button
-                      type="button"
-                      onClick={() => onViewDetails(skill)}
-                      className="text-left font-medium text-foreground group-hover:text-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-xs truncate max-w-full"
-                    >
-                      {skill.name}
-                    </button>
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      {skill.description}
-                    </span>
-                  </div>
-                </td>
-
-                {/* Category */}
-                <td data-slot="table-cell" className="px-2.5 py-1 whitespace-nowrap">
-                  <span className="rounded bg-muted px-2 py-0.5 text-[11px] text-muted-foreground uppercase">
-                    {skill.category.replace("_", " & ")}
-                  </span>
-                </td>
-
-                {/* Level (Inline 1-Click Quick-Rate) */}
-                <td data-slot="table-cell" className="px-2.5 py-1 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <SkillQuickRate
-                      skillId={skill.id}
-                      skillName={skill.name}
-                      currentLevel={skill.currentLevel}
-                      targetLevel={skill.targetLevel}
-                      onRate={(lvl) => onQuickRate?.(skill.id, lvl)}
-                      size="sm"
-                    />
-                    <span
-                      className={cn(
-                        "font-mono text-[10px] tabular-nums whitespace-nowrap",
-                        meetsTarget ? "text-primary font-medium" : "text-muted-foreground",
-                      )}
-                      title={`Role Target: Level ${skill.targetLevel} (${meetsTarget ? (delta > 0 ? `+${delta} above` : "Meets target") : `${delta} gap`})`}
-                    >
-                      {meetsTarget
-                        ? delta > 0
-                          ? `+${delta}`
-                          : "Met"
-                        : `${delta}`}
-                    </span>
-                  </div>
-                </td>
-
-                {/* Verification */}
-                <td data-slot="table-cell" className="px-2.5 py-1 whitespace-nowrap">
-                  {isCertified ? (
-                    <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-primary">
-                      <span className="vault-live-dot vault-dot-emerald" aria-hidden="true" />
-                      <ShieldCheck className="size-3.5" />
-                      <span>Certified</span>
-                    </span>
-                  ) : isPending ? (
-                    <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-muted-foreground">
-                      <span className="vault-live-dot vault-dot-amber" aria-hidden="true" />
-                      <Clock className="size-3.5" />
-                      <span>Pending</span>
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1 font-mono text-[11px] text-muted-foreground">
-                      <UserCheck className="size-3.5" />
-                      <span>Self-assessed</span>
-                    </span>
-                  )}
-                </td>
-
-                {/* Proof */}
-                <td data-slot="table-cell" className="px-2.5 py-1 max-w-xs truncate text-[11px] text-muted-foreground">
-                  {skill.certifiedProof ? (
-                    <span className="inline-flex items-center gap-1 font-medium text-foreground truncate">
-                      <Award className="size-3 text-primary shrink-0" />
-                      <span className="truncate">{skill.certifiedProof.certificateName}</span>
-                    </span>
-                  ) : skill.evidenceNote ? (
-                    <span className="italic truncate">{skill.evidenceNote}</span>
-                  ) : (
-                    <span>—</span>
-                  )}
-                </td>
-
-                {/* Actions */}
-                <td data-slot="table-cell" className="px-2.5 py-1 text-right whitespace-nowrap">
-                  <div className="inline-flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onViewDetails(skill)}
-                      className="h-7 px-2 text-caption font-medium"
-                    >
-                      <Info className="size-3.5" />
-                      <span className="sr-only">Details</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onAssess(skill)}
-                      className="h-7 px-2 text-caption font-medium hover:border-primary/40 hover:bg-primary/10 hover:text-primary"
-                    >
-                      Assess
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+    <div className="rounded-lg border border-border bg-card">
+      <Table className="text-table">
+        <TableHeader>
+          <TableRow>
+            <TableHead>Skill</TableHead>
+            <TableHead>
+              <span className="inline-flex items-center gap-1">
+                Your level
+                <SkillLegendPopover align="start" />
+              </span>
+            </TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Proof</TableHead>
+            <TableHead className="text-right">
+              <span className="sr-only">Actions</span>
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {skills.map((skill) => (
+            <TableRow key={skill.id}>
+              <TableCell className="max-w-xs">
+                <button
+                  type="button"
+                  onClick={() => onViewDetails(skill)}
+                  className="block max-w-full truncate rounded-xs text-left font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {skill.name}
+                </button>
+                <span className="text-caption text-muted-foreground">{categoryLabel(skill.category)}</span>
+              </TableCell>
+              <TableCell>
+                <SkillQuickRate
+                  skillName={skill.name}
+                  currentLevel={skill.currentLevel}
+                  onRate={(level) => onQuickRate(skill.id, level)}
+                />
+              </TableCell>
+              <TableCell>
+                <SkillStatus status={skill.verification} />
+              </TableCell>
+              <TableCell className="max-w-56 truncate text-muted-foreground">
+                {skill.certifiedProof?.certificateName ?? skill.evidenceNote ?? "—"}
+              </TableCell>
+              <TableCell className="text-right">
+                <Button type="button" variant="outline" size="sm" aria-label={`Edit ${skill.name}`} onClick={() => onAssess(skill)}>
+                  Edit
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
     </div>
   );
 }

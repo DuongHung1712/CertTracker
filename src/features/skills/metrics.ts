@@ -1,9 +1,28 @@
+import { SKILL_CATEGORIES } from "./schema";
 import type {
   Skill,
+  SkillCategory,
   SkillFilterOptions,
+  SkillLevel,
   SkillSortOption,
   SkillStats,
+  VerificationStatus,
 } from "./types";
+import { todayVn } from "@/lib/dates";
+
+/**
+ * Applies a new level. Level 5 always needs manager review; otherwise a linked
+ * certificate keeps the skill certified and anything else is self-assessed.
+ */
+export function rateSkill(skill: Skill, level: SkillLevel, today: string = todayVn()): Skill {
+  const verification: VerificationStatus =
+    level === 5 ? "pending_review" : skill.certifiedProof ? "certified" : "self_assessed";
+  return { ...skill, currentLevel: level, verification, lastEvaluatedAt: today };
+}
+
+export function categoryLabel(category: SkillCategory): string {
+  return SKILL_CATEGORIES.find((c) => c.id === category)?.label ?? category;
+}
 
 /**
  * Calculates a summary of metrics for a set of skills.
@@ -17,8 +36,7 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
       selfAssessedCount: 0,
       pendingReviewCount: 0,
       averageLevel: 0,
-      targetMetCount: 0,
-      gapCount: 0,
+      strongCount: 0,
       certifiedPercentage: 0,
     };
   }
@@ -27,8 +45,7 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
   let selfAssessed = 0;
   let pendingReview = 0;
   let sumLevel = 0;
-  let targetMet = 0;
-  let gaps = 0;
+  let strong = 0;
 
   for (const s of skills) {
     sumLevel += s.currentLevel;
@@ -36,11 +53,7 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
     else if (s.verification === "self_assessed") selfAssessed++;
     else if (s.verification === "pending_review") pendingReview++;
 
-    if (s.currentLevel >= s.targetLevel) {
-      targetMet++;
-    } else {
-      gaps++;
-    }
+    if (s.currentLevel >= 4) strong++;
   }
 
   const averageLevel = Math.round((sumLevel / total) * 10) / 10;
@@ -52,17 +65,9 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
     selfAssessedCount: selfAssessed,
     pendingReviewCount: pendingReview,
     averageLevel,
-    targetMetCount: targetMet,
-    gapCount: gaps,
+    strongCount: strong,
     certifiedPercentage,
   };
-}
-
-/**
- * Gap between target level and current level (0 if meeting or exceeding).
- */
-export function getSkillGap(skill: Skill): number {
-  return Math.max(0, skill.targetLevel - skill.currentLevel);
 }
 
 /**
@@ -88,9 +93,6 @@ export function filterSkills(
       return false;
     }
     if (filters.verification === "pending_review" && skill.verification !== "pending_review") {
-      return false;
-    }
-    if (filters.verification === "gaps_only" && skill.currentLevel >= skill.targetLevel) {
       return false;
     }
 
@@ -123,12 +125,6 @@ export function sortSkills(skills: Skill[], sortBy: SkillSortOption): Skill[] {
       return copy.sort((a, b) => b.currentLevel - a.currentLevel || a.name.localeCompare(b.name));
     case "level-asc":
       return copy.sort((a, b) => a.currentLevel - b.currentLevel || a.name.localeCompare(b.name));
-    case "gap-desc":
-      return copy.sort((a, b) => {
-        const gapA = getSkillGap(a);
-        const gapB = getSkillGap(b);
-        return gapB - gapA || b.targetLevel - a.targetLevel || a.name.localeCompare(b.name);
-      });
     case "name-asc":
       return copy.sort((a, b) => a.name.localeCompare(b.name));
     case "recent":

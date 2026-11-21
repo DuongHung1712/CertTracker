@@ -1,3 +1,4 @@
+import { DC34_MATRIX } from "./dc34-matrix";
 import type { RoleBenchmark, Skill } from "./types";
 
 export const SEED_ROLE_BENCHMARK: RoleBenchmark = {
@@ -6,7 +7,6 @@ export const SEED_ROLE_BENCHMARK: RoleBenchmark = {
   experienceLevel: "4+ years in Production Cloud Systems",
   description:
     "Autonomous engineering lead responsible for cloud architecture, zero-downtime microservices, security compliance, and peer mentorship across DC34 projects.",
-  overallTargetScore: 3.3,
 };
 
 export const SEED_SKILLS: Skill[] = [
@@ -17,7 +17,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "cloud",
     description: "Designing high-availability, fault-tolerant VPCs, multi-region architectures, and serverless compute clusters on AWS.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "certified",
     certifiedProof: {
       certificateName: "AWS Certified Solutions Architect - Associate",
@@ -48,7 +47,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "devops",
     description: "Deploying, scaling, and operating multi-tenant Kubernetes clusters with custom CRDs, Helm charts, and ingress routing.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "Certified Kubernetes Administrator (CKA)",
@@ -70,7 +68,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "cloud",
     description: "Declarative infrastructure management, remote state locking, reusable modularization, and drift remediation.",
     currentLevel: 4,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "Terraform Associate (004)",
@@ -92,7 +89,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "frontend",
     description: "App Router, React Server Components (RSC), streaming SSR, accessible design systems, and client caching strategies.",
     currentLevel: 4,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 5,
     lastEvaluatedAt: "2026-11-12",
@@ -114,7 +110,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "frontend",
     description: "Strict compile-time type safety, conditional types, generic inference, and type-safe schema synchronization.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "certified",
     certifiedProof: {
       certificateName: "Advanced TypeScript & Type-Level Design",
@@ -136,7 +131,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "backend",
     description: "Saga patterns, idempotency keys, outbox transaction patterns, and distributed locking in distributed architectures.",
     currentLevel: 3,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-08-30",
@@ -158,7 +152,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "backend",
     description: "ACID transactions, Row-Level Security (RLS) policies, partial indices, EXPLAIN ANALYZE execution plan tuning.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "PostgreSQL 16 Advanced Administration & Query Tuning",
@@ -180,7 +173,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "security",
     description: "Security architecture, CISSP domains, OWASP Top 10 mitigation, OAuth2/OIDC token flows, cryptographic signature verification, and secret rotation.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-15",
@@ -216,7 +208,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "devops",
     description: "Building automated container build pipelines, semantic versioning, artifact signing, and automated rollback triggers.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "GitHub Actions (GH-200)",
@@ -238,7 +229,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "devops",
     description: "SLO/SLI tracking, structured logging, distributed tracing with OpenTelemetry, and Prometheus alerting rules.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-08-14",
@@ -260,7 +250,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Prompt engineering, function calling, tool use schemas, local embedding index pipelines, and RAG architectures.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "certified",
     certifiedProof: {
       certificateName: "NVIDIA-Certified Associate: Generative AI LLMs (NCA-GENL)",
@@ -282,7 +271,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "backend",
     description: "Designing versioned API contracts, protobuf schemas, streaming RPCs, rate-limiting, and backwards-compatibility.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-10-25",
@@ -295,7 +283,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "backend",
     description: "Designing event-driven backbones, caching strategies (Redis), data sharding, and fail-safe fallback policies.",
     currentLevel: 3,
-    targetLevel: 4,
     verification: "pending_review",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-11-15",
@@ -317,7 +304,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "leadership",
     description: "Conducting high-impact code reviews, facilitating technical architectural spikes, and mentoring junior engineers.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-10-30",
@@ -330,7 +316,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Consumer group rebalancing, partition keys, compaction topics, and exactly-once processing semantics.",
     currentLevel: 1,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 1,
     lastEvaluatedAt: "2026-06-12",
@@ -352,7 +337,6 @@ export const SEED_SKILLS: Skill[] = [
     category: "frontend",
     description: "INP optimization, LCP resource budgeting, font loading optimization, bundle tree-shaking, and frame budgeting.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "Web Performance & Core Web Vitals Mastery",
@@ -378,7 +362,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "High-throughput asynchronous APIs, Pydantic v2 validation models, dependency injection, and background task queues.",
     currentLevel: 3,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-10-10",
@@ -391,7 +374,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "Django ORM query optimization (select_related/prefetch_related), schema migrations, DRF viewsets, and middleware.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-08-15",
@@ -404,7 +386,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "Spring Boot 3, Spring Data JPA, Hibernate optimization, Spring Security OAuth2, and resilience with Resilience4j.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-20",
@@ -417,7 +398,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "Enterprise modular design, custom decorators, interceptors, pipes, microservices transport (NATS/Kafka), and Prisma ORM.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "certified",
     certifiedProof: {
       certificateName: "OpenJS Node.js Application Developer (JSNAD)",
@@ -439,7 +419,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "Goroutines, channels, sync primitives, context cancellation, standard library HTTP, and zero-allocation protobuf encoders.",
     currentLevel: 3,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-09-25",
@@ -452,7 +431,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "Borrow checker, lifetime annotations, Tokio asynchronous runtime, Axum HTTP handlers, and fearless concurrency.",
     currentLevel: 1,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 1,
     lastEvaluatedAt: "2026-05-18",
@@ -465,7 +443,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "Schema-first design, Apollo Federation subgraphs, DataLoader batching to eliminate N+1 queries, and directives.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-08-22",
@@ -478,7 +455,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "backend",
     description: "ASP.NET Core Minimal APIs, Entity Framework Core 8, LINQ execution, dependency injection scopes, and background hosted services.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-06-15",
@@ -493,7 +469,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "frontend",
     description: "Server Actions, optimistic UI with useOptimistic, Suspense streaming boundaries, and the use() hook.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-11-08",
@@ -506,7 +481,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "frontend",
     description: "Composition API, script setup, Pinia store architecture, Nuxt 3 hybrid rendering, and server engine Nitro.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-10",
@@ -519,7 +493,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "frontend",
     description: "CSS variables token binding, dark mode contrast compliance, utility-first CSS, Radix UI & Base UI primitive styling.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-11-14",
@@ -532,7 +505,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "frontend",
     description: "Server cache invalidation, optimistic rollbacks, query key factories, Zustand for client ui state, and stale-while-revalidate.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-09-12",
@@ -545,7 +517,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "frontend",
     description: "Accessible ARIA roles, focus management, screen reader announcements, contrast ratios, and keyboard tab traps.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "Certified Professional in Accessibility Core Competencies (CPACC)",
@@ -567,7 +538,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "frontend",
     description: "Component unit testing with Testing Library, mocking network boundaries, Playwright end-to-end visual regression.",
     currentLevel: 4,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-11-10",
@@ -582,7 +552,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "mobile",
     description: "Expo Application Services (EAS), native TurboModules, React Native Reanimated gestures, and memory budgeting.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-08-19",
@@ -595,7 +564,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "mobile",
     description: "Declarative widget trees, BLoC / Riverpod state architecture, platform channels, and high-fps custom paint animations.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-06-30",
@@ -608,7 +576,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "mobile",
     description: "Swift Concurrency (async/await, actors), SwiftUI declarative layouts, Combine reactive streams, and Keychain security.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-28",
@@ -621,7 +588,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "mobile",
     description: "Kotlin Coroutines & Flow, Jetpack Compose UI, ViewModel state hoisting, Hilt dependency injection, and Room database.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-08-04",
@@ -634,7 +600,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "mobile",
     description: "Local relational caching with SQLite, two-way delta sync algorithms, conflict resolution (last-write-wins / CRDT).",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-09-02",
@@ -647,7 +612,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "mobile",
     description: "Automated code signing, provisioning profiles, Fastlane lanes, TestFlight builds, and Google Play Console internal tracks.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-05-25",
@@ -662,7 +626,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "devops",
     description: "Multi-stage builds, distroless images, layer caching, rootless daemon configuration, and Trivy CVE vulnerability scans.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "certified",
     certifiedProof: {
       certificateName: "Docker Certified Associate (DCA)",
@@ -684,7 +647,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "devops",
     description: "Declarative cluster state, automated drift detection, Argo Rollouts canary deployments with Prometheus analysis metrics.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-09-08",
@@ -697,7 +659,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "devops",
     description: "POSIX Bash scripting, systemd service units, networking (iptables/nftables), file permissions, and Linux performance analysis.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-08-11",
@@ -710,7 +671,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "devops",
     description: "SLO error budget alerts, PagerDuty escalation policies, post-mortem RCA documentation, and Chaos Mesh fault injection.",
     currentLevel: 3,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-10-20",
@@ -725,7 +685,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "cloud",
     description: "Google Kubernetes Engine (GKE), Cloud Run, BigQuery data analysis, Cloud Pub/Sub, IAM service account impersonation.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-16",
@@ -738,7 +697,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "cloud",
     description: "Azure App Services, Azure Kubernetes Service (AKS), Azure SQL Managed Instances, Entra ID integration, and VNet peering.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "Microsoft Certified: Azure Fundamentals (AZ-900)",
@@ -760,7 +718,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "cloud",
     description: "Event-driven serverless backends, Lambda cold start tuning, EventBridge event buses, SQS dead-letter queues, DynamoDB single-table.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-10-31",
@@ -773,7 +730,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "cloud",
     description: "AWS Savings Plans, Spot instance fleets, S3 intelligent tiering, CloudWatch metric alarms, and monthly cloud spend forecasting.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-09-15",
@@ -786,7 +742,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "cloud",
     description: "AWS SCP policies, IAM Roles Anywhere, AWS GuardDuty threat detection, KMS envelope encryption, and VPC endpoint security.",
     currentLevel: 3,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-10-18",
@@ -801,7 +756,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Cache-aside patterns, Redis Streams, distributed locking (Redlock algorithm), sorted sets for leaderboard ranking, eviction policies.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-11-02",
@@ -814,7 +768,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Aggregation pipelines, compound index selectivity, replica set failover, document schema validation, and sharded clusters.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-22",
@@ -827,7 +780,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Cosine distance vs dot product indexing (HNSW/IVFFlat), embedding chunking strategies, hybrid keyword/vector search.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-10-12",
@@ -840,7 +792,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Dimensional data modeling (star schema), dbt data transformations, incremental models, and Spark DataFrame transformations.",
     currentLevel: 1,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 1,
     lastEvaluatedAt: "2026-04-10",
@@ -853,7 +804,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Containerized model inference (FastAPI/vLLM), model versioning (MLflow), token latency benchmarking, and GPU instance provisioning.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-08-30",
@@ -866,7 +816,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "data_ai",
     description: "Custom tokenizers, analyzers, BM25 relevance scoring, index lifecycle management (ILM), and query aggregation optimization.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-09-05",
@@ -881,7 +830,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "security",
     description: "Mitigating SQL injection, Cross-Site Scripting (XSS), CSRF tokens, SSRF sanitization, and automated SAST/DAST checks in CI.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-11-04",
@@ -894,7 +842,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "security",
     description: "Architectural threat modeling, data flow diagrams (DFD), STRIDE threat categorization, and DREAD risk scoring.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-18",
@@ -907,7 +854,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "security",
     description: "OAuth 2.1 authorization code flow with PKCE, JWT signature validation, token refresh rotation, and session management.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-10-22",
@@ -920,7 +866,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "security",
     description: "Envelope encryption, TLS 1.3 configuration, HashiCorp Vault dynamic database secrets, and automated key rotation.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "certified",
     certifiedProof: {
       certificateName: "HashiCorp Certified: Vault Associate (003)",
@@ -942,7 +887,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "security",
     description: "Software-defined perimeters, mutual TLS (mTLS) service mesh, micro-segmentation, and IP egress filtering.",
     currentLevel: 2,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-06-18",
@@ -957,7 +901,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "embedded",
     description: "Memory constraints, volatile variables, bit manipulation, bare-metal microcontroller register programming, and pointer safety.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-05-12",
@@ -970,7 +913,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "embedded",
     description: "Preemptive task scheduling, semaphores, message queues, priority inversion remediation, and tickless idle power management.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-06-08",
@@ -983,7 +925,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "embedded",
     description: "Serial protocols, clock polarity/phase (CPOL/CPHA), DMA burst transfers, CRC checksum verification, and logic analyzer debugging.",
     currentLevel: 2,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 2,
     lastEvaluatedAt: "2026-07-04",
@@ -996,7 +937,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "embedded",
     description: "MQTT QoS levels (0, 1, 2), topic hierarchy, retained messages, Bluetooth Low Energy (BLE) GATT services, and payload compression.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-08-28",
@@ -1009,7 +949,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "embedded",
     description: "Hardware Root of Trust, cryptographic firmware image verification, MCUboot rollback protection, and encrypted flash memory.",
     currentLevel: 1,
-    targetLevel: 2,
     verification: "self_assessed",
     yearsOfExperience: 1,
     lastEvaluatedAt: "2026-03-20",
@@ -1024,7 +963,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "leadership",
     description: "Formulating architectural RFC proposals, trade-off analysis, cross-team consensus building, and technical documentation.",
     currentLevel: 4,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-11-06",
@@ -1037,7 +975,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "leadership",
     description: "Story point calibration, sprint capacity budgeting, risk mitigation, and translating business roadmap into engineering epics.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-09-22",
@@ -1050,7 +987,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "leadership",
     description: "Communicating technical debt and architectural trade-offs to business executives, product managers, and external clients.",
     currentLevel: 3,
-    targetLevel: 4,
     verification: "self_assessed",
     yearsOfExperience: 4,
     lastEvaluatedAt: "2026-10-15",
@@ -1063,7 +999,6 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
     category: "leadership",
     description: "System design interviewing rubrics, coding assessments, structured behavioral evaluation, and interviewer calibration.",
     currentLevel: 3,
-    targetLevel: 3,
     verification: "self_assessed",
     yearsOfExperience: 3,
     lastEvaluatedAt: "2026-08-18",
@@ -1071,10 +1006,108 @@ export const ADDITIONAL_ENTERPRISE_SKILLS: Skill[] = [
   },
 ];
 
+/** Duplicate check: same name ignoring case and whitespace. */
+export function skillNameKey(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "");
+}
+
 /**
- * Combined full enterprise catalog containing all 65 skills across all 9 domains.
+ * DC34 names that mean the same skill as an existing, more specific entry (owner chose to merge them).
+ * Broad groups (Python, Java, Security, Microservices…) stay separate on purpose.
+ */
+export const DC34_SAME_AS: Record<string, string> = {
+  FastAPI: "Python (FastAPI & AsyncIO)",
+  Django: "Python (Django & Django REST Framework)",
+  "Spring boot": "Java (Spring Boot 3 & Microservices)",
+  NestJS: "Node.js & NestJS Architecture",
+  Golang: "Go (Golang) Microservices & Concurrency",
+  Axum: "Rust Systems & Web Services (Axum/Tokio)",
+  "ASP.NET Core": "C# & .NET 8 Web API",
+  ReactJs: "React 19 & React Server Components (RSC)",
+  NextJS: "Modern Frontend (Next.js & React)",
+  VueJS: "Vue.js 3 & Nuxt 3 Full-Stack",
+  "React Native": "React Native & Expo Cross-Platform",
+  Dart: "Flutter & Dart Mobile Architecture",
+  Flutter: "Flutter & Dart Mobile Architecture",
+  Swift: "iOS Native (Swift & SwiftUI)",
+  SwiftUI: "iOS Native (Swift & SwiftUI)",
+  Android: "Android Native (Kotlin & Jetpack Compose)",
+  Kotlin: "Android Native (Kotlin & Jetpack Compose)",
+  "Jetpack Compose": "Android Native (Kotlin & Jetpack Compose)",
+  "C/C++": "C/C++ Systems & Embedded Programming",
+  API: "API Design & Protocol Architecture (gRPC & REST)",
+  REST: "API Design & Protocol Architecture (gRPC & REST)",
+  "REST (HTTP)": "API Design & Protocol Architecture (gRPC & REST)",
+  gRPC: "API Design & Protocol Architecture (gRPC & REST)",
+  GraphQL: "GraphQL API Design & Apollo Federation",
+  Redis: "Redis & In-Memory Data Structures",
+  MongoDB: "NoSQL & Document Stores (MongoDB)",
+  PostgreSQL: "PostgreSQL & Relational Data Modeling",
+  ElasticSearch: "Elasticsearch & Full-Text Search Tuning",
+  OAuth2: "Identity & Access Management (OAuth2, OIDC & PKCE)",
+  Encryption: "Cryptography & Secret Management (Vault)",
+  "XSS/CSRF": "OWASP Top 10 Mitigation & AppSec",
+  AWS: "Cloud Architecture & AWS Services",
+  Azure: "Microsoft Azure Cloud Infrastructure",
+  "Google Cloud Platform": "Google Cloud Platform (GCP & GKE)",
+  Docker: "Docker & Container Image Optimization",
+  Kubernetes: "Kubernetes & Container Orchestration",
+  Kafka: "Stream Processing & Real-time Data (Kafka)",
+  MQTT: "IoT Protocols & Edge Telemetry (MQTT & BLE)",
+  "CI/CD": "CI/CD & GitOps Automation",
+  "Monitoring, Logging, Dashboard": "Observability & SRE (OpenTelemetry & Grafana)",
+  Prometheus: "Observability & SRE (OpenTelemetry & Grafana)",
+  Grafana: "Observability & SRE (OpenTelemetry & Grafana)",
+  "System Design": "System Architecture & Scalability Patterns",
+  Scalability: "System Architecture & Scalability Patterns",
+  "Tailwind CSS": "Tailwind CSS & Design Token Architecture",
+  "Core Web Vitals Assessment": "Web Performance & Core Web Vitals Optimization",
+  Performance: "Web Performance & Core Web Vitals Optimization",
+  Accessibility: "Web Accessibility (WCAG 2.2 AA)",
+  Shell: "Linux Systems Administration & Shell Scripting",
+  Bash: "Linux Systems Administration & Shell Scripting",
+};
+
+/** Turns the DC34 matrix into unrated catalogue skills, skipping names the catalogue (or an earlier sheet) already has. */
+function fromDc34Matrix(existing: Skill[]): { added: Skill[]; skipped: string[] } {
+  const seen = new Set(existing.map((s) => skillNameKey(s.name)));
+  const added: Skill[] = [];
+  const skipped: string[] = [];
+  DC34_MATRIX.forEach((entry, i) => {
+    const key = skillNameKey(entry.name);
+    if (seen.has(key) || entry.name in DC34_SAME_AS) {
+      skipped.push(entry.name);
+      return;
+    }
+    seen.add(key);
+    const n = String(i + 1).padStart(3, "0");
+    added.push({
+      id: `dc34-${n}`,
+      code: `DC34-${n}`,
+      name: entry.name,
+      category: entry.category,
+      description: entry.group
+        ? `Part of ${entry.group} in the DC34 skill matrix (${entry.sheet}).`
+        : `${entry.name} as a whole, from the DC34 skill matrix (${entry.sheet}).`,
+      currentLevel: 0,
+      verification: "self_assessed",
+      yearsOfExperience: 0,
+      lastEvaluatedAt: "",
+    });
+  });
+  return { added, skipped };
+}
+
+const DC34 = fromDc34Matrix([...SEED_SKILLS, ...ADDITIONAL_ENTERPRISE_SKILLS]);
+
+/** DC34 matrix names left out: exact repeats and the merges in DC34_SAME_AS. */
+export const DC34_SKIPPED_DUPLICATES: readonly string[] = DC34.skipped;
+
+/**
+ * Full catalogue: the member's profile skills, the enterprise skills and the DC34 matrix skills.
  */
 export const ENTERPRISE_SKILL_CATALOG: Skill[] = [
   ...SEED_SKILLS,
   ...ADDITIONAL_ENTERPRISE_SKILLS,
+  ...DC34.added,
 ];

@@ -13,6 +13,8 @@ export const SKILL_CATEGORIES: { id: SkillCategory; label: string; icon: string 
   { id: "leadership", label: "Leadership & Collaboration", icon: "Users" },
 ];
 
+export const SKILL_LEVELS: readonly SkillLevel[] = [0, 1, 2, 3, 4, 5];
+
 export interface LevelDescription {
   level: SkillLevel;
   title: string;
@@ -92,7 +94,6 @@ export const updateSkillAssessmentSchema = z
     skillId: z.string().min(1, "Skill ID is required"),
     newLevel: z.coerce.number().int().min(0).max(5).optional(),
     currentLevel: z.coerce.number().int().min(0).max(5).optional(),
-    targetLevel: z.coerce.number().int().min(0).max(5).optional(),
     evidenceNote: z.string().max(1000, "Notes cannot exceed 1000 characters").optional(),
     yearsOfExperience: z.coerce.number().min(0).max(50),
     requestManagerReview: z.boolean().default(false),
@@ -100,8 +101,7 @@ export const updateSkillAssessmentSchema = z
   .refine(
     (data) =>
       data.newLevel !== undefined ||
-      data.currentLevel !== undefined ||
-      data.targetLevel !== undefined,
+      data.currentLevel !== undefined,
     {
       message: "Competency level between 0 and 5 is required",
       path: ["newLevel"],
