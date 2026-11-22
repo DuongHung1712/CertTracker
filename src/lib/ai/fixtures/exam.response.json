@@ -1,0 +1,14 @@
+{
+  "ok": true,
+  "result": {
+    "kind": "exam",
+    "certificateId": "38e00000-0000-0000-0000-000000000001",
+    "certificateName": "AWS Certified Solutions Architect - Associate",
+    "provider": "Amazon Web Services",
+    "issuedDate": "2026-03-14",
+    "validUntil": "2029-03-14",
+    "verifyUrl": "https://www.credly.com/badges/example"
+  },
+  "confidence": { "certificateId": 0.95, "issuedDate": 0.9, "validUntil": 0.85, "verifyUrl": 0.7 },
+  "usage": { "inputTokens": 1450, "outputTokens": 120 }
+}

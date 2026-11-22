@@ -57,6 +57,24 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // The AI usage store is the one other place that may use the service role (decisions #75, exception to #35):
+  // it only touches ai_usage and ai_feature_flags, never prompt data.
+  {
+    files: ["src/lib/ai/usage-store.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "cn",
+              message: 'Import cn from "@/lib/utils" instead (it knows the design-system text sizes).',
+            },
+          ],
+        },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
