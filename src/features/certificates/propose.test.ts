@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { approveCertificate, proposeCertificate } from "@/features/certificates/actions";
+import { approveCertificate, proposeCertificate, rejectCertificate } from "@/features/certificates/actions";
 import { proposeCertificateSchema } from "@/features/certificates/schema";
 
 const ID = "00000000-0000-0000-0000-000000000001";
@@ -194,5 +194,26 @@ describe("approveCertificate action", () => {
     replies["rpc:approve_certificate"] = [{ data: null, error: { code: "P0002", message: "proposal not found" } }];
     const result = await approveCertificate({ id: ID });
     expect(result).toEqual({ ok: false, error: "This proposal was already reviewed. Refresh the page." });
+  });
+});
+
+describe("rejectCertificate action", () => {
+  it("rejects through the reject_certificate function", async () => {
+    replies["rpc:reject_certificate"] = [{ data: null, error: null }];
+    expect(await rejectCertificate({ id: ID })).toEqual({ ok: true, data: null });
+  });
+
+  it("says when the proposal was already reviewed", async () => {
+    replies["rpc:reject_certificate"] = [{ data: null, error: { code: "P0002", message: "proposal not found" } }];
+    expect(await rejectCertificate({ id: ID })).toEqual({ ok: false, error: "This proposal was already reviewed. Refresh the page." });
+  });
+
+  it("says only an admin can reject", async () => {
+    replies["rpc:reject_certificate"] = [{ data: null, error: { code: "42501", message: "only admins" } }];
+    expect(await rejectCertificate({ id: ID })).toEqual({ ok: false, error: "Only an admin can reject a proposal." });
+  });
+
+  it("refuses a malformed id before calling the database", async () => {
+    expect((await rejectCertificate({ id: "nope" })).ok).toBe(false);
   });
 });

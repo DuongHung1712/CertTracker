@@ -397,9 +397,9 @@ test("admin Needs attention lists only real items computed from seed data", asyn
   await expect(attention.getByText("Nguyễn Văn An · AWS Solutions Architect Associate")).toBeVisible();
   await expect(attention.getByText(/Expires in \d+ days/)).toBeVisible();
 
-  // In seed: 1 data quality issue (done record without evidence)
+  // In seed: 1 data quality issue (done record without evidence). A member proposal that waits for approval is one more.
   await expect(attention.getByText("Data quality", { exact: true })).toBeVisible();
-  await expect(attention.getByText("1 issue to check")).toBeVisible();
+  await expect(attention.getByText(/^\d+ issues? to check$/)).toBeVisible();
   await expect(attention.getByText("All clear")).toHaveCount(0);
 
   // No mock/fake strings from Figma

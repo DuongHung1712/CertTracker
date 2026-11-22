@@ -356,7 +356,7 @@ The page never scrolls horizontally; only a table scrolls inside its own frame (
 4. Sync the Design System page on claude.ai.
 5. Big decisions (changing the accent colour, adding dark mode) get an entry in `docs/decisions.md` (see #14, #62).
 
-## 10. Themes
+## 10. Logo & Favicon
 
 - **Light theme**: Warm paper-white (`#F6F7F5`) background, blue-black ink text (`#15212B`), deep teal accent (`#0E5C58`).
 - **Dark theme**: Dark slate paper (`#10171D`) background, pale ink text (`#EBF0EE`), luminous teal accent (`#249C90`), muted text (`#9EB2B7`), input borders (`#617B8E`). Both themes meet WCAG 2.1 AA text (>= 4.5:1) and UI boundaries/focus (>= 3:1). Controlled via `.dark` class on the root, persisted in localStorage (`next-themes` with `disableTransitionOnChange`), and switched via user menu radio items.

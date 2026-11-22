@@ -207,9 +207,7 @@ export async function approveCourse(input: { id: string; grantsCompletion: boole
   const supabase = await createClient();
   const { error } = await supabase.rpc("approve_course", { p_id: parsed.data.id, p_grants_completion: input.grantsCompletion === true });
   if (error) return err(reviewError(error));
-  revalidatePath("/courses");
-  revalidatePath("/me");
-  revalidatePath("/records");
+  revalidateReviewViews();
   return ok(null);
 }
 
@@ -219,8 +217,11 @@ export async function rejectCourse(input: { id: string }): Promise<Result<null>>
   const supabase = await createClient();
   const { error } = await supabase.rpc("reject_course", { p_id: parsed.data.id });
   if (error) return err(reviewError(error));
-  revalidatePath("/courses");
-  revalidatePath("/me");
-  revalidatePath("/records");
+  revalidateReviewViews();
   return ok(null);
+}
+
+/** A reviewed course also leaves the Data Quality list and changes the Dashboard count. */
+function revalidateReviewViews() {
+  for (const path of ["/courses", "/data-quality", "/records", "/me", "/dashboard"]) revalidatePath(path);
 }
