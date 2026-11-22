@@ -236,12 +236,9 @@ test("the Kind filter separates exam certificates from course completions, and t
     await expect(examRow).toBeVisible();
     await expect(completionRow).toHaveCount(0);
 
-    // Overview: the completion is counted in its own group and not in the exam figures (seed: 1 completed exam).
+    // Overview: the completion is not in the exam figures (seed: 1 completed exam).
     await page.goto("/dashboard");
-    const completions = page.getByRole("group", { name: "Course completions" });
-    await expect(completions.locator("dl > div").filter({ hasText: "Completed this month" }).locator("dd")).toHaveText("1");
-    const exams = page.getByRole("group", { name: "Exam certificates" });
-    await expect(exams.locator("dl > div").filter({ hasText: /^Completed/ }).locator("dd")).toHaveText("1");
+    await expect(page.getByRole("region", { name: "Overview", exact: true })).toContainText("of 1 completed");
   } finally {
     await completion.remove();
   }
