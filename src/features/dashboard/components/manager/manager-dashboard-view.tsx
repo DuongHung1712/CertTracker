@@ -5,36 +5,23 @@ import Link from "next/link";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
-import { Section, SectionError } from "@/features/dashboard/components/section";
-import { AllocatedScopeCard } from "@/features/dashboard/components/manager/allocated-scope-card";
-import { AutomatedRemindersCard } from "@/features/dashboard/components/manager/automated-reminders-card";
-import {
-  AskAboutMyTeamComingSoon,
-  ManagerTabStrip,
-} from "@/features/dashboard/components/manager/manager-coming-soon-stack";
-import { MonthlyEarnedChart } from "@/features/dashboard/components/manager/monthly-earned-chart";
-import { NeedsAttentionFeed } from "@/features/dashboard/components/manager/needs-attention-feed";
-import { NextToExpireTable } from "@/features/dashboard/components/manager/next-to-expire-table";
-import { PeopleWithoutCertsCard } from "@/features/dashboard/components/manager/people-without-certs-card";
-import { PlannedExamsList } from "@/features/dashboard/components/manager/planned-exams-list";
-import { QuickActionsCard } from "@/features/dashboard/components/manager/quick-actions-card";
-import { TeamReadinessDonutCard } from "@/features/dashboard/components/manager/team-readiness-donut-card";
-import { TeamReadinessDossier } from "@/features/dashboard/components/manager/team-readiness-dossier";
+import { ManagerAttentionList } from "@/features/dashboard/components/manager/manager-attention-list";
+import { ManagerTeamTable } from "@/features/dashboard/components/manager/manager-team-table";
 import { TeamScopeFilter } from "@/features/dashboard/components/manager/team-scope-filter";
-import { TopKpiRow } from "@/features/dashboard/components/manager/top-kpi-row";
-import { calculateCompletionKpis } from "@/features/dashboard/completion-metrics";
-import {
-  calculateManagerKpis,
-  getPlannedExams,
-  getMembersWithoutCerts,
-  getTeamReadinessLeague,
-  getNeedsAttentionItems,
-} from "@/features/dashboard/manager-metrics";
+import { Section, SectionError } from "@/features/dashboard/components/section";
+import { SummaryTile } from "@/features/dashboard/components/summary-tile";
+import { WaitingTile } from "@/features/dashboard/components/waiting-tile";
+import { calculateManagerKpis, getMembersWithoutCerts, getTeamReadinessLeague } from "@/features/dashboard/manager-metrics";
 import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { isReviewable } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
+import { pluralize } from "@/lib/plural";
 
+/**
+ * What a manager does here: approve what members submit, chase expiring certificates and see who is ready. Four numbers, one
+ * list of what needs attention, and the team. Everything else lives in Learning, Members and Data quality.
+ */
 export function ManagerDashboardView({
   greeting,
   subtitle,
@@ -59,43 +46,21 @@ export function ManagerDashboardView({
 }) {
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
   const hasTeams = managedTeamNames.length > 0;
+  // A manager of a single team has nothing to pick: no team filter and no team column.
+  const manyTeams = managedTeamNames.length > 1;
 
-  // Filter records & members by selected team if user clicked a team pill
-  const filteredRecords = useMemo(() => {
-    if (!selectedTeam) return records;
-    return records.filter((r) => r.teamName === selectedTeam);
-  }, [records, selectedTeam]);
-
-  const filteredMembers = useMemo(() => {
-    if (!selectedTeam) return members;
-    return members.filter((m) => m.teamName === selectedTeam);
-  }, [members, selectedTeam]);
+  const filteredRecords = useMemo(() => (selectedTeam ? records.filter((r) => r.teamName === selectedTeam) : records), [records, selectedTeam]);
+  const filteredMembers = useMemo(() => (selectedTeam ? members.filter((m) => m.teamName === selectedTeam) : members), [members, selectedTeam]);
 
   const kpis = useMemo(() => calculateManagerKpis(filteredRecords), [filteredRecords]);
-  const completions = useMemo(() => calculateCompletionKpis(filteredRecords), [filteredRecords]);
   // The whole scope, not the selected team: the tile links to the list of the whole scope.
   const waiting = useMemo(() => records.filter((r) => isReviewable(r, viewerMemberId)).length, [records, viewerMemberId]);
-  const plannedExams = useMemo(() => getPlannedExams(filteredRecords).length, [filteredRecords]);
-
-  const teamsWithCounts = useMemo(() => {
-    return managedTeamNames.map((name) => ({
-      name,
-      memberCount: members.filter((m) => m.teamName === name).length,
-    }));
-  }, [managedTeamNames, members]);
-
-  const readinessRows = useMemo(
-    () => getTeamReadinessLeague(filteredMembers, filteredRecords),
-    [filteredMembers, filteredRecords],
+  const withoutCertificate = useMemo(() => getMembersWithoutCerts(filteredMembers, filteredRecords).length, [filteredMembers, filteredRecords]);
+  const teamRows = useMemo(() => getTeamReadinessLeague(filteredMembers, filteredRecords), [filteredMembers, filteredRecords]);
+  const teamsWithCounts = useMemo(
+    () => managedTeamNames.map((name) => ({ name, memberCount: members.filter((m) => m.teamName === name).length })),
+    [managedTeamNames, members],
   );
-
-  const membersWithoutCerts = useMemo(
-    () => getMembersWithoutCerts(filteredMembers, filteredRecords),
-    [filteredMembers, filteredRecords],
-  );
-
-  const mostOverdue = useMemo(() => getNeedsAttentionItems(filteredRecords)[0]?.record, [filteredRecords]);
-  const pastDueText = mostOverdue ? `${mostOverdue.memberName} (${mostOverdue.certificateName})` : undefined;
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -128,90 +93,48 @@ export function ManagerDashboardView({
         />
       ) : (
         <>
-          {/* Subheader filter bar: team scope pills */}
-          <TeamScopeFilter
-            teams={teamsWithCounts}
-            selectedTeam={selectedTeam}
-            onSelectTeam={setSelectedTeam}
-          />
+          {manyTeams && <TeamScopeFilter teams={teamsWithCounts} selectedTeam={selectedTeam} onSelectTeam={setSelectedTeam} />}
 
-          {/* Three independent columns (as in the Figma): each one flows down on its own, so a tall card
-              in one column never leaves a gap in the next. The centre column comes first in the markup
-              so that on a phone the KPIs and the work lists lead; from xl up the columns are reordered.
-              The lists are spread so the three columns end at about the same height. */}
-          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-12">
-            {/* Centre column (6 cols) */}
-            <div data-testid="mgr-col-center" className="flex min-w-0 flex-col gap-6 md:col-span-2 xl:order-2 xl:col-span-6">
-              <section aria-label="Overview" className="flex flex-col gap-3">
-                <h2 className="sr-only">Overview</h2>
-                {recordsError ? <SectionError title="Overview" /> : <TopKpiRow kpis={kpis} completions={completions} plannedExams={plannedExams} pastDueText={pastDueText} waiting={waiting} />}
-              </section>
+          <section aria-label="Overview" className="flex flex-col gap-3">
+            <h2 className="sr-only">Overview</h2>
+            {recordsError ? (
+              <SectionError title="Overview" />
+            ) : (
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                <WaitingTile count={waiting} />
+                <SummaryTile
+                  label="Expiring in 60 days"
+                  value={kpis.expiringCount}
+                  summary={kpis.expiringCount === 0 ? "Nothing expiring soon" : `${kpis.urgentCount} within 30 days`}
+                  footer="Listed under Needs attention"
+                  tone={kpis.urgentCount > 0 ? "warning" : "neutral"}
+                />
+                <SummaryTile
+                  label="Expired"
+                  value={kpis.expiredCount}
+                  summary={kpis.expiredCount === 0 ? "Nothing has expired" : "Past the expiry date"}
+                  footer={kpis.expiredCount === 0 ? "All up to date" : "Listed under Needs attention"}
+                  tone={kpis.expiredCount > 0 ? "danger" : "neutral"}
+                />
+                <SummaryTile
+                  label="Team ready"
+                  value={kpis.doneCount === 0 ? "—" : kpis.teamReadinessFormatted}
+                  summary={kpis.doneCount === 0 ? "No certificates yet" : `${kpis.validCount} of ${kpis.doneCount} certificates valid`}
+                  footer={membersError ? "Members could not be loaded" : `${pluralize(withoutCertificate, "member")} without a certificate`}
+                />
+              </div>
+            )}
+          </section>
 
-              <ManagerTabStrip />
+          {recordsError || membersError ? (
+            <SectionError title="Needs attention" />
+          ) : (
+            <ManagerAttentionList records={filteredRecords} members={filteredMembers} showTeam={manyTeams} />
+          )}
 
-              <Section
-                title="Next to expire"
-                description="Completed certificates with 60 days or less left, soonest first."
-              >
-                {recordsError ? (
-                  <SectionError title="Next to expire" />
-                ) : (
-                  <NextToExpireTable records={filteredRecords} />
-                )}
-              </Section>
-
-            </div>
-
-            {/* Right column (3 cols) */}
-            <div data-testid="mgr-col-right" className="flex min-w-0 flex-col gap-4 xl:order-3 xl:col-span-3">
-              {recordsError ? (
-                <SectionError title="Needs attention" />
-              ) : (
-                <NeedsAttentionFeed records={filteredRecords} />
-              )}
-              <PeopleWithoutCertsCard members={membersWithoutCerts} />
-              <Section
-                title="Planned exams"
-                description="Scheduled exams within the next 60 days."
-              >
-                {recordsError ? (
-                  <SectionError title="Planned exams" />
-                ) : (
-                  <PlannedExamsList records={filteredRecords} />
-                )}
-              </Section>
-              <AutomatedRemindersCard />
-              <AskAboutMyTeamComingSoon />
-            </div>
-
-            {/* Left column (3 cols) */}
-            <div data-testid="mgr-col-left" className="flex min-w-0 flex-col gap-4 xl:order-1 xl:col-span-3">
-              <section aria-label="Readiness summary">
-                {recordsError ? (
-                  <SectionError title="Readiness summary" />
-                ) : (
-                  <TeamReadinessDonutCard kpis={kpis} noCertCount={membersWithoutCerts.length} />
-                )}
-              </section>
-              <AllocatedScopeCard teams={teamsWithCounts} />
-              <QuickActionsCard />
-              <MonthlyEarnedChart records={filteredRecords} />
-            </div>
-          </div>
-
-          {/* Own full-width row (like the admin Explorer): the ranking and the member details need the width. */}
-          <div data-testid="mgr-readiness-row" className="flex min-w-0 flex-col gap-6">
-            <Section
-              title="Team readiness"
-              description="Status breakdown for members across your managed teams."
-            >
-              {membersError || recordsError ? (
-                <SectionError title="Team readiness" />
-              ) : (
-                <TeamReadinessDossier rows={readinessRows} records={filteredRecords} />
-              )}
-            </Section>
-          </div>
+          <Section title="My team" description="Each person's valid certificates and what needs renewing. Select a name to see their certificates.">
+            {recordsError || membersError ? <SectionError title="My team" /> : <ManagerTeamTable rows={teamRows} showTeam={manyTeams} />}
+          </Section>
         </>
       )}
     </div>

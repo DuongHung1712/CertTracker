@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calculateManagerKpis,
   formatManagerSubtitle,
-  getCertificatesEarnedByMonth,
+  getManagerAttention,
   getMembersWithoutCerts,
   getNeedsAttentionItems,
   getNextToExpire,
@@ -146,54 +146,16 @@ describe("manager-metrics", () => {
     });
   });
 
-  describe("getCertificatesEarnedByMonth", () => {
-    it("ends at the Vietnam calendar month: 18:00 UTC on 31 Oct is already 1 Nov in Vietnam", () => {
-      // issued_date is a plain date, so only the current month depends on the time zone.
-      const now = new Date("2026-10-31T18:00:00Z");
-      const months = getCertificatesEarnedByMonth([doneRecord(100, { issuedDate: "2026-11-01" })], 3, now);
-      expect(months.map((m) => m.monthKey)).toEqual(["2026-09", "2026-10", "2026-11"]);
-      expect(months[2].count).toBe(1);
-    });
-
-    it("groups certificates by last 6 calendar months and identifies peak month", () => {
-      const now = new Date("2026-06-15T00:00:00Z");
-      const records = [
-        doneRecord(100, { issuedDate: "2026-06-01" }),
-        doneRecord(100, { issuedDate: "2026-06-10" }),
-        doneRecord(100, { issuedDate: "2026-05-15" }),
-        doneRecord(100, { issuedDate: "2026-04-20" }),
-        doneRecord(100, { issuedDate: "2025-01-01" }), // outside 6 months
-      ];
-
-      const months = getCertificatesEarnedByMonth(records, 6, now);
-      expect(months).toHaveLength(6);
-      expect(months.map((m) => m.monthKey)).toEqual([
-        "2026-01",
-        "2026-02",
-        "2026-03",
-        "2026-04",
-        "2026-05",
-        "2026-06",
-      ]);
-
-      const jun = months.find((m) => m.monthKey === "2026-06")!;
-      expect(jun.count).toBe(2);
-      expect(jun.isPeak).toBe(true);
-
-      const may = months.find((m) => m.monthKey === "2026-05")!;
-      expect(may.count).toBe(1);
-      expect(may.isPeak).toBe(false);
-    });
-  });
 
   describe("getPlannedExams", () => {
     it("returns upcoming planned exams within the next 60 days sorted by days remaining", () => {
       const now = new Date("2026-11-08T00:00:00Z");
       const records = [
-        makeRecord({ id: "r1", memberName: "An", plannedExamDate: "2026-11-20" }), // 12 days
-        makeRecord({ id: "r2", memberName: "Bình", plannedExamDate: "2026-11-10" }), // 2 days
-        makeRecord({ id: "r3", memberName: "Châu", plannedExamDate: "2027-02-15" }), // > 60 days
-        makeRecord({ id: "r4", memberName: "Dung", plannedExamDate: "2026-11-01" }), // past exam
+        makeRecord({ status: "in_progress", id: "r1", memberName: "An", plannedExamDate: "2026-11-20" }), // 12 days
+        makeRecord({ status: "in_progress", id: "r2", memberName: "Bình", plannedExamDate: "2026-11-10" }), // 2 days
+        makeRecord({ status: "in_progress", id: "r3", memberName: "Châu", plannedExamDate: "2027-02-15" }), // > 60 days
+        makeRecord({ status: "in_progress", id: "r4", memberName: "Dung", plannedExamDate: "2026-11-01" }), // past exam
+        makeRecord({ id: "r5", memberName: "Giang", plannedExamDate: "2026-11-12" }), // already completed
       ];
 
       const exams = getPlannedExams(records, 60, now);
@@ -281,16 +243,6 @@ describe("manager-metrics: exam certificates only", () => {
     ];
     expect(getPlannedExams(records, 60, now).map((p) => p.recordId)).toEqual(["e"]);
   });
-
-  it("does not count completions in the monthly certificates earned", () => {
-    const now = new Date("2026-11-08T10:00:00Z");
-    const months = getCertificatesEarnedByMonth(
-      [makeRecord({ id: "e", issuedDate: "2026-11-02" }), completion({ id: "c", status: "done", issuedDate: "2026-11-03" })],
-      6,
-      now,
-    );
-    expect(months.at(-1)?.count).toBe(1);
-  });
 });
 
 describe("manager-metrics: a completion with a validity stays out of expiry lists", () => {
@@ -328,19 +280,49 @@ describe("manager-metrics: only Approved certificates count", () => {
     expect(getNextToExpire(records).map((r) => r.id)).toEqual([]);
     expect(getNeedsAttentionItems(records)).toEqual([]);
   });
-  it("the league counts only Approved items; the earned-by-month chart and members without certs follow", () => {
+  it("the league counts only Approved items and so do members without certs", () => {
     const league = getTeamReadinessLeague([{ id: "m1", fullName: "An", teamName: "Cloud" }], records);
     expect(league[0]).toMatchObject({ validCount: 1, expiredCount: 0, totalCount: 2 });
-    const now = new Date("2026-11-08T10:00:00Z");
-    const months = getCertificatesEarnedByMonth(
-      [
-        makeRecord({ id: "a", issuedDate: "2026-11-02" }),
-        makeRecord({ id: "b", issuedDate: "2026-11-03", ...waiting }),
-      ],
-      1,
-      now,
-    );
-    expect(months[0].count).toBe(1);
     expect(getMembersWithoutCerts([{ id: "m1", fullName: "An", teamName: null }], [records[1]])).toHaveLength(1);
+  });
+});
+
+describe("getManagerAttention", () => {
+  const members = [
+    { id: "m1", fullName: "An", teamName: "Cloud" },
+    { id: "m2", fullName: "Binh", teamName: "Cloud" },
+    { id: "m3", fullName: "Chau", teamName: "AI" },
+  ];
+
+  it("puts expired first (most overdue first), then expiring (soonest first), then exams, then people with no certificate", () => {
+    const records = [
+      doneRecord(20, { id: "soon", memberId: "m1", memberName: "An", certificateName: "AWS" }),
+      doneRecord(-9, { id: "old", memberId: "m2", memberName: "Binh", certificateName: "CKA" }),
+      doneRecord(-2, { id: "new", memberId: "m2", memberName: "Binh", certificateName: "PMP" }),
+      makeRecord({ id: "exam", memberId: "m3", memberName: "Chau", status: "not_started", plannedExamDate: new Date(Date.now() + 5 * 86_400_000).toISOString().slice(0, 10), expiryStatus: "N/A", daysToExpiry: null, certificateName: "GCP" }),
+    ];
+    const { items, total } = getManagerAttention(records, members, 10);
+    expect(items.map((i) => i.id)).toEqual(["expired:old", "expired:new", "expiring:soon", "exam:exam", "none:m3"]);
+    expect(total).toBe(5);
+    expect(items[0]).toMatchObject({ title: "Binh · CKA", detail: "Expired 9 days ago", href: "/records?search=Binh" });
+    expect(items[2].detail).toBe("20 days left");
+    expect(items[4]).toMatchObject({ title: "Chau", detail: "No certificate yet", teamName: "AI" });
+  });
+
+  it("shows the first few and still counts all of them", () => {
+    const records = Array.from({ length: 8 }, (_, i) => doneRecord(-(i + 1), { id: `e${i}`, memberId: "m1", memberName: "An" }));
+    const { items, total } = getManagerAttention(records, [{ id: "m1", fullName: "An", teamName: null }], 6);
+    expect(items).toHaveLength(6);
+    expect(total).toBe(8);
+  });
+
+  it("is empty when everyone is fine", () => {
+    const records = [doneRecord(200, { id: "ok", memberId: "m1", memberName: "An" })];
+    expect(getManagerAttention(records, [{ id: "m1", fullName: "An", teamName: null }])).toEqual({ items: [], total: 0 });
+  });
+
+  it("encodes a name with spaces and symbols in the link", () => {
+    const { items } = getManagerAttention([], [{ id: "m9", fullName: "Lê Minh & Co", teamName: null }]);
+    expect(items[0].href).toBe("/records?search=L%C3%AA%20Minh%20%26%20Co");
   });
 });

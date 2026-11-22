@@ -53,7 +53,6 @@ export async function loadAdminDashboard(user: SignedInUser) {
 
   const now = new Date();
   const currentMember = (membersResult.ok && membersResult.data.find((m) => m.id === memberId)) || null;
-  const profileFailure = [careerResult, membersResult].find((r) => !r.ok);
 
   const profile = resolveMemberProfile({
     member: currentMember,
@@ -68,8 +67,6 @@ export async function loadAdminDashboard(user: SignedInUser) {
   return {
     greeting,
     subtitle,
-    profile,
-    profileError: profileFailure && !profileFailure.ok ? profileFailure.error : undefined,
     kpis,
     certificates,
     teams,

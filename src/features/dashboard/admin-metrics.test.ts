@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   ADMIN_ATTENTION_LIMIT,
   countAdminAttentionRecords,
-  countIssuedThisMonth,
   getAdminNeedsAttentionItems,
 } from "@/features/dashboard/admin-metrics";
 import type { RecordRow } from "@/features/records/queries";
@@ -68,19 +67,6 @@ describe("admin-metrics", () => {
       expect(typeAt({ status: "in_progress", daysToExpiry: -5 })).toEqual([]);
       expect(typeAt({ status: "not_started", daysToExpiry: null })).toEqual([]);
       expect(typeAt({ daysToExpiry: null })).toEqual([]);
-    });
-  });
-
-  describe("countIssuedThisMonth", () => {
-    it("counts completed certificates issued in current month (Vietnam time)", () => {
-      const now = new Date("2026-11-08T10:00:00Z");
-      const records = [
-        mockRecord({ id: "r1", status: "done", issuedDate: "2026-11-02" }),
-        mockRecord({ id: "r2", status: "done", issuedDate: "2026-11-07" }),
-        mockRecord({ id: "r3", status: "done", issuedDate: "2026-10-31" }), // previous month
-        mockRecord({ id: "r4", status: "in_progress", issuedDate: "2026-11-05" }), // not done
-      ];
-      expect(countIssuedThisMonth(records, now)).toBe(2);
     });
   });
 
@@ -184,17 +170,6 @@ describe("admin-metrics", () => {
   });
 });
 
-describe("countIssuedThisMonth: exam certificates only", () => {
-  it("does not count a course completion", () => {
-    const now = new Date("2026-11-08T10:00:00Z");
-    const records = [
-      mockRecord({ id: "r1", status: "done", issuedDate: "2026-11-02" }),
-      mockRecord({ id: "r2", status: "done", issuedDate: "2026-11-02", certificateKind: "completion" }),
-    ];
-    expect(countIssuedThisMonth(records, now)).toBe(1);
-  });
-});
-
 describe("a course completion that carries a validity never needs attention", () => {
   const expiredCompletion = mockRecord({ id: "c-exp", certificateKind: "completion", status: "done", daysToExpiry: -5, expiryStatus: "Expired" });
   const expiringCompletion = mockRecord({ id: "c-soon", certificateKind: "completion", status: "done", daysToExpiry: 10, expiryStatus: "Expiring Soon" });
@@ -216,13 +191,5 @@ describe("admin metrics: only Approved exam certificates count", () => {
     ];
     expect(countAdminAttentionRecords(records)).toBe(1);
     expect(getAdminNeedsAttentionItems(records, 0).map((i) => i.id)).toEqual(["expired-ok"]);
-  });
-  it("does not count a Waiting item as issued this month", () => {
-    const now = new Date("2026-11-08T10:00:00Z");
-    const records = [
-      mockRecord({ id: "a", issuedDate: "2026-11-02" }),
-      mockRecord({ id: "b", issuedDate: "2026-11-03", ...waiting }),
-    ];
-    expect(countIssuedThisMonth(records, now)).toBe(1);
   });
 });

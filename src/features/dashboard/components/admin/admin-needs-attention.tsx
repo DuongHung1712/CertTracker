@@ -11,19 +11,19 @@ import { cn } from "@/lib/utils";
 const TONES = {
   expired: {
     icon: AlertCircle,
-    row: "border-l-status-expired-fg hover:border-status-expired-fg hover:bg-status-expired-bg",
+    row: "hover:border-status-expired-fg hover:bg-status-expired-bg",
     iconColor: "text-status-expired-fg",
     detail: "font-medium text-status-expired-fg",
   },
   expiring_soon: {
     icon: AlertTriangle,
-    row: "border-l-status-expiring-soon-fg hover:border-status-expiring-soon-fg hover:bg-status-expiring-soon-bg",
+    row: "hover:border-status-expiring-soon-fg hover:bg-status-expiring-soon-bg",
     iconColor: "text-status-expiring-soon-fg",
     detail: "text-muted-foreground",
   },
   data_quality: {
     icon: ShieldAlert,
-    row: "border-l-muted-foreground hover:border-foreground/40 hover:bg-muted/40",
+    row: "hover:border-foreground/40 hover:bg-muted/40",
     iconColor: "text-muted-foreground",
     detail: "text-muted-foreground",
   },
@@ -38,7 +38,7 @@ function AttentionRow({ item }: { item: AdminAttentionItem }) {
     <Link
       href={item.href}
       className={cn(
-        "group flex items-start justify-between gap-2 rounded-md border border-l-2 border-border p-2.5 transition-colors",
+        "group flex items-start justify-between gap-2 rounded-md border border-border p-2.5 transition-colors",
         tone.row,
         FOCUS_RING,
       )}
@@ -86,7 +86,7 @@ export function AdminNeedsAttention({
   return (
     <section aria-label="Needs attention" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-mono text-label tracking-wider text-muted-foreground">Needs attention</span>
+        <h2 className="font-mono text-label tracking-wider text-muted-foreground">Needs attention</h2>
         {!isEmpty && <span className="inline-flex size-2 rounded-full bg-destructive" aria-hidden="true" />}
       </div>
 

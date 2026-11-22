@@ -110,7 +110,7 @@ describe("[copy] admin dashboard has no mock data", () => {
   it("reads the admin files (self-check of the scanner)", () => {
     expect(
       pieces.some(
-        (p) => p.where.includes("admin-profile-card.tsx") && p.text === "Your profile",
+        (p) => p.where.includes("admin-dashboard-view.tsx") && p.text === "Individual ranking",
       ),
     ).toBe(true);
   });

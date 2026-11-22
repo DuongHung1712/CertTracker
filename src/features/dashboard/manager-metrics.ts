@@ -3,7 +3,8 @@ import { formatRate, ratePercent } from "@/features/dashboard/metrics";
 import { isApprovedDone, isCounted, isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
 import { todayVn } from "@/lib/dates";
-import { pluralize } from "@/lib/plural";
+import { formatDate } from "@/lib/format";
+import { daysLeftLabel, pluralize } from "@/lib/plural";
 
 export const isDone = isApprovedDone;
 // Exam certificates only: a completion never expires, even when its certificate carries a validity.
@@ -40,7 +41,7 @@ export type ManagerKpis = {
   teamReadinessFormatted: string;
 };
 
-/** Exam certificates only: a course completion has no expiry and is counted by `calculateCompletionKpis`. */
+/** Exam certificates only: a course completion has no expiry. */
 export function calculateManagerKpis(allRecords: RecordRow[]): ManagerKpis {
   const records = allRecords.filter(isExam).filter(isCounted);
   let doneCount = 0;
@@ -168,67 +169,6 @@ export function getTeamReadinessLeague(
   });
 }
 
-export type CertificatesEarnedMonth = {
-  monthKey: string;
-  label: string;
-  count: number;
-  isPeak: boolean;
-};
-
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
-
-/** Last N calendar months of completed exam certificates in scope. */
-export function getCertificatesEarnedByMonth(
-  records: RecordRow[],
-  monthsCount = 6,
-  now: Date = new Date(),
-): CertificatesEarnedMonth[] {
-  const result: CertificatesEarnedMonth[] = [];
-  // Vietnam calendar month: between 00:00 and 07:00 ICT on the 1st, UTC is still the previous month.
-  const [vnYear, vnMonth] = todayVn(now).split("-").map(Number);
-  const currentYear = vnYear;
-  const currentMonth = vnMonth - 1; // 0-11
-
-  for (let i = monthsCount - 1; i >= 0; i--) {
-    let year = currentYear;
-    let month = currentMonth - i;
-    while (month < 0) {
-      month += 12;
-      year -= 1;
-    }
-    const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
-    const label = MONTH_NAMES[month];
-    result.push({
-      monthKey,
-      label,
-      count: 0,
-      isPeak: false,
-    });
-  }
-
-  const countsByKey = new Map<string, number>();
-  for (const r of records) {
-    if (isExam(r) && isApprovedDone(r) && r.issuedDate) {
-      const key = r.issuedDate.slice(0, 7);
-      countsByKey.set(key, (countsByKey.get(key) ?? 0) + 1);
-    }
-  }
-
-  let maxCount = 0;
-  for (const item of result) {
-    item.count = countsByKey.get(item.monthKey) ?? 0;
-    if (item.count > maxCount) maxCount = item.count;
-  }
-
-  if (maxCount > 0) {
-    for (const item of result) {
-      if (item.count === maxCount) item.isPeak = true;
-    }
-  }
-
-  return result;
-}
-
 export type PlannedExamItem = {
   recordId: string;
   memberId: string;
@@ -250,7 +190,7 @@ export function getPlannedExams(
   const items: PlannedExamItem[] = [];
 
   for (const r of records) {
-    if (isExam(r) && r.plannedExamDate) {
+    if (isExam(r) && r.status !== "done" && r.plannedExamDate) {
       const examTime = Date.parse(r.plannedExamDate);
       if (!Number.isNaN(examTime) && !Number.isNaN(todayTime)) {
         const daysRemaining = Math.round((examTime - todayTime) / 86_400_000);
@@ -301,3 +241,65 @@ export function getMembersWithoutCerts(
   return members.filter((m) => !membersWithCompleted.has(m.id));
 }
 
+
+export type ManagerAttentionKind = "expired" | "expiring" | "exam" | "no_certificate";
+
+export type ManagerAttentionItem = {
+  id: string;
+  kind: ManagerAttentionKind;
+  /** Who, and which certificate when there is one. */
+  title: string;
+  /** What is wrong or due: "Expired 5 days ago", "20 days left", "Exam on 12/12/2026", "No certificate yet". */
+  detail: string;
+  teamName: string | null;
+  /** The person's rows in the Learning list. */
+  href: string;
+};
+
+const searchHref = (memberName: string) => `/records?search=${encodeURIComponent(memberName)}`;
+
+/**
+ * Everything a manager should look at, in one list: expired certificates (most overdue first), those expiring within 60 days
+ * (soonest first), exams planned within 60 days, and members with no certificate yet. `total` counts them all; `items` is the first `limit`.
+ */
+export function getManagerAttention(
+  records: RecordRow[],
+  members: { id: string; fullName: string; teamName: string | null }[],
+  limit = 6,
+): { items: ManagerAttentionItem[]; total: number } {
+  const all: ManagerAttentionItem[] = [
+    ...getNeedsAttentionItems(records).map(({ record }) => ({
+      id: `expired:${record.id}`,
+      kind: "expired" as const,
+      title: `${record.memberName} · ${record.certificateName}`,
+      detail: daysLeftLabel(record.daysToExpiry ?? 0),
+      teamName: record.teamName,
+      href: searchHref(record.memberName),
+    })),
+    ...getNextToExpire(records, Number.POSITIVE_INFINITY).map((record) => ({
+      id: `expiring:${record.id}`,
+      kind: "expiring" as const,
+      title: `${record.memberName} · ${record.certificateName}`,
+      detail: daysLeftLabel(record.daysToExpiry ?? 0),
+      teamName: record.teamName,
+      href: searchHref(record.memberName),
+    })),
+    ...getPlannedExams(records).map((exam) => ({
+      id: `exam:${exam.recordId}`,
+      kind: "exam" as const,
+      title: `${exam.memberName} · ${exam.certificateName}`,
+      detail: `Exam on ${formatDate(exam.plannedExamDate)}`,
+      teamName: records.find((r) => r.id === exam.recordId)?.teamName ?? null,
+      href: searchHref(exam.memberName),
+    })),
+    ...getMembersWithoutCerts(members, records).map((member) => ({
+      id: `none:${member.id}`,
+      kind: "no_certificate" as const,
+      title: member.fullName,
+      detail: "No certificate yet",
+      teamName: member.teamName,
+      href: searchHref(member.fullName),
+    })),
+  ];
+  return { items: all.slice(0, limit), total: all.length };
+}
