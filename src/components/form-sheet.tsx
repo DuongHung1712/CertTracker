@@ -1,6 +1,7 @@
 "use client";
 
-import type { FormEventHandler, ReactNode } from "react";
+import { useState, type FormEventHandler, type ReactNode } from "react";
+import { DiscardChangesDialog } from "@/components/discard-changes-dialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -13,6 +14,7 @@ export function FormSheet({
   rootError,
   submitting,
   submitDisabled = false,
+  dirty = false,
   children,
 }: {
   open: boolean;
@@ -23,10 +25,17 @@ export function FormSheet({
   submitting: boolean;
   /** A known blocker the form already explains (e.g. a duplicate); Enter is still guarded by onSubmit. */
   submitDisabled?: boolean;
+  /** The form holds unsaved input: closing it by Cancel, Esc, a click outside or the X asks first. A successful save closes through `onOpenChange` itself. */
+  dirty?: boolean;
   children: ReactNode;
 }) {
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  function requestOpenChange(next: boolean) {
+    if (!next && dirty) setConfirmDiscard(true);
+    else onOpenChange(next);
+  }
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={requestOpenChange}>
       {/* data-[side=right]:w-full overrides the primitive's w-3/4, so phones get the full width. */}
       <SheetContent className="flex w-full flex-col data-[side=right]:w-full sm:max-w-md">
         <SheetHeader>
@@ -41,7 +50,7 @@ export function FormSheet({
           )}
           {/* Sticky so Save stays on screen however long the form is. */}
           <SheetFooter className="sticky bottom-0 mt-auto flex-row justify-end gap-2 border-t border-border bg-popover px-0 pt-2 pb-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => requestOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={submitting || submitDisabled}>
@@ -50,6 +59,14 @@ export function FormSheet({
           </SheetFooter>
         </form>
       </SheetContent>
+      <DiscardChangesDialog
+        open={confirmDiscard}
+        onOpenChange={setConfirmDiscard}
+        onDiscard={() => {
+          setConfirmDiscard(false);
+          onOpenChange(false);
+        }}
+      />
     </Sheet>
   );
 }

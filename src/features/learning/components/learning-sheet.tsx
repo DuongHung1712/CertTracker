@@ -156,6 +156,12 @@ export function LearningSheet({
     return submit(event);
   }
 
+  // Closing for good starts the next Add or Edit from the saved values, not from what was typed and discarded.
+  function close(next: boolean) {
+    if (!next) form.reset(values);
+    onOpenChange(next);
+  }
+
   async function onSubmit(input: z.output<typeof learningSchema>) {
     const result = editing ? await updateLearningItem({ ...input, id: editing.id }) : await createLearningItem(input);
     if (!result.ok) {
@@ -163,18 +169,19 @@ export function LearningSheet({
       return;
     }
     toast.success(editing ? "Saved" : "Added to your learning");
-    onOpenChange(false);
+    close(false);
   }
 
   return (
     <FormSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={close}
       title={editing ? "Edit learning" : "Add learning"}
       onSubmit={handleSave}
       rootError={errors.root?.message}
       submitting={form.formState.isSubmitting}
       submitDisabled={Boolean(duplicate)}
+      dirty={form.formState.isDirty}
     >
       {!fixedMemberId && (
         <Field>

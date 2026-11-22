@@ -14,7 +14,7 @@ test("/members?search= opens the list already searched", async ({ page }) => {
 test("/courses?tab=certificates&search= searches the Certificates tab", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   await page.goto("/courses?tab=certificates&search=NVIDIA");
-  await expect(page.getByRole("tab", { name: "Certificates", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tab", { name: /^Certificates/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByPlaceholder(/Search certificates/)).toHaveValue("NVIDIA");
   await expect(page.getByRole("cell", { name: "NVIDIA Generative AI LLMs", exact: true }).first()).toBeVisible();
   await expect(page.getByRole("cell", { name: "AWS Solutions Architect Associate", exact: true })).toHaveCount(0);

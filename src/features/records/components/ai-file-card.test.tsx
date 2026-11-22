@@ -164,3 +164,13 @@ describe("AiFileCard", () => {
     expect(document.activeElement?.id).toBe("field-a");
   });
 });
+
+describe("AiFileCard: where the file goes", () => {
+  it("says it is sent to DeepSeek, and that only the first 3 PDF pages are read, before the drop area", () => {
+    render(<Harness />);
+    const note = screen.getByText(/sent to an AI service \(DeepSeek\)/i);
+    expect(note.textContent).toMatch(/first 3 pages/);
+    const dropzone = document.getElementById("record-ai-file") as HTMLElement;
+    expect(note.compareDocumentPosition(dropzone) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});

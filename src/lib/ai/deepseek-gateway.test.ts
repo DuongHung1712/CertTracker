@@ -103,6 +103,27 @@ describe("DeepSeekGateway", () => {
     expect(await pending).toEqual({ ok: false, error: "timeout" });
   });
 
+  it("cancels the provider call when the caller aborts (the member replaced the file)", async () => {
+    const hang = vi.fn((_url: unknown, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new Error("aborted")));
+    }));
+    const caller = new AbortController();
+    const pending = gateway(hang as unknown as typeof fetch).extractCertificate(request, { signal: caller.signal });
+    caller.abort();
+    expect(await pending).toEqual({ ok: false, error: "provider_error" });
+    const [, init] = hang.mock.calls[0] as unknown as [string, RequestInit];
+    expect(init.signal?.aborted).toBe(true);
+  });
+
+  it("hands an already-aborted caller's signal to fetch, so the call ends at once", async () => {
+    const hang = vi.fn((_url: unknown, init?: RequestInit) => new Promise<Response>((_resolve, reject) => {
+      if (init?.signal?.aborted) reject(new Error("aborted"));
+    }));
+    const caller = new AbortController();
+    caller.abort();
+    expect(await gateway(hang as unknown as typeof fetch).extractCertificate(request, { signal: caller.signal })).toEqual({ ok: false, error: "provider_error" });
+  });
+
   it("maps HTTP 500 and a network error to provider_error", async () => {
     expect(await gateway(reply("oops", 500)).extractCertificate(request)).toEqual({ ok: false, error: "provider_error" });
     const down = vi.fn(async () => { throw new Error("ECONNRESET"); });

@@ -20,9 +20,12 @@ export function DateField({
   required,
   describedBy,
   name,
+  labelAddon,
 }: {
   id: string;
   label: string;
+  /** Shown right after the label (and its required mark), e.g. the "AI" mark. */
+  labelAddon?: React.ReactNode;
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
@@ -54,6 +57,7 @@ export function DateField({
       <FieldLabel htmlFor={id}>
         {label}
         {required && <RequiredMark />}
+        {labelAddon}
       </FieldLabel>
       <div className="relative">
         <Input

@@ -174,7 +174,9 @@ test("the kind choice filters the certificate picker, clears the pick, and a reo
     await expect(dialog.getByLabel(fieldLabel("Issue date"))).toBeVisible();
     await expect(dialog.getByLabel(fieldLabel("Date passed"))).toHaveCount(0);
 
+    // The sheet holds a pick, so Cancel asks before it throws it away.
     await dialog.getByRole("button", { name: "Cancel" }).click();
+    await page.getByRole("button", { name: "Discard" }).click();
     await expect(dialog).toHaveCount(0);
     await page.getByRole("button", { name: "Add certificate" }).click();
     await expect(page.getByRole("dialog").getByLabel(fieldLabel("Certificate"))).toHaveValue("");
@@ -267,6 +269,7 @@ test("date rules are enforced in the form", async ({ page }) => {
   await expect(dialog.getByText("The date cannot be in the future")).toBeVisible();
 
   await dialog.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("button", { name: "Discard" }).click();
   await expect(dialog).toHaveCount(0);
   await expect(recordRow(page, "Nguyễn Văn An", "NVIDIA Generative AI LLMs")).toHaveCount(0);
 });
