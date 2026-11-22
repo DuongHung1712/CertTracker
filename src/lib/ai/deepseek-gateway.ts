@@ -35,7 +35,7 @@ export class DeepSeekGateway implements AiGateway {
 
   constructor(private readonly options: DeepSeekOptions) {}
 
-  async extractCertificate(request: ExtractRequest): Promise<ExtractResponse> {
+  async extractCertificate(request: ExtractRequest, options: { signal?: AbortSignal } = {}): Promise<ExtractResponse> {
     const { apiKey, baseUrl, model, timeoutMs } = this.options;
     const send = this.options.fetch ?? fetch;
     const controller = new AbortController();
@@ -44,6 +44,10 @@ export class DeepSeekGateway implements AiGateway {
       timedOut = true;
       controller.abort();
     }, timeoutMs);
+    // The caller gave up (the member replaced the file): stop the provider call too.
+    const cancel = () => controller.abort();
+    if (options.signal?.aborted) cancel();
+    options.signal?.addEventListener("abort", cancel, { once: true });
 
     try {
       const response = await send(`${baseUrl.replace(/\/+$/, "")}/chat/completions`, {
@@ -74,6 +78,7 @@ export class DeepSeekGateway implements AiGateway {
       return failure(timedOut ? "timeout" : "provider_error");
     } finally {
       clearTimeout(timer);
+      options.signal?.removeEventListener("abort", cancel);
     }
   }
 

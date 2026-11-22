@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn(() => {
     throw new Error("redirect");
   }),
-  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
 }));
 vi.mock("@/features/auth/queries", () => ({ getCurrentUser: () => getCurrentUser() }));
 vi.mock("@/features/dashboard/queries", () => ({
@@ -95,7 +95,7 @@ const RANKING: RankingRow[] = [
 const fail = () => Promise.reject(new Error("boom"));
 
 async function renderPage(): Promise<string> {
-  return renderToStaticMarkup(await DashboardPage());
+  return renderToStaticMarkup(await DashboardPage({ searchParams: Promise.resolve({}) }));
 }
 
 /** Markup from `<section aria-label="title">` to the end of the page (sections render in a fixed order). */
@@ -104,6 +104,8 @@ function sectionHtml(html: string, title: string): string {
   expect(start, `section "${title}" is rendered`).toBeGreaterThanOrEqual(0);
   return html.slice(start);
 }
+
+const textOf = (markup: string) => markup.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
 beforeEach(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
@@ -116,7 +118,8 @@ beforeEach(() => {
 describe("DashboardPage error isolation (admin)", () => {
   it("shows content and no error text when every query succeeds", async () => {
     const html = await renderPage();
-    expect(html).toContain("4,321");
+    // 10 + 4 + 3 + 7 valid certificates: the figure the Overview tiles show.
+    expect(textOf(html)).toContain("Valid certificates 24");
     expect(html).not.toContain("Could not load chart.");
     expect(html).not.toContain("Could not load &quot;");
     expect(html).toContain("Team Zephyr");
@@ -127,7 +130,7 @@ describe("DashboardPage error isolation (admin)", () => {
     getDashboardKpis.mockImplementation(fail);
     const html = await renderPage();
     expect(html).toContain("Could not load &quot;Overview&quot;");
-    expect(html).not.toContain("4,321");
+    expect(textOf(html)).not.toContain("Valid certificates");
     expect(html).toContain("Team Zephyr"); // Explorer still renders
     expect(html).toContain("Ranked Person"); // Ranking still renders
   });
@@ -139,7 +142,7 @@ describe("DashboardPage error isolation (admin)", () => {
     });
     const html = await renderPage();
     const overview = sectionHtml(html, "Overview");
-    expect(overview).toContain("4,321");
+    expect(textOf(overview)).toContain("Valid certificates 24");
     expect(overview).not.toContain("Could not load chart.");
     expect(html).not.toContain("Could not load &quot;Overview&quot;");
   });
@@ -164,7 +167,7 @@ describe("DashboardPage error isolation (admin)", () => {
     getRanking.mockImplementation(fail);
     const html = await renderPage();
     expect(html).toContain("Could not load &quot;Individual ranking&quot;");
-    expect(html).toContain("4,321");
+    expect(textOf(html)).toContain("Valid certificates 24");
     expect(html).toContain("Team Zephyr");
   });
 });

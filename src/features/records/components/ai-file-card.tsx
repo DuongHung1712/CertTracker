@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import { FileDropzone } from "@/components/file-dropzone";
 import { Button } from "@/components/ui/button";
 import type { CertificateSuggestion } from "@/features/records/ai-read";
+import { MAX_PAGES } from "@/lib/ai/contract";
 import { EVIDENCE_ACCEPT, MAX_EVIDENCE_BYTES } from "@/lib/storage/evidence";
 
 const NETWORK_ERROR = "The AI could not be reached. Fill in the form by hand, or try again.";
@@ -22,6 +23,7 @@ export function AiFileCard({
   onReadingChange,
   onReject,
   missing,
+  filledCount,
   fileError,
 }: {
   file: File | null;
@@ -31,6 +33,8 @@ export function AiFileCard({
   onReject: (message: string) => void;
   /** Empty required fields; listed after a read so the member knows what is left. */
   missing: { label: string; fieldId: string }[];
+  /** How many fields still hold what the AI filled (the member may have changed some); without it the card says what the read produced. */
+  filledCount?: number;
   fileError: string | null;
 }) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -38,6 +42,11 @@ export function AiFileCard({
   const tokenRef = useRef(0);
   const readingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
+  /** The sheet's latest `onSuggestion`: an answer that arrives seconds later must see what the member typed since, not the form as it was. */
+  const onSuggestionRef = useRef(onSuggestion);
+  useEffect(() => {
+    onSuggestionRef.current = onSuggestion;
+  });
 
   function stop() {
     tokenRef.current += 1;
@@ -63,7 +72,7 @@ export function AiFileCard({
       const answer = (await response.json().catch(() => null)) as { suggestion?: CertificateSuggestion; error?: string } | null;
       if (token !== tokenRef.current) return;
       if (response.ok && answer?.suggestion) {
-        onSuggestion(answer.suggestion);
+        onSuggestionRef.current(answer.suggestion);
         setStatus({ kind: "done", filled: answer.suggestion.aiFields.length });
       } else {
         setStatus({ kind: "failed", message: answer?.error ?? NETWORK_ERROR });
@@ -95,6 +104,7 @@ export function AiFileCard({
   useEffect(() => () => stop(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const shown: Status = file ? status : { kind: "idle" };
+  const filled = filledCount ?? (shown.kind === "done" ? shown.filled : 0);
 
   return (
     <section aria-labelledby="ai-file-card-title" className="flex flex-col gap-3 rounded-lg border border-input bg-card p-4">
@@ -103,8 +113,12 @@ export function AiFileCard({
           <Sparkles aria-hidden className="size-4 text-primary" />
           Have your certificate file?
         </h3>
-        <p className="text-caption text-muted-foreground">Upload it and AI fills in the form for you.</p>
+        <p className="text-caption text-muted-foreground">Upload it and AI fills in the form for you. No file? Skip this and fill in the form below.</p>
       </div>
+      {/* Before the dropzone: choosing a file sends it at once, so the member must know where it goes first. */}
+      <p className="text-caption text-muted-foreground">
+        The file is sent to an AI service (DeepSeek) to read it. You check everything before saving. For a PDF, only the first {MAX_PAGES} pages are read.
+      </p>
       <FileDropzone id="record-ai-file" file={file} onChange={handleChange} accept={EVIDENCE_ACCEPT} maxBytes={MAX_EVIDENCE_BYTES} onReject={onReject} />
       {fileError && (
         <p role="alert" className="text-caption text-destructive">
@@ -115,9 +129,11 @@ export function AiFileCard({
         {shown.kind === "reading" && <p className="text-muted-foreground">Reading your file…</p>}
         {shown.kind === "done" && (
           <p>
-            {shown.filled > 0
-              ? `AI filled ${shown.filled} ${shown.filled === 1 ? "field" : "fields"}. Check them before saving.`
-              : "AI could not fill any field. Fill in the form below."}
+            {filled > 0
+              ? `AI filled ${filled} ${filled === 1 ? "field" : "fields"}. Check them before saving.`
+              : shown.filled > 0
+                ? "No field holds the AI's answer any more. Check the form below."
+                : "AI could not fill any field. Fill in the form below."}
           </p>
         )}
         {shown.kind === "failed" && <p className="text-destructive">{shown.message}</p>}
@@ -137,9 +153,6 @@ export function AiFileCard({
           </p>
         )}
       </div>
-      <p className="text-caption text-muted-foreground">
-        The file is sent to an AI service (DeepSeek) to read it. You check everything before saving. No file? Skip this and fill in the form below.
-      </p>
     </section>
   );
 }

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LearningSheet } from "@/features/learning/components/learning-sheet";
@@ -29,6 +30,33 @@ const sheet = (rows: LearningRow[] = []) => (
 );
 
 afterEach(cleanup);
+
+/** The way the table uses it: one mounted sheet that is opened and closed again. */
+function Reopenable() {
+  const [isOpen, setOpen] = useState(true);
+  return (
+    <>
+      <button type="button" onClick={() => setOpen(true)}>
+        Reopen
+      </button>
+      <LearningSheet open={isOpen} onOpenChange={setOpen} editing={null} fixedMemberId={M} courses={[COURSE]} examOptions={[EXAM]} rows={[]} />
+    </>
+  );
+}
+
+describe("LearningSheet: discarding", () => {
+  it("starts the next Add from empty after Cancel and Discard", async () => {
+    render(<Reopenable />);
+    await userEvent.type(screen.getByRole("textbox", { name: /^Notes/ }), "my study plan");
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Discard" }));
+    await userEvent.click(screen.getByRole("button", { name: "Reopen" }));
+    expect(screen.getByRole<HTMLTextAreaElement>("textbox", { name: /^Notes/ }).value).toBe("");
+    // Nothing is dirty any more, so Cancel closes at once.
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByText("Discard your changes?")).toBeNull();
+  });
+});
 
 describe("LearningSheet", () => {
   it("starts from an exam, with the course optional for self-study", () => {

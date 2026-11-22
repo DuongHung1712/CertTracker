@@ -102,14 +102,17 @@ export function findProviderId(name: string | null, providers: { id: string; nam
   return wanted ? (providers.find((provider) => provider.name.trim().toLowerCase() === wanted)?.id ?? null) : null;
 }
 
-export async function readCertificate(deps: ReadDeps, input: { memberCode: string; file: File }): Promise<Result<CertificateSuggestion>> {
-  const { file, memberCode } = input;
+export async function readCertificate(deps: ReadDeps, input: { memberCode: string; file: File; signal?: AbortSignal }): Promise<Result<CertificateSuggestion>> {
+  const { file, memberCode, signal } = input;
   // All file checks come first: a refused file never reaches the provider and never uses a call of the daily limit.
   if (file.size === 0) return err(EVIDENCE_EMPTY_MESSAGE);
   if (file.size > MAX_EVIDENCE_BYTES) return err(EVIDENCE_TOO_LARGE_MESSAGE);
   const bytes = new Uint8Array(await file.arrayBuffer());
   const mime = sniffEvidenceType(bytes);
   if (!mime) return err(EVIDENCE_WRONG_TYPE_MESSAGE);
+
+  // The member already replaced the file: no call, so no use of the daily limit.
+  if (signal?.aborted) return err(MESSAGE.provider_error);
 
   const claim = await deps.usage.claim(FEATURE, memberCode);
   if (!claim.ok) return err(MESSAGE[claim.reason]);
@@ -124,7 +127,7 @@ export async function readCertificate(deps: ReadDeps, input: { memberCode: strin
       return err(pages.error);
     }
     const catalogue = (await deps.catalogue()).slice(0, MAX_CATALOGUE);
-    const raw = await deps.gateway.extractCertificate({ feature: FEATURE, requestedBy: memberCode, pages: pages.data, catalogue });
+    const raw = await deps.gateway.extractCertificate({ feature: FEATURE, requestedBy: memberCode, pages: pages.data, catalogue }, { signal });
 
     // Parse again: the gateway may be a remote service, and this strips any field the contract does not name (the holder's name).
     const parsed = extractResponseSchema.safeParse(raw);

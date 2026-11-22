@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { AdminDashboardView } from "@/features/dashboard/components/admin/admin-dashboard-view";
 import type { AdminDashboardData } from "@/features/dashboard/load";
-import { doneRecord, noExpiryRecord } from "@/features/records/__fixtures__/record-row";
+import { doneRecord } from "@/features/records/__fixtures__/record-row";
 import type { RecordRow } from "@/features/records/queries";
 
 vi.mock("@/features/records/components/records-realtime", () => ({
@@ -41,13 +41,6 @@ const CALM_RECORD = doneRecord(120, {
 const DEFAULT_DATA: AdminDashboardData = {
   greeting: "Good morning, Linh",
   subtitle: "Figures as of 08/11/2026 10:00.",
-  profile: {
-    fullName: "Linh Tran",
-    teamName: "Team Cloud",
-    careerRoleName: "Senior Engineer",
-    yoeYears: 6,
-  },
-  profileError: undefined,
   kpis: {
     ok: true,
     data: {
@@ -87,13 +80,6 @@ const DEFAULT_DATA: AdminDashboardData = {
   },
   records: { ok: true, data: [CALM_RECORD] },
   dqIssues: { ok: true, data: [] },
-};
-
-const UNLINKED_PROFILE = {
-  fullName: "admin@certtracker.test",
-  teamName: null,
-  careerRoleName: null,
-  yoeYears: null,
 };
 
 const failed = { ok: false as const, error: "boom" };
@@ -137,302 +123,104 @@ function elementWith(html: string, marker: string): string {
 }
 
 const region = (html: string, name: string) => elementWith(html, `aria-label="${name}"`);
-const column = (html: string, id: "col-center" | "col-right" | "col-left" | "explorer-row") =>
-  elementWith(html, `data-testid="${id}"`);
 
-const REGIONS = [
-  "Overview",
-  "Certificate expiry",
-  "Admin dashboard views",
-  "Explorer",
-  "Needs attention",
-  "Planned features (Coming soon)",
-  "Your profile",
-  "Quick actions",
-  "Individual ranking",
-];
-
-describe("AdminDashboardView: composition (layout option B)", () => {
-  it("renders every region exactly once", () => {
+describe("AdminDashboardView: composition", () => {
+  it("shows the overview, what needs attention and the explorer once each, and nothing else of the old dashboard", () => {
     const html = render();
-    for (const name of REGIONS) {
+    for (const name of ["Overview", "Needs attention", "Explorer"]) {
       expect(count(html, `aria-label="${name}"`), `region "${name}"`).toBe(1);
     }
-    expect(count(html, "Certificates earned by month:"), "monthly chart").toBe(1);
-  });
-
-  it("drops the old region names", () => {
-    const html = render();
-    expect(html).not.toContain("Workspace ledger");
-    expect(html).not.toContain("Compliance assistant and insights");
-  });
-
-  it("puts KPIs full width above the grid and the ranking full width below it", () => {
-    const html = render();
-    const columns = ["col-center", "col-right", "col-left", "explorer-row"] as const;
-    for (const id of columns) {
-      const col = column(html, id);
-      expect(col, `${id} has no Overview`).not.toContain('aria-label="Overview"');
-      expect(col, `${id} has no ranking`).not.toContain('aria-label="Individual ranking"');
+    for (const gone of ["Your profile", "Quick actions", "Planned features", "Admin dashboard views", "Certificates earned by month", "Course completions", "Active members"]) {
+      expect(html, gone).not.toContain(gone);
     }
-    expect(html.indexOf('aria-label="Overview"')).toBeLessThan(html.indexOf('data-testid="col-center"'));
-    const lastColumnEnd = Math.max(
-      ...columns.map((id) => html.indexOf(column(html, id)) + column(html, id).length),
-    );
-    expect(html.indexOf('aria-label="Individual ranking"')).toBeGreaterThan(lastColumnEnd);
   });
 
-  it("places each widget in its column, centre, left, right in the DOM (mobile order)", () => {
-    const html = render();
-    const center = column(html, "col-center");
-    const right = column(html, "col-right");
-    const left = column(html, "col-left");
-
-    const explorerRow = column(html, "explorer-row");
-
-    expect(explorerRow).toContain('aria-label="Admin dashboard views"');
-    expect(explorerRow).toContain('aria-label="Explorer"');
-    expect(center).toContain('aria-label="Needs attention"');
-    expect(center).toContain('aria-label="Quick actions"');
-    expect(right).toContain('aria-label="Planned features (Coming soon)"');
-    expect(left).toContain('aria-label="Your profile"');
-    expect(left).toContain("Certificates earned by month:");
-
-    const order = [
-      'aria-label="Overview"',
-      'data-testid="col-center"',
-      'aria-label="Needs attention"',
-      'aria-label="Quick actions"',
-      'data-testid="col-left"',
-      'aria-label="Your profile"',
-      "Certificates earned by month:",
-      'data-testid="col-right"',
-      'aria-label="Planned features (Coming soon)"',
-      'data-testid="explorer-row"',
-      'aria-label="Admin dashboard views"',
-      'aria-label="Explorer"',
-      'aria-label="Individual ranking"',
-    ].map((marker) => html.indexOf(marker));
-    expect(order).toEqual([...order].sort((a, b) => a - b));
-
-    // Explorer row is outside every column.
-    expect(center).not.toContain('data-testid="explorer-row"');
-    expect(left).not.toContain('data-testid="explorer-row"');
-    expect(right).not.toContain('data-testid="explorer-row"');
-
-    // Grid breakpoints: 1 column, 2 from md, 3 from xl; right spans both columns at md.
-    const grid = elementWith(html, 'class="grid min-w-0');
-    const gridTag = grid.slice(0, grid.indexOf(">"));
-    expect(gridTag).toContain("grid-cols-1");
-    expect(gridTag).toContain("md:grid-cols-2");
-    expect(gridTag).toContain("xl:grid-cols-3");
-    expect(right.slice(0, right.indexOf(">"))).toContain("md:col-span-2");
-
-    // Desktop: left, centre, right.
-    expect(center.slice(0, center.indexOf(">"))).toContain("xl:order-2");
-    expect(right.slice(0, right.indexOf(">"))).toContain("xl:order-3");
-    expect(left.slice(0, left.indexOf(">"))).toContain("xl:order-1");
-  });
-
-  it("renders Goals and Skills once in the tab strip; Approvals is live, so it is not a placeholder", () => {
-    const html = render();
-    expect(count(html, 'aria-label="Approvals Soon"')).toBe(0);
-    expect(count(html, 'aria-label="Goals Soon"')).toBe(1);
-    expect(count(html, 'aria-label="Skills Soon"')).toBe(1);
-  });
-});
-
-describe("AdminDashboardView: one Planned features card", () => {
-  const ITEMS = [
-    "Goals",
-    "Skills",
-    "Focus area",
-    "Ask about certificates",
-    "Monthly summary",
-    "Risk alerts",
-  ];
-
-  it("lists the seven planned features, each ending with Not available yet.", () => {
-    const html = render();
-    const card = region(html, "Planned features (Coming soon)");
-    const text = textOf(card);
-    expect(text).toContain("Planned features");
-    expect(text).toContain("Coming soon");
-    for (const title of ITEMS) {
-      expect(card, title).toMatch(new RegExp(`<h3[^>]*>${title}</h3>`));
-    }
-    expect(count(card, "Not available yet.")).toBe(ITEMS.length);
-    expect(card).not.toContain("<button");
-    expect(card).not.toContain("<input");
-  });
-
-  it("has no other Coming soon content: no profile card, no other Not available yet.", () => {
-    const html = render();
-    expect(html).not.toContain("Track specialization");
-    expect(count(html, "Not available yet.")).toBe(ITEMS.length);
-  });
-});
-
-describe("AdminDashboardView: actions", () => {
-  it("Quick actions: Add learning, Add member, Import from Excel (no export, no invite)", () => {
-    const quick = region(render(), "Quick actions");
-    const links = [...quick.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)].map(
-      ([, href, inner]) => [textOf(inner), href],
-    );
-    expect(links).toEqual([
-      ["Add learning", "/records"],
-      ["Add member", "/members"],
-      ["Import from Excel", "/import"],
-    ]);
-  });
-
-  it("offers Add learning and the CSV export once each on the page", () => {
-    const html = render();
-    expect(count(textOf(html), "Add learning")).toBe(1);
-    expect(count(html, "/api/export/records")).toBe(1);
-    expect(textOf(html)).toContain("Export CSV");
-    expect(html).not.toContain("Download data");
-    expect(html).not.toContain("Invite");
-  });
-
-  // WCAG 2.5.3 label in name: the accessible name starts with the visible text "Filter groups".
-  it("names the header filter button Filter groups", () => {
-    const html = render();
-    const names = [...html.matchAll(/<button([^>]*)>([\s\S]*?)<\/button>/g)].map(
-      ([, attrs, inner]) => /aria-label="([^"]*)"/.exec(attrs)?.[1] ?? textOf(inner),
-    );
-    expect(names.filter((name) => /^Filter groups/.test(name))).toHaveLength(1);
-    expect(names).not.toContain("Filters");
-  });
-});
-
-describe("AdminDashboardView: KPI copy", () => {
-  it("names the valid card plainly, with the share and the completed total", () => {
+  it("puts four tiles in a row: waiting for approval, valid, expiring, expired", () => {
     const overview = textOf(region(render(), "Overview"));
-    expect(overview).toContain("Valid certificates");
-    expect(overview).toMatch(/\b100% valid\b/);
-    expect(overview).toContain("of 1 completed");
-    expect(overview).toContain("1 certificate issued this month");
-    for (const word of ["Audit", "pool", "Pool", "Timeline", "Workflow", "verified"]) {
-      expect(overview, word).not.toContain(word);
-    }
+    const order = ["Waiting for approval", "Valid certificates", "Expiring in 60 days", "Expired"].map((label) => overview.indexOf(label));
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(count(region(render(), "Overview"), 'data-slot="kpi-tile"'), "summary tiles").toBe(3);
+    expect(region(render(), "Overview")).toContain('href="/records?approval=waiting"');
   });
 
-  it("says None issued this month when the records loaded and none were issued", () => {
-    const html = render({
-      records: { ok: true, data: [doneRecord(120, { issuedDate: "2026-09-01" })] },
-    });
-    expect(textOf(region(html, "Overview"))).toContain("None issued this month");
-    expect(html).not.toContain("verified");
+  it("keeps the individual ranking one click away: a closed details element at the bottom, after the explorer", () => {
+    const html = render();
+    const ranking = elementWith(html, "<details");
+    expect(ranking).not.toMatch(/<details[^>]*\sopen/);
+    expect(textOf(ranking)).toContain("Individual ranking");
+    expect(textOf(ranking)).toContain("Nguyễn Văn An");
+    expect(html.indexOf("<details")).toBeGreaterThan(html.indexOf('aria-label="Explorer"'));
   });
 
-  it("labels the expiry split without symbols and the share in plain words", () => {
-    const html = render({ kpis: withKpis({ expiringSoonCerts: 1, expiring60Certs: 2, doneRecords: 4 }) });
-    const overview = textOf(region(html, "Overview"));
-    expect(overview).toContain("Expiry");
-    expect(overview).toContain("30 days or less: 1");
-    expect(overview).toContain("31–60 days: 2");
-    expect(overview).toMatch(/\d+% of completed/);
-    expect(region(html, "Overview")).not.toContain("&lt;");
-    expect(overview).not.toContain("≤");
-    expect(overview).not.toMatch(/\b\d+d:/);
+  it("opens the explorer on the team tab", () => {
+    expect(textOf(region(render(), "Explorer"))).toContain("Team Cloud");
+  });
+});
+
+describe("AdminDashboardView: the four tiles", () => {
+  it("says how many of the completed certificates are valid, and how many members there are", () => {
+    const text = textOf(region(render(), "Overview"));
+    expect(text).toContain("Valid certificates 1 of 1 completed · 100% 3 active members");
   });
 
-  it("shows No expired certificates with no badge when nothing is expired", () => {
-    const overview = region(render(), "Overview");
-    expect(textOf(overview)).toContain("No expired certificates");
-    expect(textOf(overview)).not.toContain("All certificates up to date");
-    expect(overview).not.toContain("0 expired");
-    expect(overview).not.toContain("Action needed");
-    expect(overview).toMatch(/aria-label="No expired certificates/);
+  it("says so when nothing is completed yet", () => {
+    const html = render({ kpis: withKpis({ doneRecords: 0, activeCerts: 0 }) });
+    expect(textOf(region(html, "Overview"))).toContain("No completed certificates yet");
   });
 
-  it("names expired certificates as an action, without Flagged or Requires immediate renewal", () => {
-    const overview = textOf(region(render({ kpis: withKpis({ expiredCerts: 2 }) }), "Overview"));
-    expect(overview).toContain("Expired");
-    expect(overview).toContain("Action needed");
-    expect(overview).toContain("Past expiry date. Members need to renew these.");
-    expect(overview).not.toContain("Flagged");
-    expect(overview).not.toContain("Requires immediate renewal");
-    expect(overview).not.toContain("Audit risk");
+  it("counts what expires within 60 days and how much of it is within 30", () => {
+    const html = render({ kpis: withKpis({ expiringSoonCerts: 2, expiring60Certs: 3 }) });
+    expect(textOf(region(html, "Overview"))).toContain("Expiring in 60 days 5 2 within 30 days");
+    expect(region(html, "Overview")).toContain("border-[var(--status-expiring-soon-border)]");
   });
 
-  it("summarises certificates by team, also when there are no teams", () => {
-    expect(render()).toContain('aria-label="Certificates by team: Team Cloud 1"');
-    expect(render({ teams: { ok: true, data: [] } })).toContain(
-      'aria-label="Certificates by team: no teams yet"',
-    );
+  it("is calm when nothing expires, and names expired certificates as the thing to act on", () => {
+    expect(textOf(region(render(), "Overview"))).toContain("Nothing expiring soon");
+    expect(textOf(region(render(), "Overview"))).toContain("Expired 0 Nothing has expired All up to date");
+    const html = render({ kpis: withKpis({ expiredCerts: 4 }) });
+    expect(textOf(region(html, "Overview"))).toContain("Expired 4 Past the expiry date Members need to renew these");
+    expect(region(html, "Overview")).toContain("border-[var(--status-expired-border)]");
+    expect(html).not.toMatch(/Flagged|Requires immediate renewal/);
   });
 });
 
 describe("AdminDashboardView: failures are never shown as data", () => {
-  it("dqIssues failed: no All clear, no Nothing needs attention, and an error says so", () => {
-    const html = render({ dqIssues: failed });
-    const text = textOf(html);
-    expect(text).not.toContain("All clear");
+  it("dqIssues failed: no Nothing needs attention, and an error says so", () => {
+    const text = textOf(region(render({ dqIssues: failed }), "Needs attention"));
     expect(text).not.toContain("Nothing needs attention");
-    expect(text).toMatch(/Could not load|could not be loaded/);
+    expect(text).toContain("Data quality could not be loaded");
   });
 
-  it("records failed: no issued-this-month claim, no verified, no All clear; two section errors", () => {
+  it("records failed: the needs-attention card is an error, never an all clear", () => {
     const html = render({ records: failed });
-    const text = textOf(html);
-    expect(text).not.toContain("None issued");
-    expect(text).not.toContain("issued this month");
-    expect(text).not.toContain("verified");
-    expect(text).not.toContain("All clear");
-    expect(text).not.toContain("Nothing needs attention");
-    expect(text).toContain('Could not load "Needs attention"');
-    expect(text).toContain('Could not load "Certificates earned"');
-    expect(count(text, "Reload the page to try again.")).toBe(2);
+    expect(textOf(html)).toContain('Could not load "Needs attention"');
+    expect(html).not.toContain("Nothing needs attention");
+    expect(html).not.toContain("All clear");
   });
 
-  it("teams failed: the Overview (and its Expired card) shows no error, the Explorer does", () => {
+  it("teams failed: the overview still shows its numbers, the explorer reports the error", () => {
     const html = render({ teams: failed });
-    const overview = textOf(region(html, "Overview"));
-    expect(overview).not.toContain("Could not load");
-    expect(overview).toContain("No expired certificates");
+    expect(textOf(region(html, "Overview"))).not.toContain("Could not load");
+    expect(textOf(region(html, "Overview"))).toContain("Valid certificates");
   });
 
-  it("profile (members or career) failed: a profile error, never System administrator", () => {
-    const html = render({ profile: UNLINKED_PROFILE, profileError: "boom" });
-    const text = textOf(html);
-    expect(text).toContain('Could not load "Your profile"');
-    expect(text).not.toContain("System administrator");
-    expect(text).not.toContain("Not linked to a member");
+  it("ranking failed: the error is inside the ranking, nothing else is lost", () => {
+    const html = render({ ranking: failed });
+    expect(textOf(elementWith(html, "<details"))).toContain('Could not load "Individual ranking"');
+    expect(textOf(region(html, "Overview"))).toContain("Valid certificates");
   });
 
-  it("an admin not linked to a member says so plainly", () => {
-    const html = render({ profile: UNLINKED_PROFILE });
-    const profile = textOf(region(html, "Your profile"));
-    expect(profile).toContain("admin@certtracker.test");
-    expect(profile).toContain("Not linked to a member");
-    expect(profile).not.toContain("System administrator");
-    expect(profile).not.toContain("Role not set");
-  });
-
-  it("kpis, ranking and records failed: one error per region, nothing else", () => {
-    const text = textOf(render({ kpis: failed, ranking: failed, records: failed }));
-    for (const title of ["Overview", "Individual ranking", "Needs attention", "Certificates earned"]) {
-      expect(count(text, `Could not load "${title}"`), title).toBe(1);
-    }
-    expect(count(text, "Reload the page to try again.")).toBe(4);
+  it("kpis failed: one error for the overview and nothing else is blanked", () => {
+    const html = render({ kpis: failed });
+    expect(count(textOf(html), 'Could not load "Overview"')).toBe(1);
+    expect(textOf(html)).toContain("Needs attention");
   });
 
   it("no certificates at all: the No certificates yet empty state links to the certificates page", () => {
-    const html = render({
-      kpis: withKpis({
-        totalRecords: 0,
-        doneRecords: 0,
-        inProgressRecords: 0,
-        notStartedRecords: 0,
-        activeCerts: 0,
-      }),
-      records: { ok: true, data: [] },
-    });
-    const text = textOf(html);
-    expect(text).toContain("No certificates yet");
-    expect(html).toMatch(/<a\b[^>]*href="\/records"[^>]*>(?:(?!<\/a>)[\s\S])*Go to certificates/);
+    const html = render({ kpis: withKpis({ totalRecords: 0, doneRecords: 0 }) });
+    expect(textOf(html)).toContain("No certificates yet");
+    expect(html).toMatch(/<a\b[^>]*href="\/records"[^>]*>\s*Go to certificates/);
   });
 });
 
@@ -486,86 +274,5 @@ describe("AdminDashboardView: Needs attention", () => {
     expect(text).toContain("Showing 10 of 12. View all certificates");
     expect(attention).toMatch(/<a\b[^>]*href="\/records"[^>]*>(?:(?!<\/a>)[\s\S])*View all certificates/);
     expect(count(attention, "Expired ")).toBe(10);
-  });
-});
-
-describe("AdminDashboardView: accessibility of the KPI row", () => {
-  it("derives the ring dash length from its radius", () => {
-    const overview = region(render(), "Overview");
-    const r = Number(/<circle[^>]*\br="([\d.]+)"/.exec(overview)?.[1]);
-    const dash = Number(/stroke-dasharray="([\d.]+)"/.exec(overview)?.[1]);
-    expect(r).toBeGreaterThan(0);
-    expect(dash).toBeCloseTo(2 * Math.PI * r, 2);
-  });
-
-  // Shortcut: a lazy regex per <div>; fine while dl children hold no nested div before their dt/dd.
-  it("keeps every description list valid: each div holds a dt and a dd", () => {
-    const overview = region(render(), "Overview");
-    const lists = [...overview.matchAll(/<dl\b[^>]*>([\s\S]*?)<\/dl>/g)].map(([, inner]) => inner);
-    expect(lists.length).toBeGreaterThan(0);
-    for (const inner of lists) {
-      for (const [div, body] of inner.matchAll(/<div\b[^>]*>([\s\S]*?)<\/div>/g)) {
-        expect(body, div).toMatch(/<dt\b/);
-        expect(body, div).toMatch(/<dd\b/);
-      }
-    }
-  });
-
-  it("gives the expiry split one accessible summary, not an image plus a repeated list", () => {
-    const expiry = region(render(), "Certificate expiry");
-    expect(expiry).toMatch(/role="img"[^>]*aria-label="Certificate expiry:|aria-label="Certificate expiry:[^"]*"[^>]*role="img"/);
-    expect(expiry).not.toContain("<ul");
-    expect(expiry).not.toContain("<li");
-  });
-});
-
-describe("AdminDashboardView: exam certificates and course completions are separate groups", () => {
-  const completion = (id: string, patch: Parameters<typeof noExpiryRecord>[0]) =>
-    noExpiryRecord({ id, certificateKind: "completion", ...patch });
-  const group = (html: string, name: string) => elementWith(html, `role="group" aria-label="${name}"`);
-
-  it("renders the two groups inside Overview", () => {
-    const overview = region(render(), "Overview");
-    expect(count(overview, 'role="group"')).toBe(3);
-    expect(textOf(group(overview, "Approvals"))).toContain("Waiting for approval");
-    expect(overview).toContain('href="/records?approval=waiting"');
-    expect(textOf(group(overview, "Exam certificates"))).toContain("Valid certificates");
-    expect(textOf(group(overview, "Course completions"))).not.toContain("Valid certificates");
-  });
-
-  it("counts completions this month, this quarter and in progress, and keeps them out of the exam group", () => {
-    const records = [
-      CALM_RECORD,
-      completion("c1", { status: "done", issuedDate: "2026-11-02" }),
-      completion("c2", { status: "done", issuedDate: "2026-10-12" }),
-      completion("c3", { status: "in_progress", issuedDate: null, progress: 30 }),
-    ];
-    const html = render({
-      records: { ok: true, data: records },
-      kpis: withKpis({ doneRecords: 3, inProgressRecords: 1, completionDoneRecords: 2, completionInProgressRecords: 1 }),
-    });
-    const completions = textOf(group(region(html, "Overview"), "Course completions"));
-    expect(completions).toContain("Completed, all time 2");
-    expect(completions).toContain("Completed this month 1");
-    expect(completions).toContain("Completed this quarter 2");
-    expect(completions).toContain("Completions in progress 1");
-    // The valid card divides by exam certificates only: 3 done minus 2 completions.
-    expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("of 1 completed");
-    expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("In progress 0");
-  });
-
-  it("counts planned exams in the next 60 days in the exam group, not planned finish dates, and shows a dash when the list failed", () => {
-    const planned = (id: string, kind: "exam" | "completion") =>
-      doneRecord(120, { id, certificateKind: kind, status: "in_progress", plannedExamDate: "2026-11-20" });
-    const html = render({ records: { ok: true, data: [planned("e1", "exam"), planned("e2", "exam"), planned("c1", "completion")] } });
-    expect(textOf(group(region(html, "Overview"), "Exam certificates"))).toContain("Planned exams 2");
-    const failedHtml = render({ records: failed });
-    expect(textOf(group(region(failedHtml, "Overview"), "Exam certificates"))).toContain("Planned exams —");
-  });
-
-  it("shows a dash for the monthly figures when the certificate list failed to load", () => {
-    const completions = textOf(group(region(render({ records: failed }), "Overview"), "Course completions"));
-    expect(completions).toContain("Completed this month —");
-    expect(completions).toContain("Completions in progress 0");
   });
 });

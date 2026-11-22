@@ -72,7 +72,7 @@ export async function POST(request: Request) {
         mime === "application/pdf" ? pdfToImages(bytes) : ok([{ mime, bytesBase64: Buffer.from(bytes).toString("base64") }]),
       today: todayVn(),
     },
-    { memberCode: await limitKey(user), file },
+    { memberCode: await limitKey(user), file, signal: request.signal },
   );
   return result.ok ? NextResponse.json({ suggestion: result.data }) : fail(result.error, 422);
 }

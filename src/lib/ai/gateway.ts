@@ -4,8 +4,11 @@ import { FakeGateway } from "@/lib/ai/fake-gateway";
 
 export interface AiGateway {
   readonly transport: "fake" | "deepseek";
-  /** Never throws: every failure is `{ ok: false, error }`, so a provider fault cannot break the main flow. */
-  extractCertificate(request: ExtractRequest): Promise<ExtractResponse>;
+  /**
+   * Never throws: every failure is `{ ok: false, error }`, so a provider fault cannot break the main flow.
+   * `signal` is the caller's: when the member replaces the file, the provider call is cancelled instead of finishing unseen.
+   */
+  extractCertificate(request: ExtractRequest, options?: { signal?: AbortSignal }): Promise<ExtractResponse>;
 }
 
 export class AiConfigError extends Error {}

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Monitor, Moon, Palette, Sun, User } from "lucide-react";
+import { BookOpen, ChevronDown, Monitor, Moon, Palette, Sun, User } from "lucide-react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { useTransition } from "react";
@@ -88,6 +88,10 @@ export function UserMenu({ email, role }: { email: string; role: Role }) {
         <DropdownMenuItem render={<Link href="/profile" />}>
           <User aria-hidden className="size-4" />
           <span>Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem render={<Link href="/dashboard?guide=1" />}>
+          <BookOpen aria-hidden className="size-4" />
+          <span>User guide</span>
         </DropdownMenuItem>
         <DropdownMenuItem disabled={pending} onClick={() => startTransition(async () => signOut())}>
           {pending ? "Signing out…" : "Sign out"}
