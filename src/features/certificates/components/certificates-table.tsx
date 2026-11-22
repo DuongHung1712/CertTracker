@@ -15,7 +15,7 @@ import type { SelectOption } from "@/components/option-select";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { approveCertificate, deleteCertificate } from "@/features/certificates/actions";
+import { approveCertificate, deleteCertificate, rejectCertificate } from "@/features/certificates/actions";
 import { CERTIFICATE_ADD_NEUTRAL_LABEL, CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN, certificateDeleteHint, formatPreparedBy } from "@/features/certificates/schema";
 import { CertificateSheet } from "@/features/certificates/components/certificate-sheet";
 import type { CertificateRow } from "@/features/certificates/queries";
@@ -137,18 +137,32 @@ export function CertificatesTable({
             rowLabel: (row) => row.name,
             extraItems: (row) =>
               row.catalogueStatus === "pending" ? (
-                <DropdownMenuItem
-                  onClick={async () => {
-                    const res = await approveCertificate({ id: row.id });
-                    if (!res.ok) {
-                      toast.error(res.error);
-                    } else {
-                      toast.success(`Approved ${row.name}`);
-                    }
-                  }}
-                >
-                  Approve proposal
-                </DropdownMenuItem>
+                <>
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const res = await approveCertificate({ id: row.id });
+                      if (!res.ok) {
+                        toast.error(res.error);
+                      } else {
+                        toast.success(`Approved ${row.name}`);
+                      }
+                    }}
+                  >
+                    Approve proposal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      const res = await rejectCertificate({ id: row.id });
+                      if (!res.ok) {
+                        toast.error(res.error);
+                      } else {
+                        toast.success(`Rejected ${row.name}`);
+                      }
+                    }}
+                  >
+                    Reject proposal
+                  </DropdownMenuItem>
+                </>
               ) : null,
             onEdit: (row) => {
               setEditing(row);

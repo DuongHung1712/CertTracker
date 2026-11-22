@@ -41,6 +41,15 @@ describe("parseIssues", () => {
     expect(row).toMatchObject({ type: "certificate_no_validity", memberId: null, memberName: null, recordId: null });
   });
 
+  it("accepts a catalogue proposal: the proposer is the member, the proposed name is in certificate_name", () => {
+    const [course, certificate] = parseIssues([
+      { ...base, issue_type: "course_proposal", record_id: null, certificate_name: "AWS Cloud Basics" },
+      { ...base, issue_type: "certificate_proposal", record_id: null, certificate_name: "CKA" },
+    ]);
+    expect(course).toMatchObject({ type: "course_proposal", certificateName: "AWS Cloud Basics", memberCode: base.member_code });
+    expect(certificate).toMatchObject({ type: "certificate_proposal", certificateName: "CKA" });
+  });
+
   it("rejects an unknown issue type instead of silently dropping the row (edge #70)", () => {
     expect(() => parseIssues([{ ...base, issue_type: "something_new" }])).toThrow();
   });
