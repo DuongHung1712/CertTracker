@@ -9,6 +9,7 @@ import { ComplianceCopilotWidget } from "@/features/dashboard/components/member/
 import { MemberAttentionBanner } from "@/features/dashboard/components/member/member-attention-banner";
 import { MemberCertificatesList } from "@/features/dashboard/components/member/member-certificates-list";
 import { MemberKpiCards } from "@/features/dashboard/components/member/member-kpi-cards";
+import { MemberLearningNow } from "@/features/dashboard/components/member/member-learning-now";
 import { MemberProfileCard } from "@/features/dashboard/components/member/member-profile-card";
 import { Section, SectionError } from "@/features/dashboard/components/section";
 import { calculateMemberKpis, getAttentionRecord } from "@/features/dashboard/member-metrics";
@@ -53,8 +54,8 @@ export function MemberDashboardView({
 }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<RecordRow | null>(null);
-  // Renewing plans the next attempt as a learning item for that exam (decision #72).
-  const [renewExamId, setRenewExamId] = useState<string | null>(null);
+  // The learning sheet: opened to renew an exam (preset) or to add learning (no preset); null = closed (decision #72).
+  const [learningSheet, setLearningSheet] = useState<{ examId: string | null } | null>(null);
 
   const memberKpis = calculateMemberKpis([...records, ...journey]);
   const attention = getAttentionRecord([...records, ...journey]);
@@ -92,10 +93,16 @@ export function MemberDashboardView({
             {recordsError ? <SectionError title="Overview" /> : <MemberKpiCards kpis={memberKpis} />}
           </Section>
 
-          <MemberAttentionBanner attention={attention} onRenew={(record) => setRenewExamId(record.certificateId)} />
+          <MemberAttentionBanner attention={attention} onRenew={(record) => setLearningSheet({ examId: record.certificateId })} />
 
           {recordsError ? (
-            <SectionError title="My learning" />
+            <SectionError title="Learning now" />
+          ) : (
+            <MemberLearningNow items={journey} onAdd={() => setLearningSheet({ examId: null })} />
+          )}
+
+          {recordsError ? (
+            <SectionError title="My certificates" />
           ) : (
             <MemberCertificatesList
               fullName={fullName}
@@ -113,15 +120,15 @@ export function MemberDashboardView({
       </div>
 
       <LearningSheet
-        key={renewExamId ?? "none"}
-        open={renewExamId !== null}
-        onOpenChange={(open) => !open && setRenewExamId(null)}
+        key={learningSheet?.examId ?? "none"}
+        open={learningSheet !== null}
+        onOpenChange={(open) => !open && setLearningSheet(null)}
         editing={null}
         fixedMemberId={memberId}
         viewerMemberId={memberId}
         courses={courses}
         examOptions={examOptions}
-        presetTargetCertificateId={renewExamId ?? undefined}
+        presetTargetCertificateId={learningSheet?.examId ?? undefined}
       />
 
       <ComplianceCopilotWidget />

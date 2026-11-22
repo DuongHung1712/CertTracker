@@ -60,6 +60,32 @@ export async function updateLearningItem(input: LearningInput & { id: string }):
   return ok(null);
 }
 
+const progressSchema = z.object({
+  id: z.guid("Invalid data"),
+  progress: z.number("Progress must be a number").int("Progress must be a whole number").min(1, "Progress must be at least 1%").max(99, "Progress stops at 99%: mark the item done to finish it"),
+});
+
+/**
+ * The +10% / +25% buttons on the dashboard. An open item moves to In progress at the new value; it never finishes here,
+ * because a finished item needs a date, so 100% goes through the form.
+ */
+export async function updateLearningProgress(input: { id: string; progress: number }): Promise<Result<null>> {
+  const parsed = progressSchema.safeParse(input);
+  if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
+  const supabase = await createClient();
+  const { data: rows, error } = await supabase
+    .from("learning_items")
+    .update({ status: "in_progress", progress: parsed.data.progress })
+    .eq("id", parsed.data.id)
+    .neq("status", "done")
+    .select("id");
+  if (error) return err(mapPostgresError(error, MESSAGES));
+  const guard = assertAffected(rows);
+  if (guard && !guard.ok) return err(guard.error);
+  revalidate();
+  return ok(null);
+}
+
 export async function deleteLearningItem(input: { id: string }): Promise<Result<null>> {
   const parsed = z.object({ id: z.guid("Invalid data") }).safeParse(input);
   if (!parsed.success) return err("Invalid data");
