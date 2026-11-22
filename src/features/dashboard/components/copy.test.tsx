@@ -116,7 +116,7 @@ describe("[copy] member certificate list", () => {
 
   it("counts one exam certificate in the singular, apart from course completions, and drops Registered Records", () => {
     const html = render([studying]);
-    expect(html).toContain("My learning");
+    expect(html).toContain("My certificates");
     expect(html).toContain("1 exam certificate, 0 course completions");
     expect(html).not.toMatch(PLURAL_BUGS);
     expect(html).not.toMatch(/Registered Records|certifications registered/);

@@ -98,14 +98,14 @@ export function MemberCertificatesList({
 
   return (
     <section
-      aria-label="My learning"
+      aria-label="My certificates"
       className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4"
     >
       {/* Header and Filter strip */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-foreground">My learning</h3>
+            <h3 className="text-sm font-semibold text-foreground">My certificates</h3>
             <p className="text-xs text-muted-foreground">
               {`${learningSummary(records)} for ${fullName}`}
             </p>

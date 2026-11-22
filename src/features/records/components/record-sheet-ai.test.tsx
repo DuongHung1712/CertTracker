@@ -202,8 +202,8 @@ describe("RecordSheet: a certificate that is not in the catalogue", () => {
     await waitFor(() => expect(screen.getByText(/not in the catalogue/i)).toBeTruthy());
     expect(screen.getByText(/Introduction to subagents/)).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: /propose it/i }));
-    expect(((await screen.findByLabelText("Course completion name")) as HTMLInputElement).value).toBe("Introduction to subagents");
-    expect((screen.getByLabelText("Provider name") as HTMLInputElement).value).toBe("Anthropic");
+    expect(((await screen.findByLabelText(/^Course certificate name/)) as HTMLInputElement).value).toBe("Introduction to subagents");
+    expect((screen.getByLabelText(/^Provider name/) as HTMLInputElement).value).toBe("Anthropic");
   });
 
   it("preselects a provider that already exists", async () => {
@@ -229,5 +229,125 @@ describe("RecordSheet: a certificate that is not in the catalogue", () => {
     await waitFor(() => expect(screen.getByText(/not in the catalogue/i)).toBeTruthy());
     await readAgain();
     await waitFor(() => expect(screen.queryByText(/not in the catalogue/i)).toBeNull());
+  });
+});
+
+describe("RecordSheet: the AI never replaces what the member typed", () => {
+  it("keeps a typed date and link, fills only the empty certificate, and counts what it really filled", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ suggestion: exam })));
+    render(<RecordSheet {...base} editing={null} aiReaderEnabled />);
+    await userEvent.type(dateInput(), "01012026");
+    await userEvent.type(urlInput(), "https://mine.example/x");
+    await chooseFile();
+    await waitFor(() => expect(certificateBox().value).toBe("AWS Associate"));
+    expect(dateInput().value).toBe("01/01/2026");
+    expect(urlInput().value).toBe("https://mine.example/x");
+    expect(screen.getAllByText("AI")).toHaveLength(1);
+    await screen.findByText("AI filled 1 field. Check them before saving.");
+  });
+
+  it("Read again keeps a link the member corrected, and still refreshes what is still the AI's", async () => {
+    const second = { ...exam, issuedDate: "2026-05-05", certificateUrl: "https://example.com/other" };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(json({ suggestion: exam })).mockResolvedValueOnce(json({ suggestion: second })));
+    render(<RecordSheet {...base} editing={null} aiReaderEnabled />);
+    await chooseFile();
+    await waitFor(() => expect(screen.getAllByText("AI")).toHaveLength(3));
+    await userEvent.type(urlInput(), "x");
+    await readAgain();
+    await waitFor(() => expect(dateInput().value).toBe("05/05/2026"));
+    expect(urlInput().value).toBe("https://example.com/vx");
+  });
+});
+
+describe("RecordSheet: typing while the file is being read", () => {
+  it("keeps what the member types or picks during the read; the answer fills only what is still empty", async () => {
+    let release: (response: Response) => void = () => undefined;
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>((resolve) => (release = resolve))));
+    render(<RecordSheet {...base} editing={null} aiReaderEnabled />);
+    await chooseFile();
+    await userEvent.type(dateInput(), "01012026");
+    release(json({ suggestion: exam }));
+    await waitFor(() => expect(certificateBox().value).toBe("AWS Associate"));
+    expect(dateInput().value).toBe("01/01/2026");
+    expect(urlInput().value).toBe("https://example.com/v");
+    expect(screen.getAllByText("AI")).toHaveLength(2);
+  });
+});
+
+describe("RecordSheet: a certificate the member picks themselves", () => {
+  it("is not replaced by the AI's earlier match when the kind is switched away and back", async () => {
+    const two = [
+      { id: "e1", label: "AWS Associate", kind: "exam" as const, grantingCourse: null },
+      { id: "e2", label: "Azure Fundamentals", kind: "exam" as const, grantingCourse: null },
+      { id: "c1", label: "Intro to LLMs", kind: "completion" as const, grantingCourse: { id: "k1", name: "LLM Course" } },
+    ];
+    vi.stubGlobal("fetch", vi.fn(async () => json({ suggestion: exam })));
+    render(<RecordSheet {...base} certificateOptions={two} editing={null} aiReaderEnabled />);
+    await chooseFile();
+    await waitFor(() => expect(certificateBox().value).toBe("AWS Associate"));
+
+    await userEvent.click(certificateBox());
+    await userEvent.click(await screen.findByRole("option", { name: /Azure Fundamentals/ }));
+    await waitFor(() => expect(certificateBox().value).toBe("Azure Fundamentals"));
+
+    await userEvent.click(screen.getByRole("tab", { name: "Course certificate" }));
+    await userEvent.click(screen.getByRole("tab", { name: "Exam certificate" }));
+    expect(certificateBox().value).toBe("");
+  });
+});
+
+describe("RecordSheet: switching the kind keeps the AI's match", () => {
+  it("brings the matched certificate back when the member returns to the kind the AI found", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ suggestion: exam })));
+    render(<RecordSheet {...base} editing={null} aiReaderEnabled />);
+    await chooseFile();
+    await waitFor(() => expect(certificateBox().value).toBe("AWS Associate"));
+
+    await userEvent.click(screen.getByRole("tab", { name: "Course certificate" }));
+    expect(screen.getByRole<HTMLInputElement>("combobox", { name: /course certificate/i }).value).toBe("");
+    // The card no longer claims the certificate it just lost.
+    await screen.findByText("AI filled 2 fields. Check them before saving.");
+
+    await userEvent.click(screen.getByRole("tab", { name: "Exam certificate" }));
+    await waitFor(() => expect(certificateBox().value).toBe("AWS Associate"));
+    await screen.findByText("AI filled 3 fields. Check them before saving.");
+  });
+});
+
+describe("RecordSheet: leaving with unsaved input", () => {
+  const cancel = () => screen.getByRole("button", { name: "Cancel" });
+
+  it("asks before Cancel throws typed text away; Keep editing keeps it and Discard closes", async () => {
+    const onOpenChange = vi.fn();
+    render(<RecordSheet {...base} onOpenChange={onOpenChange} editing={null} />);
+    await userEvent.type(urlInput(), "https://x.example");
+    await userEvent.click(cancel());
+    expect(await screen.findByText("Discard your changes?")).toBeTruthy();
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Keep editing" }));
+    expect(urlInput().value).toBe("https://x.example");
+    expect(onOpenChange).not.toHaveBeenCalled();
+
+    await userEvent.click(cancel());
+    await userEvent.click(await screen.findByRole("button", { name: "Discard" }));
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("asks when the only thing at stake is a chosen file (the read failed, nothing typed)", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ error: "The AI could not read this file." }, 422)));
+    render(<RecordSheet {...base} editing={null} aiReaderEnabled />);
+    await chooseFile();
+    await screen.findByText("The AI could not read this file.");
+    await userEvent.click(cancel());
+    expect(await screen.findByText("Discard your changes?")).toBeTruthy();
+  });
+
+  it("closes at once when nothing was entered", async () => {
+    const onOpenChange = vi.fn();
+    render(<RecordSheet {...base} onOpenChange={onOpenChange} editing={null} />);
+    await userEvent.click(cancel());
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(screen.queryByText("Discard your changes?")).toBeNull();
   });
 });

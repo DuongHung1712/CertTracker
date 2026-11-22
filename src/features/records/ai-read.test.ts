@@ -62,6 +62,25 @@ describe("readCertificate: file checks run before any claim", () => {
   });
 });
 
+describe("readCertificate: cancelling", () => {
+  it("uses no call of the daily limit when the member had already replaced the file", async () => {
+    const { deps, claimFn, extractCertificate } = setup(examAnswer());
+    const controller = new AbortController();
+    controller.abort();
+    const result = await readCertificate(deps, { memberCode: "M001", file: png(), signal: controller.signal });
+    expect(result.ok).toBe(false);
+    expect(claimFn).not.toHaveBeenCalled();
+    expect(extractCertificate).not.toHaveBeenCalled();
+  });
+
+  it("hands the caller's signal to the gateway so a replaced file stops the provider call", async () => {
+    const { deps, extractCertificate } = setup(examAnswer());
+    const controller = new AbortController();
+    await readCertificate(deps, { memberCode: "M001", file: png(), signal: controller.signal });
+    expect((extractCertificate.mock.calls[0] as unknown[] | undefined)?.[1]).toEqual({ signal: controller.signal });
+  });
+});
+
 describe("readCertificate: switch and limit", () => {
   it("says the feature is unavailable when the flag is off and logs nothing", async () => {
     const { deps, finish, extractCertificate } = setup(examAnswer(), { ok: false, reason: "disabled" });
@@ -210,7 +229,7 @@ describe("readCertificate: logging", () => {
   it("sends the member code and the catalogue to the gateway", async () => {
     const { deps, extractCertificate } = setup(examAnswer());
     await readCertificate(deps, { memberCode: "M001", file: png() });
-    expect(extractCertificate).toHaveBeenCalledWith(expect.objectContaining({ feature: "certificate-reader", requestedBy: "M001", catalogue }));
+    expect(extractCertificate).toHaveBeenCalledWith(expect.objectContaining({ feature: "certificate-reader", requestedBy: "M001", catalogue }), expect.anything());
   });
 });
 

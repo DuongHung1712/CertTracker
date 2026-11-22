@@ -73,8 +73,11 @@ test("E-11: member submits, manager returns, member fixes, manager approves; num
     // The manager finds it through the tile and the filter, and returns it with a note.
     await manager.goto("/dashboard");
     await expect(waitingTile(manager).getByText("1", { exact: true })).toBeVisible();
-    await waitingTile(manager).click();
-    await expect(manager).toHaveURL(/\/records\?approval=waiting$/);
+    // The dashboard is a client component: a click that lands while it hydrates can be dropped, so click again until it navigates.
+    await expect(async () => {
+      await waitingTile(manager).click();
+      await expect(manager).toHaveURL(/\/records\?approval=waiting$/, { timeout: 3000 });
+    }).toPass({ timeout: 15_000 });
     await expect(manager.getByRole("button", { name: "Waiting for approval (1)" })).toHaveAttribute("aria-pressed", "true");
     await expect(recordRow(manager, "Lê Minh Châu", AWS)).toBeVisible();
     await openMenu(manager, "Return");

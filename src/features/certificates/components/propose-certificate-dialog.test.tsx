@@ -33,7 +33,7 @@ describe("ProposeCertificateDialog", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Propose a new certificate" })).toBeTruthy();
-    expect((screen.getByLabelText("Certificate name") as HTMLInputElement).value).toBe("Prefilled Exam Name");
+    expect((screen.getByLabelText(/^Certificate name/) as HTMLInputElement).value).toBe("Prefilled Exam Name");
   });
 
   it("submits the form successfully and triggers onSuccess", async () => {
@@ -119,8 +119,8 @@ describe("ProposeCertificateDialog", () => {
       />,
     );
 
-    expect(screen.getByRole("heading", { name: "Propose a new course completion" })).toBeTruthy();
-    expect((screen.getByLabelText("Course completion name") as HTMLInputElement).value).toBe("ML Specialization");
+    expect(screen.getByRole("heading", { name: "Propose a new course certificate" })).toBeTruthy();
+    expect((screen.getByLabelText(/^Course certificate name/) as HTMLInputElement).value).toBe("ML Specialization");
   });
   it("preselects the provider given by id", () => {
     render(
@@ -133,6 +133,6 @@ describe("ProposeCertificateDialog", () => {
     render(
       <ProposeCertificateDialog open onOpenChange={() => {}} defaultProviderId={null} defaultProposedProvider="Anthropic" providers={PROVIDERS} onSuccess={() => {}} />,
     );
-    expect((screen.getByLabelText("Provider name") as HTMLInputElement).value).toBe("Anthropic");
+    expect((screen.getByLabelText(/^Provider name/) as HTMLInputElement).value).toBe("Anthropic");
   });
 });

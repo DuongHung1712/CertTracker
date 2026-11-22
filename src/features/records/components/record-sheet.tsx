@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DiscardChangesDialog } from "@/components/discard-changes-dialog";
 import { CatalogueStatusBadge } from "@/components/status/record-status";
 import { ProposeCertificateDialog } from "@/features/certificates/components/propose-certificate-dialog";
 import { findProviderId, type CertificateSuggestion } from "@/features/records/ai-read";
@@ -114,6 +115,9 @@ export function RecordSheet({
   };
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  /** The last read, kept so switching Exam and Course and back brings the matched certificate back without another read. */
+  const [aiSuggestion, setAiSuggestion] = useState<CertificateSuggestion | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -173,21 +177,27 @@ export function RecordSheet({
     resetOptions: { keepDirtyValues: true },
   });
 
-  // Every way of closing (Cancel, Esc, overlay, successful save) goes through here, so a reopened
-  // sheet never shows stale edits or a leftover file.
+  // Closing for good (a saved or deleted record, or "Discard"): a reopened sheet never shows stale edits or a leftover file.
+  function closeNow() {
+    // `resetOptions.keepDirtyValues` would otherwise carry over here and keep the discarded edits.
+    form.reset(undefined, { keepDirtyValues: false });
+    setPickedKind(null);
+    setFile(null);
+    setFileError(null);
+    setAiFilled({});
+    setAiRead(null);
+    setAiDone(false);
+    setAiReading(false);
+    setConfirmDiscard(false);
+    setAiSuggestion(null);
+    onOpenChange(false);
+  }
+
+  // Cancel, Esc, a click outside and the X come here. With unsaved input (typed text, an AI read, a chosen file) ask first.
   function handleOpenChange(nextOpen: boolean) {
-    if (!nextOpen) {
-      // `resetOptions.keepDirtyValues` would otherwise carry over here and keep the discarded edits.
-      form.reset(undefined, { keepDirtyValues: false });
-      setPickedKind(null);
-      setFile(null);
-      setFileError(null);
-      setAiFilled({});
-      setAiRead(null);
-      setAiDone(false);
-      setAiReading(false);
-    }
-    onOpenChange(nextOpen);
+    if (nextOpen) return onOpenChange(true);
+    if (hasUnsaved) setConfirmDiscard(true);
+    else closeNow();
   }
 
   async function onSubmit(input: RecordInput) {
@@ -228,7 +238,7 @@ export function RecordSheet({
     }
 
     // The record is saved either way: staying open on "create" would hit the duplicate error on retry.
-    handleOpenChange(false);
+    closeNow();
     if (uploadError) {
       toast.error(`The ${CERTIFICATE_KIND_NOUN[certificate?.kind ?? "exam"]} is saved, but the evidence could not be uploaded: ${uploadError} Open "Edit" to try again.`, {
         duration: Infinity,
@@ -297,7 +307,7 @@ export function RecordSheet({
     }
     toast.success(`Deleted ${editing.certificateName}`);
     setConfirmDelete(false);
-    handleOpenChange(false);
+    closeNow();
   }
   const targetMemberId = fixedMemberId ?? memberId;
   const formIssuedDate = useWatch({ control: form.control, name: "issuedDate" });
@@ -313,14 +323,34 @@ export function RecordSheet({
       );
 
   const formCertificateUrl = useWatch({ control: form.control, name: "certificateUrl" });
-  const aiMark = (field: keyof typeof aiFilled) => {
+  const holdsAiValue = (field: keyof typeof aiFilled) => {
     const current = { certificateId, issuedDate: formIssuedDate, certificateUrl: formCertificateUrl }[field];
-    return aiFilled[field] !== undefined && aiFilled[field] === current ? (
-      <Badge variant="secondary" className="ml-2 rounded-sm">
+    return aiFilled[field] !== undefined && aiFilled[field] === current;
+  };
+  const aiMark = (field: keyof typeof aiFilled) =>
+    holdsAiValue(field) ? (
+      <Badge variant="secondary" className="ml-2 rounded-sm" role="img" aria-label="Filled by AI">
         AI
       </Badge>
     ) : null;
-  };
+  /** How many fields still hold what the AI put there; the card says this, so it stops claiming a field the member changed or the kind switch cleared. */
+  const aiFieldCount = (["certificateId", "issuedDate", "certificateUrl"] as const).filter(holdsAiValue).length;
+  /** Typed text, an AI read or a chosen file would be lost on close. */
+  const hasUnsaved = form.formState.isDirty || file !== null;
+
+  /** A failed Save: put the cursor on the first field to fix (the comboboxes are not registered fields, so the form cannot do it). */
+  function focusFirstError(fieldErrors: Record<string, unknown>) {
+    const ids: Record<string, string> = {
+      memberId: "record-member",
+      certificateId: "record-certificate",
+      issuedDate: "record-issued",
+      certificateUrl: "record-url",
+      refundStatus: "record-refund",
+      notes: "record-notes",
+    };
+    const first = Object.keys(ids).find((field) => field in fieldErrors);
+    if (first) document.getElementById(ids[first])?.focus();
+  }
 
   /** With the AI reader on, the file card at the top replaces the Evidence field at the bottom (adding only). */
   const aiCardShown = aiReaderEnabled && !editing;
@@ -355,16 +385,29 @@ export function RecordSheet({
     onEditExisting?.(record);
   }
 
-  function handleKindChange(next: CertificateKind) {
+  function handleKindChange(next: CertificateKind, matched: CertificateSuggestion | null = aiSuggestion) {
     if (next === kind) return;
     setPickedKind({ scope, kind: next });
+    // Back to the kind the AI matched: bring its certificate back instead of an empty field (it counts as AI-filled again).
+    if (matched?.certificateId && matched.kind === next && matched.certificateId === aiFilled.certificateId) {
+      handleCertificateChange(matched.certificateId);
+      return;
+    }
     form.setValue("certificateId", "", { shouldDirty: true });
     form.setValue("courseId", courseAfterCertificateChange(undefined, studyCourses, ""), { shouldDirty: true });
     form.clearErrors("certificateId");
   }
 
-  /** The AI only fills the form: the member checks it and saves. Status and progress already default to Completed / 100. */
+  /**
+   * The AI only fills the form: the member checks it and saves. It never replaces what the member typed or picked: a field
+   * is filled when it is empty or still holds the earlier AI value. (Status and progress already default to Completed / 100.)
+   */
   function applyAiSuggestion(suggestion: CertificateSuggestion) {
+    setAiSuggestion(suggestion);
+    const open = (current: unknown, ai: string | undefined) => String(current ?? "") === "" || (ai !== undefined && current === ai);
+    const dateOpen = open(formIssuedDate, aiFilled.issuedDate);
+    const urlOpen = open(formCertificateUrl, aiFilled.certificateUrl);
+    const certificateOpen = open(certificateId, aiFilled.certificateId);
     // A new read replaces an earlier one: what the earlier read filled, and the member has not touched, goes away when the
     // new read has nothing for it. Otherwise an AI guess would stay in the form with its "AI" mark gone.
     if (aiFilled.issuedDate !== undefined && !suggestion.issuedDate && formIssuedDate === aiFilled.issuedDate) {
@@ -377,24 +420,26 @@ export function RecordSheet({
       form.setValue("certificateId", "", { shouldDirty: true });
       form.setValue("courseId", courseAfterCertificateChange(undefined, studyCourses, ""), { shouldDirty: true });
     }
-    if (suggestion.certificateId) {
-      setPickedKind({ scope, kind: suggestion.kind });
-      handleCertificateChange(suggestion.certificateId);
-    } else if (suggestion.kind !== kind) {
-      handleKindChange(suggestion.kind);
-    }
     const filled: typeof aiFilled = {};
-    if (suggestion.certificateId) filled.certificateId = suggestion.certificateId;
-    if (suggestion.issuedDate) {
+    if (certificateOpen) {
+      if (suggestion.certificateId) {
+        setPickedKind({ scope, kind: suggestion.kind });
+        handleCertificateChange(suggestion.certificateId);
+        filled.certificateId = suggestion.certificateId;
+      } else if (suggestion.kind !== kind) {
+        handleKindChange(suggestion.kind, suggestion);
+      }
+    }
+    if (suggestion.issuedDate && dateOpen) {
       filled.issuedDate = formatDate(suggestion.issuedDate);
       form.setValue("issuedDate", filled.issuedDate, { shouldDirty: true, shouldValidate: true });
     }
-    if (suggestion.certificateUrl) {
+    if (suggestion.certificateUrl && urlOpen) {
       filled.certificateUrl = suggestion.certificateUrl;
       form.setValue("certificateUrl", suggestion.certificateUrl, { shouldDirty: true, shouldValidate: true });
     }
     setAiFilled(filled);
-    setAiRead(!suggestion.certificateId && suggestion.readName ? { name: suggestion.readName, provider: suggestion.readProvider } : null);
+    setAiRead(certificateOpen && !suggestion.certificateId && suggestion.readName ? { name: suggestion.readName, provider: suggestion.readProvider } : null);
     setAiDone(true);
   }
 
@@ -421,7 +466,7 @@ export function RecordSheet({
         <form
           noValidate
           className="flex flex-1 flex-col gap-4 overflow-y-auto px-4"
-          onSubmit={form.handleSubmit(onSubmit)}
+          onSubmit={form.handleSubmit(onSubmit, focusFirstError)}
         >
           {editing?.approval === "returned" && (
             <Alert>
@@ -444,6 +489,7 @@ export function RecordSheet({
               onReadingChange={setAiReading}
               onReject={setFileError}
               missing={aiMissing}
+              filledCount={aiFieldCount}
               fileError={fileError}
             />
           )}
@@ -512,7 +558,10 @@ export function RecordSheet({
             <EntityCombobox
               id="record-certificate"
               value={certificateId}
-              onChange={handleCertificateChange}
+              onChange={(nextId) => {
+                setAiSuggestion(null);
+                handleCertificateChange(nextId);
+              }}
               options={kindCertificates}
               placeholder={kind === "exam" ? "Choose a certificate" : "Choose a course certificate"}
               emptyText={kind === "exam" ? "No certificates found" : "No course certificates found"}
@@ -583,6 +632,7 @@ export function RecordSheet({
                 <DateField
                   id="record-issued"
                   label={issuedDateLabel(kind)}
+                  labelAddon={aiMark("issuedDate")}
                   name={field.name}
                   value={String(field.value ?? "")}
                   onChange={field.onChange}
@@ -596,7 +646,6 @@ export function RecordSheet({
             />
             <FieldDescription id="record-issued-hint">
               {issuedDateHint(kind)}
-              {aiMark("issuedDate")}
             </FieldDescription>
             <FieldError errors={[errors.issuedDate]} />
           </Field>
@@ -759,6 +808,7 @@ export function RecordSheet({
         providers={providersList}
         onSuccess={handleProposeSuccess}
       />
+      <DiscardChangesDialog open={confirmDiscard} onOpenChange={setConfirmDiscard} onDiscard={closeNow} />
       {editing && (
         <ConfirmDialog
           open={confirmDelete}

@@ -19,6 +19,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel = "Cancel",
   pendingLabel,
   onConfirm,
   pending = false,
@@ -31,6 +32,8 @@ export function ConfirmDialog({
   title: string;
   description: string;
   confirmLabel: string;
+  /** The button that keeps things as they are; "Keep editing" where a plain Cancel could be mistaken for the form's own. */
+  cancelLabel?: string;
   /** Shown on the confirm button while `pending`. Defaults to "Working…". */
   pendingLabel?: string;
   onConfirm: () => void;
@@ -58,7 +61,7 @@ export function ConfirmDialog({
         </AlertDialogHeader>
         {children && <div className="max-h-[45vh] min-w-0 overflow-y-auto">{children}</div>}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
+          <AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
           <Button variant={variant} disabled={pending || confirmDisabled} onClick={onConfirm}>
             {pending ? (pendingLabel ?? "Working…") : confirmLabel}
           </Button>

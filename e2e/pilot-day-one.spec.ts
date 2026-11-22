@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import { giveSeedManagerAMember } from "./support/manager-scopes";
@@ -18,20 +18,12 @@ import {
 const VIETNAMESE_NAME = "Nguyễn Thị Hằng";
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 
-// The pilot member adds a Completed exam certificate, so the Completed figure of the exam group moves by one.
-function completedExamsTile(page: Page): Locator {
-  return page
-    .getByRole("region", { name: "Overview", exact: true })
-    .locator("dl > div")
-    .filter({ has: page.getByText("Completed", { exact: true }) })
-    .locator("dd")
-    .first();
-}
-
+// The pilot member adds a Completed exam certificate, so "of N completed" on the Valid certificates tile moves by one.
 async function readCompletedExams(page: Page): Promise<number> {
   await page.goto("/dashboard");
-  await expect(completedExamsTile(page)).toHaveText(/^\d+$/);
-  return Number(await completedExamsTile(page).textContent());
+  const overview = page.getByRole("region", { name: "Overview", exact: true });
+  await expect(overview).toContainText(/of \d+ completed/);
+  return Number(/of (\d+) completed/.exec((await overview.textContent()) ?? "")?.[1]);
 }
 
 async function expectNoHorizontalScroll(page: Page) {

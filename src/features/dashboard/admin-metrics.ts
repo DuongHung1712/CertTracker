@@ -1,7 +1,6 @@
 import { URGENT_WINDOW_DAYS } from "@/features/dashboard/member-metrics";
 import { isApprovedDone, isExam } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
-import { todayVn } from "@/lib/dates";
 import { pluralize } from "@/lib/plural";
 
 /** Most certificate rows Needs attention lists; the data quality row comes after them. */
@@ -17,14 +16,6 @@ const isAdminExpiringUrgent = (r: RecordRow): boolean =>
   r.daysToExpiry >= 0 &&
   r.daysToExpiry <= URGENT_WINDOW_DAYS;
 
-/**
- * Counts exam certificates completed with an issued date in the current calendar month
- * in Asia/Ho_Chi_Minh time.
- */
-export function countIssuedThisMonth(records: RecordRow[], now: Date = new Date()): number {
-  const currentMonthKey = todayVn(now).slice(0, 7);
-  return records.filter((r) => isExam(r) && isApprovedDone(r) && r.issuedDate?.slice(0, 7) === currentMonthKey).length;
-}
 
 /** Expired plus expiring-within-30-days certificates: what Needs attention would list without the limit. */
 export function countAdminAttentionRecords(records: RecordRow[]): number {

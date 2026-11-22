@@ -13,7 +13,7 @@ const MEMBERS = [
   { id: "m3", fullName: "Phạm Thu Dung", teamName: "Team Cloud" },
 ];
 
-// One expired, one 20-day and one 45-day certificate (the overlap fixture for Needs attention vs Next to expire).
+// One expired, one 20-day and one 45-day certificate.
 const RECORDS: RecordRow[] = [
   doneRecord(-3, { id: "r-exp", memberId: "m1", memberName: "Nguyễn Văn An", certificateName: "Course Expired" }),
   doneRecord(20, { id: "r-20", memberId: "m1", memberName: "Nguyễn Văn An", certificateName: "Course Twenty" }),
@@ -21,12 +21,16 @@ const RECORDS: RecordRow[] = [
   makeRecord({ id: "r-ip", memberId: "m2", memberName: "Lê Minh Châu", certificateName: "Course Planned", status: "in_progress", progress: 40, issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: null }),
 ];
 
-function render({ records = RECORDS, viewerMemberId }: { records?: RecordRow[]; viewerMemberId?: string } = {}): string {
+function render({
+  records = RECORDS,
+  viewerMemberId,
+  teams = ["Team Cloud"],
+}: { records?: RecordRow[]; viewerMemberId?: string; teams?: string[] } = {}): string {
   return renderToStaticMarkup(
     <ManagerDashboardView
       greeting="Good morning, Manager"
       subtitle="You look after Team Cloud (3 members)."
-      managedTeamNames={["Team Cloud"]}
+      managedTeamNames={teams}
       records={records}
       members={MEMBERS}
       viewerMemberId={viewerMemberId}
@@ -35,6 +39,7 @@ function render({ records = RECORDS, viewerMemberId }: { records?: RecordRow[]; 
 }
 
 const count = (html: string, text: string) => html.split(text).length - 1;
+const textOf = (markup: string) => markup.replace(/<[^>]+>/g, " ").replace(/&#x27;/g, "'").replace(/&quot;/g, '"').replace(/\s+/g, " ").trim();
 
 /** Markup of one `<section aria-label=name>` up to its first closing tag (these regions do not nest sections). */
 function region(html: string, name: string): string {
@@ -43,55 +48,49 @@ function region(html: string, name: string): string {
   return html.slice(start, html.indexOf("</section>", start));
 }
 
-const textOf = (markup: string) => markup.replace(/<[^>]+>/g, "").trim();
-
 describe("ManagerDashboardView: waiting tile", () => {
   const waiting = (id: string, memberId: string) => makeRecord({ id, memberId, approval: "waiting" });
   const tile = (html: string) => textOf(html.slice(html.indexOf('href="/records?approval=waiting"'), html.indexOf("</a>", html.indexOf('href="/records?approval=waiting"'))));
 
   it("does not count the manager's own waiting item", () => {
     const records = [waiting("w1", "m2"), waiting("w2", "m1")];
-    expect(tile(render({ records, viewerMemberId: "m1" }))).toContain("Waiting for approval1Completed items to check");
-    expect(tile(render({ records }))).toContain("Waiting for approval2Completed items to check");
+    expect(tile(render({ records, viewerMemberId: "m1" }))).toContain("Waiting for approval 1 Completed items to check");
+    expect(tile(render({ records }))).toContain("Waiting for approval 2 Completed items to check");
   });
 });
 
-describe("ManagerDashboardView: each region once", () => {
-  it("renders every kept region exactly once", () => {
+describe("ManagerDashboardView: composition", () => {
+  it("shows the overview, what needs attention and the team, once each", () => {
     const html = render();
-    for (const name of [
-      "Overview",
-      "Needs attention",
-      "Next to expire",
-      "Team readiness",
-      "Planned exams",
-      "Automated reminders",
-      "Ask about my team (Coming soon)",
-      "Manager dashboard views",
-      "Filter by team scope",
-    ]) {
+    for (const name of ["Overview", "Needs attention", "My team"]) {
       expect(count(html, `aria-label="${name}"`), name).toBe(1);
     }
   });
 
-  it("drops the duplicate ranking and the duplicate Coming soon cards", () => {
-    const html = render();
-    expect(html).not.toContain("Across the department");
-    expect(html).not.toContain("Totals for the whole department.");
-    expect(html).not.toContain("Individual ranking");
-    for (const name of ["Approvals queue", "Goals", "Skills", "Risk alerts"]) {
-      expect(html).not.toContain(`aria-label="${name} (Coming soon)"`);
+  it("drops what the manager can find elsewhere or does not need", () => {
+    const html = textOf(render());
+    for (const gone of [
+      "Allocated scope",
+      "Quick actions",
+      "Automated reminders",
+      "Ask about my team",
+      "Certificates earned",
+      "Planned exams",
+      "Next to expire",
+      "People without certificates",
+      "Team readiness",
+      "Course completions",
+      "Soon",
+    ]) {
+      expect(html, gone).not.toContain(gone);
     }
   });
 
-  it("shows Goals and Skills once each as a Soon tab, and Approvals as the live waiting KPI only", () => {
-    const html = render();
-    expect(count(html, 'aria-label="Approvals Soon"')).toBe(0);
-    expect(count(html, 'aria-label="Goals Soon"')).toBe(1);
-    expect(count(html, 'aria-label="Skills Soon"')).toBe(1);
-    expect(count(html, "Waiting for approval")).toBe(1);
-    expect(count(html, ">Goals<")).toBe(1);
-    expect(count(html, ">Skills<")).toBe(1);
+  it("puts the four tiles in a row: waiting, expiring, expired, team ready", () => {
+    const overview = textOf(region(render(), "Overview"));
+    const order = ["Waiting for approval", "Expiring in 60 days", "Expired", "Team ready"].map((label) => overview.indexOf(label));
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
   it("offers export and View learning once (header only)", () => {
@@ -101,139 +100,96 @@ describe("ManagerDashboardView: each region once", () => {
   });
 });
 
+describe("ManagerDashboardView: the four tiles", () => {
+  it("counts what expires within 60 days and how much is within 30, and what has expired", () => {
+    const overview = textOf(region(render(), "Overview"));
+    expect(overview).toContain("Expiring in 60 days 2 1 within 30 days");
+    expect(overview).toContain("Expired 1 Past the expiry date");
+  });
+
+  it("says how ready the team is and how many members have no certificate", () => {
+    const overview = textOf(region(render(), "Overview"));
+    // Three completed certificates, two of them still valid.
+    expect(overview).toContain("Team ready 66% 2 of 3 certificates valid");
+    expect(overview).toContain("1 member without a certificate");
+  });
+
+  it("shows a dash, not 0%, when nothing is completed yet", () => {
+    const overview = textOf(region(render({ records: [] }), "Overview"));
+    expect(overview).toContain("Team ready — No certificates yet");
+    expect(overview).toContain("3 members without a certificate");
+  });
+});
+
+describe("ManagerDashboardView: Needs attention and My team", () => {
+  it("lists the expired and the soon-to-expire certificates once each, expired first, and the member with none", () => {
+    const attention = textOf(region(render(), "Needs attention"));
+    for (const course of ["Course Expired", "Course Twenty", "Course FortyFive"]) {
+      expect(count(attention, course), course).toBe(1);
+    }
+    expect(attention.indexOf("Course Expired")).toBeLessThan(attention.indexOf("Course Twenty"));
+    expect(attention).toContain("Phạm Thu Dung No certificate yet");
+  });
+
+  it("lists every member of the team with a status", () => {
+    const team = textOf(region(render(), "My team"));
+    for (const member of MEMBERS) expect(team, member.fullName).toContain(member.fullName);
+    expect(team).toContain("Needs renewal");
+    expect(team).toContain("No certificate yet");
+  });
+});
+
+describe("ManagerDashboardView: one team or several", () => {
+  it("has no team filter and no team column for a manager of one team", () => {
+    const html = render();
+    expect(html).not.toContain('aria-label="Filter by team scope"');
+    expect(textOf(region(html, "My team"))).not.toMatch(/Member Team/);
+  });
+
+  it("offers the team filter and a team column when there are several teams", () => {
+    const html = render({ teams: ["Team Cloud", "Team AI"] });
+    expect(count(html, 'aria-label="Filter by team scope"')).toBe(1);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(textOf(region(html, "My team"))).toMatch(/Member Team/);
+  });
+});
+
 describe("ManagerDashboardView: real data and real actions only", () => {
   it("contains none of the invented values", () => {
     const html = render();
-    for (const fake of [
-      "DAS",
-      "+28%",
-      "Last sent",
-      "Joined",
-      "Assigned Mentor",
-      "Send reminder",
-      "Notify member",
-      "Remediate",
-      "Suggest certification",
-      "Review record",
-      "Open queue",
-      "Assign goal",
-      "Pending manager action",
-      "proofs queued",
-      "Key person risk",
-      "Subsidized exams",
-      "Cloud certification coverage",
-      "Approvals (2)",
-      "Team member",
-      "Download report",
-      "Export team audit CSV",
-    ]) {
+    for (const fake of ["DAS", "+28%", "Last sent", "Joined", "Assigned Mentor", "Send reminder", "Notify member", "Remediate", "Review record", "Open queue", "Assign goal", "Key person risk", "Download report", "Export team audit CSV"]) {
       expect(html, fake).not.toContain(fake);
     }
     expect(html.toLowerCase()).not.toContain("dossier");
   });
 
-  it("has no period selector (Month / Quarter / Year is not wired to anything)", () => {
-    const html = render();
-    for (const label of [">Month<", ">Quarter<", ">Year<"]) expect(html).not.toContain(label);
-  });
-
-  it("gives every link an app route and every enabled button a handler", () => {
+  it("gives every link an app route, and has no button or input of its own for a single team", () => {
     const html = render();
     const hrefs = [...html.matchAll(/<a\b[^>]*>/g)].map((m) => /href="([^"]*)"/.exec(m[0])?.[1]);
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) expect(href, "every <a> has an in-app href").toMatch(/^\//);
-
-    // Static markup cannot show onClick, so enabled buttons must be one of the known handler-bearing
-    // controls: the team pills, the dossier member rows, or the current tab. (The source scan in
-    // manager-copy.test.ts checks the onClick itself.)
-    const allowed = new Set(["All teams", "Team Cloud", "Overview", ...MEMBERS.map((m) => m.fullName)]);
-    const buttons = [...html.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)];
-    for (const [, attrs, inner] of buttons) {
-      if (/\bdisabled\b/.test(attrs)) {
-        expect(attrs, "only the Soon tabs are disabled").toMatch(/role="tab"/);
-        continue;
-      }
-      const text = textOf(inner);
-      expect([...allowed].some((name) => text.startsWith(name)) || text.includes("#"), `button "${text}"`).toBe(true);
-    }
     expect(html).not.toContain("<input");
-  });
-});
-
-describe("ManagerDashboardView: Needs attention and Next to expire do not overlap", () => {
-  it("lists the expired certificate in Needs attention and the 20- and 45-day ones in Next to expire, once each", () => {
-    const html = render();
-    const attention = region(html, "Needs attention");
-    const next = region(html, "Next to expire");
-    for (const course of ["Course Expired", "Course Twenty", "Course FortyFive"]) {
-      expect(count(attention, course) + count(next, course), course).toBe(1);
-    }
-    expect(attention).toContain("Course Expired");
-    expect(next).toContain("Course Twenty");
-    expect(next).toContain("Course FortyFive");
-  });
-
-  it("names the most overdue certificate in the Expired tile, not the first one in the list", () => {
-    const html = render({
-      records: [
-        doneRecord(-3, { id: "a", memberName: "Recent Lapse", certificateName: "Course A" }),
-        doneRecord(-40, { id: "b", memberName: "Long Lapse", certificateName: "Course B" }),
-      ],
-    });
-    expect(region(html, "Overview")).toContain("Past due: Long Lapse (Course B)");
-  });
-});
-
-describe("ManagerDashboardView: automated reminders", () => {
-  it("states the two scheduled facts from vercel.json and nothing else", () => {
-    const reminders = region(render(), "Automated reminders");
-    expect(reminders).toContain("Members get an expiry email every Monday at 08:00 (Vietnam time).");
-    expect(reminders).toContain("The monthly report goes out on the 1st of each month.");
-    // /settings is admin-only (nav.ts), so the card links nowhere.
-    expect(reminders).not.toContain("<a ");
+    expect(html).not.toContain("<button");
   });
 });
 
 describe("ManagerDashboardView: failures are not shown as empty", () => {
   it("shows an error, not 'No teams assigned yet', when the teams could not be loaded", () => {
     const html = renderToStaticMarkup(
-      <ManagerDashboardView
-        greeting="Good morning, Manager"
-        subtitle="No teams assigned yet."
-        managedTeamNames={[]}
-        teamsError="boom"
-        records={[]}
-        members={[]}
-        />,
+      <ManagerDashboardView greeting="Good morning, Manager" subtitle="No teams assigned yet." managedTeamNames={[]} teamsError="boom" records={[]} members={[]} />,
     );
     expect(html).toContain("Could not load");
     expect(html).not.toContain("No teams assigned yet</");
   });
 
-  it("marks the selected team pill with aria-pressed", () => {
-    const html = render();
-    expect(count(html, 'aria-pressed="true"')).toBe(1);
-    expect(count(html, 'aria-pressed="false"')).toBe(1);
-  });
-});
-
-describe("ManagerDashboardView: layout structure", () => {
-  it("keeps Team readiness outside the three columns, in a grid with the breakpoint classes", () => {
-    const html = render();
-    const tagAt = (marker: string) => {
-      const at = html.indexOf(marker);
-      expect(at, marker).toBeGreaterThanOrEqual(0);
-      const start = html.lastIndexOf("<", at);
-      return html.slice(start, html.indexOf(">", at));
-    };
-    const rowAt = html.indexOf('data-testid="mgr-readiness-row"');
-    expect(rowAt).toBeGreaterThan(html.indexOf('data-testid="mgr-col-left"'));
-    // The readiness row opens after the columns' grid has closed: no column marker follows it.
-    for (const id of ["mgr-col-center", "mgr-col-right", "mgr-col-left"]) {
-      expect(html.lastIndexOf(`data-testid="${id}"`)).toBeLessThan(rowAt);
-    }
-    const grid = tagAt('class="grid min-w-0');
-    expect(grid).toContain("md:grid-cols-2");
-    expect(grid).toContain("xl:grid-cols-12");
+  it("shows one error per section, never an all clear, when the records could not be loaded", () => {
+    const html = renderToStaticMarkup(
+      <ManagerDashboardView greeting="Good morning, Manager" subtitle="x" managedTeamNames={["Team Cloud"]} records={[]} recordsError="boom" members={MEMBERS} />,
+    );
+    const content = textOf(html);
+    expect(content).toContain('Could not load "Overview"');
+    expect(content).toContain('Could not load "Needs attention"');
+    expect(content).toContain('Could not load "My team"');
+    expect(content).not.toContain("Nothing to chase");
   });
 });

@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { RequiredMark } from "@/components/required-mark";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +27,7 @@ import {
   type ProposeCertificateInput,
 } from "@/features/certificates/schema";
 import type { CertificateChoice } from "@/features/records/certificate-course";
+import { ADD_KIND_CHOICES } from "@/features/records/kind";
 
 const OTHER_PROVIDER_VALUE = "__new_provider__";
 
@@ -98,12 +100,13 @@ export function ProposeCertificateDialog({
       <DialogContent className="w-[94vw] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-section-title">
-            {kind === "exam" ? "Propose a new certificate" : "Propose a new course completion"}
+            {kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate"}
           </DialogTitle>
           <DialogDescription>
             Can&apos;t find yours in the catalogue? Propose it here so you can add your learning item immediately while waiting for admin review.
           </DialogDescription>
         </DialogHeader>
+        <p className="text-caption text-muted-foreground">* Required</p>
 
         <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
           <Field>
@@ -114,8 +117,11 @@ export function ProposeCertificateDialog({
               render={({ field }) => (
                 <Tabs value={field.value} onValueChange={(val) => field.onChange(val as CertificateKind)}>
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="exam">Exam certificate</TabsTrigger>
-                    <TabsTrigger value="completion">Course completion</TabsTrigger>
+                    {ADD_KIND_CHOICES.map((choice) => (
+                      <TabsTrigger key={choice.kind} value={choice.kind}>
+                        {choice.label}
+                      </TabsTrigger>
+                    ))}
                   </TabsList>
                 </Tabs>
               )}
@@ -124,10 +130,12 @@ export function ProposeCertificateDialog({
 
           <Field>
             <FieldLabel htmlFor="propose-name">
-              {kind === "exam" ? "Certificate name" : "Course completion name"}
+              {kind === "exam" ? "Certificate name" : "Course certificate name"}
+              <RequiredMark />
             </FieldLabel>
             <Input
               id="propose-name"
+              aria-required
               placeholder={kind === "exam" ? "e.g. Google Cloud Certified Associate Cloud Engineer" : "e.g. Machine Learning with Python"}
               {...form.register("name")}
               aria-invalid={!!form.formState.errors.name}
@@ -136,7 +144,10 @@ export function ProposeCertificateDialog({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="propose-provider-select">Provider</FieldLabel>
+            <FieldLabel htmlFor="propose-provider-select">
+              Provider
+              <RequiredMark />
+            </FieldLabel>
             <Select
               value={providerChoice}
               onValueChange={(val) => {
@@ -150,7 +161,7 @@ export function ProposeCertificateDialog({
                 }
               }}
             >
-              <SelectTrigger id="propose-provider-select" className="w-full">
+              <SelectTrigger id="propose-provider-select" className="w-full" aria-required>
                 <SelectValue placeholder="Choose provider">
                   {(selected: string) =>
                     selected === OTHER_PROVIDER_VALUE
@@ -171,9 +182,13 @@ export function ProposeCertificateDialog({
 
           {providerChoice === OTHER_PROVIDER_VALUE && (
             <Field>
-              <FieldLabel htmlFor="propose-new-provider">Provider name</FieldLabel>
+              <FieldLabel htmlFor="propose-new-provider">
+                Provider name
+                <RequiredMark />
+              </FieldLabel>
               <Input
                 id="propose-new-provider"
+                aria-required
                 placeholder="e.g. Coursera, edX, Databricks"
                 {...form.register("proposedProvider")}
                 aria-invalid={!!form.formState.errors.proposedProvider}
