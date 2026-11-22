@@ -34,6 +34,8 @@ export function ProposeCertificateDialog({
   onOpenChange,
   defaultKind = "exam",
   defaultName = "",
+  defaultProviderId,
+  defaultProposedProvider = "",
   providers = [],
   onSuccess,
 }: {
@@ -41,17 +43,21 @@ export function ProposeCertificateDialog({
   onOpenChange: (open: boolean) => void;
   defaultKind?: CertificateKind;
   defaultName?: string;
+  /** A provider to preselect; `null` opens the new-provider field instead. Unset keeps the first provider. */
+  defaultProviderId?: string | null;
+  /** The provider name put in the new-provider field when `defaultProviderId` is `null`. */
+  defaultProposedProvider?: string;
   providers?: { id: string; name: string }[];
   onSuccess: (choice: CertificateChoice) => void;
 }) {
-  const defaultProviderId = providers.length > 0 ? providers[0].id : null;
+  const initialProviderId = defaultProviderId !== undefined ? defaultProviderId : (providers[0]?.id ?? null);
   const form = useForm<ProposeCertificateFormInput, unknown, ProposeCertificateInput>({
     resolver: zodResolver(proposeCertificateSchema),
     defaultValues: {
       name: defaultName,
       kind: defaultKind,
-      providerId: defaultProviderId,
-      proposedProvider: defaultProviderId ? null : "",
+      providerId: initialProviderId,
+      proposedProvider: initialProviderId ? null : defaultProposedProvider,
       url: "",
       reason: "",
     },
@@ -62,13 +68,13 @@ export function ProposeCertificateDialog({
       form.reset({
         name: defaultName,
         kind: defaultKind,
-        providerId: defaultProviderId,
-        proposedProvider: defaultProviderId ? null : "",
+        providerId: initialProviderId,
+        proposedProvider: initialProviderId ? null : defaultProposedProvider,
         url: "",
         reason: "",
       });
     }
-  }, [open, defaultName, defaultKind, defaultProviderId, form]);
+  }, [open, defaultName, defaultKind, initialProviderId, defaultProposedProvider, form]);
 
   const selectedProviderId = useWatch({ control: form.control, name: "providerId" });
   const providerChoice = selectedProviderId ?? OTHER_PROVIDER_VALUE;

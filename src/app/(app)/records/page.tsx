@@ -7,6 +7,7 @@ import { LearningTabs } from "@/features/learning/components/learning-tabs";
 import { parseLearningTab } from "@/features/learning/tab";
 import { toExamOptions } from "@/features/learning/exam-options";
 import { listCourseOptions, listLearningItems } from "@/features/learning/queries";
+import { isAiReaderEnabled } from "@/features/records/ai-flag";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
 import { listCertificateOptions, listMemberOptions, listRecords, listStudyCourses } from "@/features/records/queries";
@@ -20,13 +21,14 @@ export default async function RecordsPage({
   const user = await getCurrentUser();
   // UX only — RLS would show a Member just their own rows here anyway; /me is their screen.
   if (user?.role === "member") redirect("/me");
-  const [records, memberOptions, certificateOptions, studyCourses, items, courses] = await Promise.all([
+  const [records, memberOptions, certificateOptions, studyCourses, items, courses, aiReaderEnabled] = await Promise.all([
     listRecords(),
     listMemberOptions(),
     listCertificateOptions(),
     listStudyCourses(),
     listLearningItems(),
     listCourseOptions(),
+    isAiReaderEnabled(),
   ]);
 
   // Dashboard links open the list already searched (?search=<name>); the key remounts the table when it changes.
@@ -64,6 +66,7 @@ export default async function RecordsPage({
             canDelete
             showCompanyFields
             canAddToCatalogue={user?.role === "admin"}
+            aiReaderEnabled={aiReaderEnabled}
           />
         }
       />

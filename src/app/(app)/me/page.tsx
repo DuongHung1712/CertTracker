@@ -9,6 +9,7 @@ import { LearningTabs } from "@/features/learning/components/learning-tabs";
 import { parseLearningTab } from "@/features/learning/tab";
 import { toExamOptions } from "@/features/learning/exam-options";
 import { listCourseOptions, listLearningItems } from "@/features/learning/queries";
+import { isAiReaderEnabled } from "@/features/records/ai-flag";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
 import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
@@ -33,12 +34,13 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
     );
   }
 
-  const [records, certificateOptions, studyCourses, items, courses] = await Promise.all([
+  const [records, certificateOptions, studyCourses, items, courses, aiReaderEnabled] = await Promise.all([
     listRecords({ memberId: user.memberId }),
     listCertificateOptions(),
     listStudyCourses(),
     listLearningItems({ memberId: user.memberId }),
     listCourseOptions(),
+    isAiReaderEnabled(),
   ]);
 
   return (
@@ -67,6 +69,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
             fixedMemberId={user.memberId}
             canDelete={user.role !== "member"}
             showCompanyFields={user.role !== "member"}
+            aiReaderEnabled={aiReaderEnabled}
           />
         }
         learning={

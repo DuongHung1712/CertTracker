@@ -34,6 +34,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_feature_flags: {
+        Row: {
+          daily_limit: number
+          enabled: boolean
+          feature: string
+        }
+        Insert: {
+          daily_limit: number
+          enabled?: boolean
+          feature: string
+        }
+        Update: {
+          daily_limit?: number
+          enabled?: boolean
+          feature?: string
+        }
+        Relationships: []
+      }
+      ai_usage: {
+        Row: {
+          cost_micro_usd: number | null
+          created_at: string
+          day: string
+          feature: string
+          id: string
+          input_tokens: number | null
+          member_code: string
+          outcome: string
+          output_tokens: number | null
+        }
+        Insert: {
+          cost_micro_usd?: number | null
+          created_at?: string
+          day: string
+          feature: string
+          id?: string
+          input_tokens?: number | null
+          member_code: string
+          outcome: string
+          output_tokens?: number | null
+        }
+        Update: {
+          cost_micro_usd?: number | null
+          created_at?: string
+          day?: string
+          feature?: string
+          id?: string
+          input_tokens?: number | null
+          member_code?: string
+          outcome?: string
+          output_tokens?: number | null
+        }
+        Relationships: []
+      }
       career_roles: {
         Row: {
           created_at: string
@@ -1233,6 +1287,13 @@ export type Database = {
         Returns: undefined
       }
       can_access_evidence: { Args: { object_name: string }; Returns: boolean }
+      claim_ai_call: {
+        Args: { p_feature: string; p_member_code: string }
+        Returns: {
+          refusal: string
+          usage_id: string
+        }[]
+      }
       claim_notification: {
         Args: { p_email: string; p_kind: string; p_period: string }
         Returns: {
@@ -1298,7 +1359,25 @@ export type Database = {
         Args: { p_issued: string; p_today: string; p_validity_months: number }
         Returns: string
       }
+      finish_ai_call: {
+        Args: {
+          p_cost: number
+          p_id: string
+          p_input: number
+          p_outcome: string
+          p_output: number
+        }
+        Returns: undefined
+      }
       format_member_code: { Args: { n: number }; Returns: string }
+      get_ai_feature: {
+        Args: { p_feature: string }
+        Returns: {
+          calls_today: number
+          daily_limit: number
+          enabled: boolean
+        }[]
+      }
       is_renewed: {
         Args: { r: Database["public"]["Tables"]["training_records"]["Row"] }
         Returns: boolean
@@ -1324,6 +1403,10 @@ export type Database = {
       }
       reject_certificate: { Args: { p_id: string }; Returns: undefined }
       reject_course: { Args: { p_id: string }; Returns: undefined }
+      set_ai_feature: {
+        Args: { p_daily_limit: number; p_enabled: boolean; p_feature: string }
+        Returns: undefined
+      }
       set_my_career_start: { Args: { p_start: string }; Returns: undefined }
       set_my_full_name: { Args: { p_name: string }; Returns: undefined }
       vn_today: { Args: never; Returns: string }

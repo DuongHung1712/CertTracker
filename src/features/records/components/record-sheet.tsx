@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { CatalogueStatusBadge } from "@/components/status/record-status";
 import { ProposeCertificateDialog } from "@/features/certificates/components/propose-certificate-dialog";
+import { findProviderId, type CertificateSuggestion } from "@/features/records/ai-read";
+import { AiFileCard } from "@/features/records/components/ai-file-card";
 import { createRecord, deleteRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
 import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
 import { CERTIFICATE_KIND_NOUN, type CertificateKind } from "@/features/certificates/schema";
@@ -61,7 +63,10 @@ export function RecordSheet({
   viewerMemberId = null,
   canDelete = false,
   providers,
+  aiReaderEnabled = false,
 }: {
+  /** Shows "Fill from file" next to the evidence upload (server decides: gateway configured and flag on). Add mode only. */
+  aiReaderEnabled?: boolean;
   /** Rows the viewer can see: used to stop a second entry for the same member and certificate. */
   records?: RecordRow[];
   /** Opens the existing row in this sheet; shown with the duplicate message. */
@@ -97,9 +102,14 @@ export function RecordSheet({
 
   const [proposeOpen, setProposeOpen] = useState(false);
   const [proposeName, setProposeName] = useState("");
+  /** A provider the AI read, put in the proposal: an existing provider id, or `null` with the name to propose. */
+  const [proposeProvider, setProposeProvider] = useState<{ id: string | null; name: string } | null>(null);
+  /** What the AI read when it found nothing in the catalogue; drives the note under the certificate field. */
+  const [aiRead, setAiRead] = useState<{ name: string; provider: string | null } | null>(null);
 
   const handleOpenPropose = (query?: string) => {
     setProposeName(query ? query.trim() : "");
+    setProposeProvider(null);
     setProposeOpen(true);
   };
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -109,6 +119,11 @@ export function RecordSheet({
   const [fileError, setFileError] = useState<string | null>(null);
   const [removingEvidence, setRemovingEvidence] = useState(false);
   const [pickedKind, setPickedKind] = useState<{ scope: string; kind: CertificateKind } | null>(null);
+  /** The values the AI put in the form; a field keeps its "AI" mark only while it still holds that value. */
+  const [aiFilled, setAiFilled] = useState<{ certificateId?: string; issuedDate?: string; certificateUrl?: string }>({});
+  /** A read is running (Save waits for it) and a read has finished (the card lists what is still needed). */
+  const [aiReading, setAiReading] = useState(false);
+  const [aiDone, setAiDone] = useState(false);
   const rootErrorRef = useRef<HTMLParagraphElement>(null);
   /** The refund value typed before the company switch went off, restored when it goes back on. */
   const lastRefundRef = useRef<(typeof REFUND_STATUSES)[number]>("n_a");
@@ -167,6 +182,10 @@ export function RecordSheet({
       setPickedKind(null);
       setFile(null);
       setFileError(null);
+      setAiFilled({});
+      setAiRead(null);
+      setAiDone(false);
+      setAiReading(false);
     }
     onOpenChange(nextOpen);
   }
@@ -258,6 +277,7 @@ export function RecordSheet({
   }, [providers, localCertificates]);
 
   function handleProposeSuccess(choice: CertificateChoice) {
+    setAiRead(null);
     setProposedCertificates((prev) => [choice, ...prev]);
     setPickedKind({ scope, kind: choice.kind });
     form.setValue("certificateId", choice.id, { shouldValidate: true, shouldDirty: true });
@@ -292,6 +312,27 @@ export function RecordSheet({
           formatDate(r.issuedDate) === formIssuedDate,
       );
 
+  const formCertificateUrl = useWatch({ control: form.control, name: "certificateUrl" });
+  const aiMark = (field: keyof typeof aiFilled) => {
+    const current = { certificateId, issuedDate: formIssuedDate, certificateUrl: formCertificateUrl }[field];
+    return aiFilled[field] !== undefined && aiFilled[field] === current ? (
+      <Badge variant="secondary" className="ml-2 rounded-sm">
+        AI
+      </Badge>
+    ) : null;
+  };
+
+  /** With the AI reader on, the file card at the top replaces the Evidence field at the bottom (adding only). */
+  const aiCardShown = aiReaderEnabled && !editing;
+  /** Empty required fields, listed by the card after a read. No red error shows until the member presses Save. */
+  const aiMissing = !aiDone
+    ? []
+    : [
+        ...(!fixedMemberId && !memberId ? [{ label: "Member", fieldId: "record-member" }] : []),
+        ...(!certificateId ? [{ label: kind === "exam" ? "Certificate" : "Course certificate", fieldId: "record-certificate" }] : []),
+        ...(!formIssuedDate ? [{ label: issuedDateLabel(kind), fieldId: "record-issued" }] : []),
+      ];
+
   // A failed save is announced and focused, so a keyboard or screen-reader user lands on the reason.
   const rootError = errors.root?.message;
   // Keyed on `submitCount` too, so a second failure with the same message focuses it again.
@@ -307,6 +348,10 @@ export function RecordSheet({
     setPickedKind(null);
     setFile(null);
     setFileError(null);
+    setAiFilled({});
+    setAiRead(null);
+    setAiDone(false);
+    setAiReading(false);
     onEditExisting?.(record);
   }
 
@@ -316,6 +361,48 @@ export function RecordSheet({
     form.setValue("certificateId", "", { shouldDirty: true });
     form.setValue("courseId", courseAfterCertificateChange(undefined, studyCourses, ""), { shouldDirty: true });
     form.clearErrors("certificateId");
+  }
+
+  /** The AI only fills the form: the member checks it and saves. Status and progress already default to Completed / 100. */
+  function applyAiSuggestion(suggestion: CertificateSuggestion) {
+    // A new read replaces an earlier one: what the earlier read filled, and the member has not touched, goes away when the
+    // new read has nothing for it. Otherwise an AI guess would stay in the form with its "AI" mark gone.
+    if (aiFilled.issuedDate !== undefined && !suggestion.issuedDate && formIssuedDate === aiFilled.issuedDate) {
+      form.setValue("issuedDate", "", { shouldDirty: true });
+    }
+    if (aiFilled.certificateUrl !== undefined && !suggestion.certificateUrl && formCertificateUrl === aiFilled.certificateUrl) {
+      form.setValue("certificateUrl", "", { shouldDirty: true });
+    }
+    if (aiFilled.certificateId !== undefined && !suggestion.certificateId && certificateId === aiFilled.certificateId) {
+      form.setValue("certificateId", "", { shouldDirty: true });
+      form.setValue("courseId", courseAfterCertificateChange(undefined, studyCourses, ""), { shouldDirty: true });
+    }
+    if (suggestion.certificateId) {
+      setPickedKind({ scope, kind: suggestion.kind });
+      handleCertificateChange(suggestion.certificateId);
+    } else if (suggestion.kind !== kind) {
+      handleKindChange(suggestion.kind);
+    }
+    const filled: typeof aiFilled = {};
+    if (suggestion.certificateId) filled.certificateId = suggestion.certificateId;
+    if (suggestion.issuedDate) {
+      filled.issuedDate = formatDate(suggestion.issuedDate);
+      form.setValue("issuedDate", filled.issuedDate, { shouldDirty: true, shouldValidate: true });
+    }
+    if (suggestion.certificateUrl) {
+      filled.certificateUrl = suggestion.certificateUrl;
+      form.setValue("certificateUrl", suggestion.certificateUrl, { shouldDirty: true, shouldValidate: true });
+    }
+    setAiFilled(filled);
+    setAiRead(!suggestion.certificateId && suggestion.readName ? { name: suggestion.readName, provider: suggestion.readProvider } : null);
+    setAiDone(true);
+  }
+
+  function openProposeFromAi() {
+    if (!aiRead) return;
+    setProposeName(aiRead.name);
+    setProposeProvider({ id: findProviderId(aiRead.provider, providersList), name: aiRead.provider ?? "" });
+    setProposeOpen(true);
   }
 
   function handleCertificateChange(nextId: string) {
@@ -345,6 +432,21 @@ export function RecordSheet({
             </Alert>
           )}
           <p className="text-caption text-muted-foreground">* Required</p>
+          {aiCardShown && (
+            <AiFileCard
+              file={file}
+              onFileChange={(next) => {
+                setFile(next);
+                setFileError(null);
+                if (!next) setAiDone(false);
+              }}
+              onSuggestion={applyAiSuggestion}
+              onReadingChange={setAiReading}
+              onReject={setFileError}
+              missing={aiMissing}
+              fileError={fileError}
+            />
+          )}
           <Field>
             <FieldLabel id="record-kind-label">
               {editing ? "Kind" : "What are you adding?"}
@@ -401,6 +503,7 @@ export function RecordSheet({
               <FieldLabel htmlFor="record-certificate">
                 {kind === "exam" ? "Certificate" : "Course certificate"}
                 <RequiredMark />
+                {aiMark("certificateId")}
               </FieldLabel>
               {certificate?.catalogueStatus && certificate.catalogueStatus !== "approved" && (
                 <CatalogueStatusBadge status={certificate.catalogueStatus} />
@@ -421,6 +524,16 @@ export function RecordSheet({
               aria-required
               aria-describedby="record-certificate-hint"
             />
+            {aiRead && !certificateId && (
+              <div className="flex flex-col items-start gap-2">
+                <p className="text-caption text-muted-foreground">
+                  AI read &ldquo;{aiRead.name}&rdquo;{aiRead.provider ? ` by ${aiRead.provider}` : ""}. It is not in the catalogue.
+                </p>
+                <Button type="button" variant="outline" size="sm" onClick={openProposeFromAi}>
+                  Propose it
+                </Button>
+              </div>
+            )}
             {certificate?.catalogueStatus === "pending" && (
               <p className="text-caption text-amber-700 dark:text-amber-400">
                 This item is pending admin approval. You can still save and track your progress.
@@ -483,11 +596,15 @@ export function RecordSheet({
             />
             <FieldDescription id="record-issued-hint">
               {issuedDateHint(kind)}
+              {aiMark("issuedDate")}
             </FieldDescription>
             <FieldError errors={[errors.issuedDate]} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="record-url">{kind === "exam" ? "Certificate link" : "Course certificate link"}</FieldLabel>
+            <FieldLabel htmlFor="record-url">
+              {kind === "exam" ? "Certificate link" : "Course certificate link"}
+              {aiMark("certificateUrl")}
+            </FieldLabel>
             <Input
               id="record-url"
               type="url"
@@ -558,6 +675,7 @@ export function RecordSheet({
               <FieldError errors={[errors.notes]} />
             </Field>
           )}
+          {!aiCardShown && (
           <Field>
             <FieldLabel htmlFor="record-evidence">Evidence</FieldLabel>
             <FieldDescription id="record-evidence-hint">{evidenceHint(!showCompanyFields)}</FieldDescription>
@@ -593,6 +711,7 @@ export function RecordSheet({
               </div>
             )}
           </Field>
+          )}
           {errors.root && (
             <p ref={rootErrorRef} tabIndex={-1} role="alert" className="text-caption text-destructive outline-none">
               {errors.root.message}
@@ -622,7 +741,7 @@ export function RecordSheet({
               </Button>
               <Button
                 type="submit"
-                disabled={form.formState.isSubmitting || !!duplicate}
+                disabled={form.formState.isSubmitting || !!duplicate || aiReading}
               >
                 {form.formState.isSubmitting ? "Saving…" : "Save"}
               </Button>
@@ -635,6 +754,8 @@ export function RecordSheet({
         onOpenChange={setProposeOpen}
         defaultKind={kind}
         defaultName={proposeName}
+        defaultProviderId={proposeProvider ? proposeProvider.id : undefined}
+        defaultProposedProvider={proposeProvider?.name ?? ""}
         providers={providersList}
         onSuccess={handleProposeSuccess}
       />
