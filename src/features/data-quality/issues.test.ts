@@ -26,6 +26,25 @@ describe("describeIssue", () => {
   });
 });
 
+describe("proposals", () => {
+  it("says who proposed it, and that approving a course adds its completion certificate", () => {
+    expect(describeIssue(row({ type: "certificate_proposal", since: "2026-11-20" }))).toBe("Proposed by M001 An on 20/11/2026.");
+    expect(describeIssue(row({ type: "course_proposal", since: "2026-11-20", memberCode: null, memberName: null }))).toBe(
+      "Proposed by a member on 20/11/2026. Approve also adds a course completion.",
+    );
+  });
+  it("opens the Catalogue tab it belongs to, searched for the proposed name", () => {
+    expect(issueHref(row({ type: "course_proposal", certificateName: "AWS Cloud Basics" }))).toBe(
+      "/courses?tab=courses&search=AWS%20Cloud%20Basics",
+    );
+    expect(issueHref(row({ type: "certificate_proposal", certificateName: "CKA" }))).toBe("/courses?tab=certificates&search=CKA");
+  });
+  it("uses two labels, one per Catalogue tab", () => {
+    expect(ISSUE_META.course_proposal.label).toBe("Course proposal");
+    expect(ISSUE_META.certificate_proposal.label).toBe("Certificate proposal");
+  });
+});
+
 describe("ISSUE_META labels", () => {
   it("says that only exam certificates are checked for a missing validity", () => {
     expect(ISSUE_META.certificate_no_validity.label).toBe("Exam validity not set");
@@ -35,7 +54,14 @@ describe("ISSUE_META labels", () => {
 describe("countByType", () => {
   it("counts every type, including zero", () => {
     const counts = countByType([row({}), row({}), row({ type: "member_no_team" })]);
-    expect(counts).toEqual({ overdue_exam: 2, done_no_evidence: 0, member_no_team: 1, certificate_no_validity: 0 });
+    expect(counts).toEqual({
+      overdue_exam: 2,
+      done_no_evidence: 0,
+      member_no_team: 1,
+      certificate_no_validity: 0,
+      course_proposal: 0,
+      certificate_proposal: 0,
+    });
   });
 });
 

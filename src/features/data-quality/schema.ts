@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-export const ISSUE_TYPES = ["overdue_exam", "done_no_evidence", "member_no_team", "certificate_no_validity"] as const;
+export const ISSUE_TYPES = [
+  "overdue_exam",
+  "done_no_evidence",
+  "member_no_team",
+  "certificate_no_validity",
+  "course_proposal",
+  "certificate_proposal",
+] as const;
 export type IssueType = (typeof ISSUE_TYPES)[number];
 
 const rowSchema = z.object({

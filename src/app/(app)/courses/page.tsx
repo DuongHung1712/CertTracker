@@ -50,6 +50,8 @@ export default async function CataloguePage({
         }
       />
       <CatalogueTabs
+        pendingCertificates={isAdmin ? certificates.filter((c) => c.catalogueStatus === "pending").length : 0}
+        pendingCourses={isAdmin ? courses.filter((c) => c.catalogueStatus === "pending").length : 0}
         certificates={
           <CertificatesTable
             key={initialSearch}

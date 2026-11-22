@@ -186,9 +186,25 @@ export async function approveCertificate(input: { id: string }): Promise<Result<
   if (error?.code === "P0002") return err("This proposal was already reviewed. Refresh the page.");
   if (error) return err(mapPostgresError(error, { duplicate: "The Catalogue already has an item with this name and provider: delete the proposal and use that one." }));
 
-  revalidatePath("/courses");
-  revalidatePath("/records");
-  revalidatePath("/me");
-  revalidatePath("/dashboard");
+  revalidateProposalViews();
   return ok(null);
+}
+
+export async function rejectCertificate(input: { id: string }): Promise<Result<null>> {
+  const parsed = idSchema.safeParse(input);
+  if (!parsed.success) return err("Invalid data");
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reject_certificate", { p_id: parsed.data.id });
+  if (error?.code === "P0002") return err("This proposal was already reviewed. Refresh the page.");
+  if (error?.code === "42501") return err("Only an admin can reject a proposal.");
+  if (error) return err(mapPostgresError(error));
+
+  revalidateProposalViews();
+  return ok(null);
+}
+
+/** Every screen that shows a proposal: the Catalogue, Data Quality, the member's own lists and the Dashboard. */
+function revalidateProposalViews() {
+  for (const path of ["/courses", "/data-quality", "/records", "/me", "/dashboard"]) revalidatePath(path);
 }

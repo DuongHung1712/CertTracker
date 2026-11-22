@@ -1322,6 +1322,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      reject_certificate: { Args: { p_id: string }; Returns: undefined }
       reject_course: { Args: { p_id: string }; Returns: undefined }
       set_my_career_start: { Args: { p_start: string }; Returns: undefined }
       set_my_full_name: { Args: { p_name: string }; Returns: undefined }
