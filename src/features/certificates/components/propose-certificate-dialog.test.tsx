@@ -122,4 +122,17 @@ describe("ProposeCertificateDialog", () => {
     expect(screen.getByRole("heading", { name: "Propose a new course completion" })).toBeTruthy();
     expect((screen.getByLabelText("Course completion name") as HTMLInputElement).value).toBe("ML Specialization");
   });
+  it("preselects the provider given by id", () => {
+    render(
+      <ProposeCertificateDialog open onOpenChange={() => {}} defaultProviderId={PROVIDERS[1].id} providers={PROVIDERS} onSuccess={() => {}} />,
+    );
+    expect(document.getElementById("propose-provider-select")?.textContent).toContain("Google Cloud");
+  });
+
+  it("opens the new-provider field with a proposed provider name", () => {
+    render(
+      <ProposeCertificateDialog open onOpenChange={() => {}} defaultProviderId={null} defaultProposedProvider="Anthropic" providers={PROVIDERS} onSuccess={() => {}} />,
+    );
+    expect((screen.getByLabelText("Provider name") as HTMLInputElement).value).toBe("Anthropic");
+  });
 });

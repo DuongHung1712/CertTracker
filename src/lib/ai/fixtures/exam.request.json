@@ -1,0 +1,9 @@
+{
+  "feature": "certificate-reader",
+  "requestedBy": "M001",
+  "pages": [{ "mime": "image/png", "bytesBase64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==" }],
+  "catalogue": [
+    { "id": "38e00000-0000-0000-0000-000000000001", "kind": "exam", "name": "AWS Certified Solutions Architect - Associate", "provider": "Amazon Web Services" },
+    { "id": "38e00000-0000-0000-0000-000000000002", "kind": "completion", "name": "Docker Fundamentals Completion", "provider": "Udemy" }
+  ]
+}

@@ -83,7 +83,10 @@ export function RecordsTable({
   canReview = false,
   reviewerMemberId = null,
   initialApproval = false,
+  aiReaderEnabled = false,
 }: {
+  /** Shows "Fill from file" in the add sheet; see RecordSheet. */
+  aiReaderEnabled?: boolean;
   records: RecordRow[];
   memberOptions: ComboboxOption[];
   certificateOptions: CertificateChoice[];
@@ -580,6 +583,7 @@ export function RecordsTable({
         fixedMemberId={fixedMemberId}
         viewerMemberId={reviewerMemberId ?? fixedMemberId}
         canDelete={canDelete}
+        aiReaderEnabled={aiReaderEnabled}
         records={records}
         onEditExisting={(record) => {
           setEditingId(record.id);

@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "result": {
+    "kind": "completion",
+    "certificateId": "38e00000-0000-0000-0000-000000000002",
+    "courseName": "Docker Fundamentals",
+    "provider": "Udemy",
+    "completedDate": "2026-02-01"
+  },
+  "confidence": { "certificateId": 0.8, "completedDate": 0.9 },
+  "usage": { "inputTokens": 1200, "outputTokens": 90 }
+}
