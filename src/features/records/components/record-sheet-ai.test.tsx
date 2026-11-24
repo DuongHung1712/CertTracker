@@ -7,6 +7,18 @@ import { RecordSheet } from "@/features/records/components/record-sheet";
 
 // jsdom has no ResizeObserver or scrollIntoView, which the Base UI popups call (same setup as record-sheet.test.tsx).
 vi.mock("@/features/records/actions", () => ({ createRecord: vi.fn(), updateRecord: vi.fn(), uploadEvidence: vi.fn(), removeEvidence: vi.fn() }));
+vi.mock("@/features/certificates/actions", () => ({
+  proposeCertificate: vi.fn(async (input: { name: string; kind: "exam" | "completion" }) => ({
+    ok: true,
+    data: {
+      id: "c-prop-1",
+      label: input.name,
+      kind: input.kind,
+      grantingCourse: null,
+      catalogueStatus: "pending",
+    },
+  })),
+}));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 const CERTIFICATES = [
@@ -77,6 +89,10 @@ describe("RecordSheet: reading starts when the file is chosen", () => {
     expect(certificateBox().value).toBe("AWS Associate");
     expect(urlInput().value).toBe("https://example.com/v");
     expect(screen.getAllByText("AI")).toHaveLength(3);
+    expect(screen.getByText(/matched in catalogue/i)).toBeTruthy();
+    expect(screen.getByText(/auto-selected in the form below/i)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: /^change$/i }));
+    expect(document.activeElement?.id).toBe("record-certificate");
   });
 
   it("clears the AI mark of a field the member edits", async () => {
@@ -229,6 +245,98 @@ describe("RecordSheet: a certificate that is not in the catalogue", () => {
     await waitFor(() => expect(screen.getByText(/not in the catalogue/i)).toBeTruthy());
     await readAgain();
     await waitFor(() => expect(screen.queryByText(/not in the catalogue/i)).toBeNull());
+  });
+
+  it("keeps the proposed certificate when the member switches tabs away and returns", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ suggestion: unmatched })));
+    render(<RecordSheet {...base} editing={null} aiReaderEnabled />);
+    await chooseFile();
+    await waitFor(() => expect(screen.getByText(/not in the catalogue/i)).toBeTruthy());
+    await userEvent.click(screen.getByRole("button", { name: /propose it/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /^propose & select$/i }));
+
+    await waitFor(() => expect(certificateBox().value).toBe("Introduction to subagents"));
+    expect(screen.getByText(/proposed & selected/i)).toBeTruthy();
+
+    // Switch to Exam certificate:
+    await userEvent.click(screen.getByRole("tab", { name: "Exam certificate" }));
+    expect(screen.getByRole<HTMLInputElement>("combobox", { name: /certificate/i }).value).toBe("");
+
+    // Switch back to Course certificate:
+    await userEvent.click(screen.getByRole("tab", { name: "Course certificate" }));
+    await waitFor(() => expect(certificateBox().value).toBe("Introduction to subagents"));
+    expect(screen.getByText(/proposed & selected/i)).toBeTruthy();
+  });
+
+  it("lets the member jump to the catalogue dropdown when unmatched", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => json({ suggestion: unmatched })));
+    render(<RecordSheet {...base} editing={null} aiReaderEnabled />);
+    await chooseFile();
+    await waitFor(() => expect(screen.getByText(/not in the catalogue/i)).toBeTruthy());
+    await userEvent.click(screen.getByRole("button", { name: /choose from catalogue/i }));
+    expect(document.activeElement?.id).toBe("record-certificate");
+  });
+
+  it("matches an existing pending proposal by name instead of offering to propose a duplicate", async () => {
+    const pendingCert = {
+      id: "c-pend-1",
+      label: "Introduction to subagents",
+      hint: "Anthropic",
+      kind: "completion" as const,
+      grantingCourse: null,
+      catalogueStatus: "pending" as const,
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => json({ suggestion: unmatched })));
+    render(<RecordSheet {...base} certificateOptions={[...CERTIFICATES, pendingCert]} editing={null} aiReaderEnabled />);
+    await chooseFile();
+
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Course certificate" }).getAttribute("aria-selected")).toBe("true"));
+    expect(screen.getByRole<HTMLInputElement>("combobox", { name: /course certificate/i }).value).toBe("Introduction to subagents");
+    expect(screen.getByText(/already proposed/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /propose it/i })).toBeNull();
+  });
+
+  it("warns when the member already has that course completion and disables Save without offering Propose it", async () => {
+    const pendingCert = {
+      id: "c-pend-1",
+      label: "Introduction to subagents",
+      hint: "Anthropic",
+      kind: "completion" as const,
+      grantingCourse: null,
+      catalogueStatus: "pending" as const,
+    };
+    const existingRecord = makeRecord({
+      id: "r-existing-comp",
+      memberId: "m1",
+      certificateId: "c-pend-1",
+      certificateName: "Introduction to subagents",
+      certificateKind: "completion",
+      providerName: "Anthropic",
+      status: "done",
+      issuedDate: "2026-08-01",
+      certificateCatalogueStatus: "pending",
+    });
+    const onEditExisting = vi.fn();
+    vi.stubGlobal("fetch", vi.fn(async () => json({ suggestion: unmatched })));
+
+    render(
+      <RecordSheet
+        {...base}
+        certificateOptions={[...CERTIFICATES, pendingCert]}
+        records={[existingRecord]}
+        onEditExisting={onEditExisting}
+        editing={null}
+        aiReaderEnabled
+      />,
+    );
+    await chooseFile();
+
+    await waitFor(() => expect(screen.getByText(/^Already on this list$/)).toBeTruthy());
+    expect(screen.queryByRole("button", { name: /propose it/i })).toBeNull();
+    expect(saveButton().disabled).toBe(true);
+
+    await userEvent.click(screen.getByRole("button", { name: /open existing/i }));
+    expect(onEditExisting).toHaveBeenCalledWith(existingRecord);
   });
 });
 

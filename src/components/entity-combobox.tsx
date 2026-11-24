@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Combobox,
   ComboboxContent,
@@ -44,6 +45,7 @@ export function EntityCombobox({
   emptyText,
   emptyAction,
   disabled,
+  className,
   "aria-invalid": ariaInvalid,
   "aria-describedby": ariaDescribedBy,
   "aria-required": ariaRequired,
@@ -56,6 +58,7 @@ export function EntityCombobox({
   emptyText: string;
   emptyAction?: { label: string; onClick: (query?: string) => void };
   disabled?: boolean;
+  className?: string;
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
   "aria-required"?: boolean;
@@ -104,7 +107,7 @@ export function EntityCombobox({
         aria-invalid={ariaInvalid}
         aria-describedby={ariaDescribedBy}
         aria-required={ariaRequired}
-        className="w-full"
+        className={cn("w-full", className)}
       />
       <ComboboxContent>
         <ComboboxEmpty>

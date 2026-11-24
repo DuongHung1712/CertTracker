@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { formatDateInput } from "@/lib/date-input";
 import { toIsoDate } from "@/lib/dates";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export function DateField({
   id,
@@ -21,6 +22,7 @@ export function DateField({
   describedBy,
   name,
   labelAddon,
+  className,
 }: {
   id: string;
   label: string;
@@ -36,6 +38,7 @@ export function DateField({
   /** Id of a `FieldDescription` under the field. */
   describedBy?: string;
   name?: string;
+  className?: string;
 }) {
   const pickerRef = useRef<HTMLInputElement>(null);
 
@@ -67,7 +70,7 @@ export function DateField({
           placeholder="dd/mm/yyyy"
           inputMode="numeric"
           maxLength={10}
-          className="h-9 pr-10"
+          className={cn("h-9 pr-10", className)}
           aria-invalid={invalid}
           aria-required={required}
           aria-describedby={describedBy}

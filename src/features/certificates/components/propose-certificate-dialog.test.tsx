@@ -135,4 +135,39 @@ describe("ProposeCertificateDialog", () => {
     );
     expect((screen.getByLabelText(/^Provider name/) as HTMLInputElement).value).toBe("Anthropic");
   });
+
+  it("blocks duplicate proposals client-side and offers selecting the existing entry", async () => {
+    const onSelectExisting = vi.fn();
+    const onOpenChange = vi.fn();
+    const existing = {
+      id: "p-existing",
+      label: "Ultimate AWS Cloud Practitioner",
+      kind: "completion" as const,
+      grantingCourse: null,
+      catalogueStatus: "pending" as const,
+    };
+
+    render(
+      <ProposeCertificateDialog
+        open
+        onOpenChange={onOpenChange}
+        defaultKind="completion"
+        defaultName="ultimate  aws cloud practitioner"
+        providers={PROVIDERS}
+        existingCertificates={[existing]}
+        onSelectExisting={onSelectExisting}
+        onSuccess={() => {}}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Propose & select" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("already been proposed");
+    expect(proposeCertificate).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Use existing" }));
+    expect(onSelectExisting).toHaveBeenCalledWith(existing);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
 });

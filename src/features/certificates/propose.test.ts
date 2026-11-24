@@ -164,6 +164,24 @@ describe("proposeCertificate action", () => {
     }
   });
 
+  it("rejects proposal if a pending proposal already exists with the same name", async () => {
+    replies.profiles = [{ data: { member_id: MEMBER_ID, role: "member" }, error: null }];
+    replies.certificates = [
+      { data: { id: "pending-1", name: "Intro to Agent Skills", kind: "completion", catalogue_status: "pending" }, error: null },
+    ];
+
+    const result = await proposeCertificate({
+      name: "  intro to agent skills  ",
+      kind: "completion",
+      providerId: ID,
+    });
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain("already been proposed");
+    }
+  });
+
   it("handles duplicate unique constraint gracefully from database", async () => {
     replies.profiles = [{ data: { member_id: MEMBER_ID, role: "member" }, error: null }];
     replies.certificates = [
