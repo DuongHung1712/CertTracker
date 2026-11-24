@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { UserGuideCard, type UserGuideProps } from "@/features/guide/components/user-guide-card";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
 import { AdminHeader } from "@/features/dashboard/components/admin/admin-header";
@@ -32,12 +33,13 @@ function NoRecords() {
  * What an admin does here: approve, renew and fix. Four numbers, one list of what needs attention, and the Explorer to dig into
  * a team, a certificate type, a provider or a certificate. The individual ranking is one click away at the bottom.
  */
-export function AdminDashboardView({ greeting, subtitle, kpis, certificates, teams, certTypes, providers, ranking, records, dqIssues }: AdminDashboardData) {
+export function AdminDashboardView({ greeting, subtitle, kpis, certificates, teams, certTypes, providers, ranking, records, dqIssues, guide }: AdminDashboardData & { guide?: UserGuideProps }) {
   const noRecords = kpis.ok && kpis.data.totalRecords === 0;
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
       <AdminHeader greeting={greeting} subtitle={subtitle} />
+      {guide && <UserGuideCard {...guide} />}
       <RecordsRealtime />
 
       <section aria-label="Overview" className="flex flex-col gap-3">

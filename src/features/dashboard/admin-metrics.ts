@@ -49,7 +49,7 @@ export function getAdminNeedsAttentionItems(
       type: expired ? "expired" : "expiring_soon",
       label: `${r.memberName} · ${r.certificateName}`,
       detail,
-      href: `/records?search=${encodeURIComponent(r.memberName)}`,
+      href: `/records?search=${encodeURIComponent(`${r.memberName} ${r.memberCode} ${r.certificateName}`)}`,
     };
   };
 

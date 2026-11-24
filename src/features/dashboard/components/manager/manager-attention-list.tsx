@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AlertCircle, AlertTriangle, CalendarClock, CheckCircle2, UserX, type LucideIcon } from "lucide-react";
 import { getManagerAttention, type ManagerAttentionKind } from "@/features/dashboard/manager-metrics";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { RecordRow } from "@/features/records/queries";
 import { cn } from "@/lib/utils";
 
@@ -19,11 +20,14 @@ export function ManagerAttentionList({
   records,
   members,
   showTeam,
+  incomplete = false,
 }: {
   records: RecordRow[];
   members: { id: string; fullName: string; teamName: string | null }[];
   /** Name the team on each row when the manager looks after more than one. */
   showTeam: boolean;
+  /** Learning items could not be loaded: exams coming up may be missing, so an empty list is not an all clear. */
+  incomplete?: boolean;
 }) {
   const { items, total } = getManagerAttention(records, members);
 
@@ -32,12 +36,19 @@ export function ManagerAttentionList({
       <div className="flex flex-col gap-0.5">
         <h2 className="text-section-title font-semibold text-foreground">Needs attention</h2>
         <p className="text-caption text-muted-foreground">
-          {total === 0 ? "Nothing to chase right now." : "Expired or expiring certificates, exams coming up and people with no certificate yet."}
+          {total === 0 && !incomplete ? "Nothing to chase right now." : "Expired or expiring certificates, exams coming up and people with no certificate yet."}
         </p>
       </div>
 
+      {incomplete && (
+        <Alert variant="destructive">
+          <AlertTitle>Learning items could not be loaded</AlertTitle>
+          <AlertDescription>Exams coming up may be missing from this list. Reload the page to try again.</AlertDescription>
+        </Alert>
+      )}
+
       {items.length === 0 ? (
-        <p className="flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-4 text-body text-muted-foreground">
+        incomplete ? null : <p className="flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-4 text-body text-muted-foreground">
           <CheckCircle2 aria-hidden className="size-4 shrink-0 text-status-active-fg" />
           No certificate in your teams has expired or is about to, and everyone has one.
         </p>

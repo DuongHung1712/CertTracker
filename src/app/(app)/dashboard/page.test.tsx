@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
   }),
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
 }));
+vi.mock("next/headers", () => ({ cookies: async () => ({ has: () => false }) }));
 vi.mock("@/features/auth/queries", () => ({ getCurrentUser: () => getCurrentUser() }));
 vi.mock("@/features/dashboard/queries", () => ({
   getDashboardKpis: () => getDashboardKpis(),

@@ -110,6 +110,25 @@ test("manager sees four tiles, one Needs attention list and the team table", asy
   }
 });
 
+test("the manager's team table updates live when a learning item changes elsewhere", async ({ page }) => {
+  const CHAU = "5eed0000-0000-0000-0000-00000000b003";
+  const admin = await signInAsSeedAdmin();
+  await signIn(page, "manager@certtracker.test");
+  // Columns without a Team column: Member, Valid, In progress, Expired, Status.
+  const inProgress = () => rowWith(section(page, "My team"), "Lê Minh Châu").getByRole("cell").nth(2);
+  await expect(inProgress()).toHaveText("0");
+  try {
+    // Châu starts her self-study AWS item (no course, so an exam in progress).
+    const started = await admin.from("learning_items").update({ status: "in_progress", progress: 55 }).eq("member_id", CHAU).select("id");
+    if (started.error || started.data.length !== 1) throw new Error(`start Châu's item: ${started.error?.message ?? "not found"}`);
+    // No reload on the dashboard: Realtime must trigger the refresh.
+    await expect(inProgress()).toHaveText("1", { timeout: 10_000 });
+  } finally {
+    await restoreSeedLearning(admin);
+  }
+  await expect(inProgress()).toHaveText("0", { timeout: 10_000 });
+});
+
 test("a manager with no teams sees the empty state", async ({ page }) => {
   const admin = await signInAsSeedAdmin();
   await admin.from("manager_scopes").delete().eq("user_id", "5eed0000-0000-0000-0000-00000000f00b");

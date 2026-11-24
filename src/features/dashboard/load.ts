@@ -159,6 +159,7 @@ export async function loadManagerDashboard(
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     members,
     membersError: membersResult.ok ? undefined : membersResult.error,
+    learningError: learningResult.ok ? undefined : learningResult.error,
     viewerMemberId: user.memberId,
   };
 }

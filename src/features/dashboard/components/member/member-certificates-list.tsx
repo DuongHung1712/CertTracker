@@ -204,7 +204,7 @@ export function MemberCertificatesList({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2 self-start sm:shrink-0 sm:flex-nowrap sm:self-center">
                     {record.status === "done" && record.expiryStatus ? (
                       <ExpiryBadge
                         status={record.expiryStatus}
@@ -227,6 +227,7 @@ export function MemberCertificatesList({
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                nativeButton={false}
                                 render={
                                   <a
                                     href={`/api/records/${record.id}/evidence`}

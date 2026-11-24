@@ -86,7 +86,7 @@ export function AdminNeedsAttention({
   return (
     <section aria-label="Needs attention" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-mono text-label tracking-wider text-muted-foreground">Needs attention</h2>
+        <h2 className="text-section-title font-semibold text-foreground">Needs attention</h2>
         {!isEmpty && <span className="inline-flex size-2 rounded-full bg-destructive" aria-hidden="true" />}
       </div>
 
