@@ -256,7 +256,9 @@ export type ManagerAttentionItem = {
   href: string;
 };
 
-const searchHref = (memberName: string) => `/records?search=${encodeURIComponent(memberName)}`;
+const searchHref = (text: string) => `/records?search=${encodeURIComponent(text)}`;
+/** Opens Learning on that one certificate (the search matches name, code and certificate in this order), not on everything the person has. */
+const rowHref = (r: RecordRow) => searchHref(`${r.memberName} ${r.memberCode} ${r.certificateName}`);
 
 /**
  * Everything a manager should look at, in one list: expired certificates (most overdue first), those expiring within 60 days
@@ -274,7 +276,7 @@ export function getManagerAttention(
       title: `${record.memberName} · ${record.certificateName}`,
       detail: daysLeftLabel(record.daysToExpiry ?? 0),
       teamName: record.teamName,
-      href: searchHref(record.memberName),
+      href: rowHref(record),
     })),
     ...getNextToExpire(records, Number.POSITIVE_INFINITY).map((record) => ({
       id: `expiring:${record.id}`,
@@ -282,16 +284,20 @@ export function getManagerAttention(
       title: `${record.memberName} · ${record.certificateName}`,
       detail: daysLeftLabel(record.daysToExpiry ?? 0),
       teamName: record.teamName,
-      href: searchHref(record.memberName),
+      href: rowHref(record),
     })),
-    ...getPlannedExams(records).map((exam) => ({
-      id: `exam:${exam.recordId}`,
-      kind: "exam" as const,
-      title: `${exam.memberName} · ${exam.certificateName}`,
-      detail: `Exam on ${formatDate(exam.plannedExamDate)}`,
-      teamName: records.find((r) => r.id === exam.recordId)?.teamName ?? null,
-      href: searchHref(exam.memberName),
-    })),
+    ...getPlannedExams(records).flatMap((exam) => {
+      const record = records.find((r) => r.id === exam.recordId);
+      if (!record) return [];
+      return [{
+        id: `exam:${exam.recordId}`,
+        kind: "exam" as const,
+        title: `${exam.memberName} · ${exam.certificateName}`,
+        detail: `Exam on ${formatDate(exam.plannedExamDate)}`,
+        teamName: record.teamName,
+        href: searchHref(exam.memberName),
+      }];
+    }),
     ...getMembersWithoutCerts(members, records).map((member) => ({
       id: `none:${member.id}`,
       kind: "no_certificate" as const,

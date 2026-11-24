@@ -364,6 +364,7 @@ test("Escape closes only an open select popup; a second Escape closes the sheet"
 });
 
 test("admin creates a course and its course completion in one step; a member and a manager see no add controls", async ({ page }) => {
+  test.setTimeout(60_000); // creates a course, then signs in twice more: 30 s is too tight on a slow CI runner
   await signIn(page, ADMIN);
   await page.goto("/courses");
   await openTab(page, "Courses");

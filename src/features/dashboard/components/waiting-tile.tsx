@@ -18,7 +18,7 @@ export function WaitingTile({ count, className }: { count: number; className?: s
           <span className="font-mono text-label uppercase tracking-wider text-muted-foreground">Waiting for approval</span>
           <Hourglass aria-hidden className="size-4 shrink-0 text-muted-foreground" />
         </span>
-        <span className="mt-1 font-mono text-2xl font-semibold tabular-nums tracking-tight text-foreground sm:text-3xl">{count}</span>
+        <span className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-foreground sm:text-3xl">{count}</span>
         <span className="text-caption text-muted-foreground">{count > 0 ? "Completed items to check" : "Nothing to check"}</span>
       </span>
       <span className="flex items-center justify-between border-t border-border/60 pt-2 text-caption text-muted-foreground">

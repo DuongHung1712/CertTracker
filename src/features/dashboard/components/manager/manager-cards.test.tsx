@@ -40,7 +40,14 @@ describe("ManagerAttentionList", () => {
     expect(content).toContain("Expired 4 days ago");
     expect(content).toContain("20 days left");
     expect(content).toContain("No certificate yet");
-    expect(html).toContain('href="/records?search=Nguy%E1%BB%85n%20V%C4%83n%20An"');
+    expect(html).toContain('href="/records?search=Nguy%E1%BB%85n%20V%C4%83n%20An%20M001%20CKA"');
+  });
+
+  it("says the learning items could not be loaded instead of an all clear", () => {
+    const html = renderToStaticMarkup(<ManagerAttentionList records={[]} members={[]} showTeam={false} incomplete />);
+    expect(text(html)).toContain("Learning items could not be loaded");
+    expect(text(html)).not.toContain("Nothing to chase");
+    expect(text(html)).not.toContain("everyone has one");
   });
 
   it("names the team on a row only when the manager looks after several", () => {

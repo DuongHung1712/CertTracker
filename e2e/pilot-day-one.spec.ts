@@ -19,11 +19,12 @@ const VIETNAMESE_NAME = "Nguyễn Thị Hằng";
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 
 // The pilot member adds a Completed exam certificate, so "of N completed" on the Valid certificates tile moves by one.
+// With nothing completed yet the tile says so instead, which reads as 0.
 async function readCompletedExams(page: Page): Promise<number> {
   await page.goto("/dashboard");
   const overview = page.getByRole("region", { name: "Overview", exact: true });
-  await expect(overview).toContainText(/of \d+ completed/);
-  return Number(/of (\d+) completed/.exec((await overview.textContent()) ?? "")?.[1]);
+  await expect(overview).toContainText(/of \d+ completed|No completed certificates yet/);
+  return Number(/of (\d+) completed/.exec((await overview.textContent()) ?? "")?.[1] ?? 0);
 }
 
 async function expectNoHorizontalScroll(page: Page) {

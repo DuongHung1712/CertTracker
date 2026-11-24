@@ -10,7 +10,11 @@ import { EVIDENCE_ACCEPT, MAX_EVIDENCE_BYTES } from "@/lib/storage/evidence";
 
 const NETWORK_ERROR = "The AI could not be reached. Fill in the form by hand, or try again.";
 
-type Status = { kind: "idle" } | { kind: "reading" } | { kind: "done"; filled: number } | { kind: "failed"; message: string };
+type Status =
+  | { kind: "idle" }
+  | { kind: "reading" }
+  | { kind: "done"; filled: number; suggestion?: CertificateSuggestion }
+  | { kind: "failed"; message: string };
 
 /**
  * The first thing in the Add sheet when the AI reader is on: it says what the AI does, takes the certificate file and
@@ -25,6 +29,7 @@ export function AiFileCard({
   missing,
   filledCount,
   fileError,
+  resultCard,
 }: {
   file: File | null;
   onFileChange: (file: File | null) => void;
@@ -36,6 +41,8 @@ export function AiFileCard({
   /** How many fields still hold what the AI filled (the member may have changed some); without it the card says what the read produced. */
   filledCount?: number;
   fileError: string | null;
+  /** Unified AI result card summarizing the matched or unmatched certificate state. */
+  resultCard?: React.ReactNode;
 }) {
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   /** Each read gets a number; an answer whose number is no longer current belongs to a file the member has replaced. */
@@ -73,7 +80,7 @@ export function AiFileCard({
       if (token !== tokenRef.current) return;
       if (response.ok && answer?.suggestion) {
         onSuggestionRef.current(answer.suggestion);
-        setStatus({ kind: "done", filled: answer.suggestion.aiFields.length });
+        setStatus({ kind: "done", filled: answer.suggestion.aiFields.length, suggestion: answer.suggestion });
       } else {
         setStatus({ kind: "failed", message: answer?.error ?? NETWORK_ERROR });
       }
@@ -125,10 +132,10 @@ export function AiFileCard({
           {fileError}
         </p>
       )}
-      <div role="status" aria-live="polite" className="flex flex-col gap-2 text-body">
+      <div role="status" aria-live="polite" className="flex flex-col gap-2.5 text-body">
         {shown.kind === "reading" && <p className="text-muted-foreground">Reading your file…</p>}
         {shown.kind === "done" && (
-          <p>
+          <p className="font-medium text-foreground">
             {filled > 0
               ? `AI filled ${filled} ${filled === 1 ? "field" : "fields"}. Check them before saving.`
               : shown.filled > 0
@@ -137,6 +144,7 @@ export function AiFileCard({
           </p>
         )}
         {shown.kind === "failed" && <p className="text-destructive">{shown.message}</p>}
+        {shown.kind === "done" && resultCard}
         {(shown.kind === "done" || shown.kind === "failed") && file && (
           <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => void read(file)}>
             Read again

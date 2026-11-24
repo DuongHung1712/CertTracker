@@ -1,59 +1,48 @@
 import { useSyncExternalStore } from "react";
+import { dismissedCookie, guideVisibleFrom, hiddenCookie } from "@/features/guide/cookies";
 
 /**
- * Whether the sign-in guide shows. "Don't show again" is remembered in this browser for this person (localStorage);
- * "Hide for now" lasts until this tab or browser session ends (sessionStorage), so it comes back in a new tab or the next day.
- * shortcut: nothing is saved on the server, so a new browser or cleared site data shows the guide again; move it to a profile column if that matters.
+ * Whether the sign-in guide shows. Kept in cookies, not localStorage, so the server can decide before the page renders and the
+ * guide never pops in after hydration and shifts the page. "Don't show again" is a cookie that lasts a year; "Hide for now" is a
+ * session cookie (gone when the browser closes), so it comes back at the next sign-in.
+ * shortcut: nothing is saved on the server, so a new browser or cleared cookies show the guide again; move it to a profile column if that matters.
  */
 const GUIDE_EVENT = "certtracker-guide-change";
-const dismissedKey = (userId: string) => `certtracker-guide-dismissed:${userId}`;
-const hiddenKey = (userId: string) => `certtracker-guide-hidden:${userId}`;
+const ONE_YEAR = 60 * 60 * 24 * 365;
 
-function has(storage: () => Storage, key: string): boolean {
+function hasCookie(name: string): boolean {
   try {
-    return storage().getItem(key) === "1";
+    return document.cookie.split("; ").includes(`${name}=1`);
   } catch {
-    return false; // storage blocked (private window): show the guide, it is harmless
+    return false; // cookies blocked: show the guide, it is harmless
   }
 }
 
-function put(storage: () => Storage, key: string, on: boolean) {
+function setCookie(name: string, on: boolean, maxAge?: number) {
   try {
-    if (on) storage().setItem(key, "1");
-    else storage().removeItem(key);
+    document.cookie = on ? `${name}=1; path=/; SameSite=Lax${maxAge ? `; max-age=${maxAge}` : ""}` : `${name}=; path=/; SameSite=Lax; max-age=0`;
   } catch {
-    // nothing to remember where storage is blocked
+    // nothing to remember where cookies are blocked
   }
   window.dispatchEvent(new Event(GUIDE_EVENT));
 }
 
-export function isGuideVisible(userId: string): boolean {
-  return !has(() => localStorage, dismissedKey(userId)) && !has(() => sessionStorage, hiddenKey(userId));
-}
-
-export const dismissGuide = (userId: string) => put(() => localStorage, dismissedKey(userId), true);
-export const hideGuideForNow = (userId: string) => put(() => sessionStorage, hiddenKey(userId), true);
+export const isGuideVisible = (userId: string): boolean => guideVisibleFrom(hasCookie, userId);
+export const dismissGuide = (userId: string) => setCookie(dismissedCookie(userId), true, ONE_YEAR);
+export const hideGuideForNow = (userId: string) => setCookie(hiddenCookie(userId), true);
 
 /** "User guide" in the menu: bring it back even after "Don't show again". */
 export function showGuideAgain(userId: string) {
-  put(() => localStorage, dismissedKey(userId), false);
-  put(() => sessionStorage, hiddenKey(userId), false);
+  setCookie(dismissedCookie(userId), false);
+  setCookie(hiddenCookie(userId), false);
 }
 
 function subscribe(onChange: () => void) {
-  window.addEventListener("storage", onChange);
   window.addEventListener(GUIDE_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onChange);
-    window.removeEventListener(GUIDE_EVENT, onChange);
-  };
+  return () => window.removeEventListener(GUIDE_EVENT, onChange);
 }
 
-/** False on the server and during hydration, then the stored answer: the page never flashes a guide that was dismissed. */
-export function useGuideVisible(userId: string): boolean {
-  return useSyncExternalStore(
-    subscribe,
-    () => isGuideVisible(userId),
-    () => false,
-  );
+/** `initial` is the server's answer (from the cookies), used for the server render and hydration, then the browser's own. */
+export function useGuideVisible(userId: string, initial: boolean): boolean {
+  return useSyncExternalStore(subscribe, () => isGuideVisible(userId), () => initial);
 }

@@ -11,9 +11,23 @@ const replace = vi.fn();
 const router = { replace };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 
+/** Forget every cookie the guide set (a new browser). */
+function clearCookies() {
+  for (const pair of document.cookie.split("; ")) {
+    const name = pair.split("=")[0];
+    if (name) document.cookie = `${name}=; path=/; max-age=0`;
+  }
+}
+/** A new sign-in: session cookies are gone, the year-long one stays. */
+function endSession() {
+  for (const pair of document.cookie.split("; ")) {
+    const name = pair.split("=")[0];
+    if (name.startsWith("ct-guide-hidden-")) document.cookie = `${name}=; path=/; max-age=0`;
+  }
+}
+
 beforeEach(() => {
-  localStorage.clear();
-  sessionStorage.clear();
+  clearCookies();
   replace.mockClear();
 });
 afterEach(cleanup);
@@ -31,20 +45,30 @@ describe("GUIDE", () => {
 });
 
 describe("UserGuideCard", () => {
-  it("shows the member's guide to someone who has not dismissed it", () => {
+  it("is one line until Show steps is pressed", async () => {
     render(<UserGuideCard userId="u1" role="member" />);
     expect(screen.getByRole("region", { name: "Welcome to CertTracker" })).toBeTruthy();
+    expect(screen.queryByText("Add a certificate you hold")).toBeNull();
+    await userEvent.click(screen.getByRole("button", { name: "Show steps" }));
     expect(screen.getByText("Add a certificate you hold")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Hide steps" }).getAttribute("aria-expanded")).toBe("true");
   });
 
-  it("shows each role its own guide", () => {
+  it("has no heading, so it never comes before the page title in heading order", () => {
+    render(<UserGuideCard userId="u1" role="member" />);
+    expect(screen.queryByRole("heading")).toBeNull();
+  });
+
+  it("shows each role its own guide", async () => {
     render(<UserGuideCard userId="u1" role="admin" />);
+    await userEvent.click(screen.getByRole("button", { name: "Show steps" }));
     expect(screen.getByText("Keep the Catalogue")).toBeTruthy();
     expect(screen.queryByText("Add a certificate you hold")).toBeNull();
   });
 
-  it("renders nothing on the server, so a dismissed guide never flashes", () => {
-    expect(renderToStaticMarkup(<UserGuideCard userId="u1" role="member" />)).toBe("");
+  it("is in the server render when the cookies allow it, and absent when they do not", () => {
+    expect(renderToStaticMarkup(<UserGuideCard userId="u1" role="member" initialVisible />)).toContain("Welcome to CertTracker");
+    expect(renderToStaticMarkup(<UserGuideCard userId="u1" role="member" initialVisible={false} />)).toBe("");
   });
 
   it("Don't show again hides it now and at the next sign-in, for this person only", async () => {
@@ -53,7 +77,7 @@ describe("UserGuideCard", () => {
     expect(screen.queryByRole("region", { name: "Welcome to CertTracker" })).toBeNull();
     unmount();
 
-    sessionStorage.clear(); // a new sign-in is a new browser session
+    endSession(); // a new sign-in is a new browser session
     render(<UserGuideCard userId="u1" role="member" />);
     expect(screen.queryByRole("region", { name: "Welcome to CertTracker" })).toBeNull();
     cleanup();
@@ -68,7 +92,7 @@ describe("UserGuideCard", () => {
     expect(screen.queryByRole("region", { name: "Welcome to CertTracker" })).toBeNull();
     unmount();
 
-    sessionStorage.clear();
+    endSession();
     render(<UserGuideCard userId="u1" role="member" />);
     expect(screen.getByRole("region", { name: "Welcome to CertTracker" })).toBeTruthy();
   });
@@ -80,6 +104,7 @@ describe("UserGuideCard", () => {
 
     render(<UserGuideCard userId="u1" role="member" forceOpen />);
     expect(await screen.findByRole("region", { name: "Welcome to CertTracker" })).toBeTruthy();
+    expect(screen.getByText("Add a certificate you hold")).toBeTruthy(); // opened with its steps
     // ?guide=1 comes off the address, so a refresh does not undo the next "Don't show again".
     expect(replace).toHaveBeenCalledWith("/dashboard", { scroll: false });
   });

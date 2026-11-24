@@ -21,6 +21,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { proposeCertificate } from "@/features/certificates/actions";
 import {
+  CERTIFICATE_KIND_NOUN,
   proposeCertificateSchema,
   type CertificateKind,
   type ProposeCertificateFormInput,
@@ -30,6 +31,7 @@ import type { CertificateChoice } from "@/features/records/certificate-course";
 import { ADD_KIND_CHOICES } from "@/features/records/kind";
 
 const OTHER_PROVIDER_VALUE = "__new_provider__";
+const normName = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
 
 export function ProposeCertificateDialog({
   open,
@@ -39,6 +41,8 @@ export function ProposeCertificateDialog({
   defaultProviderId,
   defaultProposedProvider = "",
   providers = [],
+  existingCertificates,
+  onSelectExisting,
   onSuccess,
 }: {
   open: boolean;
@@ -50,6 +54,10 @@ export function ProposeCertificateDialog({
   /** The provider name put in the new-provider field when `defaultProviderId` is `null`. */
   defaultProposedProvider?: string;
   providers?: { id: string; name: string }[];
+  /** Existing approved or pending entries checked before submitting so a duplicate proposal is never created. */
+  existingCertificates?: CertificateChoice[];
+  /** Called when the member chooses to select an existing match instead of proposing a duplicate. */
+  onSelectExisting?: (choice: CertificateChoice) => void;
   onSuccess: (choice: CertificateChoice) => void;
 }) {
   const initialProviderId = defaultProviderId !== undefined ? defaultProviderId : (providers[0]?.id ?? null);
@@ -79,9 +87,30 @@ export function ProposeCertificateDialog({
   }, [open, defaultName, defaultKind, initialProviderId, defaultProposedProvider, form]);
 
   const selectedProviderId = useWatch({ control: form.control, name: "providerId" });
+  const watchedName = useWatch({ control: form.control, name: "name" }) ?? "";
   const providerChoice = selectedProviderId ?? OTHER_PROVIDER_VALUE;
+  const duplicateMatch =
+    form.formState.errors.root && existingCertificates
+      ? existingCertificates.find(
+          (cert) => cert.catalogueStatus !== "rejected" && normName(cert.label) === normName(watchedName),
+        )
+      : undefined;
 
   async function onSubmit(values: ProposeCertificateInput) {
+    const wanted = normName(values.name);
+    const existing = existingCertificates?.find(
+      (cert) => cert.catalogueStatus !== "rejected" && normName(cert.label) === wanted,
+    );
+    if (existing) {
+      form.setError("root", {
+        message:
+          existing.catalogueStatus === "pending"
+            ? `This ${CERTIFICATE_KIND_NOUN[existing.kind]} has already been proposed ("${existing.label}"). Select it instead of creating a duplicate proposal.`
+            : `This ${CERTIFICATE_KIND_NOUN[existing.kind]} is already in the Catalogue ("${existing.label}"). Select it from the list.`,
+      });
+      return;
+    }
+
     const result = await proposeCertificate(values);
     if (!result.ok) {
       form.setError("root", { message: result.error });
@@ -222,9 +251,23 @@ export function ProposeCertificateDialog({
           </Field>
 
           {form.formState.errors.root && (
-            <p role="alert" className="text-caption text-destructive">
-              {form.formState.errors.root.message}
-            </p>
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-caption text-destructive">
+              <span>{form.formState.errors.root.message}</span>
+              {duplicateMatch && onSelectExisting && (
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-caption font-semibold text-primary underline"
+                  onClick={() => {
+                    onSelectExisting(duplicateMatch);
+                    onOpenChange(false);
+                  }}
+                >
+                  Use existing
+                </Button>
+              )}
+            </div>
           )}
 
           <DialogFooter className="mt-2">

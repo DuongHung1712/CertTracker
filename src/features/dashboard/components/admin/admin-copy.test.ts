@@ -220,7 +220,7 @@ describe("[cleanup] dead code and fallbacks are gone", () => {
 
   it("renders the admin view straight from the page with the loaded data", () => {
     expect(read("app/(app)/dashboard/page.tsx")).toMatch(
-      /<AdminDashboardView\s+\{\.\.\.\(await loadAdminDashboard\(user\)\)\}\s*\/>/,
+      /<AdminDashboardView\s+\{\.\.\.\(await loadAdminDashboard\(user\)\)\}\s+guide=\{guideProps\}\s*\/>/,
     );
   });
 

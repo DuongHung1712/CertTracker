@@ -31,6 +31,7 @@ export function FormSheet({
 }) {
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   function requestOpenChange(next: boolean) {
+    if (!next && submitting) return; // a save is in flight: closing now would leave its result with nowhere to show
     if (!next && dirty) setConfirmDiscard(true);
     else onOpenChange(next);
   }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { updateLearningProgress } from "@/features/learning/actions";
 import { learningPath } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
@@ -42,18 +42,27 @@ export function MemberLearningNow({ items, onAdd }: { items: RecordRow[]; onAdd:
   const progressOf = (item: RecordRow) => (taken[item.id]?.base === item.progress ? taken[item.id].value : item.progress);
 
   async function step(item: RecordRow, by: number) {
-    const next = Math.min(MAX_QUICK_PROGRESS, progressOf(item) + by);
-    if (next === progressOf(item)) return;
+    const from = progressOf(item);
+    const next = Math.min(MAX_QUICK_PROGRESS, from + by);
+    if (next === from) return;
     setBusyId(item.id);
     setTaken((prev) => ({ ...prev, [item.id]: { base: item.progress, value: next } }));
-    const result = await updateLearningProgress({ id: item.id, progress: next });
+    // `from` is what the member saw: the server writes only if the item still holds it, so a stale page never lowers newer progress.
+    const result = await updateLearningProgress({ id: item.id, progress: next, from });
     setBusyId(null);
     if (result.ok) {
-      toast.success(`${item.certificateName}: ${next}%`);
+      toast.success(`${item.certificateName}: ${next}%`, { action: { label: "Undo", onClick: () => void undo(item, from, next) } });
     } else {
       setTaken((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => id !== item.id)));
       toast.error(result.error);
     }
+  }
+
+  async function undo(item: RecordRow, back: number, from: number) {
+    const result = await updateLearningProgress({ id: item.id, progress: back, from });
+    if (!result.ok) return void toast.error(result.error);
+    setTaken((prev) => ({ ...prev, [item.id]: { base: from, value: back } }));
+    toast.success(`${item.certificateName}: back to ${back}%`);
   }
 
   return (
@@ -98,20 +107,30 @@ export function MemberLearningNow({ items, onAdd }: { items: RecordRow[]; onAdd:
                     {path && <span className="truncate text-caption text-muted-foreground">{path}</span>}
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
-                    {STEPS.map((by) => (
-                      <Button
-                        key={by}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === item.id || progress >= MAX_QUICK_PROGRESS}
-                        onClick={() => void step(item, by)}
-                        aria-label={`Add ${by}% progress to ${item.certificateName}`}
-                        className="tabular-nums"
+                    {progress >= MAX_QUICK_PROGRESS ? (
+                      <Link
+                        href="/me?tab=learning"
+                        aria-label={`Finish ${item.certificateName} in My learning`}
+                        className={buttonVariants({ size: "sm", variant: "outline" })}
                       >
-                        +{by}%
-                      </Button>
-                    ))}
+                        Finish
+                      </Link>
+                    ) : (
+                      STEPS.map((by) => (
+                        <Button
+                          key={by}
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === item.id}
+                          onClick={() => void step(item, by)}
+                          aria-label={`Add ${by}% progress to ${item.certificateName}`}
+                          className="tabular-nums"
+                        >
+                          +{by}%
+                        </Button>
+                      ))
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
