@@ -15,8 +15,14 @@ vi.mock("next/navigation", () => ({
   }),
   useRouter: () => ({ refresh: vi.fn(), push: vi.fn(), replace: vi.fn() }),
 }));
-// The page reads the guide cookies; the Supabase server client reads the session cookies from the same store.
-vi.mock("next/headers", () => ({ cookies: async () => ({ has: () => false, getAll: () => [], set: () => {} }) }));
+// The page reads the guide cookies. Any query this test does not mock reaches the Supabase client: it must fail at once (as outside a
+// request) and not try the network, or the page waits for it until the test times out.
+vi.mock("next/headers", () => ({ cookies: async () => ({ has: () => false }) }));
+vi.mock("@/lib/supabase/server", () => ({
+  createClient: async () => {
+    throw new Error("no request scope in this test");
+  },
+}));
 vi.mock("@/features/auth/queries", () => ({ getCurrentUser: () => getCurrentUser() }));
 vi.mock("@/features/dashboard/queries", () => ({
   getDashboardKpis: () => getDashboardKpis(),
