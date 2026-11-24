@@ -121,17 +121,23 @@ export async function proposeCertificate(input: ProposeCertificateInput): Promis
     return err("Your account is not linked to a member profile.");
   }
 
-  // Anti-duplicate check: see if an approved entry already exists with identical name
+  // Anti-duplicate check: reject if an approved or pending entry already exists with identical name
   const trimmedName = parsed.data.name.trim();
+  const escapedName = trimmedName.replace(/[%_\\]/g, "\\$&");
   const { data: existing } = await supabase
     .from("certificates")
     .select("id, name, kind, catalogue_status")
-    .ilike("name", trimmedName)
-    .eq("catalogue_status", "approved")
+    .ilike("name", escapedName)
+    .in("catalogue_status", ["approved", "pending"])
     .limit(1);
 
   const duplicateItem = Array.isArray(existing) ? existing[0] : existing;
   if (duplicateItem) {
+    if (duplicateItem.catalogue_status === "pending") {
+      return err(
+        `This ${CERTIFICATE_KIND_NOUN[duplicateItem.kind as CertificateKind] ?? "certificate"} has already been proposed and is awaiting approval ("${duplicateItem.name}"). Choose it from the list.`,
+      );
+    }
     return err(`This certificate is already in the Catalogue ("${duplicateItem.name}"). Choose it from the list.`);
   }
 

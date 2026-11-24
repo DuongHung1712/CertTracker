@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, CheckCircle2, Info, Sparkles } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ import { ProposeCertificateDialog } from "@/features/certificates/components/pro
 import { findProviderId, type CertificateSuggestion } from "@/features/records/ai-read";
 import { AiFileCard } from "@/features/records/components/ai-file-card";
 import { createRecord, deleteRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
+import { cn } from "@/lib/utils";
 import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
 import { CERTIFICATE_KIND_NOUN, type CertificateKind } from "@/features/certificates/schema";
 import { ADD_KIND_CHOICES, isRecordDeletableByMember, issuedDateHint, issuedDateLabel, recordSavedMessage, recordSheetTitle, type ApprovalState } from "@/features/records/kind";
@@ -44,9 +46,33 @@ import { EVIDENCE_ACCEPT, EVIDENCE_WRONG_TYPE_MESSAGE, MAX_EVIDENCE_BYTES, sniff
 type Editing = RecordRow | null;
 
 /** Storage RLS (`can_access_evidence`): the member, their managers and admins can read the file. */
+/** Shown when the Server Action itself fails (offline, session expired): nothing was saved. */
+const SAVE_FAILED_MESSAGE = "Could not save. Check your connection and sign in again if the session expired, then try again.";
+
 const evidenceHint = (own: boolean): string =>
   `Upload a scan or screenshot (PDF/image up to ${MAX_EVIDENCE_BYTES / 1024 / 1024} MB). Only ${own ? "you, your managers" : "the member, their managers"} and admins can see it.`;
 type FormValues = z.input<typeof recordSchema>;
+
+const normText = (value: string | null | undefined) => (value ?? "").trim().replace(/\s+/g, " ").toLowerCase();
+
+/** Matches an AI-read name/provider against certificates already visible to the member (approved or pending proposals). */
+function findLocalCatalogueMatch(
+  readName: string | null,
+  readProvider: string | null,
+  certificates: CertificateChoice[],
+): CertificateChoice | undefined {
+  const wantedName = normText(readName);
+  if (!wantedName) return undefined;
+  const active = certificates.filter((c) => c.catalogueStatus !== "rejected");
+  const nameMatches = active.filter((c) => normText(c.label) === wantedName);
+  if (nameMatches.length === 0) return undefined;
+  const wantedProvider = normText(readProvider);
+  if (wantedProvider) {
+    const providerMatch = nameMatches.find((c) => normText(c.hint) === wantedProvider);
+    if (providerMatch) return providerMatch;
+  }
+  return nameMatches.find((c) => !wantedProvider || !c.hint) ?? (nameMatches.length === 1 ? nameMatches[0] : undefined);
+}
 
 export function RecordSheet({
   open,
@@ -196,6 +222,8 @@ export function RecordSheet({
   // Cancel, Esc, a click outside and the X come here. With unsaved input (typed text, an AI read, a chosen file) ask first.
   function handleOpenChange(nextOpen: boolean) {
     if (nextOpen) return onOpenChange(true);
+    // A save is in flight: closing now would reset the form under it and leave the result with nowhere to show.
+    if (form.formState.isSubmitting) return;
     if (hasUnsaved) setConfirmDiscard(true);
     else closeNow();
   }
@@ -210,22 +238,28 @@ export function RecordSheet({
 
     let recordId: string;
     let approval: ApprovalState | null;
-    if (editing) {
-      const result = await updateRecord({ id: editing.id, ...input, ...(showCompanyFields ? {} : { notes: undefined }) });
-      if (!result.ok) {
-        form.setError("root", { message: result.error });
-        return;
+    // A Server Action rejects (not `ok: false`) when the device is offline or the session has expired: say so instead of doing nothing.
+    try {
+      if (editing) {
+        const result = await updateRecord({ id: editing.id, ...input, ...(showCompanyFields ? {} : { notes: undefined }) });
+        if (!result.ok) {
+          form.setError("root", { message: result.error });
+          return;
+        }
+        recordId = editing.id;
+        approval = result.data.approval;
+      } else {
+        const result = await createRecord(input);
+        if (!result.ok) {
+          form.setError("root", { message: result.error });
+          return;
+        }
+        recordId = result.data.id;
+        approval = result.data.approval;
       }
-      recordId = editing.id;
-      approval = result.data.approval;
-    } else {
-      const result = await createRecord(input);
-      if (!result.ok) {
-        form.setError("root", { message: result.error });
-        return;
-      }
-      recordId = result.data.id;
-      approval = result.data.approval;
+    } catch {
+      form.setError("root", { message: SAVE_FAILED_MESSAGE });
+      return;
     }
 
     let uploadError: string | null = null;
@@ -233,8 +267,10 @@ export function RecordSheet({
       const body = new FormData();
       body.set("recordId", recordId);
       body.set("file", file);
-      const uploaded = await uploadEvidence(body);
-      if (!uploaded.ok) uploadError = uploaded.error;
+      // The record is already saved here: a failed upload is reported, never retried through a second Save (that would hit the duplicate error).
+      const uploaded = await uploadEvidence(body).catch(() => null);
+      if (!uploaded) uploadError = "The connection was lost.";
+      else if (!uploaded.ok) uploadError = uploaded.error;
     }
 
     // The record is saved either way: staying open on "create" would hit the duplicate error on retry.
@@ -286,12 +322,42 @@ export function RecordSheet({
     return [...map].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [providers, localCertificates]);
 
-  function handleProposeSuccess(choice: CertificateChoice) {
-    setAiRead(null);
-    setProposedCertificates((prev) => [choice, ...prev]);
+  function selectResolvedCertificate(choice: CertificateChoice) {
     setPickedKind({ scope, kind: choice.kind });
+    setAiRead(null);
+    setAiSuggestion((prev) =>
+      prev
+        ? { ...prev, certificateId: choice.id, kind: choice.kind }
+        : aiRead
+          ? {
+              kind: choice.kind,
+              certificateId: choice.id,
+              issuedDate: null,
+              certificateUrl: null,
+              validUntil: null,
+              readName: aiRead.name,
+              readProvider: aiRead.provider,
+              aiFields: ["certificateId"],
+            }
+          : null,
+    );
+    setAiFilled((prev) => ({ ...prev, certificateId: choice.id }));
     form.setValue("certificateId", choice.id, { shouldValidate: true, shouldDirty: true });
     handleCertificateChange(choice.id);
+  }
+
+  function handleProposeSuccess(choice: CertificateChoice) {
+    setProposedCertificates((prev) => (prev.some((p) => p.id === choice.id) ? prev : [choice, ...prev]));
+    selectResolvedCertificate(choice);
+  }
+
+  function handleSelectExistingCertificate(choice: CertificateChoice) {
+    if (aiRead || aiSuggestion) {
+      selectResolvedCertificate(choice);
+    } else {
+      setPickedKind({ scope, kind: choice.kind });
+      handleCertificateChange(choice.id);
+    }
   }
 
   const canDeleteCurrent = canDelete || (editing ? isRecordDeletableByMember(editing) : false);
@@ -311,16 +377,20 @@ export function RecordSheet({
   }
   const targetMemberId = fixedMemberId ?? memberId;
   const formIssuedDate = useWatch({ control: form.control, name: "issuedDate" });
-  // Same member, certificate and issue date as a saved certificate (the form holds dd/MM/yyyy, rows hold ISO).
+  const isCompletion = (certificate?.kind ?? kind) === "completion";
+  // Same member & certificate: any completed course completion is already held; exams allow renewals on distinct dates.
   const duplicate = editing || !certificateId
     ? undefined
     : records?.find(
         (r) =>
           r.memberId === targetMemberId &&
           r.certificateId === certificateId &&
-          r.issuedDate !== null &&
-          formatDate(r.issuedDate) === formIssuedDate,
+          r.status === "done" &&
+          (isCompletion || (r.issuedDate !== null && formatDate(r.issuedDate) === formIssuedDate)),
       );
+  const existingForCert = editing || !certificateId
+    ? undefined
+    : (duplicate ?? records?.find((r) => r.memberId === targetMemberId && r.certificateId === certificateId && r.status === "done"));
 
   const formCertificateUrl = useWatch({ control: form.control, name: "certificateUrl" });
   const holdsAiValue = (field: keyof typeof aiFilled) => {
@@ -333,6 +403,10 @@ export function RecordSheet({
         AI
       </Badge>
     ) : null;
+  const aiFieldBorder = (field: keyof typeof aiFilled) =>
+    holdsAiValue(field)
+      ? "border-primary/60 bg-primary/[0.02] ring-1 ring-primary/20 focus-visible:border-primary"
+      : undefined;
   /** How many fields still hold what the AI put there; the card says this, so it stops claiming a field the member changed or the kind switch cleared. */
   const aiFieldCount = (["certificateId", "issuedDate", "certificateUrl"] as const).filter(holdsAiValue).length;
   /** Typed text, an AI read or a chosen file would be lost on close. */
@@ -359,7 +433,7 @@ export function RecordSheet({
     ? []
     : [
         ...(!fixedMemberId && !memberId ? [{ label: "Member", fieldId: "record-member" }] : []),
-        ...(!certificateId ? [{ label: kind === "exam" ? "Certificate" : "Course certificate", fieldId: "record-certificate" }] : []),
+        ...(!certificateId && !aiRead ? [{ label: kind === "exam" ? "Certificate" : "Course certificate", fieldId: "record-certificate" }] : []),
         ...(!formIssuedDate ? [{ label: issuedDateLabel(kind), fieldId: "record-issued" }] : []),
       ];
 
@@ -402,7 +476,43 @@ export function RecordSheet({
    * The AI only fills the form: the member checks it and saves. It never replaces what the member typed or picked: a field
    * is filled when it is empty or still holds the earlier AI value. (Status and progress already default to Completed / 100.)
    */
-  function applyAiSuggestion(suggestion: CertificateSuggestion) {
+  function applyAiSuggestion(rawSuggestion: CertificateSuggestion) {
+    let localMatch =
+      !rawSuggestion.certificateId && rawSuggestion.readName
+        ? findLocalCatalogueMatch(rawSuggestion.readName, rawSuggestion.readProvider, localCertificates)
+        : undefined;
+    if (!rawSuggestion.certificateId && !localMatch && rawSuggestion.readName && targetMemberId && records?.length) {
+      const wantedName = normText(rawSuggestion.readName);
+      const wantedProvider = normText(rawSuggestion.readProvider);
+      const existingRow = records.find(
+        (r) =>
+          r.memberId === targetMemberId &&
+          normText(r.certificateName) === wantedName &&
+          (!wantedProvider || !r.providerName || normText(r.providerName) === wantedProvider),
+      );
+      if (existingRow) {
+        const synthesized: CertificateChoice = {
+          id: existingRow.certificateId,
+          label: existingRow.certificateName,
+          hint: existingRow.providerName ?? undefined,
+          kind: existingRow.certificateKind,
+          grantingCourse: null,
+          catalogueStatus: existingRow.certificateCatalogueStatus ?? "approved",
+        };
+        setProposedCertificates((prev) => (prev.some((p) => p.id === synthesized.id) ? prev : [synthesized, ...prev]));
+        localMatch = synthesized;
+      }
+    }
+    const suggestion: CertificateSuggestion = localMatch
+      ? {
+          ...rawSuggestion,
+          certificateId: localMatch.id,
+          kind: localMatch.kind,
+          aiFields: rawSuggestion.aiFields.includes("certificateId")
+            ? rawSuggestion.aiFields
+            : ["certificateId", ...rawSuggestion.aiFields],
+        }
+      : rawSuggestion;
     setAiSuggestion(suggestion);
     const open = (current: unknown, ai: string | undefined) => String(current ?? "") === "" || (ai !== undefined && current === ai);
     const dateOpen = open(formIssuedDate, aiFilled.issuedDate);
@@ -452,10 +562,190 @@ export function RecordSheet({
 
   function handleCertificateChange(nextId: string) {
     form.setValue("certificateId", nextId, { shouldDirty: true });
-    const next = certificateOptions.find((option) => option.id === nextId);
+    const next = localCertificates.find((option) => option.id === nextId);
     form.setValue("courseId", courseAfterCertificateChange(next, studyCourses, String(courseId ?? "")), { shouldDirty: true });
     form.clearErrors("certificateId");
   }
+
+  function focusCertificateField() {
+    const el = document.getElementById("record-certificate");
+    el?.focus();
+    el?.scrollIntoView?.({ block: "nearest" });
+  }
+
+  const isNewlyProposed = !!certificate && proposedCertificates.some((p) => p.id === certificate.id);
+  const isExistingPending = !!certificate && certificate.catalogueStatus === "pending" && !isNewlyProposed;
+
+  const aiResultCard =
+    holdsAiValue("certificateId") && certificate ? (
+      duplicate ? (
+        <div
+          className="flex flex-col gap-2.5 rounded-lg border border-destructive/35 bg-destructive/[0.03] p-3.5 text-body shadow-xs"
+          data-slot="ai-duplicate-card"
+        >
+          <div className="flex items-start gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive mt-0.5">
+              <AlertCircle className="size-4" aria-hidden="true" />
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-destructive uppercase tracking-wider">
+                  Already on this list
+                </span>
+                {(aiSuggestion?.readProvider || certificate.hint) && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                    {aiSuggestion?.readProvider ?? certificate.hint}
+                  </Badge>
+                )}
+              </div>
+              <p className="font-semibold text-foreground text-sm leading-snug break-words">
+                {certificate.label}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 rounded-md bg-background/80 border border-destructive/20 px-2.5 py-1.5 text-caption text-muted-foreground">
+            <Info className="size-3.5 text-destructive shrink-0" aria-hidden="true" />
+            <span>
+              {isCompletion
+                ? "This course completion is already on this list."
+                : duplicate.issuedDate
+                  ? `Already added on ${formatDate(duplicate.issuedDate)}.`
+                  : "Already added on this list."}{" "}
+              Edit the existing entry instead of creating a duplicate.
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+            {onEditExisting && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="font-medium shadow-xs"
+                onClick={() => openExisting(duplicate)}
+              >
+                Open existing
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-caption text-muted-foreground hover:text-foreground"
+              onClick={focusCertificateField}
+            >
+              Change
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div
+          className="flex flex-col gap-2.5 rounded-lg border border-primary/25 bg-background p-3.5 text-body shadow-xs"
+          data-slot="ai-matched-card"
+        >
+          <div className="flex items-start gap-2.5">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary mt-0.5">
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+            </div>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+                  {isNewlyProposed
+                    ? "Proposed & selected"
+                    : isExistingPending
+                      ? "Already proposed"
+                      : "Matched in catalogue"}
+                </span>
+                {(aiSuggestion?.readProvider || certificate.hint) && (
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                    {aiSuggestion?.readProvider ?? certificate.hint}
+                  </Badge>
+                )}
+              </div>
+              <p className="font-semibold text-foreground text-sm leading-snug break-words">
+                {certificate.label}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-2 rounded-md bg-muted/60 border border-border/60 px-2.5 py-1.5 text-caption text-muted-foreground">
+            <div className="flex items-center gap-2 min-w-0">
+              <Info className="size-3.5 text-primary shrink-0" aria-hidden="true" />
+              <span>
+                {isNewlyProposed || isExistingPending
+                  ? "Pending approval · Selected in the form below."
+                  : existingForCert?.issuedDate
+                    ? `Auto-selected as a renewal (previous date: ${formatDate(existingForCert.issuedDate)}).`
+                    : "Auto-selected in the form below."}
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-caption font-semibold text-primary underline shrink-0"
+              onClick={focusCertificateField}
+            >
+              Change
+            </Button>
+          </div>
+        </div>
+      )
+    ) : aiRead && !certificateId ? (
+      <div
+        className="flex flex-col gap-2.5 rounded-lg border border-primary/25 bg-background p-3.5 text-body shadow-xs"
+        data-slot="ai-unmatched-card"
+      >
+        <div className="flex items-start gap-2.5">
+          <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary mt-0.5">
+            <Sparkles className="size-4" aria-hidden="true" />
+          </div>
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+                AI Detected
+              </span>
+              {aiRead.provider && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                  {aiRead.provider}
+                </Badge>
+              )}
+            </div>
+            <p className="font-semibold text-foreground text-sm leading-snug break-words">
+              {aiRead.name}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-md bg-muted/60 border border-border/60 px-2.5 py-1.5 text-caption text-muted-foreground">
+          <Info className="size-3.5 text-primary shrink-0" aria-hidden="true" />
+          <span>This certificate is not in the catalogue yet. Propose it now to add it.</span>
+        </div>
+
+        <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+          <Button
+            type="button"
+            size="sm"
+            className="gap-1.5 font-medium shadow-xs"
+            onClick={openProposeFromAi}
+            id="record-propose-btn"
+          >
+            <Sparkles className="size-3.5" aria-hidden="true" />
+            Propose it
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-caption text-muted-foreground hover:text-foreground"
+            onClick={focusCertificateField}
+          >
+            Choose from catalogue
+          </Button>
+        </div>
+      </div>
+    ) : null;
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -483,7 +773,11 @@ export function RecordSheet({
               onFileChange={(next) => {
                 setFile(next);
                 setFileError(null);
-                if (!next) setAiDone(false);
+                if (!next) {
+                  setAiDone(false);
+                  setAiRead(null);
+                  setAiSuggestion(null);
+                }
               }}
               onSuggestion={applyAiSuggestion}
               onReadingChange={setAiReading}
@@ -491,6 +785,7 @@ export function RecordSheet({
               missing={aiMissing}
               filledCount={aiFieldCount}
               fileError={fileError}
+              resultCard={aiResultCard}
             />
           )}
           <Field>
@@ -509,14 +804,40 @@ export function RecordSheet({
               <Tabs value={kind} onValueChange={(next) => handleKindChange(next as CertificateKind)}>
                 <TabsList aria-labelledby="record-kind-label" className="grid w-full grid-cols-2 group-data-horizontal/tabs:h-auto">
                   {ADD_KIND_CHOICES.map((choice) => (
-                    <TabsTrigger key={choice.kind} value={choice.kind} className="px-2 whitespace-normal">
-                      {choice.label}
+                    <TabsTrigger key={choice.kind} value={choice.kind} className="px-2 whitespace-normal gap-1.5">
+                      <span>{choice.label}</span>
+                      {aiSuggestion?.kind === choice.kind && (
+                        <span
+                          className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-primary"
+                          aria-hidden="true"
+                          title="Detected by AI"
+                        >
+                          <Sparkles className="size-2.5" />
+                        </span>
+                      )}
                     </TabsTrigger>
                   ))}
                 </TabsList>
               </Tabs>
             )}
             <FieldDescription>{ADD_KIND_CHOICES.find((choice) => choice.kind === kind)?.hint}</FieldDescription>
+            {aiSuggestion && aiSuggestion.kind !== kind && (
+              <div className="flex items-center justify-between gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-caption mt-1">
+                <span className="flex items-center gap-1.5 text-foreground/80">
+                  <Sparkles className="size-3.5 text-primary shrink-0" aria-hidden="true" />
+                  Document was detected as a {aiSuggestion.kind === "exam" ? "certificate" : "course certificate"}.
+                </span>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-caption font-semibold text-primary underline"
+                  onClick={() => handleKindChange(aiSuggestion.kind)}
+                >
+                  Switch back
+                </Button>
+              </div>
+            )}
           </Field>
           {!fixedMemberId && (
             <Field>
@@ -563,7 +884,8 @@ export function RecordSheet({
                 handleCertificateChange(nextId);
               }}
               options={kindCertificates}
-              placeholder={kind === "exam" ? "Choose a certificate" : "Choose a course certificate"}
+              className={aiFieldBorder("certificateId")}
+              placeholder={aiRead && !certificateId ? "Or choose an existing certificate from catalogue" : kind === "exam" ? "Choose a certificate" : "Choose a course certificate"}
               emptyText={kind === "exam" ? "No certificates found" : "No course certificates found"}
               emptyAction={{
                 label: kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate",
@@ -573,16 +895,6 @@ export function RecordSheet({
               aria-required
               aria-describedby="record-certificate-hint"
             />
-            {aiRead && !certificateId && (
-              <div className="flex flex-col items-start gap-2">
-                <p className="text-caption text-muted-foreground">
-                  AI read &ldquo;{aiRead.name}&rdquo;{aiRead.provider ? ` by ${aiRead.provider}` : ""}. It is not in the catalogue.
-                </p>
-                <Button type="button" variant="outline" size="sm" onClick={openProposeFromAi}>
-                  Propose it
-                </Button>
-              </div>
-            )}
             {certificate?.catalogueStatus === "pending" && (
               <p className="text-caption text-amber-700 dark:text-amber-400">
                 This item is pending admin approval. You can still save and track your progress.
@@ -633,6 +945,7 @@ export function RecordSheet({
                   id="record-issued"
                   label={issuedDateLabel(kind)}
                   labelAddon={aiMark("issuedDate")}
+                  className={aiFieldBorder("issuedDate")}
                   name={field.name}
                   value={String(field.value ?? "")}
                   onChange={field.onChange}
@@ -657,7 +970,7 @@ export function RecordSheet({
             <Input
               id="record-url"
               type="url"
-              className="h-9"
+              className={cn("h-9", aiFieldBorder("certificateUrl"))}
               {...form.register("certificateUrl")}
               aria-invalid={!!errors.certificateUrl}
               aria-describedby="record-url-hint"
@@ -806,6 +1119,8 @@ export function RecordSheet({
         defaultProviderId={proposeProvider ? proposeProvider.id : undefined}
         defaultProposedProvider={proposeProvider?.name ?? ""}
         providers={providersList}
+        existingCertificates={localCertificates}
+        onSelectExisting={handleSelectExistingCertificate}
         onSuccess={handleProposeSuccess}
       />
       <DiscardChangesDialog open={confirmDiscard} onOpenChange={setConfirmDiscard} onDiscard={closeNow} />

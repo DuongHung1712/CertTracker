@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Plus } from "lucide-react";
+import { UserGuideCard, type UserGuideProps } from "@/features/guide/components/user-guide-card";
 import { PageHeader } from "@/components/app-shell/page-header";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,10 @@ export function MemberDashboardView({
   courses,
   examOptions,
   subtitle,
+  guide,
 }: {
+  /** The sign-in guide: shown under the header, never above it. */
+  guide?: UserGuideProps;
   fullName: string;
   teamName: string | null;
   careerRoleName: string | null;
@@ -80,6 +84,8 @@ export function MemberDashboardView({
           </div>
         }
       />
+
+      {guide && <UserGuideCard {...guide} />}
 
       <RecordsRealtime />
 

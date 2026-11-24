@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { UserGuideCard, type UserGuideProps } from "@/features/guide/components/user-guide-card";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { EmptyState } from "@/components/data/empty-state";
 import { buttonVariants } from "@/components/ui/button";
@@ -31,8 +32,12 @@ export function ManagerDashboardView({
   recordsError,
   members,
   membersError,
+  learningError,
   viewerMemberId = null,
+  guide,
 }: {
+  /** The sign-in guide: shown under the header, never above it. */
+  guide?: UserGuideProps;
   greeting: string;
   subtitle: string;
   managedTeamNames: string[];
@@ -41,13 +46,17 @@ export function ManagerDashboardView({
   recordsError?: string;
   members: { id: string; fullName: string; teamName: string | null }[];
   membersError?: string;
+  /** Learning items (planned exams, in progress) could not be loaded: the lists say so instead of looking complete. */
+  learningError?: string;
   /** The manager's own member row: their own waiting item is not theirs to review, so it is not counted. */
   viewerMemberId?: string | null;
 }) {
-  const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+  const [pickedTeam, setSelectedTeam] = useState<string | null>(null);
   const hasTeams = managedTeamNames.length > 0;
   // A manager of a single team has nothing to pick: no team filter and no team column.
   const manyTeams = managedTeamNames.length > 1;
+  // A team that left the manager's scope (or a single team left) falls back to all teams instead of an empty page.
+  const selectedTeam = manyTeams && pickedTeam && managedTeamNames.includes(pickedTeam) ? pickedTeam : null;
 
   const filteredRecords = useMemo(() => (selectedTeam ? records.filter((r) => r.teamName === selectedTeam) : records), [records, selectedTeam]);
   const filteredMembers = useMemo(() => (selectedTeam ? members.filter((m) => m.teamName === selectedTeam) : members), [members, selectedTeam]);
@@ -76,6 +85,8 @@ export function ManagerDashboardView({
           </div>
         }
       />
+
+      {guide && <UserGuideCard {...guide} />}
 
       <RecordsRealtime />
 
@@ -129,7 +140,7 @@ export function ManagerDashboardView({
           {recordsError || membersError ? (
             <SectionError title="Needs attention" />
           ) : (
-            <ManagerAttentionList records={filteredRecords} members={filteredMembers} showTeam={manyTeams} />
+            <ManagerAttentionList records={filteredRecords} members={filteredMembers} showTeam={manyTeams} incomplete={Boolean(learningError)} />
           )}
 
           <Section title="My team" description="Each person's valid certificates and what needs renewing. Select a name to see their certificates.">

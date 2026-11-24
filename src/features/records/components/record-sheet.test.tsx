@@ -222,6 +222,39 @@ describe("RecordSheet renewal duplicate detection", () => {
     const saveButton = screen.getByRole("button", { name: /^Save/ });
     expect(saveButton.hasAttribute("disabled")).toBe(true);
   });
+
+  it("blocks a second completed entry for the same course completion regardless of date", async () => {
+    const existingCompletion = makeRecord({
+      id: "r-comp",
+      memberId: "m1",
+      certificateId: "c1",
+      certificateName: "Intro to LLMs",
+      certificateKind: "completion",
+      status: "done",
+      issuedDate: "2026-01-15",
+      progress: 100,
+    });
+    render(
+      <RecordSheet
+        open
+        onOpenChange={() => {}}
+        editing={null}
+        memberOptions={[]}
+        certificateOptions={CERTIFICATES}
+        studyCourses={COURSES}
+        showCompanyFields={false}
+        fixedMemberId="m1"
+        records={[existingCompletion]}
+      />,
+    );
+
+    await userEvent.click(screen.getByRole("tab", { name: "Course certificate" }));
+    await userEvent.click(certificateInput(/^Course certificate/));
+    await userEvent.click(screen.getByRole("option", { name: "Intro to LLMs" }));
+
+    expect(screen.getByText("Intro to LLMs is already on this list. Edit it instead.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^Save/ }).hasAttribute("disabled")).toBe(true);
+  });
 });
 
 describe("RecordSheet proposal and delete", () => {
@@ -335,5 +368,20 @@ describe("RecordSheet is for certificates only (decision #72)", () => {
     await vi.waitFor(() =>
       expect(createRecord).toHaveBeenCalledWith(expect.objectContaining({ certificateId: GUID_E, status: "done", progress: 100 })),
     );
+  });
+
+  it("says so when the save itself fails (offline or session expired) and keeps the sheet open", async () => {
+    const { createRecord } = await import("@/features/records/actions");
+    vi.mocked(createRecord).mockRejectedValue(new Error("Failed to fetch"));
+    const onOpenChange = vi.fn();
+    const GUID_M = "5eed0000-0000-0000-0000-00000000b001";
+    const GUID_E = "5eed0000-0000-0000-0000-00000000d001";
+    render(<RecordSheet open onOpenChange={onOpenChange} editing={null} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} studyCourses={COURSES} showCompanyFields={false} fixedMemberId={GUID_M} />);
+    await userEvent.click(certificateInput(/^Certificate/));
+    await userEvent.click(screen.getByRole("option", { name: "AWS Associate" }));
+    await userEvent.type(screen.getByRole("textbox", { name: /Date passed/ }), "01/10/2026");
+    await userEvent.click(screen.getByRole("button", { name: /^Save/ }));
+    await vi.waitFor(() => expect(screen.getByText(/Could not save\. Check your connection/)).toBeTruthy());
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 });

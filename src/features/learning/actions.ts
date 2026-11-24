@@ -60,28 +60,28 @@ export async function updateLearningItem(input: LearningInput & { id: string }):
   return ok(null);
 }
 
-const progressSchema = z.object({
-  id: z.guid("Invalid data"),
-  progress: z.number("Progress must be a number").int("Progress must be a whole number").min(1, "Progress must be at least 1%").max(99, "Progress stops at 99%: mark the item done to finish it"),
-});
+const percent = (label: string) => z.number(`${label} must be a number`).int(`${label} must be a whole number`).min(0, `${label} cannot be below 0%`).max(99, `${label} stops at 99%: mark the item done to finish it`);
+const progressSchema = z.object({ id: z.guid("Invalid data"), progress: percent("Progress"), from: percent("Progress") });
 
 /**
- * The +10% / +25% buttons on the dashboard. An open item moves to In progress at the new value; it never finishes here,
- * because a finished item needs a date, so 100% goes through the form.
+ * The +10% / +25% buttons on the dashboard (and their Undo). `from` is the value the member saw: the write only happens if the
+ * item still holds it, so a stale dashboard never overwrites progress made elsewhere. An item moves to In progress at the new
+ * value (back to Not started at 0); it never finishes here, because a finished item needs a date, so 100% goes through the form.
  */
-export async function updateLearningProgress(input: { id: string; progress: number }): Promise<Result<null>> {
+export async function updateLearningProgress(input: { id: string; progress: number; from: number }): Promise<Result<null>> {
   const parsed = progressSchema.safeParse(input);
   if (!parsed.success) return err(parsed.error.issues[0]?.message ?? "Invalid data");
+  const { id, progress, from } = parsed.data;
   const supabase = await createClient();
   const { data: rows, error } = await supabase
     .from("learning_items")
-    .update({ status: "in_progress", progress: parsed.data.progress })
-    .eq("id", parsed.data.id)
+    .update({ status: progress === 0 ? "not_started" : "in_progress", progress })
+    .eq("id", id)
+    .eq("progress", from)
     .neq("status", "done")
     .select("id");
   if (error) return err(mapPostgresError(error, MESSAGES));
-  const guard = assertAffected(rows);
-  if (guard && !guard.ok) return err(guard.error);
+  if (!rows || rows.length === 0) return err("This item changed or was removed. Reload the page and try again.");
   revalidate();
   return ok(null);
 }

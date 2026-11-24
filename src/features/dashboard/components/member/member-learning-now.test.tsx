@@ -8,7 +8,7 @@ import { makeRecord } from "@/features/records/__fixtures__/record-row";
 const updateLearningProgress = vi.fn();
 vi.mock("@/features/learning/actions", () => ({ updateLearningProgress: (...args: unknown[]) => updateLearningProgress(...args) }));
 const toast = { success: vi.fn(), error: vi.fn() };
-vi.mock("sonner", () => ({ toast: { success: (m: string) => toast.success(m), error: (m: string) => toast.error(m) } }));
+vi.mock("sonner", () => ({ toast: { success: (m: string, o?: unknown) => toast.success(m, o), error: (m: string) => toast.error(m) } }));
 
 const item = (over: Parameters<typeof makeRecord>[0]) =>
   makeRecord({ certificateKind: "exam", expiryStatus: "N/A", daysToExpiry: null, approval: null, ...over });
@@ -34,22 +34,33 @@ describe("MemberLearningNow", () => {
   it("+10% sends the new value, shows it at once and says so", async () => {
     render(<MemberLearningNow items={[studying]} onAdd={() => {}} />);
     await userEvent.click(screen.getByRole("button", { name: "Add 10% progress to AWS SAA" }));
-    expect(updateLearningProgress).toHaveBeenCalledWith({ id: "a", progress: 40 });
+    expect(updateLearningProgress).toHaveBeenCalledWith({ id: "a", progress: 40, from: 30 });
     expect(screen.getByRole("progressbar", { name: "Progress of AWS SAA" }).getAttribute("aria-valuenow")).toBe("40");
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("AWS SAA: 40%"));
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("AWS SAA: 40%", expect.objectContaining({ action: expect.objectContaining({ label: "Undo" }) })));
   });
 
   it("+25% on a not started item starts it", async () => {
     render(<MemberLearningNow items={[waiting]} onAdd={() => {}} />);
     await userEvent.click(screen.getByRole("button", { name: "Add 25% progress to CKA" }));
-    expect(updateLearningProgress).toHaveBeenCalledWith({ id: "b", progress: 25 });
+    expect(updateLearningProgress).toHaveBeenCalledWith({ id: "b", progress: 25, from: 0 });
   });
 
-  it("stops at 99% and disables the buttons there", async () => {
+  it("Undo in the toast puts the value back, from the value just written", async () => {
+    render(<MemberLearningNow items={[studying]} onAdd={() => {}} />);
+    await userEvent.click(screen.getByRole("button", { name: "Add 10% progress to AWS SAA" }));
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    const options = toast.success.mock.calls[0][1] as { action: { onClick: () => void } };
+    options.action.onClick();
+    await waitFor(() => expect(updateLearningProgress).toHaveBeenLastCalledWith({ id: "a", progress: 30, from: 40 }));
+    await waitFor(() => expect(screen.getByRole("progressbar", { name: "Progress of AWS SAA" }).getAttribute("aria-valuenow")).toBe("30"));
+  });
+
+  it("stops at 99% and swaps the buttons for a link to finish it in My learning", async () => {
     render(<MemberLearningNow items={[{ ...studying, progress: 90 }]} onAdd={() => {}} />);
     await userEvent.click(screen.getByRole("button", { name: "Add 25% progress to AWS SAA" }));
-    expect(updateLearningProgress).toHaveBeenCalledWith({ id: "a", progress: 99 });
-    await waitFor(() => expect(screen.getByRole<HTMLButtonElement>("button", { name: "Add 10% progress to AWS SAA" }).disabled).toBe(true));
+    expect(updateLearningProgress).toHaveBeenCalledWith({ id: "a", progress: 99, from: 90 });
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Add 10% progress to AWS SAA" })).toBeNull());
+    expect(screen.getByRole("link", { name: "Finish AWS SAA in My learning" }).getAttribute("href")).toBe("/me?tab=learning");
   });
 
   it("puts the old value back and shows the reason when the server refuses", async () => {

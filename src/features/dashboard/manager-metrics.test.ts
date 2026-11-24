@@ -304,8 +304,9 @@ describe("getManagerAttention", () => {
     const { items, total } = getManagerAttention(records, members, 10);
     expect(items.map((i) => i.id)).toEqual(["expired:old", "expired:new", "expiring:soon", "exam:exam", "none:m3"]);
     expect(total).toBe(5);
-    expect(items[0]).toMatchObject({ title: "Binh · CKA", detail: "Expired 9 days ago", href: "/records?search=Binh" });
+    expect(items[0]).toMatchObject({ title: "Binh · CKA", detail: "Expired 9 days ago", href: "/records?search=Binh%20M001%20CKA" });
     expect(items[2].detail).toBe("20 days left");
+    expect(items[3].href).toBe("/records?search=Chau"); // a planned exam may be a learning item, which Learning does not list by certificate
     expect(items[4]).toMatchObject({ title: "Chau", detail: "No certificate yet", teamName: "AI" });
   });
 
