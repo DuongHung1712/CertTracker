@@ -11,16 +11,28 @@ import { ExternalLinkCell } from "@/components/data/external-link-cell";
 import { FilterBar } from "@/components/data/filter-bar";
 import { rowActionsColumn } from "@/components/data/row-actions-column";
 import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
-import type { SelectOption } from "@/components/option-select";
+import { OptionSelect, type SelectOption } from "@/components/option-select";
+import { CatalogueStatusBadge } from "@/components/status/record-status";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { approveCertificate, deleteCertificate, rejectCertificate } from "@/features/certificates/actions";
-import { CERTIFICATE_ADD_NEUTRAL_LABEL, CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN, certificateDeleteHint, formatPreparedBy } from "@/features/certificates/schema";
+import { CERTIFICATE_ADD_NEUTRAL_LABEL, CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN, CERTIFICATE_KINDS, certificateDeleteHint, formatPreparedBy } from "@/features/certificates/schema";
 import { CertificateSheet } from "@/features/certificates/components/certificate-sheet";
 import type { CertificateRow } from "@/features/certificates/queries";
 import { pluralize } from "@/lib/plural";
 import { foldText } from "@/lib/text";
+
+const ALL = "all";
+const STATUS_FILTER: SelectOption[] = [
+  { id: ALL, name: "All statuses" },
+  { id: "pending", name: "Waiting for approval" },
+  { id: "approved", name: "Approved" },
+];
+const KIND_FILTER: SelectOption[] = [
+  { id: ALL, name: "All kinds" },
+  ...CERTIFICATE_KINDS.map((kind) => ({ id: kind, name: CERTIFICATE_KIND_LABEL[kind] })),
+];
 
 const NO_CERT_TYPES_OR_PROVIDERS_HINT = "Add a certificate type and a provider first.";
 
@@ -67,6 +79,8 @@ export function CertificatesTable({
   initialSearch?: string;
 }) {
   const [search, setSearch] = useState(initialSearch);
+  const [statusFilter, setStatusFilter] = useState(ALL);
+  const [kindFilter, setKindFilter] = useState(ALL);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<CertificateRow | null>(null);
   const removal = useConfirmedDelete<CertificateRow>({
@@ -76,11 +90,13 @@ export function CertificatesTable({
 
   const rows = useMemo(() => {
     const query = foldText(search);
-    if (!query) return certificates;
-    return certificates.filter((c) =>
-      foldText(`${c.name} ${c.providerName} ${c.certTypeName} ${c.courseName ?? ""} ${(preparedBy[c.id] ?? []).join(" ")}`).includes(query),
-    );
-  }, [certificates, preparedBy, search]);
+    return certificates.filter((c) => {
+      if (statusFilter !== ALL && c.catalogueStatus !== statusFilter) return false;
+      if (kindFilter !== ALL && c.kind !== kindFilter) return false;
+      if (!query) return true;
+      return foldText(`${c.name} ${c.providerName} ${c.certTypeName} ${c.courseName ?? ""} ${(preparedBy[c.id] ?? []).join(" ")}`).includes(query);
+    });
+  }, [certificates, preparedBy, search, statusFilter, kindFilter]);
 
   const columns: ColumnDef<CertificateRow, unknown>[] = [
     {
@@ -89,14 +105,7 @@ export function CertificatesTable({
       cell: ({ row }) => (
         <div className="flex items-center gap-1.5 min-w-0">
           <TruncatedCell text={row.original.name} />
-          {row.original.catalogueStatus === "pending" && (
-            <Badge
-              variant="outline"
-              className="rounded-sm border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400 text-[10px] px-1 py-0 h-4 shrink-0"
-            >
-              Pending
-            </Badge>
-          )}
+          <CatalogueStatusBadge status={row.original.catalogueStatus} />
         </div>
       ),
     },
@@ -149,7 +158,7 @@ export function CertificatesTable({
                       }
                     }}
                   >
-                    Approve proposal
+                    Approve
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={async () => {
@@ -161,7 +170,7 @@ export function CertificatesTable({
                       }
                     }}
                   >
-                    Reject proposal
+                    Reject
                   </DropdownMenuItem>
                 </>
               ) : null,
@@ -186,10 +195,22 @@ export function CertificatesTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search certificates and course completions…"
-        hasActiveFilters={search.length > 0}
-        onClear={() => setSearch("")}
+        searchPlaceholder="Search exam and course certificates…"
+        hasActiveFilters={search.length > 0 || statusFilter !== ALL || kindFilter !== ALL}
+        onClear={() => {
+          setSearch("");
+          setStatusFilter(ALL);
+          setKindFilter(ALL);
+        }}
       >
+        <div className="w-40">
+          <OptionSelect id="catalogue-cert-kind-filter" value={kindFilter} onChange={setKindFilter} options={KIND_FILTER} placeholder="Kind" />
+        </div>
+        {canManage && (
+          <div className="w-44">
+            <OptionSelect id="catalogue-cert-status-filter" value={statusFilter} onChange={setStatusFilter} options={STATUS_FILTER} placeholder="Status" />
+          </div>
+        )}
         {canManage && (
           <AddButton
             label={CERTIFICATE_ADD_NEUTRAL_LABEL}
@@ -209,7 +230,7 @@ export function CertificatesTable({
           certificates.length === 0 ? (
             <EmptyState
               title="Nothing here yet"
-              description={canManage ? "Add the first certificate or course completion members can hold." : "Nothing is available yet."}
+              description={canManage ? "Add the first exam certificate or course certificate members can hold." : "Nothing is available yet."}
             />
           ) : (
             <EmptyState title="Nothing found" description="Try a different search or clear the filters." />

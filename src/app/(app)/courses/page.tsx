@@ -66,13 +66,9 @@ export default async function CataloguePage({
           />
         }
         courses={<CoursesTable key={initialSearch} initialSearch={initialSearch} courses={courses} providers={providers} certTypes={certTypes} canManage={isAdmin} />}
+        certTypes={isAdmin ? <CertTypeSection certTypes={certTypes} /> : undefined}
+        providers={isAdmin ? <ProviderSection providers={providers} /> : undefined}
       />
-      {isAdmin && (
-        <>
-          <CertTypeSection certTypes={certTypes} />
-          <ProviderSection providers={providers} />
-        </>
-      )}
     </div>
   );
 }

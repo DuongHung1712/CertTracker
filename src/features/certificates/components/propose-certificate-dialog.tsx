@@ -37,6 +37,7 @@ export function ProposeCertificateDialog({
   open,
   onOpenChange,
   defaultKind = "exam",
+  lockKind = false,
   defaultName = "",
   defaultProviderId,
   defaultProposedProvider = "",
@@ -48,6 +49,8 @@ export function ProposeCertificateDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultKind?: CertificateKind;
+  /** Hides the kind tabs so the caller's kind (e.g. "exam" from LearningSheet) cannot be switched. */
+  lockKind?: boolean;
   defaultName?: string;
   /** A provider to preselect; `null` opens the new-provider field instead. Unset keeps the first provider. */
   defaultProviderId?: string | null;
@@ -88,18 +91,25 @@ export function ProposeCertificateDialog({
 
   const selectedProviderId = useWatch({ control: form.control, name: "providerId" });
   const watchedName = useWatch({ control: form.control, name: "name" }) ?? "";
+  const kind = useWatch({ control: form.control, name: "kind" }) ?? "exam";
   const providerChoice = selectedProviderId ?? OTHER_PROVIDER_VALUE;
   const duplicateMatch =
     form.formState.errors.root && existingCertificates
       ? existingCertificates.find(
-          (cert) => cert.catalogueStatus !== "rejected" && normName(cert.label) === normName(watchedName),
+          (cert) =>
+            cert.catalogueStatus !== "rejected" &&
+            cert.kind === kind &&
+            normName(cert.label) === normName(watchedName),
         )
       : undefined;
 
   async function onSubmit(values: ProposeCertificateInput) {
     const wanted = normName(values.name);
     const existing = existingCertificates?.find(
-      (cert) => cert.catalogueStatus !== "rejected" && normName(cert.label) === wanted,
+      (cert) =>
+        cert.catalogueStatus !== "rejected" &&
+        cert.kind === values.kind &&
+        normName(cert.label) === wanted,
     );
     if (existing) {
       form.setError("root", {
@@ -122,8 +132,6 @@ export function ProposeCertificateDialog({
     onOpenChange(false);
   }
 
-  const kind = useWatch({ control: form.control, name: "kind" }) ?? "exam";
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="md">
@@ -137,25 +145,33 @@ export function ProposeCertificateDialog({
         </DialogHeader>
         <p className="text-caption text-muted-foreground">* Required</p>
 
-        <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <Field>
-            <FieldLabel>Type</FieldLabel>
-            <Controller
-              control={form.control}
-              name="kind"
-              render={({ field }) => (
-                <Tabs value={field.value} onValueChange={(val) => field.onChange(val as CertificateKind)}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    {ADD_KIND_CHOICES.map((choice) => (
-                      <TabsTrigger key={choice.kind} value={choice.kind}>
-                        {choice.label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
-                </Tabs>
-              )}
-            />
-          </Field>
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(event) => {
+            event.stopPropagation();
+            return form.handleSubmit(onSubmit)(event);
+          }}
+        >
+          {!lockKind && (
+            <Field>
+              <FieldLabel>Type</FieldLabel>
+              <Controller
+                control={form.control}
+                name="kind"
+                render={({ field }) => (
+                  <Tabs value={field.value} onValueChange={(val) => field.onChange(val as CertificateKind)}>
+                    <TabsList className="grid w-full grid-cols-2">
+                      {ADD_KIND_CHOICES.map((choice) => (
+                        <TabsTrigger key={choice.kind} value={choice.kind}>
+                          {choice.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </Tabs>
+                )}
+              />
+            </Field>
+          )}
 
           <Field>
             <FieldLabel htmlFor="propose-name">

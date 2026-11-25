@@ -13,7 +13,7 @@ import { ExternalLinkCell } from "@/components/data/external-link-cell";
 import { FilterBar } from "@/components/data/filter-bar";
 import { rowActionsColumn } from "@/components/data/row-actions-column";
 import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
-import type { SelectOption } from "@/components/option-select";
+import { OptionSelect, type SelectOption } from "@/components/option-select";
 import { CatalogueStatusBadge } from "@/components/status/record-status";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -23,6 +23,13 @@ import { CourseSheet } from "@/features/courses/components/course-sheet";
 import { courseDeleteDescription } from "@/features/courses/schema";
 import { formatMoney, type Currency } from "@/lib/money";
 import { foldText } from "@/lib/text";
+
+const ALL = "all";
+const STATUS_FILTER: SelectOption[] = [
+  { id: ALL, name: "All statuses" },
+  { id: "pending", name: "Waiting for approval" },
+  { id: "approved", name: "Approved" },
+];
 
 type Course = {
   id: string;
@@ -58,6 +65,7 @@ export function CoursesTable({
   initialSearch?: string;
 }) {
   const [search, setSearch] = useState(initialSearch);
+  const [statusFilter, setStatusFilter] = useState(ALL);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Course | null>(null);
   const removal = useConfirmedDelete<Course>({
@@ -74,9 +82,12 @@ export function CoursesTable({
 
   const rows = useMemo(() => {
     const q = foldText(search);
-    if (!q) return courses;
-    return courses.filter((c) => foldText(`${c.name} ${c.providerName} ${c.grantsCertificateName ?? ""}`).includes(q));
-  }, [courses, search]);
+    return courses.filter((c) => {
+      if (statusFilter !== ALL && c.catalogueStatus !== statusFilter) return false;
+      if (!q) return true;
+      return foldText(`${c.name} ${c.providerName} ${c.grantsCertificateName ?? ""}`).includes(q);
+    });
+  }, [courses, search, statusFilter]);
 
   const columns: ColumnDef<Course, unknown>[] = [
     {
@@ -163,9 +174,17 @@ export function CoursesTable({
         search={search}
         onSearchChange={setSearch}
         searchPlaceholder="Search courses…"
-        hasActiveFilters={search.length > 0}
-        onClear={() => setSearch("")}
+        hasActiveFilters={search.length > 0 || statusFilter !== ALL}
+        onClear={() => {
+          setSearch("");
+          setStatusFilter(ALL);
+        }}
       >
+        {canManage && (
+          <div className="w-44">
+            <OptionSelect id="catalogue-course-status-filter" value={statusFilter} onChange={setStatusFilter} options={STATUS_FILTER} placeholder="Status" />
+          </div>
+        )}
         {canManage && (
           <AddButton
             label="Add course"
