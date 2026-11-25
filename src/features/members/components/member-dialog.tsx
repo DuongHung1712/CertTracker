@@ -130,7 +130,7 @@ export function MemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="text-section-title">{editing ? "Edit member" : "Add member"}</DialogTitle>
         </DialogHeader>

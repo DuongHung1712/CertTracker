@@ -75,9 +75,9 @@ export function ImportMembersDialog() {
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next && pending) return; setOpen(next); if (!next) reset(); }}>
       <DialogTrigger render={<Button variant="outline" />}>Import members</DialogTrigger>
-      <DialogContent className="sm:max-w-3xl">
+      <DialogContent size="lg">
         <DialogHeader>
-          <DialogTitle>Import members</DialogTitle>
+          <DialogTitle className="text-section-title">Import members</DialogTitle>
           <DialogDescription>
             Upload an Excel or CSV file with the columns Full name, Email, Team and Career role. Members are created without an invitation.{" "}
             <a href="/templates/members-import.csv" download className="inline-flex items-center gap-1 text-primary underline">

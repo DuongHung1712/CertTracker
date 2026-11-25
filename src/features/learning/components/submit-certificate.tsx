@@ -48,7 +48,7 @@ export function SubmitCertificate({
     <>
       {both && chosen === undefined && (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Which certificate?</DialogTitle>
               <DialogDescription>This item has a course and an exam. Submit the one you received.</DialogDescription>

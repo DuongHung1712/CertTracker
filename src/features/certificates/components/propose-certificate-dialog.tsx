@@ -126,7 +126,7 @@ export function ProposeCertificateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[94vw] sm:w-full sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="text-section-title">
             {kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate"}
