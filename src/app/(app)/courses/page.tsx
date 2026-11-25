@@ -65,7 +65,7 @@ export default async function CataloguePage({
             canManage={isAdmin}
           />
         }
-        courses={<CoursesTable courses={courses} providers={providers} certTypes={certTypes} canManage={isAdmin} />}
+        courses={<CoursesTable key={initialSearch} initialSearch={initialSearch} courses={courses} providers={providers} certTypes={certTypes} canManage={isAdmin} />}
       />
       {isAdmin && (
         <>

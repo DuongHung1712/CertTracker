@@ -43,6 +43,7 @@ export function LearningTable({
   studyCourses = [],
   providers,
   initialSearch = "",
+  initialStatus = ALL,
 }: {
   rows: LearningRow[];
   mode: "self" | "team";
@@ -58,6 +59,8 @@ export function LearningTable({
   providers?: { id: string; name: string }[];
   /** Links open the list already searched (?search=<name>). */
   initialSearch?: string;
+  /** Links open the list narrowed to one status (?status=in_progress | not_started). */
+  initialStatus?: string;
 }) {
   const [submitting, setSubmitting] = useState<LearningRow | null>(null);
   // A course's completion certificate (catalogue: certificates.course_id), for "Submit certificate".
@@ -66,7 +69,9 @@ export function LearningTable({
     [certificateOptions],
   );
   const [search, setSearch] = useState(initialSearch);
-  const [status, setStatus] = useState(ALL);
+  const [status, setStatus] = useState(
+    (RECORD_STATUSES as readonly string[]).includes(initialStatus) ? initialStatus : ALL,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<LearningRow | null>(null);
   const remove = useConfirmedDelete<LearningRow>({
@@ -79,9 +84,14 @@ export function LearningTable({
     return rows.filter(
       (row) =>
         (status === ALL || row.status === status) &&
-        (!query || foldText(`${row.courseName ?? ""} ${row.targetCertificateName ?? ""} ${row.providerName ?? ""} ${row.memberName}`).includes(query)),
+        (!query ||
+          foldText(
+            mode === "team"
+              ? `${row.courseName ?? ""} ${row.targetCertificateName ?? ""} ${row.providerName ?? ""} ${row.memberName} ${row.memberCode}`
+              : `${row.courseName ?? ""} ${row.targetCertificateName ?? ""} ${row.providerName ?? ""}`,
+          ).includes(query)),
     );
-  }, [rows, search, status]);
+  }, [rows, search, status, mode]);
 
   const columns = useMemo<ColumnDef<LearningRow, unknown>[]>(
     () => [
@@ -153,7 +163,16 @@ export function LearningTable({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <FilterBar search={search} onSearchChange={setSearch} searchPlaceholder="Search by course or exam…" hasActiveFilters={status !== ALL} onClear={() => setStatus(ALL)}>
+        <FilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder={mode === "team" ? "Search by member, course or exam…" : "Search by course or exam…"}
+          hasActiveFilters={search.length > 0 || status !== ALL}
+          onClear={() => {
+            setSearch("");
+            setStatus(ALL);
+          }}
+        >
           <div className="w-40">
             <OptionSelect id="learning-status-filter" value={status} onChange={setStatus} options={STATUS_FILTER} placeholder="Status" />
           </div>

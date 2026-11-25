@@ -15,6 +15,7 @@ import { approveCertificate, rejectCertificate } from "@/features/certificates/a
 import { approveCourse, rejectCourse } from "@/features/courses/actions";
 import { countByType, describeIssue, isCatalogueIssue, isProposal, ISSUE_META, issueHref } from "@/features/data-quality/issues";
 import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-quality/schema";
+import { foldText } from "@/lib/text";
 
 /** Who or what the finding is about: a person for record/member issues, a certificate for catalogue issues. */
 function subjectName(row: IssueRow): string | null {
@@ -67,11 +68,11 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
   const sorted = useMemo(() => [...issues].sort(byUrgency), [issues]);
 
   const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = foldText(search);
     return sorted.filter((row) => {
       if (typeFilter && row.type !== typeFilter) return false;
       if (!q) return true;
-      return [row.memberName, row.memberCode, row.certificateName, row.teamName].some((value) => value?.toLowerCase().includes(q));
+      return [row.memberName, row.memberCode, row.certificateName, row.teamName].some((value) => value && foldText(value).includes(q));
     });
   }, [sorted, search, typeFilter]);
 

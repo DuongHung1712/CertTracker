@@ -126,7 +126,7 @@ export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatc
   const visibleRows = useMemo(() => {
     const query = foldText(search);
     return rows.filter((row) => {
-      if (query && !foldText(`${row.raw.email ?? ""} ${row.raw.course ?? ""} ${row.rowNo}`).includes(query)) return false;
+      if (query && !foldText(`${row.raw.email ?? ""} ${row.raw.course ?? ""} ${rawCell(row, "courseStudied") ?? ""} ${row.rowNo}`).includes(query)) return false;
       if (outcomeFilter !== ALL && rowOutcome(row) !== outcomeFilter) return false;
       return true;
     });

@@ -3,10 +3,18 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 /** Completed items nobody has approved yet; the whole tile is a link to /records already filtered to them. */
-export function WaitingTile({ count, className }: { count: number; className?: string }) {
+export function WaitingTile({
+  count,
+  href = "/records?approval=waiting",
+  className,
+}: {
+  count: number;
+  href?: string;
+  className?: string;
+}) {
   return (
     <Link
-      href="/records?approval=waiting"
+      href={href}
       className={cn(
         "group/tile flex min-h-[140px] min-w-0 flex-col justify-between rounded-lg border bg-card p-3.5 outline-none transition-colors hover:bg-accent/40 focus-visible:ring-[3px] focus-visible:ring-ring/50",
         count > 0 ? "border-[var(--status-expiring-soon-border)]" : "border-border",

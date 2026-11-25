@@ -37,7 +37,11 @@ export function CatalogueTabs({
       value={tab}
       onValueChange={(value) => {
         // History API, not router.replace: the tab flips at once and no server round trip remounts the open sheet.
-        window.history.replaceState(null, "", value === "courses" ? "?tab=courses" : window.location.pathname);
+        const params = new URLSearchParams(window.location.search);
+        if (value === "courses") params.set("tab", "courses");
+        else params.delete("tab");
+        const query = params.toString();
+        window.history.replaceState(null, "", query ? `${window.location.pathname}?${query}` : window.location.pathname);
       }}
     >
       <TabsList>

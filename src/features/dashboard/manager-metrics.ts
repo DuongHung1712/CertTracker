@@ -257,6 +257,7 @@ export type ManagerAttentionItem = {
 };
 
 const searchHref = (text: string) => `/records?search=${encodeURIComponent(text)}`;
+const learningSearchHref = (text: string) => `/records?tab=learning&search=${encodeURIComponent(text)}`;
 /** Opens Learning on that one certificate (the search matches name, code and certificate in this order), not on everything the person has. */
 const rowHref = (r: RecordRow) => searchHref(`${r.memberName} ${r.memberCode} ${r.certificateName}`);
 
@@ -295,7 +296,7 @@ export function getManagerAttention(
         title: `${exam.memberName} · ${exam.certificateName}`,
         detail: `Exam on ${formatDate(exam.plannedExamDate)}`,
         teamName: record.teamName,
-        href: searchHref(exam.memberName),
+        href: learningSearchHref(exam.memberName),
       }];
     }),
     ...getMembersWithoutCerts(members, records).map((member) => ({

@@ -16,9 +16,14 @@ import { listCertificateOptions, listRecords, listStudyCourses } from "@/feature
 
 const MY_LEARNING_DESCRIPTION = "Your certificates, and the courses and exams you are working on.";
 
-export default async function MePage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; tab?: string | string[] }> }) {
-  const { view, tab } = await searchParams;
+export default async function MePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string | string[]; tab?: string | string[]; status?: string | string[] }>;
+}) {
+  const { view, tab, status } = await searchParams;
   const initialView = parseMemberView(view);
+  const initialStatus = (Array.isArray(status) ? status[0] : status) ?? "all";
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
@@ -73,7 +78,7 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
           />
         }
         learning={
-          <LearningTable rows={items} mode="self" fixedMemberId={user.memberId} courses={courses} examOptions={toExamOptions(certificateOptions)} viewerMemberId={user.memberId} certificateOptions={certificateOptions} studyCourses={studyCourses} />
+          <LearningTable key={initialStatus} initialStatus={initialStatus} rows={items} mode="self" fixedMemberId={user.memberId} courses={courses} examOptions={toExamOptions(certificateOptions)} viewerMemberId={user.memberId} certificateOptions={certificateOptions} studyCourses={studyCourses} />
         }
       />
     </div>

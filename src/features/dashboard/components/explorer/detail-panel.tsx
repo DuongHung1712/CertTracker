@@ -49,13 +49,6 @@ export function DetailPanel({
               <span className="text-label font-medium uppercase tracking-wider text-muted-foreground">
                 Detail View · {groupLabel}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-0.5 text-caption font-medium text-foreground">
-                <span
-                  className="size-1.5 rounded-full bg-[var(--chart-1)]"
-                  aria-hidden
-                />
-                {formatRate(rateOf(selectedRow))} done
-              </span>
             </div>
             <h3
               className="text-page-title font-bold tracking-tight text-foreground truncate"
@@ -244,7 +237,11 @@ export function DetailPanel({
                 <TooltipTrigger
                   render={
                     <Link
-                      href={`/records?search=${encodeURIComponent(selectedRow.label)}`}
+                      href={
+                        groupLabel === "Team"
+                          ? `/records?team=${encodeURIComponent(selectedRow.label)}`
+                          : `/records?search=${encodeURIComponent(selectedRow.label)}`
+                      }
                       target="_blank"
                       rel="noopener noreferrer"
                       className={cn(
@@ -261,7 +258,11 @@ export function DetailPanel({
               </Tooltip>
 
               <Link
-                href={`/records?search=${encodeURIComponent(selectedRow.label)}`}
+                href={
+                  groupLabel === "Team"
+                    ? `/records?team=${encodeURIComponent(selectedRow.label)}`
+                    : `/records?search=${encodeURIComponent(selectedRow.label)}`
+                }
                 className={cn(
                   buttonVariants({ variant: "default", size: "sm" }),
                   "h-8 gap-1.5 text-xs font-medium",

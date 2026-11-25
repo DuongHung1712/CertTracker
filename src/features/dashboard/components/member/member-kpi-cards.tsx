@@ -185,7 +185,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         label="In progress"
         view="in-progress"
         // The journey lives on the Learning tab (decision #72).
-        href={kpis.inProgressCount === 0 ? "/courses" : "/me?tab=learning"}
+        href={kpis.inProgressCount === 0 ? "/courses" : "/me?tab=learning&status=in_progress"}
         tone="neutral"
         icon={<PlayCircle className="size-3.5 text-primary" aria-hidden="true" />}
         value={kpis.inProgressCount}
@@ -211,7 +211,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
       <Tile
         label="Up next"
         view="up-next"
-        href="/me?tab=learning"
+        href={kpis.notStartedCount > 0 ? "/me?tab=learning&status=not_started" : "/me?tab=learning"}
         tone="neutral"
         icon={<CalendarClock className="size-3.5 text-primary" aria-hidden="true" />}
         value={kpis.notStartedCount}

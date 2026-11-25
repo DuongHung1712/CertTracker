@@ -24,8 +24,10 @@ describe("MemberKpiCards tiles", () => {
 
     const htmlWithProgress = render([
       makeRecord({ id: "p1", status: "in_progress", progress: 30, certificateName: "AWS Dev" }),
+      makeRecord({ id: "n1", status: "not_started", certificateName: "CKA" }),
     ]);
-    expect(htmlWithProgress).toContain('href="/me?tab=learning"');
+    expect(htmlWithProgress).toContain('href="/me?tab=learning&amp;status=in_progress"');
+    expect(htmlWithProgress).toContain('href="/me?tab=learning&amp;status=not_started"');
     expect(htmlWithProgress).not.toMatch(/Study hours|Profile health|Active credentials/);
   });
 

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LearningTable } from "@/features/learning/components/learning-table";
 import type { LearningRow } from "@/features/learning/queries";
@@ -51,5 +52,25 @@ describe("LearningTable", () => {
     render(<LearningTable rows={[row({})]} mode="team" courses={[]} examOptions={[]} />);
     expect(screen.queryByRole("button", { name: /Approve/ })).toBeNull();
     expect(screen.getByText("Jane")).toBeTruthy();
+  });
+
+  it("applies initialStatus, searches by memberCode in team mode, and Clear filters clears search", async () => {
+    const rows = [
+      row({ id: "r1", memberCode: "M001", memberName: "Nguyễn Văn An", status: "in_progress", targetCertificateName: "AWS" }),
+      row({ id: "r2", memberCode: "M002", memberName: "Lê Minh Châu", status: "not_started", targetCertificateName: "CKA" }),
+    ];
+    render(<LearningTable rows={rows} mode="team" courses={[]} examOptions={[]} initialStatus="not_started" />);
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByText("CKA")).toBeTruthy();
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(screen.getAllByRole("row")).toHaveLength(3);
+
+    await userEvent.type(screen.getByRole("searchbox"), "M002");
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByText("Lê Minh Châu")).toBeTruthy();
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(screen.getAllByRole("row")).toHaveLength(3);
   });
 });

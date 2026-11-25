@@ -15,9 +15,9 @@ import { listCertificateOptions, listMemberOptions, listRecords, listStudyCourse
 export default async function RecordsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string | string[]; approval?: string | string[]; tab?: string | string[] }>;
+  searchParams: Promise<{ search?: string | string[]; approval?: string | string[]; team?: string | string[]; tab?: string | string[] }>;
 }) {
-  const { search, approval, tab } = await searchParams;
+  const { search, approval, team, tab } = await searchParams;
   const user = await getCurrentUser();
   // UX only — RLS would show a Member just their own rows here anyway; /me is their screen.
   if (user?.role === "member") redirect("/me");
@@ -31,9 +31,9 @@ export default async function RecordsPage({
     isAiReaderEnabled(),
   ]);
 
-  // Dashboard links open the list already searched (?search=<name>); the key remounts the table when it changes.
+  // Dashboard links open the list already searched (?search=<name>) or filtered (?team=<name>); the key remounts the table when they change.
   const initialSearch = (Array.isArray(search) ? search[0] : search) ?? "";
-
+  const initialTeam = (Array.isArray(team) ? team[0] : team) ?? "";
   const initialApproval = (Array.isArray(approval) ? approval[0] : approval) === "waiting";
 
   return (
@@ -53,8 +53,9 @@ export default async function RecordsPage({
         }
         certificates={
           <RecordsTable
-            key={`${initialSearch}|${initialApproval}`}
+            key={`${initialSearch}|${initialTeam}|${initialApproval}`}
             initialSearch={initialSearch}
+            initialTeam={initialTeam}
             initialApproval={initialApproval}
             canReview
             reviewerMemberId={user?.role === "admin" ? null : (user?.memberId ?? null)}

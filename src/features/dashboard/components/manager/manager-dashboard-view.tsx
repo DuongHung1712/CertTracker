@@ -62,8 +62,8 @@ export function ManagerDashboardView({
   const filteredMembers = useMemo(() => (selectedTeam ? members.filter((m) => m.teamName === selectedTeam) : members), [members, selectedTeam]);
 
   const kpis = useMemo(() => calculateManagerKpis(filteredRecords), [filteredRecords]);
-  // The whole scope, not the selected team: the tile links to the list of the whole scope.
-  const waiting = useMemo(() => records.filter((r) => isReviewable(r, viewerMemberId)).length, [records, viewerMemberId]);
+  const waiting = useMemo(() => filteredRecords.filter((r) => isReviewable(r, viewerMemberId)).length, [filteredRecords, viewerMemberId]);
+  const waitingHref = selectedTeam ? `/records?approval=waiting&team=${encodeURIComponent(selectedTeam)}` : "/records?approval=waiting";
   const withoutCertificate = useMemo(() => getMembersWithoutCerts(filteredMembers, filteredRecords).length, [filteredMembers, filteredRecords]);
   const teamRows = useMemo(() => getTeamReadinessLeague(filteredMembers, filteredRecords), [filteredMembers, filteredRecords]);
   const teamsWithCounts = useMemo(
@@ -112,7 +112,7 @@ export function ManagerDashboardView({
               <SectionError title="Overview" />
             ) : (
               <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                <WaitingTile count={waiting} />
+                <WaitingTile count={waiting} href={waitingHref} />
                 <SummaryTile
                   label="Expiring in 60 days"
                   value={kpis.expiringCount}

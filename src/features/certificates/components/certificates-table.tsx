@@ -20,6 +20,7 @@ import { CERTIFICATE_ADD_NEUTRAL_LABEL, CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND
 import { CertificateSheet } from "@/features/certificates/components/certificate-sheet";
 import type { CertificateRow } from "@/features/certificates/queries";
 import { pluralize } from "@/lib/plural";
+import { foldText } from "@/lib/text";
 
 const NO_CERT_TYPES_OR_PROVIDERS_HINT = "Add a certificate type and a provider first.";
 
@@ -74,10 +75,10 @@ export function CertificatesTable({
   });
 
   const rows = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = foldText(search);
     if (!query) return certificates;
     return certificates.filter((c) =>
-      `${c.name} ${c.providerName} ${c.certTypeName} ${c.courseName ?? ""} ${(preparedBy[c.id] ?? []).join(" ")}`.toLowerCase().includes(query),
+      foldText(`${c.name} ${c.providerName} ${c.certTypeName} ${c.courseName ?? ""} ${(preparedBy[c.id] ?? []).join(" ")}`).includes(query),
     );
   }, [certificates, preparedBy, search]);
 

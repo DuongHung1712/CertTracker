@@ -85,7 +85,11 @@ export function Explorer({
           <Tabs
             value={activeTab}
             onValueChange={(val) => {
-              if (val) setActiveTab(val);
+              if (val) {
+                setActiveTab(val);
+                setSearch("");
+                setSelectedKey(null);
+              }
             }}
             className="flex flex-col"
           >

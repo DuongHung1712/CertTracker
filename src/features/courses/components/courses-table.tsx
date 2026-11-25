@@ -22,6 +22,7 @@ import { approveCourse, deleteCourse, rejectCourse } from "@/features/courses/ac
 import { CourseSheet } from "@/features/courses/components/course-sheet";
 import { courseDeleteDescription } from "@/features/courses/schema";
 import { formatMoney, type Currency } from "@/lib/money";
+import { foldText } from "@/lib/text";
 
 type Course = {
   id: string;
@@ -47,13 +48,16 @@ export function CoursesTable({
   providers,
   certTypes,
   canManage,
+  initialSearch = "",
 }: {
   courses: Course[];
   providers: SelectOption[];
   certTypes: SelectOption[];
   canManage: boolean;
+  /** Starting value of the search box (Data Quality links here with ?tab=courses&search=<name>). */
+  initialSearch?: string;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Course | null>(null);
   const removal = useConfirmedDelete<Course>({
@@ -69,9 +73,9 @@ export function CoursesTable({
   }
 
   const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = foldText(search);
     if (!q) return courses;
-    return courses.filter((c) => `${c.name} ${c.providerName} ${c.grantsCertificateName ?? ""}`.toLowerCase().includes(q));
+    return courses.filter((c) => foldText(`${c.name} ${c.providerName} ${c.grantsCertificateName ?? ""}`).includes(q));
   }, [courses, search]);
 
   const columns: ColumnDef<Course, unknown>[] = [

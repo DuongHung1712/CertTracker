@@ -18,6 +18,7 @@ import { deleteMember } from "@/features/members/actions";
 import { type Role } from "@/components/status/labels";
 import { RoleBadge } from "@/components/status/role-badge";
 import { MemberDialog } from "@/features/members/components/member-dialog";
+import { foldText } from "@/lib/text";
 
 type Member = {
   id: string;
@@ -70,9 +71,11 @@ export function MembersTable({
   const [clearingScopes, setClearingScopes] = useState<Member | null>(null);
 
   const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = foldText(search);
     if (!q) return members;
-    return members.filter((m) => `${m.code} ${m.fullName} ${m.email}`.toLowerCase().includes(q));
+    return members.filter((m) =>
+      foldText(`${m.code} ${m.fullName} ${m.email} ${m.teamName ?? ""} ${m.careerRoleName ?? ""}`).includes(q),
+    );
   }, [members, search]);
 
   const columns: ColumnDef<Member, unknown>[] = [
