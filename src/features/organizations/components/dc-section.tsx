@@ -41,7 +41,12 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
                 >
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setConfirming(row.original)}
+                >
                   Delete
                 </Button>
               </div>
@@ -94,8 +99,8 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Delete centre ${confirming?.name}?`}
-            description="A centre can only be deleted when it has no programs."
+            title={`Delete centre ${confirming?.name ?? ""}?`}
+            description="A centre can only be deleted when it has no programs. This cannot be undone."
             confirmLabel="Delete centre"
             pendingLabel="Deleting…"
             pending={pending}

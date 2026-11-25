@@ -121,5 +121,6 @@ export async function proposeCourse(input: { name: string; proposedProvider: str
     .single();
   if (error) return err(mapPostgresError(error, { duplicate: "A course with this name already exists. Pick it from the list." }));
   revalidate();
+  revalidatePath("/courses");
   return ok({ id: data.id });
 }

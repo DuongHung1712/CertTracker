@@ -76,7 +76,7 @@ export function ImportUploadForm() {
             setError(message);
           }}
           disabled={pending}
-          hint="Drop an Excel file here or choose one: .xlsx or .xls, up to 4 MB"
+          hint="Drop an Excel file here or choose one (.xlsx or .xls)"
           wrongTypeMessage={NOT_EXCEL}
           tooLargeMessage={TOO_LARGE}
           emptyMessage={EMPTY_FILE}

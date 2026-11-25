@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, ShieldAlert } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowRight, CheckCircle2, FilePlus2, ShieldAlert } from "lucide-react";
 import {
   countAdminAttentionRecords,
   getAdminNeedsAttentionItems,
@@ -9,6 +9,12 @@ import type { RecordRow } from "@/features/records/queries";
 import { cn } from "@/lib/utils";
 
 const TONES = {
+  proposals: {
+    icon: FilePlus2,
+    row: "border-status-expiring-soon-border bg-status-expiring-soon-bg/40 hover:border-status-expiring-soon-fg hover:bg-status-expiring-soon-bg",
+    iconColor: "text-status-expiring-soon-fg",
+    detail: "font-medium text-status-expiring-soon-fg",
+  },
   expired: {
     icon: AlertCircle,
     row: "hover:border-status-expired-fg hover:bg-status-expired-bg",
@@ -74,13 +80,15 @@ function AllClear() {
 export function AdminNeedsAttention({
   records,
   dqIssuesCount,
+  proposalCount = 0,
 }: {
   records: RecordRow[];
   dqIssuesCount: number | undefined;
+  proposalCount?: number;
 }) {
-  const items = getAdminNeedsAttentionItems(records, dqIssuesCount ?? 0);
+  const items = getAdminNeedsAttentionItems(records, dqIssuesCount ?? 0, proposalCount);
   const total = countAdminAttentionRecords(records);
-  const shown = items.filter((item) => item.type !== "data_quality").length;
+  const shown = items.filter((item) => item.type !== "data_quality" && item.type !== "proposals").length;
   const isEmpty = items.length === 0 && dqIssuesCount !== undefined;
 
   return (

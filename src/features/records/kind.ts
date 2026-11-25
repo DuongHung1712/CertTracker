@@ -25,9 +25,9 @@ export const isCounted = (row: { status: string; approval: ApprovalState | null;
 
 /** A waiting item the viewer can act on: a manager never reviews their own (pass null for an admin, who may). */
 export const isReviewable = (
-  row: { status: string; approval: ApprovalState | null; memberId: string },
+  row: { status: string; approval: ApprovalState | null; memberId: string; renewed?: boolean },
   ownMemberId: string | null,
-): boolean => row.status === "done" && row.approval === "waiting" && row.memberId !== ownMemberId;
+): boolean => row.status === "done" && row.approval === "waiting" && !row.renewed && row.memberId !== ownMemberId;
 
 export const KIND_FILTERS = ["all", "exam", "completion"] as const;
 export type KindFilter = (typeof KIND_FILTERS)[number];

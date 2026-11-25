@@ -10,7 +10,7 @@ interface SkillLevelGuideProps {
 export function SkillLevelGuide({ open, onOpenChange }: SkillLevelGuideProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-dvh overflow-y-auto sm:max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="text-section-title">Skill levels 0–5</DialogTitle>
           <DialogDescription>

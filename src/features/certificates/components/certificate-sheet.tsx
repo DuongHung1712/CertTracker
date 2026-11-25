@@ -79,11 +79,15 @@ export function CertificateSheet({
   return (
     <FormSheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={(next) => {
+        if (!next) form.reset(editing ?? EMPTY);
+        onOpenChange(next);
+      }}
       title={certificateSheetTitle(!!editing, kind)}
       onSubmit={form.handleSubmit(onSubmit)}
       rootError={errors.root?.message}
       submitting={isSubmitting}
+      dirty={form.formState.isDirty}
     >
       <p className="text-caption text-muted-foreground">* Required</p>
       <Field>

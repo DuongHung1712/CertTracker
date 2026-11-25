@@ -9,6 +9,7 @@ import { LearningTabs } from "@/features/learning/components/learning-tabs";
 import { parseLearningTab } from "@/features/learning/tab";
 import { toExamOptions } from "@/features/learning/exam-options";
 import { listCourseOptions, listLearningItems } from "@/features/learning/queries";
+import { listProviders } from "@/features/courses/queries";
 import { isAiReaderEnabled } from "@/features/records/ai-flag";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
@@ -16,9 +17,14 @@ import { listCertificateOptions, listRecords, listStudyCourses } from "@/feature
 
 const MY_LEARNING_DESCRIPTION = "Your certificates, and the courses and exams you are working on.";
 
-export default async function MePage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; tab?: string | string[] }> }) {
-  const { view, tab } = await searchParams;
+export default async function MePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string | string[]; tab?: string | string[]; status?: string | string[] }>;
+}) {
+  const { view, tab, status } = await searchParams;
   const initialView = parseMemberView(view);
+  const initialStatus = (Array.isArray(status) ? status[0] : status) ?? "all";
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
@@ -34,12 +40,13 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
     );
   }
 
-  const [records, certificateOptions, studyCourses, items, courses, aiReaderEnabled] = await Promise.all([
+  const [records, certificateOptions, studyCourses, items, courses, providers, aiReaderEnabled] = await Promise.all([
     listRecords({ memberId: user.memberId }),
     listCertificateOptions(),
     listStudyCourses(),
     listLearningItems({ memberId: user.memberId }),
     listCourseOptions(),
+    listProviders(),
     isAiReaderEnabled(),
   ]);
 
@@ -69,11 +76,27 @@ export default async function MePage({ searchParams }: { searchParams: Promise<{
             fixedMemberId={user.memberId}
             canDelete={user.role !== "member"}
             showCompanyFields={user.role !== "member"}
+            canAddToCatalogue={user.role === "admin"}
             aiReaderEnabled={aiReaderEnabled}
           />
         }
         learning={
-          <LearningTable rows={items} mode="self" fixedMemberId={user.memberId} courses={courses} examOptions={toExamOptions(certificateOptions)} viewerMemberId={user.memberId} certificateOptions={certificateOptions} studyCourses={studyCourses} />
+          <LearningTable
+            key={initialStatus}
+            initialStatus={initialStatus}
+            rows={items}
+            mode="self"
+            fixedMemberId={user.memberId}
+            courses={courses}
+            examOptions={toExamOptions(certificateOptions)}
+            viewerMemberId={user.memberId}
+            certificateOptions={certificateOptions}
+            studyCourses={studyCourses}
+            providers={providers}
+            showCompanyFields={user.role !== "member"}
+            aiReaderEnabled={aiReaderEnabled}
+            records={records}
+          />
         }
       />
     </div>

@@ -2,7 +2,6 @@ import { Award } from "lucide-react";
 import { categoryLabel } from "../metrics";
 import { LEVEL_SCALE_GUIDE } from "../schema";
 import type { Skill, SkillLevel } from "../types";
-import { SkillLegendPopover } from "./skill-legend-popover";
 import { SkillQuickRate } from "./skill-quick-rate";
 import { SkillStatus } from "./skill-status";
 import { Button } from "@/components/ui/button";
@@ -43,14 +42,11 @@ export function SkillCard({ skill, onViewDetails, onAssess, onQuickRate }: Skill
         <p className="text-caption font-medium text-foreground">
           Level {skill.currentLevel} · {LEVEL_SCALE_GUIDE[skill.currentLevel].title}
         </p>
-        <div className="flex items-center justify-between gap-2">
-          <SkillQuickRate
-            skillName={skill.name}
-            currentLevel={skill.currentLevel}
-            onRate={(level) => onQuickRate(skill.id, level)}
-          />
-          <SkillLegendPopover align="end" side="top" />
-        </div>
+        <SkillQuickRate
+          skillName={skill.name}
+          currentLevel={skill.currentLevel}
+          onRate={(level) => onQuickRate(skill.id, level)}
+        />
       </div>
 
       <div className="flex items-center justify-between gap-2 border-t border-border pt-3">

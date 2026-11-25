@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ArrowUpRight, Copy, ExternalLink } from "lucide-react";
+import { ArrowRight, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { StatusBar } from "@/features/dashboard/components/status-bar";
-import { CERTIFICATE_GROUP_LABEL, copySummaryText, groupCount, rateOf } from "@/features/dashboard/components/explorer/types";
+import { copySummaryText, groupCount, rateOf } from "@/features/dashboard/components/explorer/types";
 import {
   formatRate,
   studyStatusSplit,
@@ -49,13 +49,6 @@ export function DetailPanel({
               <span className="text-label font-medium uppercase tracking-wider text-muted-foreground">
                 Detail View · {groupLabel}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2.5 py-0.5 text-caption font-medium text-foreground">
-                <span
-                  className="size-1.5 rounded-full bg-[var(--chart-1)]"
-                  aria-hidden
-                />
-                {formatRate(rateOf(selectedRow))} done
-              </span>
             </div>
             <h3
               className="text-page-title font-bold tracking-tight text-foreground truncate"
@@ -70,17 +63,6 @@ export function DetailPanel({
                   {formatNumber(selectedRow.headcount ?? selectedRow.people)}
                 </strong>
               </span>
-              {groupLabel !== CERTIFICATE_GROUP_LABEL && (
-                <>
-                  <span>•</span>
-                  <span>
-                    Items:{" "}
-                    <strong className="font-semibold text-foreground tabular-nums">
-                      {formatNumber(selectedRow.records)}
-                    </strong>
-                  </span>
-                </>
-              )}
             </div>
           </div>
 
@@ -92,12 +74,9 @@ export function DetailPanel({
                 <span className="min-w-0 truncate" title="Valid">Valid</span>
                 <span className="size-2 rounded-full bg-[var(--status-active-fg)]" aria-hidden />
               </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-lg font-bold tabular-nums text-foreground">
-                  {formatNumber(selectedRow.valid)}
-                </span>
-                <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />
-              </div>
+              <span className="text-lg font-bold tabular-nums text-foreground">
+                {formatNumber(selectedRow.valid)}
+              </span>
               <span className="text-caption text-muted-foreground">Not expired</span>
             </div>
 
@@ -107,12 +86,9 @@ export function DetailPanel({
                 <span className="min-w-0 truncate" title="Completed">Completed</span>
                 <span className="size-2 rounded-full bg-[var(--chart-1)]" aria-hidden />
               </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-lg font-bold tabular-nums text-foreground">
-                  {formatNumber(selectedRow.done)}
-                </span>
-                <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />
-              </div>
+              <span className="text-lg font-bold tabular-nums text-foreground">
+                {formatNumber(selectedRow.done)}
+              </span>
               <span className="text-caption text-muted-foreground">Finished</span>
             </div>
 
@@ -122,12 +98,9 @@ export function DetailPanel({
                 <span className="min-w-0 truncate" title="In progress">In progress</span>
                 <span className="size-2 rounded-full bg-[var(--chart-2)]" aria-hidden />
               </div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-lg font-bold tabular-nums text-foreground">
-                  {formatNumber(selectedRow.inProgress)}
-                </span>
-                <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />
-              </div>
+              <span className="text-lg font-bold tabular-nums text-foreground">
+                {formatNumber(selectedRow.inProgress)}
+              </span>
               <span className="text-caption text-muted-foreground">Currently studying</span>
             </div>
 
@@ -137,17 +110,14 @@ export function DetailPanel({
                 <span className="min-w-0 truncate" title="Expired">Expired</span>
                 <span className="size-2 rounded-full bg-[var(--status-expired-fg)]" aria-hidden />
               </div>
-              <div className="flex items-baseline justify-between">
-                <span
-                  className={cn(
-                    "text-lg font-bold tabular-nums",
-                    selectedRow.expired > 0 ? "text-destructive" : "text-foreground",
-                  )}
-                >
-                  {formatNumber(selectedRow.expired)}
-                </span>
-                <ArrowUpRight className="size-3.5 text-muted-foreground" aria-hidden />
-              </div>
+              <span
+                className={cn(
+                  "text-lg font-bold tabular-nums",
+                  selectedRow.expired > 0 ? "text-destructive" : "text-foreground",
+                )}
+              >
+                {formatNumber(selectedRow.expired)}
+              </span>
               <span className="text-caption text-muted-foreground">Past expiry date</span>
             </div>
           </div>
@@ -192,7 +162,7 @@ export function DetailPanel({
 
           {/* Totals Footer matching the template */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-            {/* Left: 3 figures */}
+            {/* Left: summary totals */}
             <div className="flex flex-wrap items-center gap-3 text-caption text-muted-foreground">
               <span>
                 Total:{" "}
@@ -200,28 +170,9 @@ export function DetailPanel({
                   {groupCount(selectedRow, groupLabel)}
                 </strong>
               </span>
-              <span>•</span>
-              <span>
-                Done rate:{" "}
-                <strong className="font-semibold text-foreground tabular-nums">
-                  {formatRate(rateOf(selectedRow))}
-                </strong>
-              </span>
-              <span>•</span>
-              <span>
-                Expired:{" "}
-                <strong
-                  className={cn(
-                    "font-semibold tabular-nums",
-                    selectedRow.expired > 0 ? "text-destructive" : "text-foreground",
-                  )}
-                >
-                  {formatNumber(selectedRow.expired)}
-                </strong>
-              </span>
             </div>
 
-            {/* Right: 2 Icon action buttons with Tooltip + Primary View learning button */}
+            {/* Right: Copy summary + Primary View learning button */}
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger
@@ -240,28 +191,12 @@ export function DetailPanel({
                 <TooltipContent>Copy summary</TooltipContent>
               </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Link
-                      href={`/records?search=${encodeURIComponent(selectedRow.label)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
-                        "size-8 p-0",
-                      )}
-                      aria-label="Open in a new tab"
-                    >
-                      <ExternalLink className="size-4" aria-hidden />
-                    </Link>
-                  }
-                />
-                <TooltipContent>Open in a new tab</TooltipContent>
-              </Tooltip>
-
               <Link
-                href={`/records?search=${encodeURIComponent(selectedRow.label)}`}
+                href={
+                  groupLabel === "Team"
+                    ? `/records?team=${encodeURIComponent(selectedRow.label)}`
+                    : `/records?search=${encodeURIComponent(selectedRow.label)}`
+                }
                 className={cn(
                   buttonVariants({ variant: "default", size: "sm" }),
                   "h-8 gap-1.5 text-xs font-medium",

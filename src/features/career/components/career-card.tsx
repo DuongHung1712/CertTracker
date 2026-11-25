@@ -24,11 +24,15 @@ export function CareerCard({
   careerStart: string | null;
   yoeYears: number | null;
 }) {
+  const [saved, setSaved] = useState<CareerStartDraft>(() => toDraft(careerStart));
   const [draft, setDraft] = useState<CareerStartDraft>(() => toDraft(careerStart));
   const [error, setError] = useState<string | undefined>();
   const [pending, setPending] = useState(false);
 
-  async function save() {
+  const dirty = draft.year.trim() !== saved.year || draft.month !== saved.month;
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     setError(undefined);
     setPending(true);
     const result = await setMyCareerStart(toCareerStartInput(draft));
@@ -37,6 +41,7 @@ export function CareerCard({
       setError(result.error);
       return;
     }
+    setSaved({ year: draft.year.trim(), month: draft.month });
     toast.success("Saved when you started working");
   }
 
@@ -56,15 +61,15 @@ export function CareerCard({
             <dd data-testid="career-yoe">{formatYoe(yoeYears)}</dd>
           </div>
         </dl>
-        <div className="flex flex-col gap-2">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
           <p className="text-body font-medium">Started working</p>
-          <div className="flex flex-wrap items-start gap-3">
+          <div className="flex flex-wrap items-end gap-3">
             <CareerStartFields idPrefix="career" value={draft} onChange={setDraft} error={error} disabled={pending} />
-            <Button size="lg" className="mt-5" onClick={save} disabled={pending}>
+            <Button type="submit" className="h-9" disabled={pending || !dirty}>
               {pending ? "Saving…" : "Save"}
             </Button>
           </div>
-        </div>
+        </form>
       </CardContent>
     </Card>
   );

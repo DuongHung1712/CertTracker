@@ -86,9 +86,9 @@ describe("ManagerDashboardView: composition", () => {
     }
   });
 
-  it("puts the four tiles in a row: waiting, expiring, expired, team ready", () => {
+  it("puts the four tiles in a row: waiting, expiring, expired, valid certificates", () => {
     const overview = textOf(region(render(), "Overview"));
-    const order = ["Waiting for approval", "Expiring in 60 days", "Expired", "Team ready"].map((label) => overview.indexOf(label));
+    const order = ["Waiting for approval", "Expiring in 60 days", "Expired", "Valid certificates"].map((label) => overview.indexOf(label));
     expect(order.every((at) => at >= 0)).toBe(true);
     expect(order).toEqual([...order].sort((a, b) => a - b));
   });
@@ -96,6 +96,12 @@ describe("ManagerDashboardView: composition", () => {
   it("offers export and View learning once (header only)", () => {
     const html = render();
     expect(count(html, "/api/export/records")).toBe(1);
+    expect(count(html, ">View learning<")).toBe(1);
+  });
+
+  it("hides header export and duplicate View learning when no teams are assigned", () => {
+    const html = render({ teams: [], records: [] });
+    expect(count(html, "/api/export/records")).toBe(0);
     expect(count(html, ">View learning<")).toBe(1);
   });
 });
@@ -107,16 +113,16 @@ describe("ManagerDashboardView: the four tiles", () => {
     expect(overview).toContain("Expired 1 Past the expiry date");
   });
 
-  it("says how ready the team is and how many members have no certificate", () => {
+  it("says how many completed certificates are valid and how many members have no certificate", () => {
     const overview = textOf(region(render(), "Overview"));
     // Three completed certificates, two of them still valid.
-    expect(overview).toContain("Team ready 66% 2 of 3 certificates valid");
+    expect(overview).toContain("Valid certificates 66% 2 of 3 certificates valid");
     expect(overview).toContain("1 member without a certificate");
   });
 
   it("shows a dash, not 0%, when nothing is completed yet", () => {
     const overview = textOf(region(render({ records: [] }), "Overview"));
-    expect(overview).toContain("Team ready — No certificates yet");
+    expect(overview).toContain("Valid certificates — No certificates yet");
     expect(overview).toContain("3 members without a certificate");
   });
 });

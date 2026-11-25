@@ -25,17 +25,20 @@ export function countAdminAttentionRecords(records: RecordRow[]): number {
 type AttentionBase = { id: string; label: string; detail: string; href: string };
 
 export type AdminAttentionItem =
+  | (AttentionBase & { type: "proposals"; count: number })
   | (AttentionBase & { type: "expired" | "expiring_soon" })
   | (AttentionBase & { type: "data_quality"; count: number });
 
 /**
  * Builds the "Needs attention" list for the Admin dashboard:
- * expired certificates (most overdue first), then certificates expiring within 30 days (soonest first),
- * cut to ADMIN_ATTENTION_LIMIT, then one data quality summary that the cut never drops.
+ * catalogue proposals waiting for approval first (never cut), then expired certificates (most overdue first),
+ * then certificates expiring within 30 days (soonest first), cut to ADMIN_ATTENTION_LIMIT,
+ * then one data quality summary that the cut never drops.
  */
 export function getAdminNeedsAttentionItems(
   records: RecordRow[],
   dqIssuesCount: number,
+  proposalCount = 0,
 ): AdminAttentionItem[] {
   const byDaysLeft = (a: RecordRow, b: RecordRow) => (a.daysToExpiry ?? 0) - (b.daysToExpiry ?? 0);
   const certificateItem = (r: RecordRow): AdminAttentionItem => {
@@ -53,12 +56,27 @@ export function getAdminNeedsAttentionItems(
     };
   };
 
-  const items = [
-    ...records.filter(isAdminExpired).sort(byDaysLeft),
-    ...records.filter(isAdminExpiringUrgent).sort(byDaysLeft),
-  ]
-    .slice(0, ADMIN_ATTENTION_LIMIT)
-    .map(certificateItem);
+  const items: AdminAttentionItem[] = [];
+
+  if (proposalCount > 0) {
+    items.push({
+      id: "catalogue-proposals",
+      type: "proposals",
+      count: proposalCount,
+      label: "Catalogue proposals",
+      detail: `${pluralize(proposalCount, "proposal")} waiting for approval`,
+      href: "/data-quality?type=proposals",
+    });
+  }
+
+  items.push(
+    ...[
+      ...records.filter(isAdminExpired).sort(byDaysLeft),
+      ...records.filter(isAdminExpiringUrgent).sort(byDaysLeft),
+    ]
+      .slice(0, ADMIN_ATTENTION_LIMIT)
+      .map(certificateItem),
+  );
 
   if (dqIssuesCount > 0) {
     items.push({

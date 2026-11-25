@@ -12,12 +12,14 @@ import { MemberCode } from "@/components/status/member-code";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { formatYoe } from "@/features/career/format";
 import { removeManagerScopes } from "@/features/organizations/actions";
 import { deleteMember } from "@/features/members/actions";
-import { type Role } from "@/components/status/labels";
+import { ROLE_LABEL, type Role } from "@/components/status/labels";
 import { RoleBadge } from "@/components/status/role-badge";
 import { MemberDialog } from "@/features/members/components/member-dialog";
+import { foldText } from "@/lib/text";
 
 type Member = {
   id: string;
@@ -37,6 +39,25 @@ type Member = {
 type RoleOption = { id: string; name: string };
 type Scope = { label: string; active: boolean };
 type TeamOption = { id: string; name: string };
+
+const FILTER_ALL = "all";
+const FILTER_NONE = "none";
+type StatusFilter = typeof FILTER_ALL | "active" | "inactive";
+type AccessFilter = typeof FILTER_ALL | Role | typeof FILTER_NONE;
+
+const STATUS_FILTER_LABEL: Record<StatusFilter, string> = {
+  all: "All statuses",
+  active: "Active",
+  inactive: "Inactive",
+};
+
+const ACCESS_FILTER_LABEL: Record<AccessFilter, string> = {
+  all: "All access",
+  admin: ROLE_LABEL.admin,
+  manager: ROLE_LABEL.manager,
+  member: ROLE_LABEL.member,
+  none: "No account",
+};
 
 export function MembersTable({
   members,
@@ -63,17 +84,33 @@ export function MembersTable({
   initialSearch?: string;
 }) {
   const [search, setSearch] = useState(initialSearch);
+  const [teamFilter, setTeamFilter] = useState<string>(FILTER_ALL);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(FILTER_ALL);
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>(FILTER_ALL);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [confirming, setConfirming] = useState<Member | null>(null);
   const [pending, setPending] = useState(false);
   const [clearingScopes, setClearingScopes] = useState<Member | null>(null);
 
+  const hasActiveFilters =
+    search.length > 0 || teamFilter !== FILTER_ALL || statusFilter !== FILTER_ALL || accessFilter !== FILTER_ALL;
+
   const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return members;
-    return members.filter((m) => `${m.code} ${m.fullName} ${m.email}`.toLowerCase().includes(q));
-  }, [members, search]);
+    const q = foldText(search);
+    return members.filter((m) => {
+      if (teamFilter === FILTER_NONE ? m.teamId !== null : teamFilter !== FILTER_ALL && m.teamId !== teamFilter) {
+        return false;
+      }
+      if (statusFilter === "active" && !m.isActive) return false;
+      if (statusFilter === "inactive" && m.isActive) return false;
+      if (showScopes && accessFilter !== FILTER_ALL) {
+        if (accessFilter === FILTER_NONE ? m.accessRole !== null : m.accessRole !== accessFilter) return false;
+      }
+      if (!q) return true;
+      return foldText(`${m.code} ${m.fullName} ${m.email} ${m.teamName ?? ""} ${m.careerRoleName ?? ""}`).includes(q);
+    });
+  }, [members, search, teamFilter, statusFilter, accessFilter, showScopes]);
 
   const columns: ColumnDef<Member, unknown>[] = [
     { accessorKey: "code", header: "Code", cell: ({ row }) => <MemberCode code={row.original.code} /> },
@@ -88,7 +125,7 @@ export function MembersTable({
     },
     { accessorKey: "email", header: "Email" },
     { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
-    { accessorKey: "careerRoleName", header: "Career title", cell: ({ row }) => row.original.careerRoleName ?? "Not set" },
+    { accessorKey: "careerRoleName", header: "Career role", cell: ({ row }) => row.original.careerRoleName ?? "Not set" },
     {
       accessorKey: "yoeYears",
       header: "Experience",
@@ -192,15 +229,69 @@ export function MembersTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by name, code or email…"
-        hasActiveFilters={search.length > 0}
-        onClear={() => setSearch("")}
+        searchPlaceholder="Search by name, code, email, team or career role…"
+        hasActiveFilters={hasActiveFilters}
+        onClear={() => {
+          setSearch("");
+          setTeamFilter(FILTER_ALL);
+          setStatusFilter(FILTER_ALL);
+          setAccessFilter(FILTER_ALL);
+        }}
       >
+        <Select value={teamFilter} onValueChange={(value) => setTeamFilter(value ?? FILTER_ALL)}>
+          <SelectTrigger aria-label="Filter by team" className="min-w-36">
+            <SelectValue>
+              {(value: string) =>
+                value === FILTER_ALL
+                  ? "All teams"
+                  : value === FILTER_NONE
+                    ? "No team"
+                    : (teams.find((t) => t.id === value)?.name ?? "All teams")
+              }
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={FILTER_ALL}>All teams</SelectItem>
+            <SelectItem value={FILTER_NONE}>No team</SelectItem>
+            {teams.map((team) => (
+              <SelectItem key={team.id} value={team.id}>
+                {team.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={statusFilter} onValueChange={(value) => setStatusFilter((value as StatusFilter) ?? FILTER_ALL)}>
+          <SelectTrigger aria-label="Filter by status" className="min-w-32">
+            <SelectValue>{(value: StatusFilter) => STATUS_FILTER_LABEL[value] ?? "All statuses"}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(STATUS_FILTER_LABEL) as StatusFilter[]).map((key) => (
+              <SelectItem key={key} value={key}>
+                {STATUS_FILTER_LABEL[key]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {showScopes && (
+          <Select value={accessFilter} onValueChange={(value) => setAccessFilter((value as AccessFilter) ?? FILTER_ALL)}>
+            <SelectTrigger aria-label="Filter by access" className="min-w-32">
+              <SelectValue>{(value: AccessFilter) => ACCESS_FILTER_LABEL[value] ?? "All access"}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(ACCESS_FILTER_LABEL) as AccessFilter[]).map((key) => (
+                <SelectItem key={key} value={key}>
+                  {ACCESS_FILTER_LABEL[key]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         {canCreate && (
           <Button
             size="sm"
             className="ml-auto"
             disabled={teams.length === 0}
+            title={teams.length === 0 ? "Add a team in Organisation first." : undefined}
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
@@ -217,7 +308,10 @@ export function MembersTable({
         getRowId={(row) => row.id}
         empty={
           members.length === 0 ? (
-            <EmptyState title="No members yet" description="Add the first member to start tracking your team." />
+            <EmptyState
+              title="No members yet"
+              description={teams.length === 0 ? "Add a team in Organisation first." : "Add the first member to start tracking your team."}
+            />
           ) : (
             <EmptyState title="No members found" description="Try a different search or clear the filters." />
           )
@@ -228,7 +322,7 @@ export function MembersTable({
         <ConfirmDialog
           open={!!clearingScopes}
           onOpenChange={(open) => !open && setClearingScopes(null)}
-          title={`Remove manager access to teams for ${clearingScopes?.fullName}?`}
+          title={`Remove manager access to teams for ${clearingScopes?.fullName ?? ""}?`}
           description={`${clearingScopes?.fullName ?? "This member"} is no longer a Manager, so this team access is not used. You cannot undo this.`}
           confirmLabel="Remove access"
           pendingLabel="Removing…"
@@ -240,7 +334,7 @@ export function MembersTable({
         <ConfirmDialog
           open={!!confirming}
           onOpenChange={(open) => !open && setConfirming(null)}
-          title={`Delete member ${confirming?.code} · ${confirming?.fullName}?`}
+          title={`Delete member ${confirming?.code ?? ""} · ${confirming?.fullName ?? ""}?`}
           description="A member can only be deleted when they have no certificates. This cannot be undone."
           confirmLabel="Delete member"
           pendingLabel="Deleting…"
@@ -258,7 +352,7 @@ function ScopesCell({ scopes, onRemove }: { scopes: Scope[] | undefined; onRemov
   return (
     <div className="flex flex-col gap-0.5">
       <span className={inactive ? "text-muted-foreground" : undefined}>
-        Manages: {scopes.map((scope) => scope.label).join(", ")}
+        {scopes.map((scope) => scope.label).join(", ")}
       </span>
       {inactive && (
         <span className="flex items-center gap-2">

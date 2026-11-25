@@ -75,6 +75,7 @@ export async function loadAdminDashboard(user: SignedInUser) {
     ranking,
     records,
     dqIssues,
+    learningError: learningResult.ok ? undefined : learningResult.error,
   };
 }
 
@@ -109,6 +110,7 @@ export async function loadMemberDashboard(
     certificateOptions: certificateOptionsResult.ok ? certificateOptionsResult.data : [],
     studyCourses: studyCoursesResult.ok ? studyCoursesResult.data : [],
     journey: learningResult.ok ? learningAsJourneyRecords(learningResult.data) : [],
+    learningError: learningResult.ok ? undefined : learningResult.error,
     courses: coursesResult.ok ? coursesResult.data : [],
     examOptions: certificateOptionsResult.ok ? toExamOptions(certificateOptionsResult.data) : [],
     subtitle: `Welcome back, ${extractFirstName(profile.fullName)}! Ready to plan your next certification milestone?`,

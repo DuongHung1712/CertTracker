@@ -1,9 +1,11 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { LearningTab } from "@/features/learning/tab";
+import { parseLearningTab, type LearningTab } from "@/features/learning/tab";
+
+const TAB_SPECIFIC_PARAMS = ["view", "status", "approval"] as const;
 
 /** Certificates (results) and Learning (the journey) side by side; the tab is kept in ?tab= so links can open either. */
 export function LearningTabs({
@@ -22,11 +24,12 @@ export function LearningTabs({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<LearningTab>(initialTab);
+  const tabParam = searchParams.get("tab");
+  const tab: LearningTab = tabParam !== null ? parseLearningTab(tabParam) : initialTab;
 
   function change(next: LearningTab) {
-    setTab(next);
     const params = new URLSearchParams(searchParams.toString());
+    for (const key of TAB_SPECIFIC_PARAMS) params.delete(key);
     params.set("tab", next);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }

@@ -121,12 +121,13 @@ export async function proposeCertificate(input: ProposeCertificateInput): Promis
     return err("Your account is not linked to a member profile.");
   }
 
-  // Anti-duplicate check: reject if an approved or pending entry already exists with identical name
+  // Anti-duplicate check: reject if an approved or pending entry of the same kind already exists with identical name
   const trimmedName = parsed.data.name.trim();
   const escapedName = trimmedName.replace(/[%_\\]/g, "\\$&");
   const { data: existing } = await supabase
     .from("certificates")
     .select("id, name, kind, catalogue_status")
+    .eq("kind", parsed.data.kind)
     .ilike("name", escapedName)
     .in("catalogue_status", ["approved", "pending"])
     .limit(1);

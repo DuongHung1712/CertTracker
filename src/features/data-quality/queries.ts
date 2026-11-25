@@ -14,5 +14,52 @@ export async function listDataQualityIssues(): Promise<IssueRow[]> {
       .order("subject_id")
       .range(from, to),
   );
-  return parseIssues(rows);
+  const parsed = parseIssues(rows);
+  const certProposalIds = parsed.filter((r) => r.type === "certificate_proposal").map((r) => r.subjectId);
+  const courseProposalIds = parsed.filter((r) => r.type === "course_proposal").map((r) => r.subjectId);
+  if (certProposalIds.length === 0 && courseProposalIds.length === 0) return parsed;
+
+  const [certMeta, courseMeta] = await Promise.all([
+    certProposalIds.length > 0
+      ? supabase
+          .from("certificates")
+          .select("id, kind, proposed_provider, providers(name)")
+          .in("id", certProposalIds)
+      : Promise.resolve({ data: null }),
+    courseProposalIds.length > 0
+      ? supabase
+          .from("courses")
+          .select("id, proposed_provider, providers(name)")
+          .in("id", courseProposalIds)
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const certById = new Map(
+    (certMeta.data ?? []).map((c) => [
+      c.id,
+      {
+        kind: c.kind as "exam" | "completion",
+        providerName: c.providers?.name ?? c.proposed_provider ?? null,
+      },
+    ]),
+  );
+  const courseById = new Map(
+    (courseMeta.data ?? []).map((c) => [
+      c.id,
+      {
+        providerName: c.providers?.name ?? c.proposed_provider ?? null,
+      },
+    ]),
+  );
+
+  return parsed.map((row) => {
+    if (row.type === "certificate_proposal") {
+      const meta = certById.get(row.subjectId);
+      if (meta) return { ...row, certificateKind: meta.kind, providerName: meta.providerName };
+    } else if (row.type === "course_proposal") {
+      const meta = courseById.get(row.subjectId);
+      if (meta) return { ...row, providerName: meta.providerName };
+    }
+    return row;
+  });
 }

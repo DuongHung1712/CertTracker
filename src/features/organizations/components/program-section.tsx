@@ -9,8 +9,9 @@ import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { Button } from "@/components/ui/button";
 import { deleteProgram } from "@/features/organizations/actions";
+import { ManagersCell } from "@/features/organizations/components/managers-cell";
 import { ProgramDialog } from "@/features/organizations/components/program-dialog";
-import { ProgramManagersDialog } from "@/features/organizations/components/program-managers-dialog";
+import { ScopeManagersDialog } from "@/features/organizations/components/scope-managers-dialog";
 
 type Program = { id: string; name: string; dcId: string; dcName: string; managerIds: string[] };
 type DcOption = { id: string; name: string };
@@ -36,6 +37,12 @@ export function ProgramSection({
   const columns: ColumnDef<Program, unknown>[] = [
     { accessorKey: "name", header: "Program name" },
     { accessorKey: "dcName", header: "Centre" },
+    {
+      id: "managers",
+      header: "Managers",
+      enableSorting: false,
+      cell: ({ row }) => <ManagersCell managerIds={row.original.managerIds} candidates={candidates} />,
+    },
     ...(canManage
       ? ([
           {
@@ -57,7 +64,12 @@ export function ProgramSection({
                 >
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setConfirming(row.original)}
+                >
                   Delete
                 </Button>
               </div>
@@ -113,16 +125,20 @@ export function ProgramSection({
       {canManage && (
         <>
           <ProgramDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} dcs={dcs} />
-          <ProgramManagersDialog
-            program={settingManagers}
+          <ScopeManagersDialog
+            scope={
+              settingManagers
+                ? { kind: "program", id: settingManagers.id, name: settingManagers.name, managerIds: settingManagers.managerIds }
+                : null
+            }
             candidates={candidates}
             onClose={() => setSettingManagers(null)}
           />
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Delete program ${confirming?.name}?`}
-            description="A program can only be deleted when it has no teams."
+            title={`Delete program ${confirming?.name ?? ""}?`}
+            description="A program can only be deleted when it has no teams. This cannot be undone."
             confirmLabel="Delete program"
             pendingLabel="Deleting…"
             pending={pending}

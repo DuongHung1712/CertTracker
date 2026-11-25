@@ -42,7 +42,7 @@ export const LEVEL_SCALE_GUIDE: Record<SkillLevel, LevelDescription> = {
     title: "Novice",
     badgeLabel: "L1 · Novice",
     percentageRange: "10-20%",
-    officialLegend: "Know theory / limit knowledge (10-20%)",
+    officialLegend: "Know theory / limited knowledge (10-20%)",
     summary: "Basic understanding and theory (10-20%).",
     criteria: "Can execute routine, well-defined tasks under direct guidance.",
     requiresReview: false,

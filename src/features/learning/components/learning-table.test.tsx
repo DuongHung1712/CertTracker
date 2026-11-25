@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LearningTable } from "@/features/learning/components/learning-table";
 import type { LearningRow } from "@/features/learning/queries";
@@ -36,14 +37,14 @@ describe("LearningTable", () => {
 
   it("marks a course that is still waiting for the admin", () => {
     render(<LearningTable rows={[row({ courseId: "c1", courseName: "My Coursera ML", courseCatalogueStatus: "pending", isSelfStudy: false })]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
-    expect(screen.getByText("with My Coursera ML · No provider")).toBeTruthy();
+    expect(screen.getByText("with My Coursera ML · Self-study")).toBeTruthy();
     expect(screen.getByText(/Awaiting admin approval/)).toBeTruthy();
   });
 
-  it("leads a course item with the course and its completion certificate", () => {
+  it("leads a course item with the course and its course certificate", () => {
     render(<LearningTable rows={[row({ courseId: "c1", courseName: "Intro to agents", providerName: "Anthropic", courseCatalogueStatus: "approved", targetCertificateId: null, targetCertificateName: null, isSelfStudy: false })]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
     const cells = within(screen.getAllByRole("row")[1]!).getAllByRole("cell").map((cell) => cell.textContent ?? "");
-    expect(cells[0]).toBe("Intro to agentsCourseAnthropic · completion certificate");
+    expect(cells[0]).toBe("Intro to agentsCourseAnthropic · course certificate");
     expect(screen.queryByRole("columnheader", { name: /Exam target/ })).toBeNull();
   });
 
@@ -51,5 +52,25 @@ describe("LearningTable", () => {
     render(<LearningTable rows={[row({})]} mode="team" courses={[]} examOptions={[]} />);
     expect(screen.queryByRole("button", { name: /Approve/ })).toBeNull();
     expect(screen.getByText("Jane")).toBeTruthy();
+  });
+
+  it("applies initialStatus, searches by memberCode in team mode, and Clear filters clears search", async () => {
+    const rows = [
+      row({ id: "r1", memberCode: "M001", memberName: "Nguyễn Văn An", status: "in_progress", targetCertificateName: "AWS" }),
+      row({ id: "r2", memberCode: "M002", memberName: "Lê Minh Châu", status: "not_started", targetCertificateName: "CKA" }),
+    ];
+    render(<LearningTable rows={rows} mode="team" courses={[]} examOptions={[]} initialStatus="not_started" />);
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByText("CKA")).toBeTruthy();
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(screen.getAllByRole("row")).toHaveLength(3);
+
+    await userEvent.type(screen.getByRole("searchbox"), "M002");
+    expect(screen.getAllByRole("row")).toHaveLength(2);
+    expect(screen.getByText("Lê Minh Châu")).toBeTruthy();
+
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(screen.getAllByRole("row")).toHaveLength(3);
   });
 });

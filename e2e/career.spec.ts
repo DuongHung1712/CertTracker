@@ -59,7 +59,7 @@ test("admin sets a member's role and career start in /members and sees the Role 
   // While the dialog is open the table is aria-hidden: wait for it to close before asserting on the row.
   await expect(page.getByRole("dialog")).toHaveCount(0);
 
-  await expect(page.getByRole("columnheader", { name: "Career title" })).toBeVisible();
+  await expect(page.getByRole("columnheader", { name: "Career role" })).toBeVisible();
   await expect(page.getByRole("columnheader", { name: "Experience" })).toBeVisible();
   await expect(row.getByRole("cell", { name: "Senior Engineer" })).toBeVisible();
   // Only a year was given: it counts from January.

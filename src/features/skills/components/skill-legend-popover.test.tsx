@@ -16,7 +16,7 @@ describe("SkillLegendPopover component", () => {
 
     expect(screen.getByText("Skill levels")).toBeDefined();
     expect(screen.getByText("No idea on the area (0%)")).toBeDefined();
-    expect(screen.getByText("Know theory / limit knowledge (10-20%)")).toBeDefined();
+    expect(screen.getByText("Know theory / limited knowledge (10-20%)")).toBeDefined();
     expect(screen.getByText("Minimal experience - with support from others (20-50%)")).toBeDefined();
     expect(screen.getByText("Average experience - can perform on own with minimal guidance (50-70%)")).toBeDefined();
     expect(screen.getByText("Advanced knowledge - extensive technical knowledge, go-to person, train others (70-100%)")).toBeDefined();
