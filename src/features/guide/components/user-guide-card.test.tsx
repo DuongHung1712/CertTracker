@@ -109,6 +109,16 @@ describe("UserGuideCard", () => {
     expect(replace).toHaveBeenCalledWith("/dashboard", { scroll: false });
   });
 
+  it("expands steps when forceOpen flips to true on an already-mounted card", async () => {
+    const { rerender } = render(<UserGuideCard userId="u1" role="member" forceOpen={false} />);
+    await userEvent.click(screen.getByRole("button", { name: "Hide for now" }));
+    expect(screen.queryByRole("region", { name: "Welcome to CertTracker" })).toBeNull();
+
+    rerender(<UserGuideCard userId="u1" role="member" forceOpen />);
+    expect(await screen.findByRole("region", { name: "Welcome to CertTracker" })).toBeTruthy();
+    expect(screen.getByText("Add a certificate you hold")).toBeTruthy();
+  });
+
   it("stays dismissed after a refresh once the address has no ?guide=1", async () => {
     const first = render(<UserGuideCard userId="u1" role="member" forceOpen />);
     await userEvent.click(await screen.findByRole("button", { name: "Don't show again" }));

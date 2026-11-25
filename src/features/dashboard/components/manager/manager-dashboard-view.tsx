@@ -77,12 +77,14 @@ export function ManagerDashboardView({
         title="Dashboard"
         description={`${greeting} · ${subtitle}`}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <ExportLinks label="Download team data" />
-            <Link href="/records" className={buttonVariants()}>
-              View learning
-            </Link>
-          </div>
+          hasTeams ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <ExportLinks label="Download team data" />
+              <Link href="/records" className={buttonVariants()}>
+                View learning
+              </Link>
+            </div>
+          ) : undefined
         }
       />
 
@@ -128,7 +130,7 @@ export function ManagerDashboardView({
                   tone={kpis.expiredCount > 0 ? "danger" : "neutral"}
                 />
                 <SummaryTile
-                  label="Team ready"
+                  label="Valid certificates"
                   value={kpis.doneCount === 0 ? "—" : kpis.teamReadinessFormatted}
                   summary={kpis.doneCount === 0 ? "No certificates yet" : `${kpis.validCount} of ${kpis.doneCount} certificates valid`}
                   footer={membersError ? "Members could not be loaded" : `${pluralize(withoutCertificate, "member")} without a certificate`}
@@ -140,11 +142,17 @@ export function ManagerDashboardView({
           {recordsError || membersError ? (
             <SectionError title="Needs attention" />
           ) : (
-            <ManagerAttentionList records={filteredRecords} members={filteredMembers} showTeam={manyTeams} incomplete={Boolean(learningError)} />
+            <ManagerAttentionList
+              records={filteredRecords}
+              members={filteredMembers}
+              showTeam={manyTeams && !selectedTeam}
+              selectedTeam={selectedTeam}
+              incomplete={Boolean(learningError)}
+            />
           )}
 
           <Section title="My team" description="Each person's valid certificates and what needs renewing. Select a name to see their certificates.">
-            {recordsError || membersError ? <SectionError title="My team" /> : <ManagerTeamTable rows={teamRows} showTeam={manyTeams} />}
+            {recordsError || membersError ? <SectionError title="My team" /> : <ManagerTeamTable rows={teamRows} showTeam={manyTeams && !selectedTeam} />}
           </Section>
         </>
       )}

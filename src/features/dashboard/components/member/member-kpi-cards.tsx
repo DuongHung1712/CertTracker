@@ -129,6 +129,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
       <Tile
         label="Valid"
         view="held"
+        href={held === 0 && kpis.waitingCount > 0 ? "/me?view=waiting" : undefined}
         tone="primary"
         icon={<Award className="size-3.5" aria-hidden="true" />}
         value={held}
@@ -204,7 +205,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
             </div>
           </div>
         ) : (
-          <Footer>Explore catalogue &rarr;</Footer>
+          <Footer>Explore catalogue</Footer>
         )}
       </Tile>
 

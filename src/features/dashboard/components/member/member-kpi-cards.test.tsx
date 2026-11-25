@@ -19,7 +19,8 @@ describe("MemberKpiCards tiles", () => {
     expect(htmlEmpty).toContain('href="/me?view=held"');
     expect(htmlEmpty).toContain('href="/me?view=needs-action"');
     expect(htmlEmpty).toContain('href="/courses"');
-    expect(htmlEmpty).toContain("Explore catalogue →");
+    expect(htmlEmpty).toContain("Explore catalogue");
+    expect(htmlEmpty).not.toContain("Explore catalogue →");
     expect(htmlEmpty).toContain('href="/me?tab=learning"');
 
     const htmlWithProgress = render([
@@ -102,11 +103,13 @@ describe("MemberKpiCards: waiting for approval", () => {
     expect(render([doneRecord(120, { id: "a" })])).not.toContain("view=waiting");
   });
 
-  it("with only waiting items, says how many wait and offers only the waiting items (no empty View all)", () => {
+  it("with only waiting items, says how many wait, links the tile to waiting and offers no empty View all", () => {
     const html = render([waiting]);
     expect(html).toContain("1 waiting for approval");
     expect(html).not.toContain("None yet");
     expect(html).not.toContain("View all");
+    expect(html).not.toContain('href="/me?view=held"');
+    expect(html).toContain('href="/me?view=waiting"');
   });
 
   it("shows no waiting line when nothing waits", () => {

@@ -305,7 +305,7 @@ export function getManagerAttention(
       title: member.fullName,
       detail: "No certificate yet",
       teamName: member.teamName,
-      href: searchHref(member.fullName),
+      href: learningSearchHref(member.fullName),
     })),
   ];
   return { items: all.slice(0, limit), total: all.length };

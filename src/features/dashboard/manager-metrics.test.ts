@@ -324,6 +324,6 @@ describe("getManagerAttention", () => {
 
   it("encodes a name with spaces and symbols in the link", () => {
     const { items } = getManagerAttention([], [{ id: "m9", fullName: "Lê Minh & Co", teamName: null }]);
-    expect(items[0].href).toBe("/records?search=L%C3%AA%20Minh%20%26%20Co");
+    expect(items[0].href).toBe("/records?tab=learning&search=L%C3%AA%20Minh%20%26%20Co");
   });
 });

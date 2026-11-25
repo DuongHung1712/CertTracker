@@ -20,16 +20,20 @@ export function ManagerAttentionList({
   records,
   members,
   showTeam,
+  selectedTeam = null,
   incomplete = false,
 }: {
   records: RecordRow[];
   members: { id: string; fullName: string; teamName: string | null }[];
   /** Name the team on each row when the manager looks after more than one. */
   showTeam: boolean;
+  /** Currently selected team scope, propagated to the overflow link. */
+  selectedTeam?: string | null;
   /** Learning items could not be loaded: exams coming up may be missing, so an empty list is not an all clear. */
   incomplete?: boolean;
 }) {
   const { items, total } = getManagerAttention(records, members);
+  const overflowHref = selectedTeam ? `/records?team=${encodeURIComponent(selectedTeam)}` : "/records";
 
   return (
     <section aria-label="Needs attention" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
@@ -80,7 +84,7 @@ export function ManagerAttentionList({
       {total > items.length && (
         <p className="text-caption text-muted-foreground">
           {`Showing ${items.length} of ${total}. `}
-          <Link href="/records" className="font-medium text-foreground underline underline-offset-2">
+          <Link href={overflowHref} className="font-medium text-foreground underline underline-offset-2">
             Open Learning
           </Link>
         </p>

@@ -17,9 +17,17 @@ export type UserGuideProps = { userId: string; role: Role; forceOpen?: boolean; 
 export function UserGuideCard({ userId, role, forceOpen = false, initialVisible = true }: UserGuideProps) {
   const router = useRouter();
   // `forced` keeps the card up from the first paint of /dashboard?guide=1 until the cookies are cleared, so it never flickers off and on.
+  const [prevForceOpen, setPrevForceOpen] = useState(forceOpen);
   const [forced, setForced] = useState(forceOpen);
   const visible = useGuideVisible(userId, initialVisible || forceOpen) || forced;
   const [stepsOpen, setStepsOpen] = useState(forceOpen);
+  if (forceOpen !== prevForceOpen) {
+    setPrevForceOpen(forceOpen);
+    if (forceOpen) {
+      setForced(true);
+      setStepsOpen(true);
+    }
+  }
   useEffect(() => {
     if (!forceOpen) return;
     showGuideAgain(userId);
