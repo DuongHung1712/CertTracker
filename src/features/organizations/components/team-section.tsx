@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -9,10 +9,12 @@ import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { Button } from "@/components/ui/button";
 import { deleteTeam } from "@/features/organizations/actions";
+import { ManagersCell } from "@/features/organizations/components/managers-cell";
+import { ScopeManagersDialog } from "@/features/organizations/components/scope-managers-dialog";
 import { TeamDialog } from "@/features/organizations/components/team-dialog";
 
 type Team = { id: string; name: string; programId: string; programName: string; managerIds: string[] };
-type ProgramOption = { id: string; name: string };
+type ProgramOption = { id: string; name: string; managerIds?: string[] };
 type Candidate = { userId: string; fullName: string; email: string };
 
 export function TeamSection({
@@ -29,11 +31,29 @@ export function TeamSection({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Team | null>(null);
   const [confirming, setConfirming] = useState<Team | null>(null);
+  const [settingManagers, setSettingManagers] = useState<Team | null>(null);
   const [pending, setPending] = useState(false);
+
+  const programManagersById = useMemo(
+    () => new Map(programs.map((program) => [program.id, program.managerIds ?? []])),
+    [programs],
+  );
 
   const columns: ColumnDef<Team, unknown>[] = [
     { accessorKey: "name", header: "Team name" },
     { accessorKey: "programName", header: "Program" },
+    {
+      id: "managers",
+      header: "Managers",
+      enableSorting: false,
+      cell: ({ row }) => (
+        <ManagersCell
+          managerIds={row.original.managerIds}
+          inheritedManagerIds={programManagersById.get(row.original.programId) ?? []}
+          candidates={candidates}
+        />
+      ),
+    },
     ...(canManage
       ? ([
           {
@@ -42,6 +62,9 @@ export function TeamSection({
             enableSorting: false,
             cell: ({ row }) => (
               <div className="flex justify-end gap-1">
+                <Button variant="ghost" size="sm" onClick={() => setSettingManagers(row.original)}>
+                  Set managers
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -112,7 +135,22 @@ export function TeamSection({
             onOpenChange={setDialogOpen}
             editing={editing}
             programs={programs}
+          />
+          <ScopeManagersDialog
+            scope={
+              settingManagers
+                ? {
+                    kind: "team",
+                    id: settingManagers.id,
+                    name: settingManagers.name,
+                    managerIds: settingManagers.managerIds,
+                    programName: settingManagers.programName,
+                    inheritedManagerIds: programManagersById.get(settingManagers.programId) ?? [],
+                  }
+                : null
+            }
             candidates={candidates}
+            onClose={() => setSettingManagers(null)}
           />
           <ConfirmDialog
             open={!!confirming}
