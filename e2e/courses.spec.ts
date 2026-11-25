@@ -33,6 +33,8 @@ async function signOut(page: Page) {
   // "Sign out" is a menu item behind the "Account" trigger (src/components/app-shell/user-menu.tsx).
   await page.getByRole("button", { name: "Account" }).click();
   await page.getByRole("menuitem", { name: "Sign out" }).click();
+  // Wait for the redirect: going to /login while the sign-out action is still running leaves the session alive and /login bounces back.
+  await expect(page).toHaveURL(/\/login/);
 }
 
 async function pickOption(page: Page, dialog: Locator, label: string | RegExp, option: string) {
