@@ -33,7 +33,7 @@ export function SkillsHeader({ stats, benchmark, onOpenGuide, onOpenBatchAssess 
           </Button>
           <Button type="button" size="sm" onClick={onOpenBatchAssess}>
             <ListChecks aria-hidden />
-            Rate many skills
+            Update skill rate
           </Button>
         </div>
       </div>

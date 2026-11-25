@@ -123,7 +123,7 @@ export function SkillAssessmentDialog({ skill, onOpenChange, onSave }: SkillAsse
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-dvh overflow-y-auto sm:max-w-xl">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle className="text-section-title">Rate {skill.name}</DialogTitle>
           <DialogDescription>Pick the level that fits today, then add how long and where you used it.</DialogDescription>

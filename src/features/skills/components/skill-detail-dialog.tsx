@@ -30,7 +30,7 @@ export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDe
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-dvh overflow-y-auto sm:max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle className="text-section-title">{skill.name}</DialogTitle>
           <DialogDescription>{skill.description}</DialogDescription>

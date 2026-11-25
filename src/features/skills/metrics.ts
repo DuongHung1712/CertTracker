@@ -9,6 +9,7 @@ import type {
   VerificationStatus,
 } from "./types";
 import { todayVn } from "@/lib/dates";
+import { foldText } from "@/lib/text";
 
 /**
  * Applies a new level. Level 5 always needs manager review; otherwise a linked
@@ -77,7 +78,7 @@ export function filterSkills(
   skills: Skill[],
   filters: Pick<SkillFilterOptions, "category" | "verification" | "query">,
 ): Skill[] {
-  const query = filters.query.trim().toLowerCase();
+  const query = foldText(filters.query);
 
   return skills.filter((skill) => {
     // 1. Category filter
@@ -98,14 +99,10 @@ export function filterSkills(
 
     // 3. Search query
     if (query) {
-      const matchName = skill.name.toLowerCase().includes(query);
-      const matchCode = skill.code.toLowerCase().includes(query);
-      const matchDesc = skill.description.toLowerCase().includes(query);
-      const matchCert =
-        skill.certifiedProof?.certificateName.toLowerCase().includes(query) ||
-        skill.certifiedProof?.certificateCode.toLowerCase().includes(query);
-
-      if (!matchName && !matchCode && !matchDesc && !matchCert) {
+      const haystack = foldText(
+        `${skill.name} ${skill.code} ${skill.description} ${skill.certifiedProof?.certificateName ?? ""} ${skill.certifiedProof?.certificateCode ?? ""}`,
+      );
+      if (!haystack.includes(query)) {
         return false;
       }
     }
