@@ -897,7 +897,7 @@ export function RecordSheet({
             />
             {certificate?.catalogueStatus === "pending" && (
               <p className="text-caption text-amber-700 dark:text-amber-400">
-                This item is pending admin approval. You can still save and track your progress.
+                This item is pending admin approval. You can still save it.
               </p>
             )}
             {duplicate && (

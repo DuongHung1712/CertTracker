@@ -48,11 +48,11 @@ describe("RecordsTable kind filter", () => {
     expect(rowNames()).toHaveLength(1);
   });
 
-  it("self mode: names the planned date by the chosen kind and offers the add action for both kinds", async () => {
+  it("self mode: shows Issued date and Certificate columns and offers the add action for both kinds", async () => {
     render(table("self"));
-    expect(screen.getByRole("columnheader", { name: "Planned date" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Certificate" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Issued date" })).toBeTruthy();
     await userEvent.click(screen.getByRole("tab", { name: "Course certificates (2)" }));
-    expect(screen.getByRole("columnheader", { name: "Planned finish date" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add certificate" })).toBeTruthy();
     expect(screen.getByText("Passed an exam or finished a course? Add the certificate with its proof.")).toBeTruthy();
   });

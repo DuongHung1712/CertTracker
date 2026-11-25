@@ -26,7 +26,7 @@ const DETAILS: Record<ImportField, { required?: boolean; description: string; ex
   },
   courseName: { required: true, description: "The exam certificate (on a Learning row: the exam you are preparing for; optional when Course studied is set). A name that is not in the catalogue is created, which needs a Provider.", example: "AWS Certified Cloud Practitioner" },
   memberName: { description: "Needed to create a new member; an existing member keeps their name.", example: "Jane Nguyen" },
-  team: { description: "A team that already exists in Organization. A new member without a team is created with none.", example: "Team Alpha" },
+  team: { description: "A team that already exists in Organisation. A new member without a team is created with none.", example: "Team Alpha" },
   provider: { description: "Needed to create a new certificate. Also picks one when several certificates share a name.", example: "AWS" },
   certType: { description: "The type of a new certificate. An existing certificate keeps its catalogue type.", example: "Cloud" },
   validityMonths: { description: "Months a new certificate stays valid: a number, \"3 years\" or \"no expiry\".", example: "36" },

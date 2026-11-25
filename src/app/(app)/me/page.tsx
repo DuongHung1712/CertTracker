@@ -9,6 +9,7 @@ import { LearningTabs } from "@/features/learning/components/learning-tabs";
 import { parseLearningTab } from "@/features/learning/tab";
 import { toExamOptions } from "@/features/learning/exam-options";
 import { listCourseOptions, listLearningItems } from "@/features/learning/queries";
+import { listProviders } from "@/features/courses/queries";
 import { isAiReaderEnabled } from "@/features/records/ai-flag";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { RecordsTable } from "@/features/records/components/records-table";
@@ -39,12 +40,13 @@ export default async function MePage({
     );
   }
 
-  const [records, certificateOptions, studyCourses, items, courses, aiReaderEnabled] = await Promise.all([
+  const [records, certificateOptions, studyCourses, items, courses, providers, aiReaderEnabled] = await Promise.all([
     listRecords({ memberId: user.memberId }),
     listCertificateOptions(),
     listStudyCourses(),
     listLearningItems({ memberId: user.memberId }),
     listCourseOptions(),
+    listProviders(),
     isAiReaderEnabled(),
   ]);
 
@@ -74,11 +76,27 @@ export default async function MePage({
             fixedMemberId={user.memberId}
             canDelete={user.role !== "member"}
             showCompanyFields={user.role !== "member"}
+            canAddToCatalogue={user.role === "admin"}
             aiReaderEnabled={aiReaderEnabled}
           />
         }
         learning={
-          <LearningTable key={initialStatus} initialStatus={initialStatus} rows={items} mode="self" fixedMemberId={user.memberId} courses={courses} examOptions={toExamOptions(certificateOptions)} viewerMemberId={user.memberId} certificateOptions={certificateOptions} studyCourses={studyCourses} />
+          <LearningTable
+            key={initialStatus}
+            initialStatus={initialStatus}
+            rows={items}
+            mode="self"
+            fixedMemberId={user.memberId}
+            courses={courses}
+            examOptions={toExamOptions(certificateOptions)}
+            viewerMemberId={user.memberId}
+            certificateOptions={certificateOptions}
+            studyCourses={studyCourses}
+            providers={providers}
+            showCompanyFields={user.role !== "member"}
+            aiReaderEnabled={aiReaderEnabled}
+            records={records}
+          />
         }
       />
     </div>

@@ -37,14 +37,14 @@ describe("LearningTable", () => {
 
   it("marks a course that is still waiting for the admin", () => {
     render(<LearningTable rows={[row({ courseId: "c1", courseName: "My Coursera ML", courseCatalogueStatus: "pending", isSelfStudy: false })]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
-    expect(screen.getByText("with My Coursera ML · No provider")).toBeTruthy();
+    expect(screen.getByText("with My Coursera ML · Self-study")).toBeTruthy();
     expect(screen.getByText(/Awaiting admin approval/)).toBeTruthy();
   });
 
-  it("leads a course item with the course and its completion certificate", () => {
+  it("leads a course item with the course and its course certificate", () => {
     render(<LearningTable rows={[row({ courseId: "c1", courseName: "Intro to agents", providerName: "Anthropic", courseCatalogueStatus: "approved", targetCertificateId: null, targetCertificateName: null, isSelfStudy: false })]} mode="self" fixedMemberId="m1" courses={[]} examOptions={[]} />);
     const cells = within(screen.getAllByRole("row")[1]!).getAllByRole("cell").map((cell) => cell.textContent ?? "");
-    expect(cells[0]).toBe("Intro to agentsCourseAnthropic · completion certificate");
+    expect(cells[0]).toBe("Intro to agentsCourseAnthropic · course certificate");
     expect(screen.queryByRole("columnheader", { name: /Exam target/ })).toBeNull();
   });
 

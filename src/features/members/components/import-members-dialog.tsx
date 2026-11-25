@@ -79,7 +79,7 @@ export function ImportMembersDialog() {
         <DialogHeader>
           <DialogTitle className="text-section-title">Import members</DialogTitle>
           <DialogDescription>
-            Upload an Excel or CSV file with the columns Full name, Email, Team and Career role. Members are created without an invitation.{" "}
+            Upload an Excel or CSV file with the columns Full name, Email, Team and Career role. Members are created without an account; invite them later so they can sign in.{" "}
             <a href="/templates/members-import.csv" download className="inline-flex items-center gap-1 text-primary underline">
               <Download aria-hidden className="size-4" />
               Download template
@@ -112,6 +112,11 @@ export function ImportMembersDialog() {
         {error && <p role="alert" className="text-body text-destructive">{error}</p>}
         <DialogFooter>
           {done !== null && <Button onClick={() => { setOpen(false); reset(); }}>Close</Button>}
+          {done === null && (
+            <Button variant="outline" disabled={pending} onClick={() => { setOpen(false); reset(); }}>
+              Cancel
+            </Button>
+          )}
           {done === null && (preview || error) && <Button variant="outline" disabled={pending} onClick={reset}>Choose another file</Button>}
           {stale && file && <Button disabled={pending} onClick={() => runPreview(file)}>Preview again</Button>}
           {preview && !stale && <Button disabled={pending || create === 0} onClick={confirm}>{`Import ${pluralize(create, "member")}`}</Button>}

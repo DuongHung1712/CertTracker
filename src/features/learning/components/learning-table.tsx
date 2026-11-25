@@ -11,7 +11,7 @@ import { rowActionsColumn } from "@/components/data/row-actions-column";
 import { useConfirmedDelete } from "@/components/data/use-confirmed-delete";
 import type { ComboboxOption } from "@/components/entity-combobox";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
-import { RECORD_STATUS_LABEL } from "@/components/status/labels";
+import { NO_TEAM_LABEL, RECORD_STATUS_LABEL } from "@/components/status/labels";
 import { CatalogueStatusBadge, RecordStatusLabel } from "@/components/status/record-status";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -20,11 +20,13 @@ import { LearningSheet } from "@/features/learning/components/learning-sheet";
 import { SubmitCertificate } from "@/features/learning/components/submit-certificate";
 import type { CourseOption, LearningRow } from "@/features/learning/queries";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
+import type { RecordRow } from "@/features/records/queries";
 import { RECORD_STATUSES } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
 import { foldText } from "@/lib/text";
 
 const ALL = "all";
+const NO_TEAM = "__no_team__";
 const STATUS_FILTER: SelectOption[] = [{ id: ALL, name: "All statuses" }, ...RECORD_STATUSES.map((status) => ({ id: status, name: RECORD_STATUS_LABEL[status] }))];
 
 // The goal leads (decision #72): the exam when there is one, else the course; the course is how you prepare.
@@ -42,8 +44,12 @@ export function LearningTable({
   certificateOptions = [],
   studyCourses = [],
   providers,
+  showCompanyFields = false,
+  aiReaderEnabled = false,
+  records,
   initialSearch = "",
   initialStatus = ALL,
+  initialTeam = "",
 }: {
   rows: LearningRow[];
   mode: "self" | "team";
@@ -57,10 +63,15 @@ export function LearningTable({
   certificateOptions?: CertificateChoice[];
   studyCourses?: StudyCourse[];
   providers?: { id: string; name: string }[];
+  showCompanyFields?: boolean;
+  aiReaderEnabled?: boolean;
+  records?: RecordRow[];
   /** Links open the list already searched (?search=<name>). */
   initialSearch?: string;
   /** Links open the list narrowed to one status (?status=in_progress | not_started). */
   initialStatus?: string;
+  /** Links open the team list narrowed to one team (?team=<name>). */
+  initialTeam?: string;
 }) {
   const [submitting, setSubmitting] = useState<LearningRow | null>(null);
   // A course's completion certificate (catalogue: certificates.course_id), for "Submit certificate".
@@ -72,6 +83,9 @@ export function LearningTable({
   const [status, setStatus] = useState(
     (RECORD_STATUSES as readonly string[]).includes(initialStatus) ? initialStatus : ALL,
   );
+  const [teamFilter, setTeamFilter] = useState(
+    initialTeam ? (initialTeam === NO_TEAM_LABEL || initialTeam === NO_TEAM ? NO_TEAM : initialTeam) : ALL,
+  );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<LearningRow | null>(null);
   const remove = useConfirmedDelete<LearningRow>({
@@ -79,24 +93,39 @@ export function LearningTable({
     successMessage: (row) => `Removed ${itemName(row)}`,
   });
 
+  const teamOptions = useMemo<SelectOption[]>(() => {
+    const names = [...new Set(rows.flatMap((row) => (row.teamName ? [row.teamName] : [])))].sort((a, b) => a.localeCompare(b, "vi"));
+    const hasTeamless = rows.some((row) => row.teamId === null);
+    return [
+      { id: ALL, name: "All teams" },
+      ...names.map((name) => ({ id: name, name })),
+      ...(hasTeamless ? [{ id: NO_TEAM, name: NO_TEAM_LABEL }] : []),
+    ];
+  }, [rows]);
+
   const visible = useMemo(() => {
     const query = foldText(search.trim());
-    return rows.filter(
-      (row) =>
-        (status === ALL || row.status === status) &&
-        (!query ||
-          foldText(
-            mode === "team"
-              ? `${row.courseName ?? ""} ${row.targetCertificateName ?? ""} ${row.providerName ?? ""} ${row.memberName} ${row.memberCode}`
-              : `${row.courseName ?? ""} ${row.targetCertificateName ?? ""} ${row.providerName ?? ""}`,
-          ).includes(query)),
-    );
-  }, [rows, search, status, mode]);
+    return rows.filter((row) => {
+      if (status !== ALL && row.status !== status) return false;
+      if (mode === "team" && teamFilter !== ALL) {
+        if (teamFilter === NO_TEAM ? row.teamId !== null : row.teamName !== teamFilter) return false;
+      }
+      if (!query) return true;
+      return foldText(
+        mode === "team"
+          ? `${row.courseName ?? ""} ${row.targetCertificateName ?? ""} ${row.providerName ?? ""} ${row.memberName} ${row.memberCode} ${row.teamName ?? ""}`
+          : `${row.courseName ?? ""} ${row.targetCertificateName ?? ""} ${row.providerName ?? ""}`,
+      ).includes(query);
+    });
+  }, [rows, search, status, teamFilter, mode]);
 
   const columns = useMemo<ColumnDef<LearningRow, unknown>[]>(
     () => [
       ...(mode === "team"
-        ? [{ id: "member", header: "Member", accessorFn: (row: LearningRow) => row.memberName } satisfies ColumnDef<LearningRow, unknown>]
+        ? ([
+            { id: "member", header: "Member", accessorFn: (row: LearningRow) => row.memberName },
+            { id: "team", header: "Team", accessorFn: (row: LearningRow) => row.teamName ?? "", cell: ({ row }) => row.original.teamName ?? "—" },
+          ] satisfies ColumnDef<LearningRow, unknown>[])
         : []),
       {
         id: "item",
@@ -105,7 +134,7 @@ export function LearningTable({
         cell: ({ row }) => {
           const item = row.original;
           const isExam = Boolean(item.targetCertificateName);
-          const provider = item.providerName ?? "No provider";
+          const provider = item.providerName ?? "Self-study";
           return (
             <span className="flex min-w-0 flex-col gap-0.5">
               <span className="flex items-center gap-1.5">
@@ -116,7 +145,7 @@ export function LearningTable({
               </span>
               <span className="flex min-w-0 items-center gap-1.5 text-caption text-muted-foreground">
                 <span className="truncate">
-                  {!item.courseName ? "Self-study" : isExam ? `with ${item.courseName} · ${provider}` : `${provider} · completion certificate`}
+                  {!item.courseName ? "Self-study" : isExam ? `with ${item.courseName} · ${provider}` : `${provider} · course certificate`}
                 </span>
                 <CatalogueStatusBadge status={item.courseCatalogueStatus} />
               </span>
@@ -167,12 +196,18 @@ export function LearningTable({
           search={search}
           onSearchChange={setSearch}
           searchPlaceholder={mode === "team" ? "Search by member, course or exam…" : "Search by course or exam…"}
-          hasActiveFilters={search.length > 0 || status !== ALL}
+          hasActiveFilters={search.length > 0 || status !== ALL || (mode === "team" && teamFilter !== ALL)}
           onClear={() => {
             setSearch("");
             setStatus(ALL);
+            setTeamFilter(ALL);
           }}
         >
+          {mode === "team" && (
+            <div className="w-44">
+              <OptionSelect id="learning-team-filter" value={teamFilter} onChange={setTeamFilter} options={teamOptions} placeholder="Team" />
+            </div>
+          )}
           <div className="w-40">
             <OptionSelect id="learning-status-filter" value={status} onChange={setStatus} options={STATUS_FILTER} placeholder="Status" />
           </div>
@@ -207,6 +242,7 @@ export function LearningTable({
         examOptions={examOptions}
         rows={rows}
         viewerMemberId={viewerMemberId}
+        providers={providers}
       />
       {submitting && (
         <SubmitCertificate
@@ -217,6 +253,9 @@ export function LearningTable({
           studyCourses={studyCourses}
           completionByCourse={completionByCourse}
           providers={providers}
+          showCompanyFields={showCompanyFields}
+          aiReaderEnabled={aiReaderEnabled}
+          records={records}
         />
       )}
       <ConfirmDialog

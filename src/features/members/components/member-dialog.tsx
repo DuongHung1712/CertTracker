@@ -118,7 +118,9 @@ export function MemberDialog({
     if (editing?.userId && access && access !== editing.accessRole) {
       const accessResult = await setMemberAccess({ userId: editing.userId, role: access });
       if (!accessResult.ok) {
-        form.setError("root", { message: accessResult.error });
+        form.setError("root", {
+          message: `Member details were saved, but access could not be updated: ${accessResult.error}`,
+        });
         return;
       }
     }
@@ -163,7 +165,7 @@ export function MemberDialog({
               name="teamId"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="member-team" aria-invalid={!!form.formState.errors.teamId}>
+                  <SelectTrigger id="member-team" className="w-full" aria-invalid={!!form.formState.errors.teamId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the team name. */}
                     <SelectValue placeholder="Choose a team">
                       {(value: string) => teams.find((team) => team.id === value)?.name ?? "Choose a team"}
@@ -240,7 +242,9 @@ export function MemberDialog({
                 <div>
                   <dt className="text-caption text-muted-foreground">Started working</dt>
                   <dd>
-                    {formatCareerStart(editing.careerStart)} ({formatYoe(editing.yoeYears)})
+                    {editing.careerStart
+                      ? `${formatCareerStart(editing.careerStart)} (${formatYoe(editing.yoeYears)})`
+                      : "Not set"}
                   </dd>
                 </div>
               </dl>

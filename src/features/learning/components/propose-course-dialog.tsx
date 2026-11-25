@@ -31,6 +31,7 @@ export function ProposeCourseDialog({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    event.stopPropagation();
     setPending(true);
     const result = await proposeCourse({ name, proposedProvider: provider.trim() || null, memberId: viewerMemberId });
     setPending(false);

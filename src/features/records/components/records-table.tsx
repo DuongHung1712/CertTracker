@@ -26,7 +26,7 @@ import { inMemberView, MEMBER_VIEW_LABEL, type MemberView } from "@/features/das
 import { deleteRecord, deleteRecords, reviewRecord } from "@/features/records/actions";
 import { EvidenceCell } from "@/features/records/components/evidence-cell";
 import { RecordSheet } from "@/features/records/components/record-sheet";
-import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type ApprovalState, type KindFilter } from "@/features/records/kind";
+import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, type ApprovalState, type KindFilter } from "@/features/records/kind";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { MAX_BULK_DELETE, reviewSchema } from "@/features/records/schema";
@@ -237,7 +237,7 @@ export function RecordsTable({
         : []),
       {
         accessorKey: "certificateName",
-        header: "Learning item",
+        header: "Certificate",
         cell: ({ row }) => (
           // Name alone on the first line so it gets the width; kind, proposal state and path go underneath.
           <div className="flex max-w-md flex-col gap-0.5">
@@ -300,9 +300,9 @@ export function RecordsTable({
         ),
       },
       {
-        accessorKey: "plannedExamDate",
-        header: plannedDateHeader(kindFilter),
-        cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
+        accessorKey: "issuedDate",
+        header: "Issued date",
+        cell: ({ row }) => (row.original.issuedDate ? formatDate(row.original.issuedDate) : "—"),
       },
       {
         id: "evidence",
@@ -340,7 +340,7 @@ export function RecordsTable({
                     View evidence
                   </DropdownMenuItem>
                 )}
-                {canReview && record.status === "done" && record.memberId !== reviewerMemberId && record.approval !== "approved" && (
+                {canReview && record.status === "done" && !record.renewed && record.memberId !== reviewerMemberId && record.approval !== "approved" && (
                   <DropdownMenuItem onClick={() => void approve(record)}>
                     Approve{" "}
                     {!record.hasEvidence && !record.certificateUrl && (
@@ -440,7 +440,7 @@ export function RecordsTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={isTeam ? "Search by name, code, certificate or completion…" : "Search by name or course…"}
+        searchPlaceholder={isTeam ? "Search by name, code, certificate or course…" : "Search by certificate or course…"}
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -507,7 +507,13 @@ export function RecordsTable({
             ))}
           </SelectContent>
         </Select>
-        <Select value={expiryFilter} onValueChange={(value) => setExpiryFilter(value ?? ALL)}>
+        <Select
+          value={expiryFilter}
+          onValueChange={(value) => {
+            setExpiryFilter(value ?? ALL);
+            setView(undefined);
+          }}
+        >
           <SelectTrigger aria-label="Expiry">
             <SelectValue>
               {(value: string) =>
@@ -596,7 +602,11 @@ export function RecordsTable({
           records.length === 0 ? (
             <EmptyState
               title="Nothing added yet"
-              description="Add a certificate you hold, a course you are studying or a course completion."
+              description={
+                isTeam
+                  ? "Add a member's exam certificate or course certificate."
+                  : "Add an exam certificate or course certificate you hold."
+              }
             />
           ) : (
             <EmptyState title="Nothing found" description="Try a different search or clear the filters." />

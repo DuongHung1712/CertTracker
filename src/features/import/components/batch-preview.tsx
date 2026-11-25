@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ColumnDef } from "@tanstack/react-table";
-import { CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
+import { ArrowLeft, CircleAlert, CircleCheck, Info, TriangleAlert } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/app-shell/page-header";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -17,8 +17,8 @@ import { commitImport, discardImport } from "@/features/import/actions";
 import { OUTCOME_ALL, OutcomePills, type OutcomeFilter } from "@/features/import/components/outcome-pills";
 import { NewEntitiesList } from "@/features/import/components/new-entities";
 import {
-  commitDescription, countRows, listNewEntities, rawCell, ROW_OUTCOME_LABEL, rowOutcome,
-  type ExistingNames, type RowOutcome,
+  commitDescription, countRows, hasNewEntities, listNewEntities, rawCell, ROW_OUTCOME_LABEL, rowOutcome,
+  type ExistingNames, type NewEntities, type RowOutcome,
 } from "@/features/import/preview";
 import type { ImportBatchDetail, ImportRowView } from "@/features/import/queries";
 import { runBatchAction } from "@/features/import/run-batch-action";
@@ -96,6 +96,17 @@ function RowCards({ rows }: { rows: ImportRowView[] }) {
       {rows.length === 0 && <EmptyState title="No rows found" description="Try a different search or clear the filters." />}
     </div>
   );
+}
+
+function newEntitiesSummary(entities: NewEntities): string | null {
+  if (!hasNewEntities(entities)) return null;
+  const parts: string[] = [];
+  if (entities.members.length > 0) parts.push(pluralize(entities.members.length, "member"));
+  if (entities.providers.length > 0) parts.push(pluralize(entities.providers.length, "provider"));
+  if (entities.certTypes.length > 0) parts.push(pluralize(entities.certTypes.length, "certificate type"));
+  if (entities.certificates.length > 0) parts.push(pluralize(entities.certificates.length, "certificate"));
+  if (entities.courses.length > 0) parts.push(pluralize(entities.courses.length, "course"));
+  return `Will also create ${parts.join(", ")}.`;
 }
 
 function committedMessage(batch: ImportBatchDetail): string {
@@ -210,8 +221,17 @@ export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatc
     .filter((part) => part !== null)
     .join(" · ");
 
+  const summaryNote = useMemo(() => newEntitiesSummary(newEntities), [newEntities]);
+
   return (
     <div className="flex flex-col gap-4">
+      <Link
+        href="/import"
+        className="inline-flex w-fit items-center gap-1.5 text-body text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft aria-hidden className="size-4" />
+        Back to Import / Export
+      </Link>
       <PageHeader
         title={`Import batch: ${batch.fileName}`}
         description={description}
@@ -242,7 +262,7 @@ export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatc
           <CircleCheck aria-hidden />
           <AlertDescription className="text-foreground">
             {committedMessage(batch)}{" "}
-            <Link href="/records" className="font-medium">
+            <Link href="/records" className="font-medium underline underline-offset-2">
               View learning
             </Link>
           </AlertDescription>
@@ -283,7 +303,7 @@ export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatc
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by email, certificate or row number…"
+        searchPlaceholder="Search by email, certificate, course studied or row number…"
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -319,6 +339,8 @@ export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatc
         pending={pending}
         onConfirm={handleCommit}
       >
+        {summaryNote && <p className="text-body text-muted-foreground">{summaryNote}</p>}
+        {/* The names, not only the counts: a typo in the file would otherwise create a new member or provider unseen. */}
         <NewEntitiesList entities={newEntities} />
       </ConfirmDialog>
       <ConfirmDialog
@@ -327,6 +349,7 @@ export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatc
         title="Discard this import batch?"
         description="The data in this batch will not be imported. You can still look at the batch afterwards."
         confirmLabel="Discard batch"
+        pendingLabel="Discarding…"
         pending={pending}
         onConfirm={handleDiscard}
       />
