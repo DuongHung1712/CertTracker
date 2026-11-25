@@ -65,7 +65,7 @@ export function NameField({ fullName }: { fullName: string }) {
       <Label htmlFor="profile-full-name" className="sr-only">
         Name
       </Label>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Input
           id="profile-full-name"
           name="fullName"
@@ -73,7 +73,7 @@ export function NameField({ fullName }: { fullName: string }) {
           onChange={(e) => setValue(e.target.value)}
           autoComplete="name"
           autoFocus
-          className="h-9 w-64"
+          className="h-9 w-full sm:w-64"
           aria-invalid={failed || undefined}
           aria-describedby={failed ? "profile-name-error" : undefined}
         />

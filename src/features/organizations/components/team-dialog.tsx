@@ -60,7 +60,7 @@ export function TeamDialog({
               name="programId"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="team-program" aria-invalid={!!form.formState.errors.programId}>
+                  <SelectTrigger id="team-program" className="w-full" aria-invalid={!!form.formState.errors.programId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the program name. */}
                     <SelectValue placeholder="Choose a program">
                       {(value: string) => programs.find((program) => program.id === value)?.name ?? "Choose a program"}

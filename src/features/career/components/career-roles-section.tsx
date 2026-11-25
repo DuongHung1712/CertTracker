@@ -71,7 +71,12 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
           >
             Rename
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={() => setConfirming(row.original)}
+          >
             Delete
           </Button>
         </div>
@@ -95,10 +100,15 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="career-roles-heading">
-      <div className="flex items-center justify-between">
-        <h2 id="career-roles-heading" className="text-section-title">
-          Career roles
-        </h2>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h2 id="career-roles-heading" className="text-section-title">
+            Career roles
+          </h2>
+          <p className="text-caption text-muted-foreground">
+            Ordered from entry-level to senior; use the arrows to adjust the progression.
+          </p>
+        </div>
         <Button
           size="sm"
           onClick={() => {
@@ -120,7 +130,7 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
       <ConfirmDialog
         open={!!confirming}
         onOpenChange={(open) => !open && setConfirming(null)}
-        title={`Delete the role ${confirming?.name}?`}
+        title={`Delete the role ${confirming?.name ?? ""}?`}
         description="A role that members still hold cannot be deleted. This cannot be undone."
         confirmLabel="Delete role"
         pendingLabel="Deleting…"

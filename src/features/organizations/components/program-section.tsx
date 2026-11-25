@@ -64,7 +64,12 @@ export function ProgramSection({
                 >
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setConfirming(row.original)}
+                >
                   Delete
                 </Button>
               </div>
@@ -132,8 +137,8 @@ export function ProgramSection({
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Delete program ${confirming?.name}?`}
-            description="A program can only be deleted when it has no teams."
+            title={`Delete program ${confirming?.name ?? ""}?`}
+            description="A program can only be deleted when it has no teams. This cannot be undone."
             confirmLabel="Delete program"
             pendingLabel="Deleting…"
             pending={pending}

@@ -103,12 +103,12 @@ test.describe("Learning goal", () => {
     await sheet.getByRole("button", { name: "Save" }).click();
     await expect(sheet).toHaveCount(0);
 
-    // Verify table row displays course name, Course badge, and "<provider> · completion certificate"
+    // Verify table row displays course name, Course badge, and "<provider> · course certificate"
     const row = recordRow(page, NVIDIA_COURSE);
     await expect(row).toBeVisible();
     await expect(row.getByText(NVIDIA_COURSE)).toBeVisible();
     await expect(row.getByText("Course", { exact: true })).toBeVisible();
-    await expect(row.getByText(`${NVIDIA_PROVIDER} · completion certificate`)).toBeVisible();
+    await expect(row.getByText(`${NVIDIA_PROVIDER} · course certificate`)).toBeVisible();
 
     // Clean up via UI
     await openRowMenu(page, NVIDIA_COURSE, "Delete");

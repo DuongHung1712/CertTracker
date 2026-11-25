@@ -143,11 +143,12 @@ describe("SkillsView", () => {
     expect(screen.getByRole("alert").textContent).toContain("Rate all missing skills before saving");
   });
 
-  it("opens the 0–5 legend next to a rating", async () => {
+  it("opens the 0–5 legend from the table header", async () => {
     const user = userEvent.setup();
     render(<SkillsView />);
 
-    await user.click(screen.getAllByRole("button", { name: "What the levels 0–5 mean" })[0]);
+    await user.click(screen.getByRole("button", { name: "Table view" }));
+    await user.click(screen.getByRole("button", { name: "What the levels 0–5 mean" }));
     expect(screen.getByText("No idea on the area (0%)")).toBeDefined();
   });
 });

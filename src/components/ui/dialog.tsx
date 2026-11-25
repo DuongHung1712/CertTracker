@@ -76,7 +76,9 @@ function DialogContent({
         {...props}
       >
         {scrollable ? (
-          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto p-4">{children}</div>
+          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-4 pt-4 pb-4 has-data-[slot=dialog-header]:pt-0 has-data-[slot=dialog-footer]:pb-0">
+            {children}
+          </div>
         ) : (
           children
         )}
@@ -105,7 +107,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-header"
       className={cn(
-        "flex flex-col gap-1.5 pr-10 group-data-[scrollable=true]/dialog-content:sticky group-data-[scrollable=true]/dialog-content:top-0 group-data-[scrollable=true]/dialog-content:z-10 group-data-[scrollable=true]/dialog-content:-mx-4 group-data-[scrollable=true]/dialog-content:-mt-4 group-data-[scrollable=true]/dialog-content:border-b group-data-[scrollable=true]/dialog-content:border-border group-data-[scrollable=true]/dialog-content:bg-popover group-data-[scrollable=true]/dialog-content:px-4 group-data-[scrollable=true]/dialog-content:pt-4 group-data-[scrollable=true]/dialog-content:pb-3 group-data-[scrollable=true]/dialog-content:pr-12",
+        "flex flex-col gap-1.5 pr-10 group-data-[scrollable=true]/dialog-content:sticky group-data-[scrollable=true]/dialog-content:top-0 group-data-[scrollable=true]/dialog-content:z-10 group-data-[scrollable=true]/dialog-content:-mx-4 group-data-[scrollable=true]/dialog-content:border-b group-data-[scrollable=true]/dialog-content:border-border group-data-[scrollable=true]/dialog-content:bg-popover group-data-[scrollable=true]/dialog-content:px-4 group-data-[scrollable=true]/dialog-content:pt-4 group-data-[scrollable=true]/dialog-content:pb-3 group-data-[scrollable=true]/dialog-content:pr-12",
         className
       )}
       {...props}
@@ -125,7 +127,7 @@ function DialogFooter({
     <div
       data-slot="dialog-footer"
       className={cn(
-        "-mx-4 -mb-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-popover p-4 sm:flex-row sm:justify-end group-data-[scrollable=true]/dialog-content:sticky group-data-[scrollable=true]/dialog-content:bottom-0 group-data-[scrollable=true]/dialog-content:z-10",
+        "-mx-4 flex flex-col-reverse gap-2 rounded-b-xl border-t bg-popover p-4 sm:flex-row sm:justify-end group-data-[scrollable=true]/dialog-content:sticky group-data-[scrollable=true]/dialog-content:bottom-0 group-data-[scrollable=true]/dialog-content:z-10 group-data-[scrollable=false]/dialog-content:-mb-4",
         className
       )}
       {...props}

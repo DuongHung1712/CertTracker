@@ -75,7 +75,12 @@ export function TeamSection({
                 >
                   Edit
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setConfirming(row.original)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setConfirming(row.original)}
+                >
                   Delete
                 </Button>
               </div>
@@ -155,8 +160,8 @@ export function TeamSection({
           <ConfirmDialog
             open={!!confirming}
             onOpenChange={(open) => !open && setConfirming(null)}
-            title={`Delete team ${confirming?.name}?`}
-            description="Members of this team are kept but will have no team; managers of this team will no longer manage it."
+            title={`Delete team ${confirming?.name ?? ""}?`}
+            description="Members of this team are kept but will have no team; managers of this team will no longer manage it. This cannot be undone."
             confirmLabel="Delete team"
             pendingLabel="Deleting…"
             pending={pending}

@@ -44,7 +44,7 @@ describe("Topbar", () => {
     document.documentElement.removeAttribute("data-style");
   });
 
-  it("renders navigation breadcrumb, notifications menu, StyleToggle, and UserMenu", () => {
+  it("renders navigation breadcrumb, notifications menu, and UserMenu without duplicate StyleToggle", () => {
     render(
       <ThemeProvider attribute="class" defaultTheme="system">
         <StyleProvider defaultStyle="classic">
@@ -60,11 +60,12 @@ describe("Topbar", () => {
     // Breadcrumb
     expect(screen.getByText("Dashboard")).toBeDefined();
 
-    // StyleToggle button is mounted
-    const styleToggle = screen.getByRole("button", {
-      name: /Switch visual style/i,
-    });
-    expect(styleToggle).toBeDefined();
+    // StyleToggle is kept inside UserMenu, not duplicated in Topbar
+    expect(
+      screen.queryByRole("button", {
+        name: /Switch visual style/i,
+      }),
+    ).toBeNull();
 
     // UserMenu trigger is mounted
     const userMenu = screen.getByRole("button", {

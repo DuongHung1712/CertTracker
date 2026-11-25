@@ -58,7 +58,7 @@ async function fillCourseBasics(page: Page, courseName: string, grantsCompletion
   const dialog = page.getByRole("dialog");
   await dialog.getByLabel(fieldLabel("Name")).fill(courseName);
   await pickOption(page, dialog, fieldLabel("Provider"), "AWS");
-  if (!grantsCompletion) await dialog.getByRole("switch", { name: "This course grants a course completion" }).click();
+  if (!grantsCompletion) await dialog.getByRole("switch", { name: "This course grants a course certificate" }).click();
   return dialog;
 }
 
@@ -169,6 +169,8 @@ test("a course completion needs a granting course, and that course cannot be del
   await expect(page.getByRole("option", { name: courseName, exact: true })).toHaveCount(0);
   await page.keyboard.press("Escape");
   await page.keyboard.press("Escape");
+  // The sheet holds what was typed, so closing it asks first.
+  await page.getByRole("alertdialog").getByRole("button", { name: "Discard" }).click();
   await expect(next).toBeHidden();
   await openTab(page, "Courses");
 
@@ -371,7 +373,7 @@ test("admin creates a course and its course completion in one step; a member and
   const name = track(`QA One Step ${Date.now()}`);
   const dialog = await fillCourseBasics(page, name, true);
   // On by default: the completion fields show; switching off hides them; Escape resets the switch.
-  const toggle = dialog.getByRole("switch", { name: "This course grants a course completion" });
+  const toggle = dialog.getByRole("switch", { name: "This course grants a course certificate" });
   await expect(toggle).toBeChecked();
   await expect(dialog.getByText("Leave empty to use the course name.")).toBeVisible();
   await toggle.click();
@@ -396,17 +398,18 @@ test("admin creates a course and its course completion in one step; a member and
   await page.getByRole("button", { name: `Actions for ${name}` }).first().click();
   await page.getByRole("menuitem", { name: "Edit" }).click();
   const edit = page.getByRole("dialog");
-  await expect(edit.getByText("Grants the course completion")).toBeVisible();
-  await expect(edit.getByRole("switch", { name: "This course grants a course completion" })).toHaveCount(0);
+  await expect(edit.getByText("Grants the course certificate")).toBeVisible();
+  await expect(edit.getByRole("switch", { name: "This course grants a course certificate" })).toHaveCount(0);
   await page.keyboard.press("Escape");
 
   // Closing a half-filled sheet resets the switch.
   await page.getByRole("button", { name: "Add course" }).click();
   const again = page.getByRole("dialog");
-  await again.getByRole("switch", { name: "This course grants a course completion" }).click();
+  await again.getByRole("switch", { name: "This course grants a course certificate" }).click();
   await page.keyboard.press("Escape");
+  await page.getByRole("alertdialog").getByRole("button", { name: "Discard" }).click();
   await page.getByRole("button", { name: "Add course" }).click();
-  await expect(page.getByRole("dialog").getByRole("switch", { name: "This course grants a course completion" })).toBeChecked();
+  await expect(page.getByRole("dialog").getByRole("switch", { name: "This course grants a course certificate" })).toBeChecked();
   await page.keyboard.press("Escape");
 
   await signOut(page);

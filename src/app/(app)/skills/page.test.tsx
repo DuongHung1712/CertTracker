@@ -26,7 +26,7 @@ describe("SkillsPage server component", () => {
     await expect(SkillsPage()).rejects.toThrow("redirect:/login");
   });
 
-  it("redirects user without memberId to /dashboard", async () => {
+  it("renders an empty state for a user without memberId", async () => {
     getCurrentUser.mockResolvedValueOnce({
       id: "u-1",
       email: "admin@example.com",
@@ -34,7 +34,11 @@ describe("SkillsPage server component", () => {
       memberId: null,
     });
 
-    await expect(SkillsPage()).rejects.toThrow("redirect:/dashboard");
+    const jsx = await SkillsPage();
+    const html = renderToStaticMarkup(jsx);
+
+    expect(html).toContain("My skills");
+    expect(html).toContain("Your account is not linked to a member");
   });
 
   it("renders page header and skills view for member", async () => {

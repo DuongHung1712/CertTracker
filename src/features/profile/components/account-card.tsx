@@ -48,7 +48,9 @@ export function AccountCard({ profile }: { profile: MyProfile }) {
             </div>
           )}
         </dl>
-        <p className="text-caption text-muted-foreground">Ask your admin to change your email.</p>
+        <p className="text-caption text-muted-foreground">
+          {profile.role === "admin" ? "Change email in Members." : "Ask your admin to change your email."}
+        </p>
       </CardContent>
     </Card>
   );

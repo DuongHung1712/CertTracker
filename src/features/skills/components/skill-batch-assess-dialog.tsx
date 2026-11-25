@@ -9,6 +9,7 @@ import type { Skill, SkillCategory, SkillLevel } from "../types";
 import { SkillLegendPopover } from "./skill-legend-popover";
 import { SkillQuickRate } from "./skill-quick-rate";
 import { SkillStatus } from "./skill-status";
+import { DiscardChangesDialog } from "@/components/discard-changes-dialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
   const [category, setCategory] = React.useState<SkillCategory>("backend");
   const [query, setQuery] = React.useState("");
   const [dirty, setDirty] = React.useState(false);
+  const [confirmDiscard, setConfirmDiscard] = React.useState(false);
   const [missingIds, setMissingIds] = React.useState<Set<string>>(() => new Set());
   const [focusSkillId, setFocusSkillId] = React.useState<string | null>(null);
   const rowRefs = React.useRef(new Map<string, HTMLTableRowElement>());
@@ -42,9 +44,18 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
     if (open) {
       setDraft(skills);
       setDirty(false);
+      setConfirmDiscard(false);
       setMissingIds(new Set());
       setFocusSkillId(null);
     }
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next && dirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    onOpenChange(next);
   }
 
   // Scroll to and focus the first missing row after any tab/search switch settles.
@@ -110,7 +121,8 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent size="xl" scrollable={false} className="h-[85dvh]">
         <DialogHeader className="shrink-0 flex-row items-start justify-between gap-4 border-b border-border py-4 pr-12 pl-5">
           <div className="min-w-0">
@@ -245,7 +257,7 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
             </p>
           )}
           <div className="flex gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="button" onClick={save}>
@@ -255,5 +267,15 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
         </div>
       </DialogContent>
     </Dialog>
+    <DiscardChangesDialog
+      open={confirmDiscard}
+      onOpenChange={setConfirmDiscard}
+      onDiscard={() => {
+        setConfirmDiscard(false);
+        setDirty(false);
+        onOpenChange(false);
+      }}
+    />
+    </>
   );
 }

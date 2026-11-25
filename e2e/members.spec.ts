@@ -78,7 +78,7 @@ test("admin sees what a manager manages, and that the scopes go inactive when th
     await page.goto("/members");
 
     const row = page.getByRole("row", { name: new RegExp(MANAGER_NAME) });
-    await expect(row.getByText(`Manages: Team Cloud, ${SEED_PROGRAM_NAME}`)).toBeVisible();
+    await expect(row.getByText(`Team Cloud, ${SEED_PROGRAM_NAME}`)).toBeVisible();
     await expect(row.getByText("Not a manager: team access not used")).toHaveCount(0);
 
     await setSeedManagerRole("member");
@@ -93,7 +93,7 @@ test("admin sees what a manager manages, and that the scopes go inactive when th
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
     await expect(row).toBeVisible();
     await expect(row.getByText("Not a manager: team access not used")).toHaveCount(0);
-    await expect(row.getByText(/^Manages:/)).toHaveCount(0);
+    await expect(row.getByText(`Team Cloud, ${SEED_PROGRAM_NAME}`)).toHaveCount(0);
     await expect(row.getByText("—", { exact: true })).toBeVisible();
   } finally {
     await setSeedManagerRole("manager");
