@@ -16,6 +16,7 @@ import { listCourseOptions, listLearningItems } from "@/features/learning/querie
 import { listMembers, listTeamOptionsForCurrentUser } from "@/features/members/queries";
 import { isAiReaderEnabled } from "@/features/records/ai-flag";
 import { listCertificateOptions, listRecords } from "@/features/records/queries";
+import { loadMemberSkillSummary } from "@/features/skills/queries";
 import { formatDateTimeVn } from "@/lib/format";
 
 type SignedInUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
@@ -87,7 +88,17 @@ export async function loadMemberDashboard(
   user: SignedInUser,
   memberId: string,
 ): Promise<ComponentProps<typeof MemberDashboardView>> {
-  const [recordsResult, certificateOptionsResult, providersResult, aiResult, careerResult, membersResult, learningResult, coursesResult] = await Promise.all([
+  const [
+    recordsResult,
+    certificateOptionsResult,
+    providersResult,
+    aiResult,
+    careerResult,
+    membersResult,
+    learningResult,
+    coursesResult,
+    skillSummaryResult,
+  ] = await Promise.all([
     settle(listRecords({ memberId })),
     settle(listCertificateOptions()),
     settle(listProviders()),
@@ -96,6 +107,7 @@ export async function loadMemberDashboard(
     settle(listMembers()),
     settle(listLearningItems({ memberId })),
     settle(listCourseOptions()),
+    settle(loadMemberSkillSummary(memberId)),
   ]);
 
   const profile = resolveMemberProfile({
@@ -116,6 +128,8 @@ export async function loadMemberDashboard(
     journey: learningResult.ok ? learningAsJourneyRecords(learningResult.data) : [],
     learningItems: learningResult.ok ? learningResult.data : [],
     learningError: learningResult.ok ? undefined : learningResult.error,
+    skillSummary: skillSummaryResult.ok ? skillSummaryResult.data : undefined,
+    skillsError: skillSummaryResult.ok ? undefined : skillSummaryResult.error,
     courses: coursesResult.ok ? coursesResult.data : [],
     examOptions: certificateOptionsResult.ok ? toExamOptions(certificateOptionsResult.data) : [],
     subtitle: `Welcome back, ${extractFirstName(profile.fullName)}! Ready to plan your next certification milestone?`,

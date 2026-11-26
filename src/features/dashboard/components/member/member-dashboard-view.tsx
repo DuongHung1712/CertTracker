@@ -12,6 +12,7 @@ import { MemberCertificatesList } from "@/features/dashboard/components/member/m
 import { MemberKpiCards } from "@/features/dashboard/components/member/member-kpi-cards";
 import { MemberLearningNow } from "@/features/dashboard/components/member/member-learning-now";
 import { MemberProfileCard } from "@/features/dashboard/components/member/member-profile-card";
+import { SkillsMatrixCard } from "@/features/dashboard/components/member/skills-matrix-card";
 import { Section, SectionError } from "@/features/dashboard/components/section";
 import { calculateMemberKpis, getAttentionRecord } from "@/features/dashboard/member-metrics";
 import { ExportLinks } from "@/features/export/components/export-links";
@@ -20,6 +21,7 @@ import type { CourseOption, LearningRow } from "@/features/learning/queries";
 import type { CertificateChoice } from "@/features/records/certificate-course";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import type { RecordRow } from "@/features/records/queries";
+import type { MemberSkillSummary } from "@/features/skills/types";
 
 export function MemberDashboardView({
   fullName,
@@ -32,6 +34,8 @@ export function MemberDashboardView({
   learningItems = [],
   recordsError,
   learningError,
+  skillSummary,
+  skillsError,
   certificateOptions,
   providers = [],
   aiReaderEnabled = false,
@@ -55,6 +59,8 @@ export function MemberDashboardView({
   learningItems?: LearningRow[];
   recordsError?: string;
   learningError?: string;
+  skillSummary?: MemberSkillSummary;
+  skillsError?: string;
   certificateOptions: CertificateChoice[];
   providers?: { id: string; name: string }[];
   aiReaderEnabled?: boolean;
@@ -102,6 +108,7 @@ export function MemberDashboardView({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-4 xl:col-span-4">
           <MemberProfileCard fullName={fullName} teamName={teamName} careerRoleName={careerRoleName} yoeYears={yoeYears} />
+          {skillsError ? <SectionError title="My skills" /> : <SkillsMatrixCard summary={skillSummary} />}
         </div>
 
         <div className="flex flex-col gap-6 lg:col-span-8 xl:col-span-8">

@@ -7,7 +7,8 @@ test("/members?search= opens the list already searched", async ({ page }) => {
   await signIn(page, "admin@certtracker.test");
   await page.goto("/members?search=Ch%C3%A2u");
   await expect(page.getByPlaceholder(/Search by name, code, email, team or career role/)).toHaveValue("Châu");
-  await expect(page.getByRole("cell", { name: "Lê Minh Châu", exact: true })).toBeVisible();
+  // The name cell also holds the pending Level 5 badge, so match the start of its name.
+  await expect(page.getByRole("cell", { name: /^Lê Minh Châu/ })).toBeVisible();
   await expect(page.getByRole("cell", { name: "Trần Thị Bình", exact: true })).toHaveCount(0);
 });
 

@@ -7,6 +7,7 @@ import { settle } from "@/features/dashboard/settle";
 import { ImportMembersDialog } from "@/features/members/components/import-members-dialog";
 import { MembersTable } from "@/features/members/components/members-table";
 import { listMemberScopes, listMembers, listTeamOptionsForCurrentUser, type MemberScope } from "@/features/members/queries";
+import { listPendingSkillReviewCounts } from "@/features/skills/queries";
 
 export default async function MembersPage({
   searchParams,
@@ -18,11 +19,12 @@ export default async function MembersPage({
   // UX only: RLS gives a Member no update right here; /me is their screen.
   if (user?.role === "member") redirect("/me");
   const isAdmin = user?.role === "admin";
-  const [members, teams, roles, scopes] = await Promise.all([
+  const [members, teams, roles, scopes, pendingSkillReviews] = await Promise.all([
     settle(listMembers()),
     settle(listTeamOptionsForCurrentUser()),
     settle(listCareerRoles()),
     isAdmin ? settle(listMemberScopes()) : Promise.resolve({ ok: true as const, data: new Map<string, MemberScope[]>() }),
+    settle(listPendingSkillReviewCounts(user?.memberId ?? null)),
   ]);
 
   // Data Quality links open the list already searched (?search=<name>); the key remounts the table when it changes.
@@ -44,6 +46,8 @@ export default async function MembersPage({
           roles={roles.data}
           canEditCareer={isAdmin}
           scopes={Object.fromEntries(scopes.data)}
+          // The review badge is optional: a failed count must not hide the members list.
+          pendingSkillReviews={pendingSkillReviews.ok ? Object.fromEntries(pendingSkillReviews.data) : {}}
           showScopes={isAdmin}
           canCreate={isAdmin}
           canDelete={isAdmin}
