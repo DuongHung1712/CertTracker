@@ -60,17 +60,17 @@ describe("UserMenu Visual Style & Theme Switcher", () => {
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
 
     expect(screen.getByText("Theme")).toBeDefined();
-    expect(screen.getByText("Visual Style")).toBeDefined();
+    expect(screen.getByText("Visual style")).toBeDefined();
     expect(screen.getByText("Profile")).toBeDefined();
     expect(screen.getByText("Sign out")).toBeDefined();
   });
 
-  it("exposes Classic Swiss, Credential Vault, and Nordic Heritage in Visual Style submenu", () => {
+  it("exposes Classic Swiss, Credential Vault, and Nordic Heritage in Visual style submenu", () => {
     renderUserMenu("admin@certtracker.vn", "admin");
     const trigger = screen.getByRole("button", { name: /Account:/i });
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
 
-    const styleTrigger = screen.getByText("Visual Style");
+    const styleTrigger = screen.getByText("Visual style");
     fireEvent.keyDown(styleTrigger, { key: "ArrowRight" });
 
     // Verify all 3 supported styles exist
@@ -88,7 +88,7 @@ describe("UserMenu Visual Style & Theme Switcher", () => {
     const trigger = screen.getByRole("button", { name: /Account:/i });
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
 
-    const styleTrigger = screen.getByText("Visual Style");
+    const styleTrigger = screen.getByText("Visual style");
     fireEvent.keyDown(styleTrigger, { key: "ArrowRight" });
 
     const vaultOption = screen.getByText("Credential Vault");
@@ -102,7 +102,7 @@ describe("UserMenu Visual Style & Theme Switcher", () => {
     const trigger = screen.getByRole("button", { name: /Account:/i });
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
 
-    const styleTrigger = screen.getByText("Visual Style");
+    const styleTrigger = screen.getByText("Visual style");
     fireEvent.keyDown(styleTrigger, { key: "ArrowRight" });
 
     const nordicOption = screen.getByText("Nordic Heritage");
@@ -119,7 +119,7 @@ describe("UserMenu Visual Style & Theme Switcher", () => {
     const trigger = screen.getByRole("button", { name: /Account:/i });
     fireEvent.keyDown(trigger, { key: "ArrowDown" });
 
-    const styleTrigger = screen.getByText("Visual Style");
+    const styleTrigger = screen.getByText("Visual style");
     fireEvent.keyDown(styleTrigger, { key: "ArrowRight" });
 
     const classicOption = screen.getByText("Classic Swiss");

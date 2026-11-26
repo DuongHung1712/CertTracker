@@ -18,7 +18,6 @@ const CERTIFICATES = [
   { id: "e2", label: "Lonely Exam", kind: "exam" as const, grantingCourse: null },
   { id: "c1", label: "Intro to LLMs", kind: "completion" as const, grantingCourse: { id: "k1", name: "LLM Course" } },
 ];
-const COURSES = [{ id: "k2", name: "AWS Bootcamp", preparesForId: "e1" }];
 
 function sheet() {
   return (
@@ -28,7 +27,6 @@ function sheet() {
       editing={null}
       memberOptions={[]}
       certificateOptions={CERTIFICATES}
-      studyCourses={COURSES}
       showCompanyFields={false}
       fixedMemberId="m1"
     />
@@ -59,18 +57,29 @@ describe("RecordSheet kind choice", () => {
     expect(screen.getAllByRole("option").map((o) => o.textContent)).toEqual(["Intro to LLMs"]);
   });
 
-  it("shows the Catalogue link only when the viewer can add to it", () => {
+  it("shows the Catalogue link only when the viewer can add to it and hides Propose for admins and unlinked managers", () => {
     const { unmount } = render(sheet());
-    expect(screen.getByText("Can't find yours?")).toBeTruthy();
+    expect(screen.getByText("Cannot find yours?")).toBeTruthy();
     expect(screen.getByRole("button", { name: "+ Propose a new certificate" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Add it in the Catalogue" })).toBeNull();
     unmount();
-    render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={CERTIFICATES} studyCourses={COURSES} showCompanyFields canAddToCatalogue />);
+
+    const admin = render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={CERTIFICATES} showCompanyFields canAddToCatalogue />);
     expect(screen.getByRole("link", { name: "Add it in the Catalogue" }).getAttribute("href")).toBe("/courses");
+    expect(screen.queryByRole("button", { name: /\+ Propose/ })).toBeNull();
+    admin.unmount();
+
+    const unlinked = render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={CERTIFICATES} showCompanyFields viewerMemberId={null} />);
+    expect(screen.queryByRole("button", { name: /\+ Propose/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Add it in the Catalogue" })).toBeNull();
+    unlinked.unmount();
+
+    render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={CERTIFICATES} showCompanyFields fixedMemberId="m-other" viewerMemberId={null} />);
+    expect(screen.queryByRole("button", { name: /\+ Propose/ })).toBeNull();
   });
 
   it("disables Refund status while Registered through the company is off", async () => {
-    render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={CERTIFICATES} studyCourses={COURSES} showCompanyFields />);
+    render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={CERTIFICATES} showCompanyFields />);
     expect(screen.getByRole("combobox", { name: "Refund status" }).hasAttribute("disabled") || screen.getByRole("combobox", { name: "Refund status" }).getAttribute("aria-disabled") === "true").toBe(true);
     await userEvent.click(screen.getByRole("switch", { name: "Registered through the company" }));
     expect(screen.getByRole("combobox", { name: "Refund status" }).getAttribute("aria-disabled")).not.toBe("true");
@@ -85,7 +94,7 @@ describe("RecordSheet kind choice", () => {
         expiryDate: null, daysToExpiry: null, expiryStatus: "N/A", careerRoleName: null, yoeYears: null,
       }) as unknown as RecordRow;
     const open = (viaCompany: boolean) =>
-      render(<RecordSheet open onOpenChange={() => {}} editing={record(viaCompany)} memberOptions={[]} certificateOptions={CERTIFICATES} studyCourses={COURSES} showCompanyFields />);
+      render(<RecordSheet open onOpenChange={() => {}} editing={record(viaCompany)} memberOptions={[]} certificateOptions={CERTIFICATES} showCompanyFields />);
     const refund = () => screen.getByRole("combobox", { name: "Refund status" });
 
     it("restores the typed value when the company switch goes off and back on before saving", async () => {
@@ -122,7 +131,7 @@ describe("RecordSheet returned note", () => {
       expiryDate: null, daysToExpiry: null, expiryStatus: "N/A", approval: "returned", approvalNote: "Wrong date.", ...partial,
     }) as unknown as RecordRow;
   const open = (editing: RecordRow, showCompanyFields: boolean, viewerMemberId: string | null = "m1") =>
-    render(<RecordSheet open onOpenChange={() => {}} editing={editing} memberOptions={[]} certificateOptions={CERTIFICATES} studyCourses={COURSES} showCompanyFields={showCompanyFields} fixedMemberId="m1" viewerMemberId={viewerMemberId} />);
+    render(<RecordSheet open onOpenChange={() => {}} editing={editing} memberOptions={[]} certificateOptions={CERTIFICATES} showCompanyFields={showCompanyFields} fixedMemberId="m1" viewerMemberId={viewerMemberId} />);
 
   it("shows the manager's note to the member", () => {
     open(row({}), false);
@@ -160,7 +169,7 @@ describe("RecordSheet save toast", () => {
   ] as const)("says what the database decided: %s", async (approval, message) => {
     vi.mocked(toast.success).mockClear();
     vi.mocked(updateRecord).mockResolvedValue({ ok: true, data: { approval } });
-    render(<RecordSheet open onOpenChange={() => {}} editing={done} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} studyCourses={COURSES} showCompanyFields={false} fixedMemberId={GUID_M} />);
+    render(<RecordSheet open onOpenChange={() => {}} editing={done} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} showCompanyFields={false} fixedMemberId={GUID_M} />);
     await userEvent.click(screen.getByRole("button", { name: /^Save/ }));
     await vi.waitFor(() => expect(toast.success).toHaveBeenCalledWith(message));
   });
@@ -186,7 +195,7 @@ describe("RecordSheet renewal duplicate detection", () => {
         editing={null}
         memberOptions={[]}
         certificateOptions={CERTIFICATES}
-        studyCourses={COURSES}
+       
         showCompanyFields={false}
         fixedMemberId="m1"
         records={[existingDone]}
@@ -208,7 +217,7 @@ describe("RecordSheet renewal duplicate detection", () => {
         editing={null}
         memberOptions={[]}
         certificateOptions={CERTIFICATES}
-        studyCourses={COURSES}
+       
         showCompanyFields={false}
         fixedMemberId="m1"
         records={[existingDone]}
@@ -223,7 +232,7 @@ describe("RecordSheet renewal duplicate detection", () => {
     expect(saveButton.hasAttribute("disabled")).toBe(true);
   });
 
-  it("blocks a second completed entry for the same course completion regardless of date", async () => {
+  it("blocks a second completed entry for the same course certificate regardless of date", async () => {
     const existingCompletion = makeRecord({
       id: "r-comp",
       memberId: "m1",
@@ -241,7 +250,7 @@ describe("RecordSheet renewal duplicate detection", () => {
         editing={null}
         memberOptions={[]}
         certificateOptions={CERTIFICATES}
-        studyCourses={COURSES}
+       
         showCompanyFields={false}
         fixedMemberId="m1"
         records={[existingCompletion]}
@@ -275,7 +284,7 @@ describe("RecordSheet proposal and delete", () => {
         editing={draft}
         memberOptions={[]}
         certificateOptions={CERTIFICATES}
-        studyCourses={COURSES}
+       
         showCompanyFields={false}
         fixedMemberId="m1"
       />,
@@ -292,7 +301,7 @@ describe("RecordSheet proposal and delete", () => {
         editing={returned}
         memberOptions={[]}
         certificateOptions={CERTIFICATES}
-        studyCourses={COURSES}
+       
         showCompanyFields={false}
         fixedMemberId="m1"
         canDelete={false}
@@ -310,7 +319,7 @@ describe("RecordSheet proposal and delete", () => {
         editing={approved}
         memberOptions={[]}
         certificateOptions={CERTIFICATES}
-        studyCourses={COURSES}
+       
         showCompanyFields={false}
         fixedMemberId="m1"
         canDelete={false}
@@ -334,14 +343,14 @@ describe("RecordSheet proposal and delete", () => {
         editing={null}
         memberOptions={[]}
         certificateOptions={[...CERTIFICATES, pendingCert]}
-        studyCourses={COURSES}
+       
         showCompanyFields={false}
         fixedMemberId="m1"
         presetCertificateId="c-pending"
       />,
     );
     expect(screen.getByText("Awaiting admin approval")).toBeTruthy();
-    expect(screen.getByText(/This item is pending admin approval/)).toBeTruthy();
+    expect(screen.getByText(/This item is awaiting admin approval/)).toBeTruthy();
   });
 });
 
@@ -360,7 +369,7 @@ describe("RecordSheet is for certificates only (decision #72)", () => {
     vi.mocked(createRecord).mockResolvedValue({ ok: true, data: { id: "r9", approval: "waiting" } });
     const GUID_M = "5eed0000-0000-0000-0000-00000000b001";
     const GUID_E = "5eed0000-0000-0000-0000-00000000d001";
-    render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} studyCourses={COURSES} showCompanyFields={false} fixedMemberId={GUID_M} />);
+    render(<RecordSheet open onOpenChange={() => {}} editing={null} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} showCompanyFields={false} fixedMemberId={GUID_M} />);
     await userEvent.click(certificateInput(/^Certificate/));
     await userEvent.click(screen.getByRole("option", { name: "AWS Associate" }));
     await userEvent.type(screen.getByRole("textbox", { name: /Date passed/ }), "01/10/2026");
@@ -376,7 +385,7 @@ describe("RecordSheet is for certificates only (decision #72)", () => {
     const onOpenChange = vi.fn();
     const GUID_M = "5eed0000-0000-0000-0000-00000000b001";
     const GUID_E = "5eed0000-0000-0000-0000-00000000d001";
-    render(<RecordSheet open onOpenChange={onOpenChange} editing={null} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} studyCourses={COURSES} showCompanyFields={false} fixedMemberId={GUID_M} />);
+    render(<RecordSheet open onOpenChange={onOpenChange} editing={null} memberOptions={[]} certificateOptions={[{ id: GUID_E, label: "AWS Associate", kind: "exam", grantingCourse: null }]} showCompanyFields={false} fixedMemberId={GUID_M} />);
     await userEvent.click(certificateInput(/^Certificate/));
     await userEvent.click(screen.getByRole("option", { name: "AWS Associate" }));
     await userEvent.type(screen.getByRole("textbox", { name: /Date passed/ }), "01/10/2026");

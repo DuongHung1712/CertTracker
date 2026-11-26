@@ -26,7 +26,7 @@ test("admin manages the org tree end to end", async ({ page }) => {
   await page.getByRole("button", { name: "Add centre" }).click();
   await page.getByLabel("Centre name").fill(dcName);
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("cell", { name: dcName })).toBeVisible();
+  await expect(page.getByRole("cell", { name: dcName, exact: true })).toBeVisible();
 
   const programName = `Program E2E ${Date.now()}`;
   await page.getByRole("button", { name: "Add program" }).click();
@@ -34,7 +34,7 @@ test("admin manages the org tree end to end", async ({ page }) => {
   await page.getByLabel("Centre").click();
   await page.getByRole("option", { name: dcName }).click();
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("cell", { name: programName })).toBeVisible();
+  await expect(page.getByRole("cell", { name: programName, exact: true })).toBeVisible();
 
   // The DC now has a Program: deleting it must fail with the restricted message, not a raw Postgres error.
   // Scoped to the "Centres" section: the Program table also has a "Centre" column showing

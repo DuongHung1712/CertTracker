@@ -32,7 +32,7 @@ describe("LoginPage", () => {
     const page = await LoginPage({ searchParams: Promise.resolve({ passwordSet: "1", email: "engineer@example.com" }) });
     render(<StyleProvider>{page}</StyleProvider>);
 
-    const emailInput = screen.getByLabelText("Email") as HTMLInputElement;
+    const emailInput = screen.getByLabelText(/^Email/) as HTMLInputElement;
     expect(emailInput.value).toBe("engineer@example.com");
   });
 

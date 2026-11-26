@@ -70,7 +70,7 @@ export const issuedDateLabel = (kind: CertificateKind): string => (kind === "exa
 export const issuedDateHint = (kind: CertificateKind): string =>
   kind === "exam"
     ? "The day you passed the exam. The expiry date is worked out from its validity period."
-    : "The day it was issued. A course completion does not expire.";
+    : "The day it was issued. A course certificate does not expire.";
 
 /** The "What are you adding?" choice at the top of the record sheet. */
 export const ADD_KIND_CHOICES: { kind: CertificateKind; label: string; hint: string }[] = [
@@ -82,7 +82,7 @@ export const ADD_KIND_CHOICES: { kind: CertificateKind; label: string; hint: str
   {
     kind: "completion",
     label: "Course certificate",
-    hint: "Credential issued for completing a course (Coursera, Udemy, internal...)",
+    hint: "Certificate issued for completing a course (Coursera, Udemy, internal...)",
   },
 ];
 

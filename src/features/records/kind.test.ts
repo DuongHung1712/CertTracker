@@ -58,7 +58,7 @@ describe("kind filter", () => {
   it("titles the sheet as a certificate for both kinds, and words the saved message after the kind", () => {
     expect(recordSheetTitle(false)).toBe("Add certificate");
     expect(recordSheetTitle(true)).toBe("Edit certificate");
-    expect(recordSavedMessage(true, "completion")).toBe("Saved course completion");
+    expect(recordSavedMessage(true, "completion")).toBe("Saved course certificate");
     expect(recordSavedMessage(false, "exam")).toBe("Added certificate");
     expect(recordSavedMessage(false, undefined)).toBe("Added certificate");
   });

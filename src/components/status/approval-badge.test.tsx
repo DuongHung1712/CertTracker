@@ -6,14 +6,21 @@ import { ApprovalBadge } from "@/components/status/record-status";
 afterEach(cleanup);
 
 describe("ApprovalBadge", () => {
-  it("names Waiting and Returned in text", () => {
-    render(<><ApprovalBadge approval="waiting" /><ApprovalBadge approval="returned" /></>);
+  it("names Waiting, Approved and Returned in text", () => {
+    render(
+      <>
+        <ApprovalBadge approval="waiting" />
+        <ApprovalBadge approval="approved" />
+        <ApprovalBadge approval="returned" />
+      </>,
+    );
     expect(screen.getByText("Waiting for approval")).toBeTruthy();
+    expect(screen.getByText("Approved")).toBeTruthy();
     expect(screen.getByText("Returned")).toBeTruthy();
   });
 
-  it("shows nothing for Approved or no state", () => {
-    const { container } = render(<><ApprovalBadge approval="approved" /><ApprovalBadge approval={null} /></>);
+  it("shows nothing when approval is null", () => {
+    const { container } = render(<ApprovalBadge approval={null} />);
     expect(container.textContent).toBe("");
   });
 });

@@ -20,13 +20,15 @@ export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: Set
       <section aria-label="Email history" className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-0.5">
           <h2 className="text-section-title">Email history</h2>
-          <p className="text-caption text-muted-foreground">Each row is one sending period; counts are per recipient.</p>
+          <p className="text-caption text-muted-foreground">
+            Each row is one sending period; counts are per recipient. Stalled rows waited over 15 minutes and retry on the next run.
+          </p>
         </div>
         <div className="overflow-hidden rounded-lg border bg-card">
           <Table aria-label="Email history" className="text-table tabular-nums">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
-                <TableHead className={HEAD}>Type</TableHead>
+                <TableHead className={cn(HEAD, "sticky left-0 z-[1]")}>Type</TableHead>
                 <TableHead className={HEAD}>Period</TableHead>
                 <TableHead className={cn(HEAD, "text-right")}>Sent</TableHead>
                 <TableHead className={cn(HEAD, "text-right")}>Failed</TableHead>
@@ -48,8 +50,8 @@ export function NotificationRuns({ runs, checks }: { runs: RunRow[]; checks: Set
                 </TableRow>
               ) : (
                 runs.map((run) => (
-                  <TableRow key={`${run.kind}|${run.period}`} className="h-8 hover:bg-accent">
-                    <TableCell className="px-2.5 py-1">{KIND_LABEL[run.kind]}</TableCell>
+                  <TableRow key={`${run.kind}|${run.period}`} className="group h-8 hover:bg-accent">
+                    <TableCell className="sticky left-0 z-[1] bg-card px-2.5 py-1 group-hover:bg-accent">{KIND_LABEL[run.kind]}</TableCell>
                     <TableCell className="px-2.5 py-1">{run.label}</TableCell>
                     <TableCell className="px-2.5 py-1 text-right">{run.sent}</TableCell>
                     <TableCell className={cn("px-2.5 py-1 text-right", run.failed > 0 && "font-semibold text-destructive")}>

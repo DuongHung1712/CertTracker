@@ -18,7 +18,7 @@ export function TeamScopeFilter({
         aria-pressed={selectedTeam === null}
         onClick={() => onSelectTeam(null)}
         className={cn(
-          "rounded-full px-3 py-1 text-caption font-medium transition-colors font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "min-h-8 rounded-lg px-3 py-1 font-mono text-caption font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
           selectedTeam === null
             ? "bg-primary text-primary-foreground"
             : "border border-border bg-card text-muted-foreground hover:bg-muted/60",
@@ -36,7 +36,7 @@ export function TeamScopeFilter({
             aria-pressed={isSelected}
             onClick={() => onSelectTeam(isSelected ? null : t.name)}
             className={cn(
-              "rounded-full px-3 py-1 text-caption font-medium transition-colors font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "min-h-8 rounded-lg px-3 py-1 font-mono text-caption font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
               isSelected
                 ? "bg-primary text-primary-foreground"
                 : "border border-border bg-card text-muted-foreground hover:bg-muted/60",

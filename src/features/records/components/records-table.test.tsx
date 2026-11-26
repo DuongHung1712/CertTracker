@@ -23,7 +23,6 @@ const table = (mode: "self" | "team", records = RECORDS) => (
     records={records}
     memberOptions={[{ id: "m1", label: "Le Minh Chau" }]}
     certificateOptions={[{ id: "c", label: "AWS", kind: "exam", grantingCourse: null }]}
-    studyCourses={[]}
     mode={mode}
     canDelete={false}
     showCompanyFields={false}
@@ -78,7 +77,7 @@ describe("RecordsTable kind filter", () => {
 describe("RecordsTable bulk delete", () => {
   const bulk = (count: number) => {
     vi.mocked(deleteRecords).mockResolvedValue({ ok: true, data: { count } });
-    render(<RecordsTable records={RECORDS} memberOptions={[]} certificateOptions={[]} studyCourses={[]} mode="self" canDelete showCompanyFields={false} />);
+    render(<RecordsTable records={RECORDS} memberOptions={[]} certificateOptions={[]} mode="self" canDelete showCompanyFields={false} />);
   };
   const deleteSelected = async (confirmLabel: string) => {
     await userEvent.click(screen.getByRole("checkbox", { name: "Select all on this page" }));
@@ -90,7 +89,7 @@ describe("RecordsTable bulk delete", () => {
     vi.clearAllMocks();
     bulk(2);
     await deleteSelected("Delete 3 items");
-    expect(toast.warning).toHaveBeenCalledWith("Deleted 2 of 3 items. The rest were already gone or you can't delete them.");
+    expect(toast.warning).toHaveBeenCalledWith("Deleted 2 of 3 items. The rest were already gone or you cannot delete them.");
     expect(toast.success).not.toHaveBeenCalled();
     expect(screen.queryByRole("region", { name: "Bulk actions" })).toBeNull();
   });
@@ -114,7 +113,7 @@ describe("RecordsTable approval", () => {
 
   const view = (props: { canReview?: boolean; initialApproval?: boolean; reviewerMemberId?: string | null } = {}) =>
     render(
-      <RecordsTable records={ALL} memberOptions={[]} certificateOptions={[]} studyCourses={[]} mode="team" canDelete={false} showCompanyFields reviewerMemberId="m-boss" {...props} />,
+      <RecordsTable records={ALL} memberOptions={[]} certificateOptions={[]} mode="team" canDelete={false} showCompanyFields reviewerMemberId="m-boss" {...props} />,
     );
   const menuOf = async (name: RegExp) => {
     await userEvent.click(screen.getByRole("button", { name }));
@@ -167,7 +166,6 @@ describe("RecordsTable approval", () => {
         records={teamRecords}
         memberOptions={[]}
         certificateOptions={[]}
-        studyCourses={[]}
         mode="team"
         canDelete={false}
         showCompanyFields
@@ -183,7 +181,6 @@ describe("RecordsTable approval", () => {
         records={teamRecords}
         memberOptions={[]}
         certificateOptions={[]}
-        studyCourses={[]}
         mode="team"
         canDelete={false}
         showCompanyFields
@@ -198,7 +195,6 @@ describe("RecordsTable approval", () => {
         records={teamRecords}
         memberOptions={[]}
         certificateOptions={[]}
-        studyCourses={[]}
         mode="team"
         canDelete={false}
         showCompanyFields
@@ -275,7 +271,6 @@ describe("RecordsTable member draft delete", () => {
         records={[DRAFT, RETURNED, APPROVED]}
         memberOptions={[]}
         certificateOptions={[]}
-        studyCourses={[]}
         mode="self"
         canDelete={false}
         showCompanyFields={false}
@@ -297,7 +292,7 @@ describe("RecordsTable member draft delete", () => {
   });
 
   it("asks a member to confirm before deleting their draft", async () => {
-    render(<RecordsTable records={[DRAFT]} memberOptions={[]} certificateOptions={[]} studyCourses={[]} mode="self" canDelete={false} showCompanyFields={false} />);
+    render(<RecordsTable records={[DRAFT]} memberOptions={[]} certificateOptions={[]} mode="self" canDelete={false} showCompanyFields={false} />);
     await getMenu(/Actions for Me · Draft Exam/);
     await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
     expect(await screen.findByRole("alertdialog", { name: /Delete the Draft Exam/ })).toBeTruthy();
@@ -331,7 +326,6 @@ describe("RecordsTable status of a certificate (decision #72)", () => {
         ]}
         memberOptions={[]}
         certificateOptions={[]}
-        studyCourses={[]}
         mode="self"
         canDelete={false}
         showCompanyFields={false}
@@ -350,5 +344,20 @@ describe("RecordsTable status of a certificate (decision #72)", () => {
     render(table("self", [makeRecord({ id: "a1", memberName: "Lê Minh Châu", certificateName: "AWS SAA" })]));
     await userEvent.type(screen.getByRole("searchbox"), "Chau");
     expect(screen.getByText("Nothing found")).toBeTruthy();
+  });
+
+  it("team mode search matches Needs attention query '<memberName> <memberCode> <certificateName>' even with a teamName", () => {
+    render(
+      <RecordsTable
+        records={[makeRecord({ id: "t1", memberName: "An", memberCode: "M001", teamName: "Team Cloud", certificateName: "AWS SAA" })]}
+        memberOptions={[]}
+        certificateOptions={[]}
+        mode="team"
+        canDelete={false}
+        showCompanyFields
+        initialSearch="An M001 AWS SAA"
+      />,
+    );
+    expect(rowNames()).toEqual([expect.stringContaining("An")]);
   });
 });

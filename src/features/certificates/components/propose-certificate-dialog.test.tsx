@@ -107,7 +107,7 @@ describe("ProposeCertificateDialog", () => {
     expect(alert.textContent).toContain("This certificate is already in the Catalogue.");
   });
 
-  it("renders course completion wording when kind is completion", () => {
+  it("renders course certificate wording when kind is completion", () => {
     render(
       <ProposeCertificateDialog
         open

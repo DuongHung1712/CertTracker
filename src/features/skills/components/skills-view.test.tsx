@@ -66,7 +66,7 @@ describe("SkillsView", () => {
     await user.type(screen.getByRole("searchbox", { name: "Search skills or certificates" }), "nothing-like-this");
     expect(screen.getByText("No skills match these filters")).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Clear all filters" }));
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(screen.getByText("Cloud Architecture & AWS Services")).toBeDefined();
   });
 
@@ -132,7 +132,7 @@ describe("SkillsView", () => {
     expect(toast.success).toHaveBeenLastCalledWith(expect.stringContaining("set to level 3"));
   });
 
-  it("opens Update skill rate and highlights unrated skills on save", async () => {
+  it("opens Update skill rate and saves even when optional catalog skills are unrated", async () => {
     const user = userEvent.setup();
     render(<SkillsView />);
 
@@ -140,8 +140,18 @@ describe("SkillsView", () => {
     expect(screen.getByRole("heading", { name: "Update skill rate" })).toBeDefined();
 
     await user.click(screen.getByRole("button", { name: "Save ratings" }));
-    expect(screen.getByRole("alert").textContent).toContain("Rate all missing skills before saving");
-  });
+    expect(screen.queryByRole("alert")).toBeNull();
+  }, 15_000);
+
+  it("highlights unrated profile skills on Save ratings", async () => {
+    const user = userEvent.setup();
+    const { SEED_SKILLS } = await import("../seed-data");
+    render(<SkillsView initialSkills={[{ ...SEED_SKILLS[0], currentLevel: 0 }, ...SEED_SKILLS.slice(1)]} />);
+
+    await user.click(screen.getByRole("button", { name: "Update skill rate" }));
+    await user.click(screen.getByRole("button", { name: "Save ratings" }));
+    expect(screen.getByRole("alert").textContent).toContain("Rate all missing skills before saving (1 left).");
+  }, 15_000);
 
   it("opens the 0–5 legend from the table header", async () => {
     const user = userEvent.setup();

@@ -2,7 +2,9 @@
 
 import { HelpCircle } from "lucide-react";
 import { LEVEL_SCALE_GUIDE, SKILL_LEVELS } from "../schema";
+import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface SkillLegendPopoverProps {
   align?: "start" | "center" | "end";
@@ -13,17 +15,26 @@ interface SkillLegendPopoverProps {
 export function SkillLegendPopover({ align = "end", side = "bottom" }: SkillLegendPopoverProps) {
   return (
     <Popover>
-      <PopoverTrigger
-        render={
-          <button
-            type="button"
-            aria-label="What the levels 0–5 mean"
-            className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <HelpCircle className="size-3.5" aria-hidden />
-          </button>
-        }
-      />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <PopoverTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="What the levels 0–5 mean"
+                  className="text-muted-foreground hover:text-foreground"
+                />
+              }
+            />
+          }
+        >
+          <HelpCircle className="size-4" aria-hidden />
+        </TooltipTrigger>
+        <TooltipContent side="top">Level guide (0–5)</TooltipContent>
+      </Tooltip>
       <PopoverContent align={align} side={side} className="w-80 p-3">
         <p className="mb-2 text-label uppercase text-muted-foreground">Skill levels</p>
         <dl className="flex flex-col gap-2">

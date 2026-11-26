@@ -8,6 +8,8 @@ import { CertTypeSection } from "@/features/courses/components/cert-type-section
 import { CoursesTable } from "@/features/courses/components/courses-table";
 import { ProviderSection } from "@/features/courses/components/provider-section";
 import { listCertTypes, listCourses, listProviders } from "@/features/courses/queries";
+import { SectionError } from "@/features/dashboard/components/section";
+import { settle } from "@/features/dashboard/settle";
 
 export default async function CataloguePage({
   searchParams,
@@ -19,12 +21,18 @@ export default async function CataloguePage({
   const initialSearch = (Array.isArray(search) ? search[0] : search) ?? "";
   const user = await getCurrentUser();
   const isAdmin = user?.role === "admin";
-  const [certTypes, providers, courses, certificates] = await Promise.all([
-    listCertTypes(),
-    listProviders(),
-    listCourses(),
-    listCertificates(),
+  const [certTypesResult, providersResult, coursesResult, certificatesResult] = await Promise.all([
+    settle(listCertTypes()),
+    settle(listProviders()),
+    settle(listCourses()),
+    settle(listCertificates()),
   ]);
+
+  const certTypes = certTypesResult.ok ? certTypesResult.data : [];
+  const providers = providersResult.ok ? providersResult.data : [];
+  const courses = coursesResult.ok ? coursesResult.data : [];
+  const certificates = certificatesResult.ok ? certificatesResult.data : [];
+
   const preparedBy: Record<string, string[]> = {};
   for (const course of courses) {
     if (course.preparesForId) (preparedBy[course.preparesForId] ??= []).push(course.name);
@@ -34,7 +42,7 @@ export default async function CataloguePage({
     .map((c) => ({ id: c.id, name: c.name }));
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex min-w-0 flex-col gap-8">
       <PageHeader
         title="Catalogue"
         description="Certificates members can hold and the courses that prepare for or grant them."
@@ -53,21 +61,39 @@ export default async function CataloguePage({
         pendingCertificates={isAdmin ? certificates.filter((c) => c.catalogueStatus === "pending").length : 0}
         pendingCourses={isAdmin ? courses.filter((c) => c.catalogueStatus === "pending").length : 0}
         certificates={
-          <CertificatesTable
-            key={initialSearch}
-            initialSearch={initialSearch}
-            certificates={certificates}
-            certTypes={certTypes}
-            providers={providers}
-            courses={coursesNotGrantingYet}
-            hasCourses={courses.length > 0}
-            preparedBy={preparedBy}
-            canManage={isAdmin}
-          />
+          certificatesResult.ok && certTypesResult.ok && providersResult.ok && coursesResult.ok ? (
+            <CertificatesTable
+              key={initialSearch}
+              initialSearch={initialSearch}
+              certificates={certificates}
+              certTypes={certTypes}
+              providers={providers}
+              courses={coursesNotGrantingYet}
+              hasCourses={courses.length > 0}
+              preparedBy={preparedBy}
+              canManage={isAdmin}
+            />
+          ) : (
+            <SectionError title="Certificates" />
+          )
         }
-        courses={<CoursesTable key={initialSearch} initialSearch={initialSearch} courses={courses} providers={providers} certTypes={certTypes} canManage={isAdmin} />}
-        certTypes={isAdmin ? <CertTypeSection certTypes={certTypes} /> : undefined}
-        providers={isAdmin ? <ProviderSection providers={providers} /> : undefined}
+        courses={
+          coursesResult.ok && providersResult.ok && certTypesResult.ok ? (
+            <CoursesTable key={initialSearch} initialSearch={initialSearch} courses={courses} providers={providers} certTypes={certTypes} canManage={isAdmin} />
+          ) : (
+            <SectionError title="Courses" />
+          )
+        }
+        certTypes={
+          isAdmin ? (
+            certTypesResult.ok ? <CertTypeSection certTypes={certTypes} /> : <SectionError title="Certificate types" />
+          ) : undefined
+        }
+        providers={
+          isAdmin ? (
+            providersResult.ok ? <ProviderSection providers={providers} /> : <SectionError title="Providers" />
+          ) : undefined
+        }
       />
     </div>
   );

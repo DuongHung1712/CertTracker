@@ -49,7 +49,7 @@ describe("certificateSchema", () => {
 
   it("a completion needs the course that grants it", () => {
     expect(messages({ ...exam, kind: "completion", courseId: null })).toEqual([
-      ["courseId", "Choose the course that grants this completion"],
+      ["courseId", "Choose the course that grants this certificate"],
     ]);
     expect(certificateSchema.safeParse({ ...exam, kind: "completion", courseId: COURSE }).success).toBe(true);
   });
@@ -64,10 +64,10 @@ describe("certificateSchema", () => {
 
   it("words the sheet title and the delete hint after the kind", () => {
     expect(certificateSheetTitle(false, "exam")).toBe("Add certificate");
-    expect(certificateSheetTitle(false, "completion")).toBe("Add course completion");
-    expect(certificateSheetTitle(true, "completion")).toBe("Edit course completion");
+    expect(certificateSheetTitle(false, "completion")).toBe("Add course certificate");
+    expect(certificateSheetTitle(true, "completion")).toBe("Edit course certificate");
     expect(certificateDeleteHint("exam")).toBe("A certificate that members hold cannot be deleted. This cannot be undone.");
-    expect(certificateDeleteHint("completion")).toBe("A course completion that members hold cannot be deleted. This cannot be undone.");
+    expect(certificateDeleteHint("completion")).toBe("A course certificate that members hold cannot be deleted. This cannot be undone.");
   });
 
   it("an exam never keeps a course", () => {

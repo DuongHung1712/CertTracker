@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { fieldLabel, signIn } from "./helpers";
 import { signInAsSeedAdmin } from "./support/restore-seed";
 
-const ADD_CERTIFICATE_BUTTON = "Add certificate or course completion";
+const ADD_CERTIFICATE_BUTTON = "Add exam or course certificate";
 const ADMIN = "admin@certtracker.test";
 const MEMBER = "member@certtracker.test";
 const MANAGER = "manager@certtracker.test";
@@ -43,7 +43,7 @@ async function pickOption(page: Page, dialog: Locator, label: string | RegExp, o
   await page.getByRole("option", { name: option, exact: true }).click();
 }
 
-async function addCertificate(page: Page, fields: { name: string; kind: "Exam" | "Course completion" }) {
+async function addCertificate(page: Page, fields: { name: string; kind: "Exam" | "Course certificate" }) {
   await openTab(page, "Certificates");
   await page.getByRole("button", { name: ADD_CERTIFICATE_BUTTON, exact: true }).click();
   const dialog = page.getByRole("dialog");
@@ -134,7 +134,7 @@ test("a manager reads the catalogue without any way to change it", async ({ page
   await expectReadOnlyCatalogue(page);
 });
 
-test("a course completion needs a granting course, and that course cannot be deleted while it grants", async ({ page }) => {
+test("a course certificate needs a granting course, and that course cannot be deleted while it grants", async ({ page }) => {
   await signIn(page, ADMIN);
   await page.goto("/courses");
 
@@ -143,29 +143,28 @@ test("a course completion needs a granting course, and that course cannot be del
   const completionName = track(`Completion E2E ${stamp}`);
   await addCourse(page, courseName);
 
-  const dialog = await addCertificate(page, { name: completionName, kind: "Course completion" });
-  await expect(dialog.getByRole("heading", { name: "Add course completion" })).toBeVisible();
+  const dialog = await addCertificate(page, { name: completionName, kind: "Course certificate" });
+  await expect(dialog.getByRole("heading", { name: "Add course certificate" })).toBeVisible();
   await dialog.getByRole("button", { name: "Save" }).click();
-  await expect(dialog.getByText("Choose the course that grants this completion")).toBeVisible();
+  await expect(dialog.getByText("Choose the course that grants this certificate")).toBeVisible();
   await pickOption(page, dialog, fieldLabel("Course"), courseName);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
   await searchFor(page, completionName);
   await expect(rowOf(page, completionName).getByRole("cell", { name: `Granted by: ${courseName}`, exact: true })).toBeVisible();
-  await expect(page.getByText(`Added course completion ${completionName}`)).toBeVisible();
+  await expect(page.getByText(`Added course certificate ${completionName}`)).toBeVisible();
 
-  // A completion is never called a certificate, also when deleting it.
   await rowOf(page, completionName).getByRole("button", { name: `Actions for ${completionName}` }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
-  await expect(page.getByRole("alertdialog").getByText(`Delete course completion ${completionName}?`)).toBeVisible();
+  await expect(page.getByRole("alertdialog").getByText(`Delete course certificate ${completionName}?`)).toBeVisible();
   await page.getByRole("button", { name: "Cancel" }).click();
 
   await openTab(page, "Courses");
   await searchFor(page, courseName);
   await expect(rowOf(page, courseName).getByRole("cell", { name: completionName, exact: true })).toBeVisible();
 
-  // A course that grants a completion is no longer offered to the next one; a free course still is.
-  const next = await addCertificate(page, { name: `Next ${stamp}`, kind: "Course completion" });
+  // A course that grants a course certificate is no longer offered to the next one; a free course still is.
+  const next = await addCertificate(page, { name: `Next ${stamp}`, kind: "Course certificate" });
   await next.getByLabel(fieldLabel("Course")).click();
   await expect(page.getByRole("option", { name: "AWS Solutions Architect Associate", exact: true })).toBeVisible();
   await expect(page.getByRole("option", { name: courseName, exact: true })).toHaveCount(0);
@@ -176,12 +175,12 @@ test("a course completion needs a granting course, and that course cannot be del
   await expect(next).toBeHidden();
   await openTab(page, "Courses");
 
-  // The delete dialog names the completion, disables Delete and links to the Certificates tab.
+  // The delete dialog names the course certificate, disables Delete and links to the Certificates tab.
   await searchFor(page, courseName);
   await rowOf(page, courseName).getByRole("button", { name: `Actions for ${courseName}` }).click();
   await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog");
-  await expect(confirm.getByText(`This course grants the completion ${completionName}. Delete or change that completion first.`)).toBeVisible();
+  await expect(confirm.getByText(`This course grants the course certificate ${completionName}. Delete or change that course certificate first.`)).toBeVisible();
   await expect(confirm.getByRole("button", { name: "Delete course" })).toBeDisabled();
   await confirm.getByRole("link", { name: "Open the Certificates tab" }).click();
   await expect(page.getByRole("tab", { name: "Certificates" })).toHaveAttribute("aria-selected", "true");
@@ -197,12 +196,12 @@ test("a course that grants nothing gets a plain delete confirmation that works",
   await page.getByRole("menuitem", { name: "Delete" }).click();
   const confirm = page.getByRole("alertdialog");
   await expect(confirm.getByText(/This cannot be undone/)).toBeVisible();
-  await expect(confirm.getByText(/grants the completion/)).toHaveCount(0);
+  await expect(confirm.getByText(/grants the course certificate/)).toHaveCount(0);
   await confirm.getByRole("button", { name: "Delete course" }).click();
   await expect(page.getByText(`Deleted course ${courseName}`)).toBeVisible();
 });
 
-test("a completion form has no Validity field and saves without one; an exam keeps it", async ({ page }) => {
+test("a course certificate form has no Validity field and saves without one; an exam keeps it", async ({ page }) => {
   await signIn(page, ADMIN);
   await page.goto("/courses");
   const stamp = Date.now();
@@ -210,7 +209,7 @@ test("a completion form has no Validity field and saves without one; an exam kee
   const completionName = track(`QA Validity Completion ${stamp}`);
   await addCourse(page, courseName);
 
-  const dialog = await addCertificate(page, { name: completionName, kind: "Course completion" });
+  const dialog = await addCertificate(page, { name: completionName, kind: "Course certificate" });
   await expect(dialog.getByLabel("Validity (months)")).toHaveCount(0);
   await expect(dialog.getByLabel(fieldLabel("Link"))).toBeVisible();
   await expect(dialog.getByLabel("Certificate link")).toHaveCount(0);
@@ -218,7 +217,7 @@ test("a completion form has no Validity field and saves without one; an exam kee
   await pickOption(page, dialog, fieldLabel("Kind"), "Exam");
   await expect(dialog.getByLabel("Validity (months)")).toBeVisible();
   await dialog.getByLabel("Validity (months)").fill("24");
-  await pickOption(page, dialog, fieldLabel("Kind"), "Course completion");
+  await pickOption(page, dialog, fieldLabel("Kind"), "Course certificate");
   await expect(dialog.getByLabel("Validity (months)")).toHaveCount(0);
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
@@ -345,7 +344,7 @@ test("the link in the certificate sheet switches to the Courses tab", async ({ p
   await page.goto("/courses");
   await page.getByRole("button", { name: ADD_CERTIFICATE_BUTTON, exact: true }).click();
   const dialog = page.getByRole("dialog");
-  await pickOption(page, dialog, fieldLabel("Kind"), "Course completion");
+  await pickOption(page, dialog, fieldLabel("Kind"), "Course certificate");
   await dialog.getByRole("link", { name: /Courses tab/ }).click();
   await expect(page).toHaveURL(/\?tab=courses$/);
   await expect(page.getByRole("tab", { name: "Courses" })).toHaveAttribute("aria-selected", "true");
@@ -367,7 +366,7 @@ test("Escape closes only an open select popup; a second Escape closes the sheet"
   await expect(dialog).toBeHidden();
 });
 
-test("admin creates a course and its course completion in one step; a member and a manager see no add controls", async ({ page }) => {
+test("admin creates a course and its course certificate in one step; a member and a manager see no add controls", async ({ page }) => {
   test.setTimeout(60_000); // creates a course, then signs in twice more: 30 s is too tight on a slow CI runner
   await signIn(page, ADMIN);
   await page.goto("/courses");
@@ -379,11 +378,11 @@ test("admin creates a course and its course completion in one step; a member and
   await expect(toggle).toBeChecked();
   await expect(dialog.getByText("Leave empty to use the course name.")).toBeVisible();
   await toggle.click();
-  await expect(dialog.getByLabel(fieldLabel("Completion type"))).toHaveCount(0);
+  await expect(dialog.getByLabel(fieldLabel("Course certificate type"))).toHaveCount(0);
   await toggle.click();
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog.getByText("Type is required")).toBeVisible();
-  await pickOption(page, dialog, fieldLabel("Completion type"), "Cloud");
+  await pickOption(page, dialog, fieldLabel("Course certificate type"), "Cloud");
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(dialog).toBeHidden();
 
@@ -392,7 +391,7 @@ test("admin creates a course and its course completion in one step; a member and
   await openTab(page, "Certificates");
   await searchFor(page, name);
   const certificate = rowOf(page, name);
-  await expect(certificate.getByText("Course completion", { exact: true })).toBeVisible();
+  await expect(certificate.getByText("Course certificate", { exact: true })).toBeVisible();
 
   // Edit mode of that course: read-only line, no switch.
   await openTab(page, "Courses");

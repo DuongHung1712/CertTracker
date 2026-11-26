@@ -61,11 +61,24 @@ export function CareerCard({
             <dd data-testid="career-yoe">{formatYoe(yoeYears)}</dd>
           </div>
         </dl>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <p className="text-body font-medium">Started working</p>
+        <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <p className="text-body font-medium">Started working</p>
+            <span className="text-caption text-muted-foreground">* Required</span>
+          </div>
           <div className="flex flex-wrap items-end gap-3">
-            <CareerStartFields idPrefix="career" value={draft} onChange={setDraft} error={error} disabled={pending} />
-            <Button type="submit" className="h-9" disabled={pending || !dirty}>
+            <CareerStartFields
+              idPrefix="career"
+              value={draft}
+              onChange={(next) => {
+                setDraft(next);
+                if (error) setError(undefined);
+              }}
+              error={error}
+              disabled={pending}
+              requiredYear
+            />
+            <Button type="submit" size="lg" disabled={pending || !dirty}>
               {pending ? "Saving…" : "Save"}
             </Button>
           </div>

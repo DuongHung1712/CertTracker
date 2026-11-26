@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { RequiredMark } from "@/components/required-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -44,7 +45,7 @@ export function AiReaderSettings({ settings }: { settings: Settings }) {
       toast.success(enabled ? "AI certificate reader is on" : "AI certificate reader is off");
     } else {
       setError(result.error);
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
     }
   }
 
@@ -58,18 +59,22 @@ export function AiReaderSettings({ settings }: { settings: Settings }) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} noValidate className="flex max-w-md flex-col gap-4">
+          <p className="text-caption text-muted-foreground">* Required</p>
           <Field orientation="horizontal">
             <FieldLabel htmlFor="ai-reader-enabled">Let members use AI to fill in the form</FieldLabel>
             <Switch id="ai-reader-enabled" checked={enabled} onCheckedChange={setEnabled} />
           </Field>
           <Field>
-            <FieldLabel htmlFor="ai-reader-limit">Reads per member per day</FieldLabel>
+            <FieldLabel htmlFor="ai-reader-limit">
+              Reads per member per day <RequiredMark />
+            </FieldLabel>
             <Input
               id="ai-reader-limit"
               type="number"
               inputMode="numeric"
               min={1}
               max={200}
+              aria-required="true"
               className="h-9 w-32"
               value={limit}
               aria-invalid={!!error}

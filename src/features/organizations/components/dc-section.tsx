@@ -29,11 +29,13 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
             id: "actions",
             header: "",
             enableSorting: false,
+            meta: { className: "sticky right-0 z-[1] w-10", cellClassName: "bg-card group-hover:bg-accent" },
             cell: ({ row }) => (
               <div className="flex justify-end gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={`Edit ${row.original.name}`}
                   onClick={() => {
                     setEditing(row.original);
                     setDialogOpen(true);
@@ -44,6 +46,7 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={`Delete ${row.original.name}`}
                   className="text-destructive hover:text-destructive"
                   onClick={() => setConfirming(row.original)}
                 >
@@ -62,7 +65,7 @@ export function DcSection({ dcs, canManage }: { dcs: Dc[]; canManage: boolean })
     const result = await deleteDc({ id: confirming.id });
     setPending(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       setConfirming(null);
       return;
     }

@@ -55,9 +55,9 @@ test("E-11: member submits, manager returns, member fixes, manager approves; num
     await expect(heldValue(member)).toHaveText("0");
     await expect(waitingTile(manager).getByText("0", { exact: true })).toBeVisible();
 
-    // The member passes the exam planned on the Learning tab and submits the certificate with proof: it waits.
+    // The member passes the exam planned on the Learning tab and adds the certificate with proof: it waits.
     await member.goto("/me?tab=learning");
-    await openMenu(member, "Submit certificate");
+    await openMenu(member, "Add certificate");
     const dialog = member.getByRole("dialog");
     await dialog.getByLabel(fieldLabel("Date passed")).fill("01/06/2026");
     await dialog.getByLabel("Evidence", { exact: true }).setInputFiles("e2e/fixtures/evidence.pdf");

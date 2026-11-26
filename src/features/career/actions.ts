@@ -14,7 +14,7 @@ import {
 import { err, ok, type Result } from "@/lib/result";
 import { createClient } from "@/lib/supabase/server";
 
-const GENERIC_ERROR = "Something went wrong. Please try again.";
+const GENERIC_ERROR = "Something went wrong. Try again.";
 const FORBIDDEN_ERROR = "You do not have permission to do this.";
 const NOT_FOUND_ERROR = "You do not have permission to do this, or the role no longer exists.";
 const UNIQUE_VIOLATION = "23505";

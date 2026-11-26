@@ -68,5 +68,5 @@ export type CourseInput = z.infer<typeof courseSchema>;
 /** Body of the delete dialog: a course that grants a completion cannot be deleted, so the dialog says which one. */
 export const courseDeleteDescription = (grantsCompletionName: string | null): string =>
   grantsCompletionName
-    ? `This course grants the completion ${grantsCompletionName}. Delete or change that completion first.`
+    ? `This course grants the course certificate ${grantsCompletionName}. Delete or change that course certificate first.`
     : "Where members used it as their course studied, it is cleared. This cannot be undone.";

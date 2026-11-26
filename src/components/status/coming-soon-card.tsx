@@ -38,7 +38,7 @@ export function ComingSoonCard({
           <h3 className="text-body font-semibold text-foreground">{title}</h3>
         </div>
         <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-caption font-medium text-muted-foreground"
+          className="inline-flex shrink-0 items-center gap-1 rounded-sm border border-border bg-muted/40 px-2 py-0.5 text-caption font-medium text-muted-foreground"
         >
           <Clock className="size-3 text-muted-foreground" aria-hidden />
           <span>Coming soon</span>

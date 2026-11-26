@@ -21,7 +21,7 @@ function view() {
     <MemberDashboardView
       fullName="Le Minh Chau" teamName={null} careerRoleName={null} yoeYears={null} memberId="m1"
       records={[expiring]} journey={[]} courses={[]} examOptions={[{ id: EXAM_ID, label: "AWS SAA" }]}
-      certificateOptions={[]} studyCourses={[]} subtitle="Hello"
+      certificateOptions={[]} subtitle="Hello"
     />
   );
 }

@@ -23,11 +23,13 @@ interface SkillBatchAssessDialogProps {
   onOpenChange: (open: boolean) => void;
   /** The whole catalogue with the member's ratings already merged in. */
   skills: Skill[];
+  /** Skills on the member's profile that cannot stay at level 0 when saving; defaults to all skills if omitted. */
+  requiredSkillIds?: ReadonlySet<string>;
   onSave: (skills: Skill[]) => void;
 }
 
 /** Rate a whole area in one sitting: one row per skill, changes stay local until "Save ratings". */
-export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: SkillBatchAssessDialogProps) {
+export function SkillBatchAssessDialog({ open, onOpenChange, skills, requiredSkillIds, onSave }: SkillBatchAssessDialogProps) {
   const [draft, setDraft] = React.useState(skills);
   const [category, setCategory] = React.useState<SkillCategory>("backend");
   const [query, setQuery] = React.useState("");
@@ -103,7 +105,7 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
   }
 
   function save() {
-    const unrated = draft.filter((s) => s.currentLevel === 0);
+    const unrated = draft.filter((s) => (!requiredSkillIds || requiredSkillIds.has(s.id)) && s.currentLevel === 0);
     if (unrated.length > 0) {
       const nextMissing = new Set(unrated.map((s) => s.id));
       setMissingIds(nextMissing);
@@ -147,7 +149,7 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
                 className="h-8 pl-8"
               />
             </div>
-            <Button type="button" variant="outline" size="sm" disabled={!dirty} onClick={resetRatings}>
+            <Button type="button" variant="outline" disabled={!dirty} onClick={resetRatings}>
               <RotateCcw aria-hidden className="size-3.5" />
               Reset
             </Button>
@@ -209,7 +211,7 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
                       data-missing={isMissing ? "true" : undefined}
                       className={cn(isMissing && "bg-destructive/5")}
                     >
-                      <TableCell className="w-full max-w-0">
+                      <TableCell className="min-w-44 max-w-xs sm:w-full sm:max-w-0">
                         <span className={cn("block truncate font-medium", isMissing ? "text-destructive" : "text-foreground")}>
                           {skill.name}
                         </span>

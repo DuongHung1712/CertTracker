@@ -224,7 +224,7 @@ export function BatchPreview({ batch, rows, existingNames }: { batch: ImportBatc
   const summaryNote = useMemo(() => newEntitiesSummary(newEntities), [newEntities]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex min-w-0 flex-col gap-4">
       <Link
         href="/import"
         className="inline-flex w-fit items-center gap-1.5 text-body text-muted-foreground transition-colors hover:text-foreground"

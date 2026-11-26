@@ -77,16 +77,14 @@ export function ProposeCertificateDialog({
   });
 
   useEffect(() => {
-    if (open) {
-      form.reset({
-        name: defaultName,
-        kind: defaultKind,
-        providerId: initialProviderId,
-        proposedProvider: initialProviderId ? null : defaultProposedProvider,
-        url: "",
-        reason: "",
-      });
-    }
+    form.reset({
+      name: defaultName,
+      kind: defaultKind,
+      providerId: initialProviderId,
+      proposedProvider: initialProviderId ? null : defaultProposedProvider,
+      url: "",
+      reason: "",
+    });
   }, [open, defaultName, defaultKind, initialProviderId, defaultProposedProvider, form]);
 
   const selectedProviderId = useWatch({ control: form.control, name: "providerId" });
@@ -140,12 +138,13 @@ export function ProposeCertificateDialog({
             {kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate"}
           </DialogTitle>
           <DialogDescription>
-            Can&apos;t find yours in the catalogue? Propose it here so you can add your learning item immediately while waiting for admin review.
+            Cannot find yours in the catalogue? Propose it here so you can add your learning item immediately while waiting for admin review.
           </DialogDescription>
         </DialogHeader>
         <p className="text-caption text-muted-foreground">* Required</p>
 
         <form
+          noValidate
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.stopPropagation();
@@ -154,7 +153,7 @@ export function ProposeCertificateDialog({
         >
           {!lockKind && (
             <Field>
-              <FieldLabel>Type</FieldLabel>
+              <FieldLabel>Kind</FieldLabel>
               <Controller
                 control={form.control}
                 name="kind"
@@ -206,7 +205,7 @@ export function ProposeCertificateDialog({
                 }
               }}
             >
-              <SelectTrigger id="propose-provider-select" className="w-full" aria-required>
+              <SelectTrigger id="propose-provider-select" className="w-full" aria-required aria-invalid={!!form.formState.errors.providerId}>
                 <SelectValue placeholder="Choose provider">
                   {(selected: string) =>
                     selected === OTHER_PROVIDER_VALUE
@@ -223,6 +222,7 @@ export function ProposeCertificateDialog({
                 <SelectItem value={OTHER_PROVIDER_VALUE}>+ Other / New provider</SelectItem>
               </SelectContent>
             </Select>
+            <FieldError errors={[form.formState.errors.providerId]} />
           </Field>
 
           {providerChoice === OTHER_PROVIDER_VALUE && (
@@ -243,7 +243,7 @@ export function ProposeCertificateDialog({
           )}
 
           <Field>
-            <FieldLabel htmlFor="propose-url">Course or exam URL</FieldLabel>
+            <FieldLabel htmlFor="propose-url">Link</FieldLabel>
             <Input
               id="propose-url"
               placeholder="https://..."
@@ -255,7 +255,7 @@ export function ProposeCertificateDialog({
           </Field>
 
           <Field>
-            <FieldLabel htmlFor="propose-reason">Reason / Notes</FieldLabel>
+            <FieldLabel htmlFor="propose-reason">Reason</FieldLabel>
             <Textarea
               id="propose-reason"
               placeholder="Why should this be added? (e.g. Needed for Cloud Architect certification path)"
@@ -291,7 +291,7 @@ export function ProposeCertificateDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Submitting…" : "Propose & select"}
+              {form.formState.isSubmitting ? "Proposing…" : "Propose & select"}
             </Button>
           </DialogFooter>
         </form>

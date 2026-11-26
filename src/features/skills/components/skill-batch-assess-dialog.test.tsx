@@ -179,4 +179,24 @@ describe("SkillBatchAssessDialog", () => {
 
     expect(screen.getByText(/No skills match/i)).toBeDefined();
   });
+
+  it("allows unrated catalog skills when requiredSkillIds covers only the rated profile skills", async () => {
+    const user = userEvent.setup();
+    const handleSave = vi.fn();
+    const skills = [
+      { ...BACKEND_SKILLS[0], currentLevel: 3 as const },
+      { ...BACKEND_SKILLS[1], currentLevel: 0 as const },
+    ];
+    render(
+      <SkillBatchAssessDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        skills={skills}
+        requiredSkillIds={new Set([BACKEND_SKILLS[0].id])}
+        onSave={handleSave}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Save ratings" }));
+    expect(handleSave).toHaveBeenCalled();
+  });
 });

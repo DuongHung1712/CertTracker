@@ -27,11 +27,11 @@ export function SkillsHeader({ stats, benchmark, onOpenGuide, onOpenBatchAssess 
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onOpenGuide}>
+          <Button type="button" variant="outline" onClick={onOpenGuide}>
             <HelpCircle aria-hidden />
             Level guide
           </Button>
-          <Button type="button" size="sm" onClick={onOpenBatchAssess}>
+          <Button type="button" onClick={onOpenBatchAssess}>
             <ListChecks aria-hidden />
             Update skill rate
           </Button>

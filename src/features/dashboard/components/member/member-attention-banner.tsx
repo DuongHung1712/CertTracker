@@ -41,7 +41,7 @@ export function MemberAttentionBanner({
             {isExpired ? "Certificate expired:" : "Expires soon:"}
           </span>
           <span className="font-medium text-foreground">{record.certificateName}</span>
-          <span className="text-caption opacity-80 sm:text-body">
+          <span className="text-caption sm:text-body">
             {isExpired
               ? `Expired on ${formatDate(record.expiryDate!)}`
               : record.daysToExpiry === 0
@@ -52,7 +52,6 @@ export function MemberAttentionBanner({
       </div>
 
       <Button
-        size="sm"
         variant="outline"
         className={
           isExpired
@@ -62,7 +61,7 @@ export function MemberAttentionBanner({
         onClick={() => handleAction(record)}
       >
         <RotateCcw className="size-4" aria-hidden="true" />
-        Renew credential
+        Renew certificate
       </Button>
     </aside>
   );

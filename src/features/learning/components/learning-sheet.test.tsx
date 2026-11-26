@@ -180,4 +180,19 @@ describe("LearningSheet propose links are always visible", () => {
     expect(screen.getByRole("button", { name: "+ Propose a new course" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "+ Propose a new exam" })).toBeTruthy();
   });
+
+  it("hides Propose buttons for admins and unlinked managers", () => {
+    const admin = render(<LearningSheet open onOpenChange={() => {}} editing={null} courses={[COURSE]} examOptions={[EXAM]} canAddToCatalogue />);
+    expect(screen.queryByRole("button", { name: /\+ Propose/ })).toBeNull();
+    expect(screen.getAllByRole("link", { name: "Add it in the Catalogue" })).toHaveLength(2);
+    admin.unmount();
+
+    const unlinked = render(<LearningSheet open onOpenChange={() => {}} editing={null} viewerMemberId={null} courses={[COURSE]} examOptions={[EXAM]} />);
+    expect(screen.queryByRole("button", { name: /\+ Propose/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Add it in the Catalogue" })).toBeNull();
+    unlinked.unmount();
+
+    render(<LearningSheet open onOpenChange={() => {}} editing={null} fixedMemberId="m-other" viewerMemberId={null} courses={[COURSE]} examOptions={[EXAM]} />);
+    expect(screen.queryByRole("button", { name: /\+ Propose/ })).toBeNull();
+  });
 });

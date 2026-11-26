@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Award, BookOpen, Clock, FileText, Pencil, Plus, ShieldAlert, Trash2, type LucideIcon } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { EmptyState } from "@/components/data/empty-state";
-import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
+import type { CertificateChoice } from "@/features/records/certificate-course";
 import { expiryMeta, toExpiryStatus, type ExpiryTone } from "@/components/status/expiry";
 import { ExpiryBadge } from "@/components/status/expiry-badge";
 import { ApprovalBadge, CatalogueStatusBadge, RecordStatusLabel } from "@/components/status/record-status";
@@ -43,10 +43,10 @@ const TILE: Record<TileTone, { icon: LucideIcon; className: string }> = {
   neutral: { icon: BookOpen, className: "border-border bg-muted text-muted-foreground" },
 };
 
-/** "2 exam certificates, 1 course completion": the two kinds are counted apart, never as one "certificates". */
+/** "2 exam certificates, 1 course certificate": the two kinds are counted apart, never as one "certificates". */
 function learningSummary(records: RecordRow[]): string {
   const { exam, completion } = kindCounts(records);
-  return `${pluralize(exam, "exam certificate")}, ${pluralize(completion, "course completion")}`;
+  return `${pluralize(exam, "exam certificate")}, ${pluralize(completion, "course certificate")}`;
 }
 
 function tileTone(record: RecordRow): TileTone {
@@ -58,7 +58,8 @@ export function MemberCertificatesList({
   fullName,
   records,
   certificateOptions,
-  studyCourses,
+  providers,
+  aiReaderEnabled = false,
   memberId,
   sheetOpen,
   onSheetOpenChange,
@@ -68,7 +69,8 @@ export function MemberCertificatesList({
   fullName: string;
   records: RecordRow[];
   certificateOptions: CertificateChoice[];
-  studyCourses: StudyCourse[];
+  providers?: { id: string; name: string }[];
+  aiReaderEnabled?: boolean;
   memberId: string;
   sheetOpen: boolean;
   onSheetOpenChange: (open: boolean) => void;
@@ -106,7 +108,7 @@ export function MemberCertificatesList({
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
             <h2 className="text-section-title font-semibold text-foreground">My certificates</h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {`${learningSummary(records)} for ${fullName}`}
             </p>
           </div>
@@ -115,8 +117,8 @@ export function MemberCertificatesList({
             <div className="flex items-center gap-2 self-start sm:self-center">
               <span className="text-caption text-muted-foreground">Sort:</span>
               <Select value={sort} onValueChange={(val) => setSort(val as MemberSort)}>
-                <SelectTrigger className="h-7 w-28 text-caption" aria-label="Sort certificates">
-                  <SelectValue />
+                <SelectTrigger className="h-8 w-28 text-caption" aria-label="Sort certificates">
+                  <SelectValue>{(v: MemberSort) => (v === "name" ? "Name" : "Expiry")}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="expiry">Expiry</SelectItem>
@@ -149,9 +151,9 @@ export function MemberCertificatesList({
           title="Nothing added yet"
           description="Passed an exam or finished a course? Add the certificate with its proof."
           action={
-            <Button onClick={handleAdd} size="sm">
+            <Button onClick={handleAdd}>
               <Plus className="size-4" aria-hidden="true" />
-              Add your first certificate or course completion
+              Add your first certificate
             </Button>
           }
         />
@@ -191,10 +193,10 @@ export function MemberCertificatesList({
                     </div>
 
                     <div className="flex flex-col min-w-0">
-                      <h3 className="text-sm font-semibold text-foreground leading-snug truncate">
+                      <h3 className="text-body font-semibold text-foreground leading-snug truncate">
                         {record.certificateName}
                       </h3>
-                      <p className="text-xs text-muted-foreground truncate">
+                      <p className="text-caption text-muted-foreground truncate">
                         {record.providerName ?? "Provider not set"}
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
                       </p>
@@ -269,10 +271,11 @@ export function MemberCertificatesList({
                               <Button
                                 variant="ghost"
                                 size="icon"
+                                className="text-muted-foreground hover:text-destructive"
                                 onClick={() => setConfirmDeleteRecord(record)}
                                 aria-label={`Delete ${record.certificateName}`}
                               >
-                                <Trash2 className="size-4 text-muted-foreground hover:text-destructive" aria-hidden="true" />
+                                <Trash2 className="size-4" aria-hidden="true" />
                               </Button>
                             }
                           />
@@ -311,7 +314,7 @@ export function MemberCertificatesList({
         <div className="flex justify-center border-t border-border pt-3">
           <Link
             href="/me"
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            className={cn(buttonVariants({ variant: "outline" }))}
           >
             View all ({filteredRecords.length})
           </Link>
@@ -324,9 +327,11 @@ export function MemberCertificatesList({
         editing={editingRecord}
         memberOptions={[]}
         certificateOptions={certificateOptions}
-        studyCourses={studyCourses}
+        providers={providers}
+        aiReaderEnabled={aiReaderEnabled}
         showCompanyFields={false}
         fixedMemberId={memberId}
+        viewerMemberId={memberId}
         canDelete={false}
         records={records}
         onEditExisting={handleEdit}
@@ -346,7 +351,7 @@ export function MemberCertificatesList({
           const result = await deleteRecord({ id: confirmDeleteRecord.id });
           setDeleting(false);
           if (!result.ok) {
-            toast.error(result.error);
+            toast.error(result.error, { duration: Infinity });
           } else {
             toast.success(`Deleted ${confirmDeleteRecord.certificateName}`);
             setConfirmDeleteRecord(null);

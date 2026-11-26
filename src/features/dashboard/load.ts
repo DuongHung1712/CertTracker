@@ -9,11 +9,13 @@ import { getBreakdown, getDashboardKpis, getRanking } from "@/features/dashboard
 import { settle } from "@/features/dashboard/settle";
 import { resolveMemberProfile } from "@/features/dashboard/view-model";
 import { listDataQualityIssues } from "@/features/data-quality/queries";
+import { listProviders } from "@/features/courses/queries";
 import { toExamOptions } from "@/features/learning/exam-options";
 import { learningAsJourneyRecords } from "@/features/learning/journey";
 import { listCourseOptions, listLearningItems } from "@/features/learning/queries";
 import { listMembers, listTeamOptionsForCurrentUser } from "@/features/members/queries";
-import { listCertificateOptions, listRecords, listStudyCourses } from "@/features/records/queries";
+import { isAiReaderEnabled } from "@/features/records/ai-flag";
+import { listCertificateOptions, listRecords } from "@/features/records/queries";
 import { formatDateTimeVn } from "@/lib/format";
 
 type SignedInUser = NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
@@ -85,10 +87,11 @@ export async function loadMemberDashboard(
   user: SignedInUser,
   memberId: string,
 ): Promise<ComponentProps<typeof MemberDashboardView>> {
-  const [recordsResult, certificateOptionsResult, studyCoursesResult, careerResult, membersResult, learningResult, coursesResult] = await Promise.all([
+  const [recordsResult, certificateOptionsResult, providersResult, aiResult, careerResult, membersResult, learningResult, coursesResult] = await Promise.all([
     settle(listRecords({ memberId })),
     settle(listCertificateOptions()),
-    settle(listStudyCourses()),
+    settle(listProviders()),
+    settle(isAiReaderEnabled()),
     settle(getMemberCareer(memberId)),
     settle(listMembers()),
     settle(listLearningItems({ memberId })),
@@ -108,8 +111,10 @@ export async function loadMemberDashboard(
     records: recordsResult.ok ? recordsResult.data : [],
     recordsError: recordsResult.ok ? undefined : recordsResult.error,
     certificateOptions: certificateOptionsResult.ok ? certificateOptionsResult.data : [],
-    studyCourses: studyCoursesResult.ok ? studyCoursesResult.data : [],
+    providers: providersResult.ok ? providersResult.data : [],
+    aiReaderEnabled: aiResult.ok ? aiResult.data : false,
     journey: learningResult.ok ? learningAsJourneyRecords(learningResult.data) : [],
+    learningItems: learningResult.ok ? learningResult.data : [],
     learningError: learningResult.ok ? undefined : learningResult.error,
     courses: coursesResult.ok ? coursesResult.data : [],
     examOptions: certificateOptionsResult.ok ? toExamOptions(certificateOptionsResult.data) : [],

@@ -77,7 +77,7 @@ export function CoursesTable({
     // Approving also creates the completion certificate the course grants (owner default: on).
     const result = decision === "approve" ? await approveCourse({ id: course.id, grantsCompletion: true }) : await rejectCourse({ id: course.id });
     if (result.ok) toast.success(decision === "approve" ? `Approved ${course.name}` : `Rejected ${course.name}`);
-    else toast.error(result.error);
+    else toast.error(result.error, { duration: Infinity });
   }
 
   const rows = useMemo(() => {
@@ -125,7 +125,7 @@ export function CoursesTable({
             </Badge>
             {row.original.refundConditions && (
               <Tooltip>
-                <TooltipTrigger render={<span className="max-w-full truncate text-caption text-muted-foreground" />}>
+                <TooltipTrigger render={<span tabIndex={0} className="max-w-full truncate text-caption text-muted-foreground" />}>
                   {row.original.refundConditions}
                 </TooltipTrigger>
                 <TooltipContent>{row.original.refundConditions}</TooltipContent>

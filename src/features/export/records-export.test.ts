@@ -150,7 +150,7 @@ describe("records export", () => {
   it("writes the kind and the course studied, with the cost of that course", () => {
     const studied = { ...ROWS[0]!, certificateKind: "completion" as const, courseName: "ML Specialization" };
     const lines = recordsToCsv([studied, ROWS[1]!]).split(CRLF);
-    expect(lines[1]).toContain("AWS SAA,Course completion,AWS,Cloud,36,ML Specialization,150,USD,40,");
+    expect(lines[1]).toContain("AWS SAA,Course certificate,AWS,Cloud,36,ML Specialization,150,USD,40,");
     expect(lines[2]).toContain("GCP ACE,Exam,Google,,,,3500000,VND,,");
   });
 

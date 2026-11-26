@@ -22,9 +22,9 @@ export function ImportPreviewTable({ rows }: { rows: MemberImportRow[] }) {
           {rows.map((row) => (
             <TableRow key={row.line}>
               <TableCell className="tabular-nums">{row.line}</TableCell>
-              <TableCell>{row.fullName ?? "-"}</TableCell>
-              <TableCell>{row.email ?? "-"}</TableCell>
-              <TableCell>{row.teamName ?? "-"}</TableCell>
+              <TableCell>{row.fullName ?? "—"}</TableCell>
+              <TableCell>{row.email ?? "—"}</TableCell>
+              <TableCell>{row.teamName ?? "—"}</TableCell>
               <TableCell>{row.careerRoleName ?? "—"}</TableCell>
               <TableCell className={row.action === "error" ? "text-destructive" : undefined}>{RESULT_LABEL[row.action]}</TableCell>
               <TableCell className="whitespace-normal">{row.action === "skip" ? "Already a member" : row.messages.join("; ")}</TableCell>

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { formatNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const BORDER = {
@@ -30,8 +31,8 @@ export function SummaryTile({
     <div data-slot="kpi-tile" className={cn("flex min-h-[140px] min-w-0 flex-col justify-between rounded-lg border bg-card p-3.5", BORDER[tone])}>
       <dl className="flex flex-col gap-1">
         <dt className="font-mono text-label uppercase tracking-wider text-muted-foreground">{label}</dt>
-        <dd className={cn("mt-1 text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl", tone === "danger" ? "text-status-expired-fg" : "text-foreground")}>
-          {value}
+        <dd className={cn("mt-1 text-kpi tabular-nums tracking-tight", tone === "danger" ? "text-status-expired-fg" : "text-foreground")}>
+          {typeof value === "number" ? formatNumber(value) : value}
         </dd>
         <dd className="text-caption text-muted-foreground">{summary}</dd>
       </dl>

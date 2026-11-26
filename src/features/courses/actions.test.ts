@@ -60,7 +60,7 @@ describe("createCourseWithCompletion", () => {
     replies.certificates = [{ error: unique }];
     expect(await createCourseWithCompletion(input)).toEqual({
       ok: false,
-      error: 'A certificate or course completion named "Intro" already exists for this provider. Rename the course or give the completion a different name.',
+      error: 'A course certificate named "Intro" already exists for this provider. Rename the course or give the course certificate a different name.',
     });
     expect(deletes).toEqual(["courses"]);
     expect(eqCalls).toEqual([["id", "course-1"]]);

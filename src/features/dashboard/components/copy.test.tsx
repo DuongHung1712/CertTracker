@@ -100,7 +100,6 @@ describe("[copy] member certificate list", () => {
         fullName="Lê Minh Châu"
         records={records}
         certificateOptions={[]}
-        studyCourses={[]}
         memberId="m1"
         sheetOpen={false}
         onSheetOpenChange={() => {}}
@@ -114,10 +113,10 @@ describe("[copy] member certificate list", () => {
     issuedDate: null, expiryDate: null, daysToExpiry: null, expiryStatus: "N/A",
   });
 
-  it("counts one exam certificate in the singular, apart from course completions, and drops Registered Records", () => {
+  it("counts one exam certificate in the singular, apart from course certificates, and drops Registered Records", () => {
     const html = render([studying]);
     expect(html).toContain("My certificates");
-    expect(html).toContain("1 exam certificate, 0 course completions");
+    expect(html).toContain("1 exam certificate, 0 course certificates");
     expect(html).not.toMatch(PLURAL_BUGS);
     expect(html).not.toMatch(/Registered Records|certifications registered/);
   });

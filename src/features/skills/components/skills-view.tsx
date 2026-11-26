@@ -25,7 +25,6 @@ import { SkillTable } from "./skill-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { FilterBar } from "@/components/data/filter-bar";
 import { OptionSelect, type SelectOption } from "@/components/option-select";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -195,8 +194,8 @@ export function SkillsView({ initialSkills = SEED_SKILLS, benchmark = SEED_ROLE_
                 aria-pressed={viewMode === mode}
                 onClick={() => setViewMode(mode)}
                 className={cn(
-                  "inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  viewMode === mode && "bg-card text-foreground shadow-xs",
+                  "inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                  viewMode === mode && "bg-card text-foreground",
                 )}
               >
                 <Icon className="size-3.5" aria-hidden />
@@ -206,15 +205,10 @@ export function SkillsView({ initialSkills = SEED_SKILLS, benchmark = SEED_ROLE_
         </div>
 
         {visibleSkills.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border p-10">
-            <EmptyState
-              title="No skills match these filters"
-              description="Try another category or status, or clear the search."
-            />
-            <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
-              Clear all filters
-            </Button>
-          </div>
+          <EmptyState
+            title="No skills match these filters"
+            description="Try another category or status, or clear the search."
+          />
         ) : viewMode === "grid" ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visibleSkills.map((skill) => (
@@ -238,7 +232,7 @@ export function SkillsView({ initialSkills = SEED_SKILLS, benchmark = SEED_ROLE_
       </section>
 
       <SkillLevelGuide open={guideOpen} onOpenChange={setGuideOpen} />
-      <SkillBatchAssessDialog open={batchOpen} onOpenChange={setBatchOpen} skills={allSkills} onSave={handleBatchSave} />
+      <SkillBatchAssessDialog open={batchOpen} onOpenChange={setBatchOpen} skills={allSkills} requiredSkillIds={profileIds} onSave={handleBatchSave} />
       <SkillDetailDialog
         skill={detailSkill}
         onOpenChange={(open) => !open && setDetailSkill(null)}

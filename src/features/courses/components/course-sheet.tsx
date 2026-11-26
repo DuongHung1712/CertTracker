@@ -104,6 +104,7 @@ export function CourseSheet({
         </FieldLabel>
         <Input
           id="course-name"
+          aria-required
           className="h-9"
           {...form.register("name")}
           aria-invalid={!!form.formState.errors.name}
@@ -266,7 +267,7 @@ export function CourseSheet({
           {grantsCompletion && (
             <>
               <Field>
-                <FieldLabel htmlFor="completion-name">Completion name</FieldLabel>
+                <FieldLabel htmlFor="completion-name">Course certificate name</FieldLabel>
                 <Input
                   id="completion-name"
                   className="h-9"
@@ -279,7 +280,7 @@ export function CourseSheet({
               </Field>
               <Field>
                 <FieldLabel htmlFor="completion-type">
-                  Completion type <RequiredMark />
+                  Course certificate type <RequiredMark />
                 </FieldLabel>
                 <Controller
                   control={form.control}
@@ -298,7 +299,7 @@ export function CourseSheet({
                 <FieldError errors={[form.formState.errors.completionCertTypeId]} />
               </Field>
               <Field>
-                <FieldLabel htmlFor="completion-url">Completion link</FieldLabel>
+                <FieldLabel htmlFor="completion-url">Course certificate link</FieldLabel>
                 <Input
                   id="completion-url"
                   type="url"

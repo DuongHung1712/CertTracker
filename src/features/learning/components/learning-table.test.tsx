@@ -73,4 +73,26 @@ describe("LearningTable", () => {
     await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(screen.getAllByRole("row")).toHaveLength(3);
   });
+
+  it("offers Add certificate for open items and hides it for finished items", async () => {
+    render(
+      <LearningTable
+        rows={[
+          row({ id: "open-1", status: "in_progress", targetCertificateName: "Open Exam" }),
+          row({ id: "done-1", status: "done", progress: 100, finishedDate: "2026-10-01", targetCertificateName: "Done Exam" }),
+        ]}
+        mode="self"
+        fixedMemberId="m1"
+        courses={[]}
+        examOptions={[]}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Actions for Open Exam" }));
+    expect(await screen.findByRole("menuitem", { name: "Add certificate" })).toBeTruthy();
+    await userEvent.keyboard("{Escape}");
+
+    await userEvent.click(screen.getByRole("button", { name: "Actions for Done Exam" }));
+    await screen.findByRole("menuitem", { name: "Edit" });
+    expect(screen.queryByRole("menuitem", { name: "Add certificate" })).toBeNull();
+  });
 });

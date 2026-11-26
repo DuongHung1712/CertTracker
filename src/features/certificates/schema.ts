@@ -4,10 +4,10 @@ import { courseFields, dropConditionsUnlessRefundable, emptyToNull, requireCostW
 export const CERTIFICATE_KINDS = ["exam", "completion"] as const;
 export type CertificateKind = (typeof CERTIFICATE_KINDS)[number];
 
-export const CERTIFICATE_KIND_LABEL: Record<CertificateKind, string> = { exam: "Exam", completion: "Course completion" };
+export const CERTIFICATE_KIND_LABEL: Record<CertificateKind, string> = { exam: "Exam", completion: "Course certificate" };
 
-/** What to call one row in a sentence: a completion is never a "certificate" in the UI. */
-export const CERTIFICATE_KIND_NOUN: Record<CertificateKind, string> = { exam: "certificate", completion: "course completion" };
+/** What to call one row in a sentence: an exam is a "certificate", a completion a "course certificate". */
+export const CERTIFICATE_KIND_NOUN: Record<CertificateKind, string> = { exam: "certificate", completion: "course certificate" };
 
 /** Course names for the "Prepared by" cell: the first few, then "+N more". */
 export function formatPreparedBy(names: string[], max = 2): string {
@@ -18,10 +18,10 @@ export function formatPreparedBy(names: string[], max = 2): string {
 
 /** Short explanation under the Kind select. */
 export const CERTIFICATE_KIND_HELP =
-  "Exam: earned by passing an exam, has a validity. Course completion: earned by finishing a course, granted by one course.";
+  "Exam: earned by passing an exam, has a validity. Course certificate: earned by finishing a course, granted by one course.";
 
 /** One add button serves both kinds on the Catalogue tab. */
-export const CERTIFICATE_ADD_NEUTRAL_LABEL = "Add certificate or course completion";
+export const CERTIFICATE_ADD_NEUTRAL_LABEL = "Add exam or course certificate";
 
 export const certificateSheetTitle = (editing: boolean, kind: CertificateKind): string =>
   `${editing ? "Edit" : "Add"} ${CERTIFICATE_KIND_NOUN[kind]}`;
@@ -47,7 +47,7 @@ type KindAndCourse = { kind: CertificateKind; courseId: string | null };
 
 function requireGrantingCourse(value: KindAndCourse, context: z.RefinementCtx): void {
   if (value.kind === "completion" && value.courseId === null) {
-    context.addIssue({ code: "custom", path: ["courseId"], message: "Choose the course that grants this completion" });
+    context.addIssue({ code: "custom", path: ["courseId"], message: "Choose the course that grants this certificate" });
   }
 }
 
@@ -66,7 +66,7 @@ export type CertificateInput = z.infer<typeof certificateSchema>;
 
 /** Shared by the certificate actions and the one-step course action, so both word a clash the same way. */
 export const certificateDuplicateMessage = (kind: CertificateKind, name: string): string =>
-  `A ${CERTIFICATE_KIND_NOUN[kind]} named "${name}" already exists for this provider, or this course already grants a completion.`;
+  `A ${CERTIFICATE_KIND_NOUN[kind]} named "${name}" already exists for this provider, or this course already grants a course certificate.`;
 
 /**
  * The course form plus the optional completion it grants. The completion takes the course's name (unless one is given) and provider,

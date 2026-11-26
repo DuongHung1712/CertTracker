@@ -41,7 +41,7 @@ function ProposalActions({ row, onReject }: { row: IssueRow; onReject: (row: Iss
     const result = await reviewProposal(row, "approve");
     setBusy(false);
     if (result.ok) toast.success(`Approved ${name}`);
-    else toast.error(result.error);
+    else toast.error(result.error, { duration: Infinity });
   }
   return (
     <>
@@ -54,7 +54,7 @@ function ProposalActions({ row, onReject }: { row: IssueRow; onReject: (row: Iss
               disabled={busy}
               onClick={() => void approve()}
               aria-label={`Approve ${name}`}
-              className="text-status-active-fg hover:bg-status-active-bg hover:text-status-active-fg"
+              className="text-primary hover:bg-accent hover:text-accent-foreground"
             >
               <Check className="size-4" aria-hidden />
             </Button>
@@ -133,7 +133,7 @@ export function DataQualityTable({
         cell: ({ row }) => (
           <span className="inline-flex items-center gap-2 whitespace-nowrap">
             {ISSUE_META[row.original.type].label}
-            {row.original.severity === "info" && <Badge variant="secondary">Suggestion</Badge>}
+            {row.original.severity === "info" && <Badge variant="secondary" className="rounded-sm">Suggestion</Badge>}
           </span>
         ),
       },
@@ -188,7 +188,7 @@ export function DataQualityTable({
         id: "open",
         header: () => <span className="sr-only">Actions</span>,
         enableSorting: false,
-        meta: { className: "w-[1%] whitespace-nowrap" },
+        meta: { className: "sticky right-0 z-[1] w-[1%] whitespace-nowrap", cellClassName: "bg-card group-hover:bg-accent" },
         cell: ({ row }) => {
           const { label } = ISSUE_META[row.original.type];
           return (
@@ -218,7 +218,8 @@ export function DataQualityTable({
 
   const hasActiveFilters = search.length > 0 || typeFilter !== null;
   // Proposals share the single "Proposals (N)" filter pill so it never duplicates "Certificate proposal (N)".
-  const visibleTypes = ISSUE_TYPES.filter((type) => !isProposal(type) && counts[type] > 0);
+  const showProposals = proposalCount > 0 || typeFilter === "proposals";
+  const visibleTypes = ISSUE_TYPES.filter((type) => !isProposal(type) && (counts[type] > 0 || typeFilter === type));
 
   return (
     <TooltipProvider>
@@ -233,7 +234,7 @@ export function DataQualityTable({
           setTypeFilter(null);
         }}
       />
-      {(visibleTypes.length > 0 || proposalCount > 0) && (
+      {(visibleTypes.length > 0 || showProposals) && (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -243,7 +244,7 @@ export function DataQualityTable({
           >
             All ({issues.length})
           </Button>
-          {proposalCount > 0 && (
+          {showProposals && (
             <Button
               size="sm"
               variant={typeFilter === "proposals" ? "secondary" : "outline"}
@@ -271,7 +272,7 @@ export function DataQualityTable({
         onOpenChange={(open) => !open && setRejecting(null)}
         title={`Reject ${rejecting?.certificateName ?? "this proposal"}?`}
         description="Members who already picked it keep their items, but it no longer counts. It cannot be undone here."
-        confirmLabel="Reject"
+        confirmLabel="Reject proposal"
         pendingLabel="Rejecting…"
         pending={rejectPending}
         onConfirm={async () => {
@@ -280,7 +281,7 @@ export function DataQualityTable({
           const result = await reviewProposal(rejecting, "reject");
           setRejectPending(false);
           if (result.ok) toast.success(`Rejected ${rejecting.certificateName ?? "the proposal"}`);
-          else toast.error(result.error);
+          else toast.error(result.error, { duration: Infinity });
           setRejecting(null);
         }}
       />

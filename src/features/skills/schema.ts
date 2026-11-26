@@ -83,7 +83,7 @@ export const LEVEL_SCALE_GUIDE: Record<SkillLevel, LevelDescription> = {
     badgeLabel: "L5 · DC Master",
     percentageRange: "100%+",
     officialLegend: "SME / Expert - most experienced resource, extensive depth (100%+)",
-    summary: "Department/DC recognized technical authority (100%+).",
+    summary: "DC-recognized technical authority (100%+).",
     criteria: "Sets long-term strategic direction; requires review and endorsement from DC Manager.",
     requiresReview: true,
   },

@@ -307,7 +307,12 @@ describe("getManagerAttention", () => {
     expect(items[0]).toMatchObject({ title: "Binh · CKA", detail: "Expired 9 days ago", href: "/records?search=Binh%20M001%20CKA" });
     expect(items[2].detail).toBe("20 days left");
     expect(items[3].href).toBe("/records?tab=learning&search=Chau"); // a planned exam lives on the Learning tab
-    expect(items[4]).toMatchObject({ title: "Chau", detail: "No certificate yet", teamName: "AI" });
+    expect(items[4]).toMatchObject({
+      title: "Chau",
+      detail: "No certificate yet",
+      teamName: "AI",
+      href: "/members?search=Chau",
+    });
   });
 
   it("shows the first few and still counts all of them", () => {
@@ -324,6 +329,6 @@ describe("getManagerAttention", () => {
 
   it("encodes a name with spaces and symbols in the link", () => {
     const { items } = getManagerAttention([], [{ id: "m9", fullName: "Lê Minh & Co", teamName: null }]);
-    expect(items[0].href).toBe("/records?tab=learning&search=L%C3%AA%20Minh%20%26%20Co");
+    expect(items[0].href).toBe("/members?search=L%C3%AA%20Minh%20%26%20Co");
   });
 });

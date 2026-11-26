@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Bot, MessageSquare, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export function ComplianceCopilotWidget() {
   const [open, setOpen] = useState(false);
@@ -13,7 +14,7 @@ export function ComplianceCopilotWidget() {
       {open ? (
         <section
           aria-label="Ask about certificates (Coming soon)"
-          className="mb-3 flex w-80 flex-col rounded-xl border border-border bg-card shadow-xl sm:w-96 animate-in fade-in-0 slide-in-from-bottom-2 duration-150"
+          className="mb-3 flex w-[calc(100vw-3rem)] max-w-80 flex-col rounded-xl border border-border bg-card shadow-xl sm:max-w-none sm:w-96 animate-in fade-in-0 slide-in-from-bottom-2 duration-150"
         >
           {/* Header */}
           <div className="flex items-center justify-between border-b px-4 py-3 bg-muted/30 rounded-t-xl">
@@ -22,28 +23,35 @@ export function ComplianceCopilotWidget() {
                 <Bot className="size-4" aria-hidden="true" />
               </div>
               <div className="flex flex-col">
-                <h3 className="text-body font-semibold text-foreground">Ask about certificates</h3>
+                <h2 className="text-body font-semibold text-foreground">Ask about certificates</h2>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-caption rounded bg-muted px-1.5 py-0.5 font-mono text-muted-foreground border">
                 Coming soon
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Close chat"
-                className="size-7 p-0 text-muted-foreground hover:text-foreground"
-                onClick={() => setOpen(false)}
-              >
-                <X className="size-4" aria-hidden="true" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Close chat"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => setOpen(false)}
+                    >
+                      <X className="size-4" aria-hidden="true" />
+                    </Button>
+                  }
+                />
+                <TooltipContent side="top">Close chat</TooltipContent>
+              </Tooltip>
             </div>
           </div>
 
           {/* Chat Body */}
           <div className="flex flex-col gap-3 p-4">
-            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground leading-relaxed">
+            <div className="rounded-lg bg-muted/50 p-3 text-caption text-muted-foreground leading-relaxed">
               Ask questions about exam refunds, renewals and approved courses. Not available yet.
             </div>
             <div className="flex flex-col gap-1.5">
@@ -88,10 +96,10 @@ export function ComplianceCopilotWidget() {
         size="lg"
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
-        className="gap-2 rounded-full shadow-lg h-12 px-4 bg-primary text-primary-foreground hover:bg-primary/90 transition-transform active:scale-95"
+        className="gap-2 rounded-lg shadow-lg h-12 px-4 bg-primary text-primary-foreground hover:bg-primary/90 transition-transform active:scale-95"
       >
         <MessageSquare className="size-5" aria-hidden="true" />
-        <span className="text-sm font-medium">Ask about certificates</span>
+        <span className="text-body font-medium">Ask about certificates</span>
       </Button>
     </div>
   );
