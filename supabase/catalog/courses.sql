@@ -112,7 +112,7 @@ select e.name, 'exam', ct.id, p.id, e.level, e.validity_months, e.url
 from catalogue_exams e
 join public.cert_types ct on ct.name = e.cert_type
 join public.providers p on p.name = e.provider
-on conflict (provider_id, name) do nothing;
+on conflict (provider_id, kind, name) do nothing;
 
 -- Where the exam fee is verified it lives on a course of the same name that prepares for the exam.
 insert into public.courses (name, provider_id, refundable, cost, cost_currency, url, prepares_for_id)
