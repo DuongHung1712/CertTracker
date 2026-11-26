@@ -71,7 +71,7 @@ interface SkillsViewProps {
 export function SkillsView({ initialSkills = SEED_SKILLS, benchmark = SEED_ROLE_BENCHMARK }: SkillsViewProps) {
   // shortcut: mock state in memory, lost on reload; replace with queries/actions when Skills leaves Later.
   const [allSkills, setAllSkills] = React.useState<Skill[]>(() => mergeWithCatalog(initialSkills));
-  const profileIds = React.useMemo(() => new Set(initialSkills.map((s) => s.id)), [initialSkills]);
+  const [profileIds, setProfileIds] = React.useState<Set<string>>(() => new Set(initialSkills.map((s) => s.id)));
 
   const [category, setCategory] = React.useState<"all" | SkillCategory>("all");
   const [status, setStatus] = React.useState<SkillVerificationFilter>("all");
@@ -84,7 +84,10 @@ export function SkillsView({ initialSkills = SEED_SKILLS, benchmark = SEED_ROLE_
   const [detailSkill, setDetailSkill] = React.useState<Skill | null>(null);
   const [assessSkill, setAssessSkill] = React.useState<Skill | null>(null);
 
-  const mySkills = React.useMemo(() => allSkills.filter((s) => profileIds.has(s.id)), [allSkills, profileIds]);
+  const mySkills = React.useMemo(
+    () => allSkills.filter((s) => profileIds.has(s.id)),
+    [allSkills, profileIds],
+  );
   const categoryCounts = React.useMemo(() => getCategoryCounts(mySkills), [mySkills]);
   const stats = React.useMemo(() => calculateSkillStats(mySkills), [mySkills]);
   const visibleSkills = React.useMemo(
@@ -107,9 +110,20 @@ export function SkillsView({ initialSkills = SEED_SKILLS, benchmark = SEED_ROLE_
     if (!skill) return;
     updateSkill(
       skill,
-      (s) => ({ ...rateSkill(s, newLevel), yearsOfExperience, evidenceNote: evidenceNote || s.evidenceNote }),
+      (s) => ({ ...rateSkill(s, newLevel), yearsOfExperience, evidenceNote: evidenceNote || undefined }),
       newLevel,
     );
+  }
+
+  function handleBatchSave(nextSkills: Skill[]) {
+    setProfileIds((prev) => {
+      const next = new Set(prev);
+      for (const s of nextSkills) {
+        if (s.currentLevel > 0) next.add(s.id);
+      }
+      return next;
+    });
+    setAllSkills(nextSkills);
   }
 
   function clearFilters() {
@@ -224,7 +238,7 @@ export function SkillsView({ initialSkills = SEED_SKILLS, benchmark = SEED_ROLE_
       </section>
 
       <SkillLevelGuide open={guideOpen} onOpenChange={setGuideOpen} />
-      <SkillBatchAssessDialog open={batchOpen} onOpenChange={setBatchOpen} skills={allSkills} onSave={setAllSkills} />
+      <SkillBatchAssessDialog open={batchOpen} onOpenChange={setBatchOpen} skills={allSkills} onSave={handleBatchSave} />
       <SkillDetailDialog
         skill={detailSkill}
         onOpenChange={(open) => !open && setDetailSkill(null)}

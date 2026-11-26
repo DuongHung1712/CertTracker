@@ -1,9 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { CERTIFICATE_GROUP_LABEL, groupCount, rateOf } from "@/features/dashboard/components/explorer/types";
+import { CERTIFICATE_GROUP_LABEL, groupCount } from "@/features/dashboard/components/explorer/types";
 import { useListboxNavigation } from "@/features/dashboard/components/explorer/use-listbox-navigation";
-import { formatRate } from "@/features/dashboard/metrics";
 import type { BreakdownRow } from "@/features/dashboard/schema";
 import { pluralize } from "@/lib/plural";
 import { cn } from "@/lib/utils";
@@ -52,7 +51,6 @@ export function MasterList({
         >
           {rows.map((row, index) => {
             const isSelected = row.key === activeKey;
-            const rate = rateOf(row);
             const initials = row.label
               .split(" ")
               .filter(Boolean)
@@ -121,8 +119,8 @@ export function MasterList({
                   </div>
                 </div>
 
-                {/* Right: certificate count chip + Completion % */}
-                <div className="ml-auto flex shrink-0 flex-col items-end gap-1">
+                {/* Right: item count */}
+                <div className="ml-auto flex shrink-0 items-center">
                   <span
                     className={cn(
                       "text-xs font-semibold tabular-nums",
@@ -133,27 +131,6 @@ export function MasterList({
                   >
                     {groupCount(row, groupLabel)}
                   </span>
-                  <div
-                    className={cn(
-                      "flex items-center gap-1.5 text-caption",
-                      isSelected ? "text-primary-foreground font-medium" : "text-muted-foreground",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "inline-block size-1.5 rounded-full",
-                        isSelected
-                          ? "bg-primary-foreground"
-                          : (rate ?? 0) > 0
-                            ? "bg-[var(--chart-1)]"
-                            : "bg-muted-foreground",
-                      )}
-                      aria-hidden
-                    />
-                    <span className="tabular-nums font-medium">
-                      {formatRate(rate)}
-                    </span>
-                  </div>
                 </div>
               </div>
             );

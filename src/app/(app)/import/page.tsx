@@ -15,9 +15,12 @@ export default async function ImportPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Import / Export" description="Import data from the old Excel file, export CSV or Excel." />
+      <PageHeader
+        title="Import / Export"
+        description="Import certificates and learning from Excel, or export CSV or Excel."
+      />
       <section className="flex flex-col gap-3">
-        <h2 className="text-section-title">Import from Excel</h2>
+        <h2 className="text-section-title">Import certificates from Excel</h2>
         <ImportUploadForm />
         <ColumnsGuide />
       </section>

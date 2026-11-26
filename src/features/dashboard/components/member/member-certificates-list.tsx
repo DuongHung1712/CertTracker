@@ -105,7 +105,7 @@ export function MemberCertificatesList({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col">
-            <h3 className="text-sm font-semibold text-foreground">My certificates</h3>
+            <h2 className="text-section-title font-semibold text-foreground">My certificates</h2>
             <p className="text-xs text-muted-foreground">
               {`${learningSummary(records)} for ${fullName}`}
             </p>
@@ -115,7 +115,7 @@ export function MemberCertificatesList({
             <div className="flex items-center gap-2 self-start sm:self-center">
               <span className="text-caption text-muted-foreground">Sort:</span>
               <Select value={sort} onValueChange={(val) => setSort(val as MemberSort)}>
-                <SelectTrigger className="h-7 w-28 text-caption">
+                <SelectTrigger className="h-7 w-28 text-caption" aria-label="Sort certificates">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -191,9 +191,9 @@ export function MemberCertificatesList({
                     </div>
 
                     <div className="flex flex-col min-w-0">
-                      <h4 className="text-sm font-semibold text-foreground leading-snug truncate">
+                      <h3 className="text-sm font-semibold text-foreground leading-snug truncate">
                         {record.certificateName}
-                      </h4>
+                      </h3>
                       <p className="text-xs text-muted-foreground truncate">
                         {record.providerName ?? "Provider not set"}
                         {record.certTypeName ? ` · ${record.certTypeName}` : ""}
@@ -276,7 +276,7 @@ export function MemberCertificatesList({
                               </Button>
                             }
                           />
-                          <TooltipContent side="top">Delete draft</TooltipContent>
+                          <TooltipContent side="top">Delete</TooltipContent>
                         </Tooltip>
                       )}
                     </div>

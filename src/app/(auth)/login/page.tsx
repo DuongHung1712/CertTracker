@@ -20,7 +20,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           </div>
           <CardTitle className="text-page-title font-semibold tracking-tight">CertTracker</CardTitle>
           <CardDescription className="text-body text-muted-foreground text-balance">
-            {passwordSet ? "Password saved. Sign in with your new password." : "Sign in with the account you were given"}
+            Sign in with the account you were given
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">

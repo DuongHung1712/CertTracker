@@ -31,12 +31,18 @@ type FormValues = z.input<typeof learningSchema>;
 
 /** What the member works toward decides which field leads; an exam item may still name the course they prepare with. */
 type Goal = "exam" | "course";
-const GOALS: { goal: Goal; label: string; hint: string }[] = [
-  { goal: "exam", label: "An exam", hint: "A certification exam you will sit, such as HSK 1, AWS or PMP." },
+const GOALS: { goal: Goal; label: string; selfHint: string; teamHint: string }[] = [
+  {
+    goal: "exam",
+    label: "An exam",
+    selfHint: "A certification exam you will sit, such as HSK 1, AWS or PMP.",
+    teamHint: "A certification exam the member will sit, such as HSK 1, AWS or PMP.",
+  },
   {
     goal: "course",
     label: "A course",
-    hint: "A course that gives a completion certificate when you finish, with no exam to sit.",
+    selfHint: "A course that gives a course certificate when you finish, with no exam to sit.",
+    teamHint: "A course that gives a course certificate when finished, with no exam to sit.",
   },
 ];
 
@@ -52,6 +58,7 @@ export function LearningSheet({
   rows = [],
   presetTargetCertificateId,
   viewerMemberId = null,
+  providers,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -66,6 +73,8 @@ export function LearningSheet({
   presetTargetCertificateId?: string;
   /** The signed-in member, who proposes a missing course; null for an admin. */
   viewerMemberId?: string | null;
+  /** Providers for the ProposeCertificateDialog dropdown. */
+  providers?: { id: string; name: string }[];
 }) {
   const [proposeName, setProposeName] = useState<string | null>(null);
   const [proposedCourses, setProposedCourses] = useState<CourseOption[]>([]);
@@ -146,7 +155,9 @@ export function LearningSheet({
   function handleSave(event: FormEvent<HTMLFormElement>) {
     if (goal === "exam" && !targetId) {
       event.preventDefault();
-      form.setError("targetCertificateId", { message: "Choose the exam you are preparing for" });
+      form.setError("targetCertificateId", {
+        message: forSelf ? "Choose the exam you are preparing for" : "Choose the exam the member is preparing for",
+      });
       return;
     }
     if (duplicate) {
@@ -168,11 +179,14 @@ export function LearningSheet({
       form.setError("root", { message: result.error });
       return;
     }
-    toast.success(editing ? "Saved" : "Added to your learning");
+    toast.success(editing ? "Saved" : forSelf ? "Added to your learning" : "Added to learning");
     close(false);
   }
 
+  const activeGoal = GOALS.find((choice) => choice.goal === goal);
+
   return (
+    <>
     <FormSheet
       open={open}
       onOpenChange={close}
@@ -208,7 +222,7 @@ export function LearningSheet({
         </Field>
       )}
       <Field>
-        <FieldLabel id="learning-goal-label">What are you working toward?</FieldLabel>
+        <FieldLabel id="learning-goal-label">{forSelf ? "What are you working toward?" : "What is the member working toward?"}</FieldLabel>
         <Tabs value={goal} onValueChange={(next) => changeGoal(next as Goal)}>
           <TabsList aria-labelledby="learning-goal-label" className="grid w-full grid-cols-2">
             {GOALS.map((choice) => (
@@ -218,7 +232,7 @@ export function LearningSheet({
             ))}
           </TabsList>
         </Tabs>
-        <FieldDescription>{GOALS.find((choice) => choice.goal === goal)?.hint}</FieldDescription>
+        <FieldDescription>{forSelf ? activeGoal?.selfHint : activeGoal?.teamHint}</FieldDescription>
       </Field>
       {goal === "exam" && (
         <Field>
@@ -271,7 +285,13 @@ export function LearningSheet({
           )}
         />
         <FieldDescription>
-          {goal === "exam" ? "The course you prepare with, if any. Leave empty for self-study." : "Add its certificate when you finish."}
+          {goal === "exam"
+            ? forSelf
+              ? "The course you prepare with, if any. Leave empty for self-study."
+              : "The course the member prepares with, if any. Leave empty for self-study."
+            : forSelf
+              ? "Add its certificate when you finish."
+              : "Add its certificate when finished."}
         </FieldDescription>
         <FieldDescription className="flex flex-wrap items-center gap-1">
           Can&apos;t find the course?
@@ -354,30 +374,33 @@ export function LearningSheet({
         <Textarea id="learning-notes" rows={3} {...form.register("notes")} />
         <FieldError errors={[errors.notes]} />
       </Field>
-      <ProposeCertificateDialog
-        open={proposeExamOpen}
-        onOpenChange={setProposeExamOpen}
-        defaultKind="exam"
-        defaultName=""
-        onSuccess={(choice) => {
-          setProposedExams((previous) => [...previous, { id: choice.id, label: choice.label, hint: choice.hint }]);
-          form.setValue("targetCertificateId", choice.id, { shouldDirty: true });
-          form.clearErrors(["courseId", "targetCertificateId"]);
+    </FormSheet>
+    <ProposeCertificateDialog
+      open={proposeExamOpen}
+      onOpenChange={setProposeExamOpen}
+      defaultKind="exam"
+      lockKind
+      defaultName=""
+      providers={providers}
+      onSuccess={(choice) => {
+        setProposedExams((previous) => [...previous, { id: choice.id, label: choice.label, hint: choice.hint }]);
+        form.setValue("targetCertificateId", choice.id, { shouldDirty: true });
+        form.clearErrors(["courseId", "targetCertificateId"]);
+      }}
+    />
+    {proposeName !== null && (
+      <ProposeCourseDialog
+        open
+        onOpenChange={(next) => !next && setProposeName(null)}
+        defaultName={proposeName}
+        viewerMemberId={viewerMemberId}
+        onCreated={(course) => {
+          setProposedCourses((previous) => [...previous, course]);
+          form.setValue("courseId", course.id, { shouldDirty: true });
+          form.clearErrors("courseId");
         }}
       />
-      {proposeName !== null && (
-        <ProposeCourseDialog
-          open
-          onOpenChange={(next) => !next && setProposeName(null)}
-          defaultName={proposeName}
-          viewerMemberId={viewerMemberId}
-          onCreated={(course) => {
-            setProposedCourses((previous) => [...previous, course]);
-            form.setValue("courseId", course.id, { shouldDirty: true });
-            form.clearErrors("courseId");
-          }}
-        />
-      )}
-    </FormSheet>
+    )}
+    </>
   );
 }

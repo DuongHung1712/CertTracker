@@ -7,6 +7,7 @@ import { ProposeCertificateDialog } from "@/features/certificates/components/pro
 import type { LearningRow } from "@/features/learning/queries";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import { RecordSheet } from "@/features/records/components/record-sheet";
+import type { RecordRow } from "@/features/records/queries";
 
 /** Which certificate a learning item can end in: its exam, its course's completion certificate, both, or none yet. */
 export function submitTargets(row: LearningRow, completionByCourse: Map<string, string>): { exam?: string; completion?: string } {
@@ -29,6 +30,9 @@ export function SubmitCertificate({
   studyCourses,
   completionByCourse,
   providers,
+  showCompanyFields = false,
+  aiReaderEnabled = false,
+  records,
 }: {
   row: LearningRow;
   onClose: () => void;
@@ -36,6 +40,9 @@ export function SubmitCertificate({
   studyCourses: StudyCourse[];
   completionByCourse: Map<string, string>;
   providers?: { id: string; name: string }[];
+  showCompanyFields?: boolean;
+  aiReaderEnabled?: boolean;
+  records?: RecordRow[];
 }) {
   const targets = submitTargets(row, completionByCourse);
   const both = targets.exam !== undefined && targets.completion !== undefined;
@@ -48,17 +55,17 @@ export function SubmitCertificate({
     <>
       {both && chosen === undefined && (
         <Dialog open onOpenChange={(open) => !open && onClose()}>
-          <DialogContent className="sm:max-w-sm">
+          <DialogContent>
             <DialogHeader>
               <DialogTitle>Which certificate?</DialogTitle>
               <DialogDescription>This item has a course and an exam. Submit the one you received.</DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-2">
               <Button type="button" variant="outline" onClick={() => setChosen(targets.exam)}>
-                Exam certificate
+                {row.targetCertificateName ? `Exam certificate: ${row.targetCertificateName}` : "Exam certificate"}
               </Button>
               <Button type="button" variant="outline" onClick={() => setChosen(targets.completion)}>
-                Course certificate
+                {row.courseName ? `Course certificate: ${row.courseName}` : "Course certificate"}
               </Button>
             </div>
           </DialogContent>
@@ -81,7 +88,9 @@ export function SubmitCertificate({
         memberOptions={[]}
         certificateOptions={proposed ? [...certificateOptions, proposed] : certificateOptions}
         studyCourses={studyCourses}
-        showCompanyFields={false}
+        showCompanyFields={showCompanyFields}
+        aiReaderEnabled={aiReaderEnabled}
+        records={records}
         fixedMemberId={row.memberId}
         presetCertificateId={certificateId}
         providers={providers}

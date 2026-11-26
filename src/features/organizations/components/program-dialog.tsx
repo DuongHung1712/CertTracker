@@ -60,7 +60,7 @@ export function ProgramDialog({
               name="dcId"
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="program-dc" aria-invalid={!!form.formState.errors.dcId}>
+                  <SelectTrigger id="program-dc" className="w-full" aria-invalid={!!form.formState.errors.dcId}>
                     {/* Base UI's SelectValue renders the raw value by default; map it back to the DC name. */}
                     <SelectValue placeholder="Choose a centre">
                       {(value: string) => dcs.find((dc) => dc.id === value)?.name ?? "Choose a centre"}

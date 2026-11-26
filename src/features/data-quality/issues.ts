@@ -32,7 +32,8 @@ export function issueHref(row: IssueRow): string {
 
 function proposedBy(row: IssueRow): string {
   const who = [row.memberCode, row.memberName].filter(Boolean).join(" ") || "a member";
-  return `Proposed by ${who} on ${formatDate(row.since)}.`;
+  const prefix = row.providerName ? `${row.providerName} · ` : "";
+  return `${prefix}Proposed by ${who} on ${formatDate(row.since)}.`;
 }
 
 export function describeIssue(row: IssueRow): string {

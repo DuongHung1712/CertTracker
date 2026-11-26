@@ -44,6 +44,13 @@ export function ChangePasswordForm() {
         <form ref={form} action={formAction} className="flex max-w-sm flex-col gap-4">
           {FIELDS.map((field) => {
             const invalid = errorField === field.name;
+            const isNewPassword = field.name === "password";
+            const describedBy = [
+              invalid ? "change-password-error" : null,
+              isNewPassword ? "change-password-hint" : null,
+            ]
+              .filter(Boolean)
+              .join(" ") || undefined;
             return (
               <div key={field.name} className="flex flex-col gap-1.5">
                 <Label htmlFor={field.name} className="text-body font-medium">
@@ -53,11 +60,17 @@ export function ChangePasswordForm() {
                   id={field.name}
                   name={field.name}
                   autoComplete={field.autoComplete}
+                  minLength={isNewPassword ? 8 : undefined}
                   required
                   className="h-9"
                   aria-invalid={invalid || undefined}
-                  aria-describedby={invalid ? "change-password-error" : undefined}
+                  aria-describedby={describedBy}
                 />
+                {isNewPassword && (
+                  <p id="change-password-hint" className="text-caption text-muted-foreground">
+                    At least 8 characters
+                  </p>
+                )}
                 {invalid && failure && <ErrorText message={failure.error} />}
               </div>
             );

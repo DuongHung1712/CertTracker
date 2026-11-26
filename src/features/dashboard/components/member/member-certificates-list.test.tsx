@@ -34,7 +34,7 @@ function rowsByCourse(html: string): Map<string, { tone: string; tile: string; h
   const tiles = [...html.matchAll(/<[a-z]+[^>]*\bdata-tone="([^"]+)"[^>]*>/g)];
   tiles.forEach((m, i) => {
     const chunk = html.slice(m.index, tiles[i + 1]?.index);
-    const course = /<h4[^>]*>([^<]+)<\/h4>/.exec(chunk)?.[1];
+    const course = /<h3[^>]*>([^<]+)<\/h3>/.exec(chunk)?.[1];
     if (course) rows.set(course, { tone: m[1], tile: m[0], html: chunk });
   });
   return rows;

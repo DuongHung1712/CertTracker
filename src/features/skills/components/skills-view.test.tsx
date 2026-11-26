@@ -132,22 +132,23 @@ describe("SkillsView", () => {
     expect(toast.success).toHaveBeenLastCalledWith(expect.stringContaining("set to level 3"));
   });
 
-  it("opens Rate many skills and saves", async () => {
+  it("opens Update skill rate and highlights unrated skills on save", async () => {
     const user = userEvent.setup();
     render(<SkillsView />);
 
-    await user.click(screen.getByRole("button", { name: "Rate many skills" }));
-    expect(screen.getByRole("heading", { name: "Rate many skills" })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Update skill rate" }));
+    expect(screen.getByRole("heading", { name: "Update skill rate" })).toBeDefined();
 
     await user.click(screen.getByRole("button", { name: "Save ratings" }));
-    expect(screen.queryByRole("heading", { name: "Rate many skills" })).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("Rate all missing skills before saving");
   });
 
-  it("opens the 0–5 legend next to a rating", async () => {
+  it("opens the 0–5 legend from the table header", async () => {
     const user = userEvent.setup();
     render(<SkillsView />);
 
-    await user.click(screen.getAllByRole("button", { name: "What the levels 0–5 mean" })[0]);
+    await user.click(screen.getByRole("button", { name: "Table view" }));
+    await user.click(screen.getByRole("button", { name: "What the levels 0–5 mean" }));
     expect(screen.getByText("No idea on the area (0%)")).toBeDefined();
   });
 });

@@ -45,8 +45,8 @@ export function CourseSheet({
     estHours: null,
     url: null,
     refundConditions: null,
-    // Owner 2026-11-20: a course normally ends in a completion certificate.
-    grantsCompletion: true,
+    // Owner 2026-11-20: a course normally ends in a course certificate (unless no certificate types exist yet).
+    grantsCompletion: certTypes.length > 0,
     completionCertTypeId: "",
     completionUrl: null,
     completionName: null,
@@ -78,7 +78,7 @@ export function CourseSheet({
       return;
     }
     toast.success(
-      editing ? `Saved course ${values.name}` : grants ? `Added course ${values.name} and its course completion` : `Added course ${values.name}`,
+      editing ? `Saved course ${values.name}` : grants ? `Added course ${values.name} and its course certificate` : `Added course ${values.name}`,
     );
     onOpenChange(false);
     form.reset(empty);
@@ -95,6 +95,7 @@ export function CourseSheet({
       onSubmit={form.handleSubmit(onSubmit)}
       rootError={form.formState.errors.root?.message}
       submitting={form.formState.isSubmitting}
+      dirty={form.formState.isDirty}
     >
       <p className="text-caption text-muted-foreground">* Required</p>
       <Field>
@@ -227,7 +228,7 @@ export function CourseSheet({
       </Field>
       {editing?.grantsCertificateName && (
         <p className="text-body text-muted-foreground">
-          Grants the course completion{" "}
+          Grants the course certificate{" "}
           <Link
             href={`/courses?search=${encodeURIComponent(editing.grantsCertificateName)}`}
             onClick={() => onOpenChange(false)}
@@ -240,7 +241,7 @@ export function CourseSheet({
       {!editing && (
         <>
           <Field orientation="horizontal">
-            <FieldLabel htmlFor="course-grants-completion">This course grants a course completion</FieldLabel>
+            <FieldLabel htmlFor="course-grants-completion">This course grants a course certificate</FieldLabel>
             <Controller
               control={form.control}
               name="grantsCompletion"

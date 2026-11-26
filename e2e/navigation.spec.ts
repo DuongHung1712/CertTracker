@@ -39,7 +39,7 @@ const ROUTES = [
   { link: "Dashboard", href: "/dashboard", heading: "Dashboard", user: "admin", from: "Catalogue" },
   { link: "My learning", href: "/me", heading: "My learning", user: "member", from: "Catalogue" },
   { link: "Members", href: "/members", heading: "Members", user: "admin", from: "Catalogue" },
-  { link: "Learning", href: "/records", heading: "Learning", user: "admin", from: "Catalogue" },
+  { link: "Team learning", href: "/records", heading: "Team learning", user: "admin", from: "Catalogue" },
   { link: "Data quality", href: "/data-quality", heading: "Data quality", user: "admin", from: "Catalogue" },
   { link: "Catalogue", href: "/courses", heading: "Catalogue", user: "admin", from: "Members" },
   { link: "Organisation", href: "/org", heading: "Organisation", user: "admin", from: "Catalogue" },

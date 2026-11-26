@@ -87,7 +87,7 @@ test("manager sees four tiles, one Needs attention list and the team table", asy
   await expect(waitingTile(page).getByText("0", { exact: true })).toBeVisible();
   await expect(summaryValue(page, "Expiring in 60 days")).toHaveText("1");
   await expect(summaryValue(page, "Expired")).toHaveText("0");
-  await expect(summaryValue(page, "Team ready")).toHaveText("100%");
+  await expect(summaryValue(page, "Valid certificates")).toHaveText("100%");
 
   // Needs attention: An's expiring AWS and Châu, who has no certificate; each row opens that person's learning.
   const attention = section(page, "Needs attention");
@@ -208,7 +208,7 @@ test("a member's tiles open My learning narrowed to their items", async ({ page 
 
   // The seed member has one not-started exam, a learning item, and no certificate.
   await overview.getByRole("link", { name: "Up next", exact: true }).click();
-  await expect(page).toHaveURL(/\/me\?tab=learning$/);
+  await expect(page).toHaveURL(/\/me\?tab=learning&status=not_started$/);
   await expect(page.getByRole("tab", { name: /^Learning/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("row").filter({ hasText: "AWS Solutions Architect Associate" })).toHaveCount(1);
 

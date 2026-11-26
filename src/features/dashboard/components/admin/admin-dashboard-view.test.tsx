@@ -80,6 +80,7 @@ const DEFAULT_DATA: AdminDashboardData = {
   },
   records: { ok: true, data: [CALM_RECORD] },
   dqIssues: { ok: true, data: [] },
+  learningError: undefined,
 };
 
 const failed = { ok: false as const, error: "boom" };
@@ -217,10 +218,16 @@ describe("AdminDashboardView: failures are never shown as data", () => {
     expect(textOf(html)).toContain("Needs attention");
   });
 
-  it("no certificates at all: the No certificates yet empty state links to the certificates page", () => {
+  it("no certificates at all: the No certificates yet empty state links to the certificates page and hides Filter Explorer", () => {
     const html = render({ kpis: withKpis({ totalRecords: 0, doneRecords: 0 }) });
     expect(textOf(html)).toContain("No certificates yet");
     expect(html).toMatch(/<a\b[^>]*href="\/records"[^>]*>\s*Go to certificates/);
+    expect(html).not.toContain("Filter Explorer");
+  });
+
+  it("learningError: shows a warning alert when learning items could not be loaded", () => {
+    const html = render({ learningError: "boom" });
+    expect(textOf(html)).toContain("Learning items could not be loaded");
   });
 });
 
@@ -257,6 +264,17 @@ describe("AdminDashboardView: Needs attention", () => {
     expect(text).toContain("1 issue to check");
     expect(text).not.toContain("Data quality issues");
     expect(text).not.toContain("requires attention");
+  });
+
+  it("lists catalogue proposals as their own row, and keeps them out of the data quality count", () => {
+    const html = render({
+      dqIssues: { ok: true, data: [{ type: "certificate_proposal" } as never, { type: "course_proposal" } as never, { type: "certificate_no_validity" } as never] },
+    });
+    const attention = region(html, "Needs attention");
+    expect(textOf(attention)).toContain("Catalogue proposals");
+    expect(textOf(attention)).toContain("2 proposals waiting for approval");
+    expect(textOf(attention)).toContain("1 issue to check");
+    expect(attention).toContain('href="/data-quality?type=proposals"');
   });
 
   it("keeps the data quality item when the list is cut, and links to all certificates", () => {

@@ -11,13 +11,13 @@ There are **no per-skill role targets** (removed 2026-11-20, owner: too hard to 
 ## 2. Layout (top to bottom)
 
 1. **Page header**: "My skills" — "Rate each skill from 0 to 5 and back it up with certificates."
-2. **Role card**: role name · team, one line "The skills below are the ones this role uses." + role description. Actions: `Level guide` (outline), `Rate many skills` (primary).
+2. **Role card**: role name · team, one line "The skills below are the ones this role uses." + role description. Actions: `Level guide` (outline), `Update skill rate` (primary).
 3. **Four KPI tiles** (`KpiTile`): Average level (0–5 scale) · Level 4 or higher (of N) · Certified (of N, %) · Waiting for review (level 5 needs your manager).
 4. **Category tabs** (line tabs, wrap onto a second row, never scroll hidden): All skills + only categories that have skills, each with a count.
 5. **Filter bar** (`FilterBar` + `OptionSelect`): search (name, code, description, certificate) · Status (All / Certified / Waiting for review / Self-rated) · Sort (Highest level first [default] / Lowest level first / Name A–Z / Recently rated) · Clear filters · Card/Table view toggle.
 6. **Skills**: cards (1/2/3 columns) or table. Empty state with "Clear all filters".
 
-The page lists the role's skills only (16 in the seed). The full catalogue (182 skills, §5) is reachable from **Rate many skills**.
+The page lists the role's skills only (16 in the seed). The full catalogue (182 skills, §5) is reachable from **Update skill rate**.
 
 ## 3. Components (`src/features/skills/components/`)
 

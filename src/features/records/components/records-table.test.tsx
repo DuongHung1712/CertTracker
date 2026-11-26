@@ -48,11 +48,11 @@ describe("RecordsTable kind filter", () => {
     expect(rowNames()).toHaveLength(1);
   });
 
-  it("self mode: names the planned date by the chosen kind and offers the add action for both kinds", async () => {
+  it("self mode: shows Issued date and Certificate columns and offers the add action for both kinds", async () => {
     render(table("self"));
-    expect(screen.getByRole("columnheader", { name: "Planned date" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Certificate" })).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Issued date" })).toBeTruthy();
     await userEvent.click(screen.getByRole("tab", { name: "Course certificates (2)" }));
-    expect(screen.getByRole("columnheader", { name: "Planned finish date" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add certificate" })).toBeTruthy();
     expect(screen.getByText("Passed an exam or finished a course? Add the certificate with its proof.")).toBeTruthy();
   });
@@ -132,6 +132,80 @@ describe("RecordsTable approval", () => {
     cleanup();
     view({ canReview: true, initialApproval: true });
     expect(rowNames()).toHaveLength(1);
+    expect(screen.getByRole("combobox", { name: "Status" }).textContent).toContain("Waiting for approval");
+  });
+
+  it("keeps the Status dropdown and Waiting for approval button in sync without contradicting each other", async () => {
+    view({ canReview: true, initialApproval: true });
+    expect(rowNames()).toHaveLength(1);
+
+    // Changing the Status dropdown to Approved clears waitingOnly instead of returning 0 rows.
+    await userEvent.click(screen.getByRole("combobox", { name: "Status" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Approved" }));
+    expect(rowNames()).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Waiting for approval (1)" }).getAttribute("aria-pressed")).toBe("false");
+
+    // Clicking Waiting for approval while Status is Approved overrides Status instead of returning 0 rows.
+    await userEvent.click(screen.getByRole("button", { name: "Waiting for approval (1)" }));
+    expect(rowNames()).toHaveLength(1);
+    expect(screen.getByRole("combobox", { name: "Status" }).textContent).toContain("Waiting for approval");
+
+    // Turning it off resets Status to All statuses.
+    await userEvent.click(screen.getByRole("button", { name: "Waiting for approval (1)" }));
+    expect(rowNames()).toHaveLength(4);
+    expect(screen.getByRole("combobox", { name: "Status" }).textContent).toContain("All statuses");
+  });
+
+  it("pre-selects the Team dropdown from initialTeam and searches by certTypeName", () => {
+    const teamRecords = [
+      makeRecord({ id: "t1", memberName: "An", teamId: "cloud", teamName: "Team Cloud", certTypeName: "Cloud", certificateName: "AWS" }),
+      makeRecord({ id: "t2", memberName: "Binh", teamId: "data", teamName: "Team Data", certTypeName: "Data", certificateName: "Snowflake" }),
+      makeRecord({ id: "t3", memberName: "Chau", teamId: null, teamName: null, certTypeName: "Security", certificateName: "CISSP" }),
+    ];
+    render(
+      <RecordsTable
+        records={teamRecords}
+        memberOptions={[]}
+        certificateOptions={[]}
+        studyCourses={[]}
+        mode="team"
+        canDelete={false}
+        showCompanyFields
+        initialTeam="Team Cloud"
+      />,
+    );
+    expect(rowNames()).toEqual([expect.stringContaining("An")]);
+    expect(screen.getByRole("combobox", { name: "Team" }).textContent).toContain("Team Cloud");
+
+    cleanup();
+    render(
+      <RecordsTable
+        records={teamRecords}
+        memberOptions={[]}
+        certificateOptions={[]}
+        studyCourses={[]}
+        mode="team"
+        canDelete={false}
+        showCompanyFields
+        initialTeam="No team"
+      />,
+    );
+    expect(rowNames()).toEqual([expect.stringContaining("Chau")]);
+
+    cleanup();
+    render(
+      <RecordsTable
+        records={teamRecords}
+        memberOptions={[]}
+        certificateOptions={[]}
+        studyCourses={[]}
+        mode="team"
+        canDelete={false}
+        showCompanyFields
+        initialSearch="Security"
+      />,
+    );
+    expect(rowNames()).toEqual([expect.stringContaining("Chau")]);
   });
 
   it("offers Approve and Return on another member's waiting item, Approve only on a returned one, nothing on approved", async () => {
@@ -246,5 +320,35 @@ describe("RecordsTable status of a certificate (decision #72)", () => {
     await userEvent.click(screen.getByRole("combobox", { name: "Status" }));
     await userEvent.click(await screen.findByRole("option", { name: "Waiting for approval" }));
     expect(rowNames()).toEqual([expect.stringContaining("Waiting Cert")]);
+  });
+
+  it("syncs initialView=waiting with Status dropdown and clears view when Status changes", async () => {
+    render(
+      <RecordsTable
+        records={[
+          makeRecord({ id: "a1", memberName: "Hidden Name", certificateName: "Approved Cert", approval: "approved" }),
+          makeRecord({ id: "w1", memberName: "Hidden Name", certificateName: "Waiting Cert", approval: "waiting" }),
+        ]}
+        memberOptions={[]}
+        certificateOptions={[]}
+        studyCourses={[]}
+        mode="self"
+        canDelete={false}
+        showCompanyFields={false}
+        initialView="waiting"
+      />,
+    );
+    expect(screen.getByRole("combobox", { name: "Status" }).textContent).toContain("Waiting for approval");
+    expect(rowNames()).toEqual([expect.stringContaining("Waiting Cert")]);
+
+    await userEvent.click(screen.getByRole("combobox", { name: "Status" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Approved" }));
+    expect(rowNames()).toEqual([expect.stringContaining("Approved Cert")]);
+  });
+
+  it("self mode search ignores hidden memberName", async () => {
+    render(table("self", [makeRecord({ id: "a1", memberName: "Lê Minh Châu", certificateName: "AWS SAA" })]));
+    await userEvent.type(screen.getByRole("searchbox"), "Chau");
+    expect(screen.getByText("Nothing found")).toBeTruthy();
   });
 });

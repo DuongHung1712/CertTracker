@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { Check, ExternalLink, X } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data/data-table";
@@ -11,10 +12,13 @@ import { FilterBar } from "@/components/data/filter-bar";
 import { MemberCode } from "@/components/status/member-code";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { approveCertificate, rejectCertificate } from "@/features/certificates/actions";
+import { CERTIFICATE_KIND_LABEL } from "@/features/certificates/schema";
 import { approveCourse, rejectCourse } from "@/features/courses/actions";
 import { countByType, describeIssue, isCatalogueIssue, isProposal, ISSUE_META, issueHref } from "@/features/data-quality/issues";
 import { ISSUE_TYPES, type IssueRow, type IssueType } from "@/features/data-quality/schema";
+import { foldText } from "@/lib/text";
 
 /** Who or what the finding is about: a person for record/member issues, a certificate for catalogue issues. */
 function subjectName(row: IssueRow): string | null {
@@ -41,12 +45,40 @@ function ProposalActions({ row, onReject }: { row: IssueRow; onReject: (row: Iss
   }
   return (
     <>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void approve()} aria-label={`Approve ${name}`}>
-        Approve
-      </Button>
-      <Button size="sm" variant="ghost" disabled={busy} onClick={() => onReject(row)} aria-label={`Reject ${name}`}>
-        Reject
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => void approve()}
+              aria-label={`Approve ${name}`}
+              className="text-status-active-fg hover:bg-status-active-bg hover:text-status-active-fg"
+            >
+              <Check className="size-4" aria-hidden />
+            </Button>
+          }
+        />
+        <TooltipContent>Approve</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              disabled={busy}
+              onClick={() => onReject(row)}
+              aria-label={`Reject ${name}`}
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <X className="size-4" aria-hidden />
+            </Button>
+          }
+        />
+        <TooltipContent>Reject</TooltipContent>
+      </Tooltip>
     </>
   );
 }
@@ -57,21 +89,36 @@ function byUrgency(a: IssueRow, b: IssueRow): number {
   return b.days - a.days;
 }
 
-export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
+export type DataQualityFilter = IssueType | "proposals" | null;
+
+export function DataQualityTable({
+  issues,
+  initialFilter = null,
+}: {
+  issues: IssueRow[];
+  initialFilter?: DataQualityFilter;
+}) {
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<IssueType | null>(null);
+  const [typeFilter, setTypeFilter] = useState<DataQualityFilter>(initialFilter);
   const [rejecting, setRejecting] = useState<IssueRow | null>(null);
   const [rejectPending, setRejectPending] = useState(false);
 
   const counts = useMemo(() => countByType(issues), [issues]);
+  const proposalCount = counts.certificate_proposal + counts.course_proposal;
   const sorted = useMemo(() => [...issues].sort(byUrgency), [issues]);
 
   const rows = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = foldText(search);
     return sorted.filter((row) => {
-      if (typeFilter && row.type !== typeFilter) return false;
+      if (typeFilter === "proposals") {
+        if (!isProposal(row.type)) return false;
+      } else if (typeFilter && row.type !== typeFilter) {
+        return false;
+      }
       if (!q) return true;
-      return [row.memberName, row.memberCode, row.certificateName, row.teamName].some((value) => value?.toLowerCase().includes(q));
+      return [row.memberName, row.memberCode, row.certificateName, row.teamName, row.providerName].some(
+        (value) => value && foldText(value).includes(q),
+      );
     });
   }, [sorted, search, typeFilter]);
 
@@ -82,8 +129,9 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         id: "type",
         header: "Type",
         accessorFn: (row) => ISSUE_META[row.type].label,
+        meta: { className: "w-[1%] whitespace-nowrap" },
         cell: ({ row }) => (
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 whitespace-nowrap">
             {ISSUE_META[row.original.type].label}
             {row.original.severity === "info" && <Badge variant="secondary">Suggestion</Badge>}
           </span>
@@ -93,47 +141,73 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         id: "subject",
         header: "Subject",
         accessorFn: (row) => subjectName(row) ?? "",
+        meta: { className: "w-[1%] whitespace-nowrap" },
         cell: ({ row }) => {
           const name = subjectName(row.original);
           if (!name) return "—";
           return (
-            <span className="inline-flex items-baseline gap-2">
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
               {!isCatalogueIssue(row.original.type) && row.original.memberCode && (
                 <MemberCode code={row.original.memberCode} />
               )}
-              {name}
+              <span>{name}</span>
+              {row.original.type === "certificate_proposal" && row.original.certificateKind && (
+                <Badge variant="secondary" className="rounded-sm font-normal">
+                  {CERTIFICATE_KIND_LABEL[row.original.certificateKind]}
+                </Badge>
+              )}
             </span>
           );
         },
       },
-      { id: "team", header: "Team", accessorFn: (row) => row.teamName ?? "", cell: ({ row }) => row.original.teamName ?? "—" },
+      {
+        id: "team",
+        header: "Team",
+        accessorFn: (row) => row.teamName ?? "",
+        meta: { className: "w-[1%] whitespace-nowrap" },
+        cell: ({ row }) => row.original.teamName ?? "—",
+      },
       {
         id: "detail",
         header: "Details",
         enableSorting: false,
-        cell: ({ row }) => <span className="whitespace-normal">{describeIssue(row.original)}</span>,
-      },
-      {
-        accessorKey: "days",
-        header: "Days",
-        meta: { align: "right" },
+        meta: { className: "min-w-72 w-full whitespace-normal" },
+        cell: ({ row }) => (
+          <span className="block whitespace-normal leading-snug">
+            {!isCatalogueIssue(row.original.type) && row.original.certificateName && (
+              <>
+                <span className="font-medium text-foreground">{row.original.certificateName}</span>
+                {" — "}
+              </>
+            )}
+            {describeIssue(row.original)}
+          </span>
+        ),
       },
       {
         id: "open",
         header: () => <span className="sr-only">Actions</span>,
         enableSorting: false,
+        meta: { className: "w-[1%] whitespace-nowrap" },
         cell: ({ row }) => {
           const { label } = ISSUE_META[row.original.type];
           return (
-            <div className="flex justify-end gap-1">
-              <Link
-                href={issueHref(row.original)}
-                aria-label={`Open ${label} for ${subjectName(row.original) ?? "—"}`}
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-              >
-                Open
-              </Link>
+            <div className="flex items-center justify-end gap-0.5">
               {isProposal(row.original.type) && <ProposalActions row={row.original} onReject={setRejecting} />}
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Link
+                      href={issueHref(row.original)}
+                      aria-label={`Open ${label} for ${subjectName(row.original) ?? "—"}`}
+                      className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+                    >
+                      <ExternalLink className="size-4 text-muted-foreground" aria-hidden />
+                    </Link>
+                  }
+                />
+                <TooltipContent>Open</TooltipContent>
+              </Tooltip>
             </div>
           );
         },
@@ -143,9 +217,11 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
   );
 
   const hasActiveFilters = search.length > 0 || typeFilter !== null;
-  const visibleTypes = ISSUE_TYPES.filter((type) => counts[type] > 0);
+  // Proposals share the single "Proposals (N)" filter pill so it never duplicates "Certificate proposal (N)".
+  const visibleTypes = ISSUE_TYPES.filter((type) => !isProposal(type) && counts[type] > 0);
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col gap-3">
       <FilterBar
         search={search}
@@ -157,7 +233,7 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
           setTypeFilter(null);
         }}
       />
-      {visibleTypes.length > 0 && (
+      {(visibleTypes.length > 0 || proposalCount > 0) && (
         <div className="flex flex-wrap items-center gap-2">
           <Button
             size="sm"
@@ -167,6 +243,16 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
           >
             All ({issues.length})
           </Button>
+          {proposalCount > 0 && (
+            <Button
+              size="sm"
+              variant={typeFilter === "proposals" ? "secondary" : "outline"}
+              aria-pressed={typeFilter === "proposals"}
+              onClick={() => setTypeFilter(typeFilter === "proposals" ? null : "proposals")}
+            >
+              Proposals ({proposalCount})
+            </Button>
+          )}
           {visibleTypes.map((type) => (
             <Button
               key={type}
@@ -211,5 +297,6 @@ export function DataQualityTable({ issues }: { issues: IssueRow[] }) {
         }
       />
     </div>
+    </TooltipProvider>
   );
 }

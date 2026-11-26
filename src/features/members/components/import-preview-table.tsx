@@ -13,6 +13,7 @@ export function ImportPreviewTable({ rows }: { rows: MemberImportRow[] }) {
             <TableHead>Name</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Team</TableHead>
+            <TableHead>Career role</TableHead>
             <TableHead>Result</TableHead>
             <TableHead>Messages</TableHead>
           </TableRow>
@@ -24,6 +25,7 @@ export function ImportPreviewTable({ rows }: { rows: MemberImportRow[] }) {
               <TableCell>{row.fullName ?? "-"}</TableCell>
               <TableCell>{row.email ?? "-"}</TableCell>
               <TableCell>{row.teamName ?? "-"}</TableCell>
+              <TableCell>{row.careerRoleName ?? "—"}</TableCell>
               <TableCell className={row.action === "error" ? "text-destructive" : undefined}>{RESULT_LABEL[row.action]}</TableCell>
               <TableCell className="whitespace-normal">{row.action === "skip" ? "Already a member" : row.messages.join("; ")}</TableCell>
             </TableRow>

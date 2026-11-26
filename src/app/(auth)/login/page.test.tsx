@@ -18,11 +18,11 @@ describe("LoginPage", () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("renders success feedback alert when passwordSet is set", async () => {
+  it("renders success feedback alert when passwordSet is set without duplicating description copy", async () => {
     const page = await LoginPage({ searchParams: Promise.resolve({ passwordSet: "1" }) });
     render(<StyleProvider>{page}</StyleProvider>);
 
-    expect(screen.getByText("Password saved. Sign in with your new password.")).toBeTruthy();
+    expect(screen.queryByText("Password saved. Sign in with your new password.")).toBeNull();
     const alert = screen.getByRole("status");
     expect(alert).toBeTruthy();
     expect(alert.textContent).toContain("Password set successfully");

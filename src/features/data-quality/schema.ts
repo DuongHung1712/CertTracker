@@ -36,6 +36,10 @@ export type IssueRow = {
   recordId: string | null;
   since: string;
   days: number;
+  /** Enriched for certificate_proposal rows so Exam vs Course certificates are distinguishable. */
+  certificateKind?: "exam" | "completion" | null;
+  /** Enriched for proposal rows so the provider is visible right in the queue. */
+  providerName?: string | null;
 };
 
 /** Throws on any row that does not match the view contract: a silently dropped finding is worse than an error page. */

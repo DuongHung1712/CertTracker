@@ -62,6 +62,9 @@ describe("ManagerAttentionList", () => {
     expect(html.match(/<li\b/g)).toHaveLength(6);
     expect(text(html)).toContain("Showing 6 of 9.");
     expect(html).toMatch(/<a\b[^>]*href="\/records"[^>]*>\s*Open Learning/);
+
+    const scoped = renderToStaticMarkup(<ManagerAttentionList records={records} members={[MEMBERS[0]]} showTeam={false} selectedTeam="Team Cloud" />);
+    expect(scoped).toMatch(/<a\b[^>]*href="\/records\?team=Team%20Cloud"[^>]*>\s*Open Learning/);
   });
 
   it("does not list a planned exam that is more than 60 days away", () => {
@@ -100,10 +103,13 @@ describe("ManagerTeamTable", () => {
 });
 
 describe("TeamScopeFilter", () => {
-  it("marks the selected team with aria-pressed", () => {
+  it("marks the selected team with aria-pressed, shows member counts and includes focus-visible ring", () => {
     const html = renderToStaticMarkup(<TeamScopeFilter teams={[{ name: "Team Cloud", memberCount: 2 }, { name: "Team AI", memberCount: 1 }]} selectedTeam="Team AI" onSelectTeam={() => {}} />);
     expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
     expect(html.match(/aria-pressed="false"/g)).toHaveLength(2);
+    expect(text(html)).toContain("Team Cloud (2)");
+    expect(text(html)).toContain("Team AI (1)");
+    expect(html).toContain("focus-visible:ring-2");
   });
 });
 

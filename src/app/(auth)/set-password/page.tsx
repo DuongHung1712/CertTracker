@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Logo } from "@/components/app-shell/logo";
+import { StyleToggle } from "@/components/app-shell/style-toggle";
 import { SetPasswordForm } from "@/features/auth/components/set-password-form";
 
 export default async function SetPasswordPage({
@@ -12,7 +13,10 @@ export default async function SetPasswordPage({
   const validLink = Boolean(tokenHash) && (type === "invite" || type === "recovery");
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
+    <main className="relative flex min-h-screen items-center justify-center bg-background p-4 sm:p-6">
+      <div className="absolute top-4 right-4">
+        <StyleToggle />
+      </div>
       <Card className="w-full max-w-sm border-border bg-card">
         <CardHeader className="flex flex-col items-center space-y-2 text-center pb-4">
           <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground mb-1">

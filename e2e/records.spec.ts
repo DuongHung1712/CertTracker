@@ -222,7 +222,7 @@ test("the Kind filter separates exam certificates from course completions, and t
 
     await signIn(page, "admin@certtracker.test");
     await page.goto("/records");
-    await expect(page.getByRole("heading", { name: "Learning", level: 1 })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Team learning", level: 1 })).toBeVisible();
     const completionRow = recordRow(page, "Nguyễn Văn An", completion.certificateName);
     const examRow = recordRow(page, "Nguyễn Văn An", AWS);
 

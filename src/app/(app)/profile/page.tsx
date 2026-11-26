@@ -19,9 +19,17 @@ export default async function ProfilePage() {
     user.memberId ? settle(getMemberCareer(user.memberId)) : null,
   ]);
 
+  const parts = ["account", user.role === "manager" ? "scope" : null, career ? "career" : null].filter(
+    (part): part is string => part !== null,
+  );
+  const description =
+    parts.length === 1
+      ? `Your ${parts[0]}.`
+      : `Your ${parts.slice(0, -1).join(", ")} and ${parts.at(-1)}.`;
+
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Profile" description="Your account, scope and career." />
+      <PageHeader title="Profile" description={description} />
       <section aria-label="Account">
         {profile.ok ? <AccountCard profile={profile.data} /> : <SectionError title="Account" />}
       </section>

@@ -26,7 +26,7 @@ import { inMemberView, MEMBER_VIEW_LABEL, type MemberView } from "@/features/das
 import { deleteRecord, deleteRecords, reviewRecord } from "@/features/records/actions";
 import { EvidenceCell } from "@/features/records/components/evidence-cell";
 import { RecordSheet } from "@/features/records/components/record-sheet";
-import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, plannedDateHeader, type ApprovalState, type KindFilter } from "@/features/records/kind";
+import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, type ApprovalState, type KindFilter } from "@/features/records/kind";
 import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { MAX_BULK_DELETE, reviewSchema } from "@/features/records/schema";
@@ -79,6 +79,7 @@ export function RecordsTable({
   canAddToCatalogue = false,
   fixedMemberId,
   initialSearch = "",
+  initialTeam = "",
   initialView,
   canReview = false,
   reviewerMemberId = null,
@@ -100,6 +101,8 @@ export function RecordsTable({
   fixedMemberId?: string;
   /** Starting value of the search box (the dashboard links here with ?search=<name>). */
   initialSearch?: string;
+  /** Starting value of the Team dropdown (Explorer links here with ?team=<name>). */
+  initialTeam?: string;
   /** Narrows the list to one dashboard tile's items (/me?view=...). */
   initialView?: MemberView;
   /** Admin and manager: Approve / Return in the row menu (RLS still decides; the database trigger refuses a member). */
@@ -111,8 +114,12 @@ export function RecordsTable({
 }) {
   const isTeam = mode === "team";
   const [search, setSearch] = useState(initialSearch);
-  const [teamFilter, setTeamFilter] = useState(ALL);
-  const [statusFilter, setStatusFilter] = useState(ALL);
+  const [teamFilter, setTeamFilter] = useState(
+    initialTeam ? (initialTeam === NO_TEAM_LABEL || initialTeam === NO_TEAM ? NO_TEAM : initialTeam) : ALL,
+  );
+  const [statusFilter, setStatusFilter] = useState(
+    initialApproval || initialView === "waiting" ? "waiting" : ALL,
+  );
   const [expiryFilter, setExpiryFilter] = useState(ALL);
   const [kindFilter, setKindFilter] = useState<KindFilter>(ALL);
   const [waitingOnly, setWaitingOnly] = useState(initialApproval);
@@ -154,7 +161,9 @@ export function RecordsTable({
       if (waitingOnly && !isReviewable(record, reviewerMemberId)) return false;
       if (query) {
         const haystack = foldText(
-          `${record.memberName} ${record.memberCode} ${record.certificateName} ${record.courseName ?? ""} ${record.providerName ?? ""}`,
+          isTeam
+            ? `${record.memberName} ${record.memberCode} ${record.teamName ?? ""} ${record.certificateName} ${record.certTypeName ?? ""} ${record.courseName ?? ""} ${record.providerName ?? ""}`
+            : `${record.certificateName} ${record.certTypeName ?? ""} ${record.courseName ?? ""} ${record.providerName ?? ""}`,
         );
         if (!haystack.includes(query)) return false;
       }
@@ -228,7 +237,7 @@ export function RecordsTable({
         : []),
       {
         accessorKey: "certificateName",
-        header: "Learning item",
+        header: "Certificate",
         cell: ({ row }) => (
           // Name alone on the first line so it gets the width; kind, proposal state and path go underneath.
           <div className="flex max-w-md flex-col gap-0.5">
@@ -264,7 +273,7 @@ export function RecordsTable({
         meta: isTeam ? undefined : stickyName,
       },
       {
-        accessorKey: "status",
+        accessorKey: "approval",
         header: "Status",
         cell: ({ row }) => (
           <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
@@ -291,9 +300,9 @@ export function RecordsTable({
         ),
       },
       {
-        accessorKey: "plannedExamDate",
-        header: plannedDateHeader(kindFilter),
-        cell: ({ row }) => (row.original.plannedExamDate ? formatDate(row.original.plannedExamDate) : "—"),
+        accessorKey: "issuedDate",
+        header: "Issued date",
+        cell: ({ row }) => (row.original.issuedDate ? formatDate(row.original.issuedDate) : "—"),
       },
       {
         id: "evidence",
@@ -331,7 +340,7 @@ export function RecordsTable({
                     View evidence
                   </DropdownMenuItem>
                 )}
-                {canReview && record.status === "done" && record.memberId !== reviewerMemberId && record.approval !== "approved" && (
+                {canReview && record.status === "done" && !record.renewed && record.memberId !== reviewerMemberId && record.approval !== "approved" && (
                   <DropdownMenuItem onClick={() => void approve(record)}>
                     Approve{" "}
                     {!record.hasEvidence && !record.certificateUrl && (
@@ -431,7 +440,7 @@ export function RecordsTable({
       <FilterBar
         search={search}
         onSearchChange={setSearch}
-        searchPlaceholder={isTeam ? "Search by name, code, certificate or completion…" : "Search by name or course…"}
+        searchPlaceholder={isTeam ? "Search by name, code, certificate or course…" : "Search by certificate or course…"}
         hasActiveFilters={hasActiveFilters}
         onClear={() => {
           setSearch("");
@@ -476,7 +485,14 @@ export function RecordsTable({
             </SelectContent>
           </Select>
         )}
-        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL)}>
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => {
+            setStatusFilter(value ?? ALL);
+            setWaitingOnly(false);
+            setView(undefined);
+          }}
+        >
           <SelectTrigger aria-label="Status">
             <SelectValue>
               {(value: string) => (value === ALL ? "All statuses" : (APPROVAL_FILTER_LABEL[value as ApprovalState] ?? value))}
@@ -491,7 +507,13 @@ export function RecordsTable({
             ))}
           </SelectContent>
         </Select>
-        <Select value={expiryFilter} onValueChange={(value) => setExpiryFilter(value ?? ALL)}>
+        <Select
+          value={expiryFilter}
+          onValueChange={(value) => {
+            setExpiryFilter(value ?? ALL);
+            setView(undefined);
+          }}
+        >
           <SelectTrigger aria-label="Expiry">
             <SelectValue>
               {(value: string) =>
@@ -505,7 +527,7 @@ export function RecordsTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>All expiry statuses</SelectItem>
-            {EXPIRY_STATUSES.map((status) => (
+            {EXPIRY_STATUSES.filter((status) => status !== "N/A").map((status) => (
               <SelectItem key={status} value={status}>
                 {expiryMeta(status).label}
               </SelectItem>
@@ -513,7 +535,16 @@ export function RecordsTable({
           </SelectContent>
         </Select>
         {canReview && (
-          <Button size="sm" variant={waitingOnly ? "secondary" : "outline"} aria-pressed={waitingOnly} onClick={() => setWaitingOnly((on) => !on)}>
+          <Button
+            size="sm"
+            variant={waitingOnly ? "secondary" : "outline"}
+            aria-pressed={waitingOnly}
+            onClick={() => {
+              const next = !waitingOnly;
+              setWaitingOnly(next);
+              setStatusFilter(next ? "waiting" : ALL);
+            }}
+          >
             {`Waiting for approval (${waitingCount})`}
           </Button>
         )}
@@ -535,7 +566,14 @@ export function RecordsTable({
           <span>
             Showing <strong className="font-medium text-foreground">{MEMBER_VIEW_LABEL[view]}</strong> only
           </span>
-          <Button size="sm" variant="ghost" onClick={() => setView(undefined)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              if (view === "waiting") setStatusFilter(ALL);
+              setView(undefined);
+            }}
+          >
             Show all
           </Button>
         </p>
@@ -564,7 +602,11 @@ export function RecordsTable({
           records.length === 0 ? (
             <EmptyState
               title="Nothing added yet"
-              description="Add a certificate you hold, a course you are studying or a course completion."
+              description={
+                isTeam
+                  ? "Add a member's exam certificate or course certificate."
+                  : "Add an exam certificate or course certificate you hold."
+              }
             />
           ) : (
             <EmptyState title="Nothing found" description="Try a different search or clear the filters." />

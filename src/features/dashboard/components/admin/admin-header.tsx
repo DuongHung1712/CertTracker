@@ -15,17 +15,27 @@ function focusGroupFilters() {
   (search ?? filters).focus();
 }
 
-export function AdminHeader({ greeting, subtitle }: { greeting: string; subtitle: string }) {
+export function AdminHeader({
+  greeting,
+  subtitle,
+  showFilterButton = true,
+}: {
+  greeting: string;
+  subtitle: string;
+  showFilterButton?: boolean;
+}) {
   return (
     <PageHeader
       title="Dashboard"
       description={`${greeting} · ${subtitle}`}
       actions={
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={focusGroupFilters} className="gap-1.5 text-caption font-medium">
-            <SlidersHorizontal className="size-3.5" aria-hidden="true" />
-            <span>Filter groups</span>
-          </Button>
+          {showFilterButton && (
+            <Button type="button" variant="outline" size="sm" onClick={focusGroupFilters} className="gap-1.5 text-caption font-medium">
+              <SlidersHorizontal className="size-3.5" aria-hidden="true" />
+              <span>Filter Explorer</span>
+            </Button>
+          )}
           <ExportLinks label="Export CSV" />
         </div>
       }

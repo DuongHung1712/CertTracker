@@ -30,6 +30,7 @@ export function MemberDashboardView({
   records,
   journey,
   recordsError,
+  learningError,
   certificateOptions,
   studyCourses,
   courses,
@@ -49,6 +50,7 @@ export function MemberDashboardView({
   /** Open learning items as journey rows (features/learning/journey.ts): counted, never listed as certificates. */
   journey: RecordRow[];
   recordsError?: string;
+  learningError?: string;
   certificateOptions: CertificateChoice[];
   studyCourses: StudyCourse[];
   courses: CourseOption[];
@@ -101,7 +103,7 @@ export function MemberDashboardView({
 
           <MemberAttentionBanner attention={attention} onRenew={(record) => setLearningSheet({ examId: record.certificateId })} />
 
-          {recordsError ? (
+          {learningError ? (
             <SectionError title="Learning now" />
           ) : (
             <MemberLearningNow items={journey} onAdd={() => setLearningSheet({ examId: null })} />

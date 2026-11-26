@@ -7,7 +7,7 @@ const LINK_CLASS = "relative inline-flex text-foreground hover:text-primary afte
 export function EvidenceCell({ record }: { record: Pick<RecordRow, "id" | "hasEvidence" | "certificateUrl" | "status"> }) {
   if (record.hasEvidence) {
     return (
-      <a href={`/api/records/${record.id}/evidence`} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+      <a href={`/api/records/${record.id}/evidence`} target="_blank" rel="noopener noreferrer" title="Proof file attached" className={LINK_CLASS}>
         <FileCheck aria-hidden className="size-4" />
         <span className="sr-only">Proof file attached</span>
       </a>
@@ -15,7 +15,7 @@ export function EvidenceCell({ record }: { record: Pick<RecordRow, "id" | "hasEv
   }
   if (record.certificateUrl) {
     return (
-      <a href={record.certificateUrl} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+      <a href={record.certificateUrl} target="_blank" rel="noopener noreferrer" title="Link only" className={LINK_CLASS}>
         <Link2 aria-hidden className="size-4" />
         <span className="sr-only">Link only</span>
       </a>
@@ -23,7 +23,7 @@ export function EvidenceCell({ record }: { record: Pick<RecordRow, "id" | "hasEv
   }
   if (record.status === "done") {
     return (
-      <span className="inline-flex text-muted-foreground">
+      <span className="inline-flex text-muted-foreground" title="No proof yet">
         <TriangleAlert aria-hidden className="size-4" />
         <span className="sr-only">No proof yet</span>
       </span>
