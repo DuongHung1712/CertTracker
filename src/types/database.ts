@@ -547,6 +547,7 @@ export type Database = {
           last_evaluated_at: string
           manager_endorsement_requested: boolean
           member_id: string
+          review_note: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           skill_id: string
@@ -562,6 +563,7 @@ export type Database = {
           last_evaluated_at?: string
           manager_endorsement_requested?: boolean
           member_id: string
+          review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           skill_id: string
@@ -577,6 +579,7 @@ export type Database = {
           last_evaluated_at?: string
           manager_endorsement_requested?: boolean
           member_id?: string
+          review_note?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           skill_id?: string

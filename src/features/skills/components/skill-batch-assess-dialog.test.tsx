@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ENTERPRISE_SKILL_CATALOG } from "../seed-data";
+import { SKILL_FIXTURES } from "../__fixtures__/skills";
 import { SkillBatchAssessDialog } from "./skill-batch-assess-dialog";
 
 vi.mock("sonner", () => ({
@@ -13,8 +13,12 @@ vi.mock("sonner", () => ({
   },
 }));
 
-const BACKEND_SKILLS = ENTERPRISE_SKILL_CATALOG.filter((s) => s.category === "backend");
-const ALL_RATED = BACKEND_SKILLS.slice(0, 3).map((s) => ({ ...s, currentLevel: 2 as const }));
+const BACKEND_SKILLS = SKILL_FIXTURES.filter((s) => s.category === "backend");
+const RATED_FIRST_TWO = BACKEND_SKILLS.slice(0, 4).map((s, idx) => ({
+  ...s,
+  currentLevel: (idx < 2 ? 2 : 0) as 0 | 2,
+  isSaved: idx < 2,
+}));
 
 describe("SkillBatchAssessDialog", () => {
   beforeEach(() => {
@@ -23,21 +27,20 @@ describe("SkillBatchAssessDialog", () => {
 
   afterEach(cleanup);
 
-  it("renders the dialog with header, progress counter, Reset button, and backend skills by default", () => {
+  it("renders header, counter, disabled Save/Reset when clean, and backend skills by default", () => {
     render(
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={ENTERPRISE_SKILL_CATALOG}
+        skills={SKILL_FIXTURES}
         onSave={vi.fn()}
       />,
     );
 
     expect(screen.getByRole("heading", { name: "Update skill rate" })).toBeDefined();
     expect(screen.getByText(/^\d+ of \d+ rated$/)).toBeDefined();
-    expect(screen.getByRole("button", { name: "Reset" })).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Set all to 1" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Set all to 0" })).toBeNull();
+    expect((screen.getByRole("button", { name: "Reset" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Save ratings" }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText("Distributed Systems & Resilient Messaging")).toBeDefined();
   });
 
@@ -47,78 +50,80 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={ENTERPRISE_SKILL_CATALOG}
+        skills={SKILL_FIXTURES}
         onSave={vi.fn()}
       />,
     );
 
-    const frontendTab = screen.getByRole("tab", { name: /Frontend & Web/i });
-    await user.click(frontendTab);
-
+    await user.click(screen.getByRole("tab", { name: /Frontend & Web/i }));
     expect(screen.getByText("Modern Frontend (Next.js & React)")).toBeDefined();
     expect(screen.queryByText("Distributed Systems & Resilient Messaging")).toBeNull();
   });
 
-  it("updates skill level and saves when all skills are rated", async () => {
+  it("saves only changed skills even when other skills remain at 0, and supports rating down to 0", async () => {
     const user = userEvent.setup();
-    const handleSaveBatch = vi.fn();
+    const handleSaveBatch = vi.fn().mockResolvedValue(true);
     const handleOpenChange = vi.fn();
 
     render(
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={handleOpenChange}
-        skills={ALL_RATED}
+        skills={RATED_FIRST_TWO}
         onSave={handleSaveBatch}
       />,
     );
 
-    const level4Radios = screen.getAllByRole("radio", { name: /Level 4/i });
-    await user.click(level4Radios[0]);
+    // Change skill 0 from level 2 -> level 0, and skill 2 from level 0 -> level 4 (skill 3 stays 0)
+    await user.click(screen.getAllByRole("radio", { name: /Level 0/i })[0]);
+    await user.click(screen.getAllByRole("radio", { name: /Level 4/i })[2]);
 
-    await user.click(screen.getByRole("button", { name: "Save ratings" }));
+    const saveBtn = screen.getByRole("button", { name: "Save ratings" }) as HTMLButtonElement;
+    expect(saveBtn.disabled).toBe(false);
+    expect(screen.getByText("2 skills changed. Save to update your profile.")).toBeDefined();
 
-    expect(handleSaveBatch).toHaveBeenCalled();
-    expect(handleSaveBatch.mock.calls[0][0][0].currentLevel).toBe(4);
+    await user.click(saveBtn);
+
+    await waitFor(() => expect(handleSaveBatch).toHaveBeenCalledTimes(1));
+    const saved = handleSaveBatch.mock.calls[0][0];
+    expect(saved).toHaveLength(2);
+    expect(saved.map((s: { id: string; currentLevel: number }) => [s.id, s.currentLevel])).toEqual([
+      [RATED_FIRST_TWO[0].id, 0],
+      [RATED_FIRST_TWO[2].id, 4],
+    ]);
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("blocks Save ratings when any skill is unrated, highlights missing rows in red, and focuses the first missing row", async () => {
+  it("shows Saving… while pending and keeps dialog open if onSave returns false", async () => {
     const user = userEvent.setup();
-    const handleSaveBatch = vi.fn();
-    const scrollIntoView = vi.fn();
-    HTMLElement.prototype.scrollIntoView = scrollIntoView;
-
-    const skills = [
-      { ...BACKEND_SKILLS[0], currentLevel: 3 as const },
-      { ...BACKEND_SKILLS[1], currentLevel: 0 as const },
-    ];
+    let resolveSave!: (value: boolean) => void;
+    const handleSaveBatch = vi.fn(
+      () =>
+        new Promise<boolean>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const handleOpenChange = vi.fn();
 
     render(
       <SkillBatchAssessDialog
         open={true}
-        onOpenChange={vi.fn()}
-        skills={skills}
+        onOpenChange={handleOpenChange}
+        skills={RATED_FIRST_TWO}
         onSave={handleSaveBatch}
       />,
     );
 
+    await user.click(screen.getAllByRole("radio", { name: /Level 3/i })[0]);
     await user.click(screen.getByRole("button", { name: "Save ratings" }));
 
-    expect(handleSaveBatch).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert").textContent).toContain("Rate all missing skills before saving (1 left).");
-    expect(screen.getByText("Required")).toBeDefined();
-    expect(scrollIntoView).toHaveBeenCalled();
+    expect((screen.getByRole("button", { name: "Saving…" }) as HTMLButtonElement).disabled).toBe(true);
+    resolveSave(false);
 
-    // Rating the missing skill clears its red highlight and lets Save succeed
-    const missingRow = document.querySelector('tr[data-missing="true"]');
-    expect(missingRow).not.toBeNull();
-    const level2 = missingRow!.querySelector<HTMLElement>('[role="radio"][aria-label*="Level 2"]');
-    await user.click(level2!);
-    expect(document.querySelector('tr[data-missing="true"]')).toBeNull();
-
-    await user.click(screen.getByRole("button", { name: "Save ratings" }));
-    expect(handleSaveBatch).toHaveBeenCalled();
+    await waitFor(() =>
+      expect((screen.getByRole("button", { name: "Save ratings" }) as HTMLButtonElement).disabled).toBe(false),
+    );
+    expect(handleOpenChange).not.toHaveBeenCalledWith(false);
   });
 
   it("resets unsaved changes back to initial ratings via Reset button", async () => {
@@ -129,7 +134,7 @@ describe("SkillBatchAssessDialog", () => {
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={ALL_RATED}
+        skills={RATED_FIRST_TWO}
         onSave={vi.fn()}
       />,
     );
@@ -145,38 +150,43 @@ describe("SkillBatchAssessDialog", () => {
     expect(toast.success).toHaveBeenCalledWith("Ratings reset");
   });
 
-  it("filters skills when typing in search input", async () => {
+  it("asks to discard changes when closing while dirty", async () => {
     const user = userEvent.setup();
+    const handleOpenChange = vi.fn();
+
+    render(
+      <SkillBatchAssessDialog
+        open={true}
+        onOpenChange={handleOpenChange}
+        skills={RATED_FIRST_TWO}
+        onSave={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getAllByRole("radio", { name: /Level 3/i })[0]);
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(screen.getByRole("alertdialog")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Discard" }));
+    expect(handleOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it("filters skills when typing in search input and shows clean empty state", () => {
     render(
       <SkillBatchAssessDialog
         open={true}
         onOpenChange={vi.fn()}
-        skills={ENTERPRISE_SKILL_CATALOG}
+        skills={SKILL_FIXTURES}
         onSave={vi.fn()}
       />,
     );
 
     const searchInput = screen.getByRole("searchbox", { name: "Search all skills" });
-    await user.type(searchInput, "FastAPI");
-
+    fireEvent.change(searchInput, { target: { value: "FastAPI" } });
     expect(screen.getByText("Python (FastAPI & AsyncIO)")).toBeDefined();
     expect(screen.queryByText("Distributed Systems & Resilient Messaging")).toBeNull();
-  });
 
-  it("shows clean empty state message when search matches nothing", async () => {
-    const user = userEvent.setup();
-    render(
-      <SkillBatchAssessDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        skills={ENTERPRISE_SKILL_CATALOG}
-        onSave={vi.fn()}
-      />,
-    );
-
-    const searchInput = screen.getByRole("searchbox", { name: "Search all skills" });
-    await user.type(searchInput, "NonExistentSkillXYZ");
-
+    fireEvent.change(searchInput, { target: { value: "NonExistentSkillXYZ" } });
     expect(screen.getByText(/No skills match/i)).toBeDefined();
-  });
+  }, 15_000);
 });
