@@ -205,7 +205,7 @@ test("the page offers the template and a columns guide, and the template imports
   const guide = page.getByTestId("columns-guide");
   await expect(guide).not.toHaveAttribute("open", "");
   await guide.getByText("Columns", { exact: true }).click();
-  await expect(guide.getByText("Every new certificate created by an import is an exam certificate. Add course completions in the Catalogue.")).toBeVisible();
+  await expect(guide.getByText("Every new certificate created by an import is an exam certificate. Add course certificates in the Catalogue.")).toBeVisible();
   await expect(guide.getByText("Required").first()).toBeVisible();
   await expect(guide).toContainText("Course studied");
   await expect(guide).toContainText("dd/mm/yyyy");

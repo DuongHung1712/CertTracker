@@ -51,7 +51,7 @@ export function ProviderSection({ providers }: { providers: Provider[] }) {
     const result = await deleteProvider({ id: confirming.id });
     setPending(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       setConfirming(null);
       return;
     }
@@ -64,7 +64,6 @@ export function ProviderSection({ providers }: { providers: Provider[] }) {
       <div className="flex items-center justify-between">
         <h2 className="text-section-title">Providers</h2>
         <Button
-          size="sm"
           onClick={() => {
             setEditing(null);
             setDialogOpen(true);

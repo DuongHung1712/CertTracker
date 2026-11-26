@@ -57,8 +57,8 @@ export async function addPilotMember(fullName: string, email: string, teamId = T
 
 export async function signInWithPilotPassword(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(PILOT_PASSWORD);
+  await page.getByLabel(fieldLabel("Email")).fill(email);
+  await page.getByLabel(fieldLabel("Password")).fill(PILOT_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 }

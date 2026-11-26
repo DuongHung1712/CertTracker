@@ -22,7 +22,9 @@ export default async function SetPasswordPage({
           <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground mb-1">
             <Logo size={24} />
           </div>
-          <CardTitle className="text-page-title font-semibold tracking-tight">Set your password</CardTitle>
+          <CardTitle className="text-page-title font-semibold tracking-tight">
+            <h1>Set your password</h1>
+          </CardTitle>
           <CardDescription className="text-body text-muted-foreground text-balance">
             {validLink ? "Choose a password for your CertTracker account" : "This link is not valid. Ask your admin for a new one."}
           </CardDescription>

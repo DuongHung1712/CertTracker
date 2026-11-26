@@ -29,7 +29,7 @@ export function MasterList({
   );
 
   return (
-    <div className="flex flex-col gap-2.5 border-b border-border p-4 @2xl:col-span-5 @2xl:border-b-0 @2xl:border-r">
+    <div className="flex min-w-0 flex-col gap-2.5 border-b border-border p-4 @2xl:col-span-5 @2xl:border-b-0 @2xl:border-r">
       {/* Header row for list */}
       <div className="flex items-center justify-between px-1 text-label font-medium uppercase text-muted-foreground">
         <span>{groupLabel}</span>
@@ -39,7 +39,7 @@ export function MasterList({
       {rows.length === 0 ? (
         <div role="status" className="flex flex-col items-center justify-center gap-2 py-10 px-4 text-center">
           <p className="text-caption text-muted-foreground">No groups match these filters.</p>
-          <Button variant="outline" size="sm" onClick={onClearFilters} className="h-7 text-xs">
+          <Button variant="outline" size="sm" onClick={onClearFilters} className="h-7 text-caption">
             Clear filters
           </Button>
         </div>
@@ -123,9 +123,9 @@ export function MasterList({
                 <div className="ml-auto flex shrink-0 items-center">
                   <span
                     className={cn(
-                      "text-xs font-semibold tabular-nums",
+                      "text-caption font-semibold tabular-nums",
                       isSelected
-                        ? "rounded-full border border-primary-foreground/40 px-2.5 py-0.5 text-primary-foreground"
+                        ? "rounded-sm border border-primary-foreground/40 px-2.5 py-0.5 text-primary-foreground"
                         : "text-body font-semibold text-foreground",
                     )}
                   >

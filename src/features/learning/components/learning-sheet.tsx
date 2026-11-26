@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
@@ -57,7 +58,8 @@ export function LearningSheet({
   examOptions,
   rows = [],
   presetTargetCertificateId,
-  viewerMemberId = null,
+  viewerMemberId,
+  canAddToCatalogue = false,
   providers,
 }: {
   open: boolean;
@@ -73,9 +75,13 @@ export function LearningSheet({
   presetTargetCertificateId?: string;
   /** The signed-in member, who proposes a missing course; null for an admin. */
   viewerMemberId?: string | null;
+  /** Admin only: manages entries in /courses instead of proposing. */
+  canAddToCatalogue?: boolean;
   /** Providers for the ProposeCertificateDialog dropdown. */
   providers?: { id: string; name: string }[];
 }) {
+  const proposerMemberId = viewerMemberId === undefined ? (fixedMemberId ?? null) : viewerMemberId;
+  const canPropose = !canAddToCatalogue && Boolean(proposerMemberId);
   const [proposeName, setProposeName] = useState<string | null>(null);
   const [proposedCourses, setProposedCourses] = useState<CourseOption[]>([]);
   const [proposeExamOpen, setProposeExamOpen] = useState(false);
@@ -169,7 +175,11 @@ export function LearningSheet({
 
   // Closing for good starts the next Add or Edit from the saved values, not from what was typed and discarded.
   function close(next: boolean) {
-    if (!next) form.reset(values);
+    if (!next) {
+      form.reset(values);
+      setProposeName(null);
+      setProposeExamOpen(false);
+    }
     onOpenChange(next);
   }
 
@@ -197,6 +207,7 @@ export function LearningSheet({
       submitDisabled={Boolean(duplicate)}
       dirty={form.formState.isDirty}
     >
+      <p className="text-caption text-muted-foreground">* Required</p>
       {!fixedMemberId && (
         <Field>
           <FieldLabel htmlFor="learning-member">
@@ -251,16 +262,28 @@ export function LearningSheet({
                 options={[...examOptions, ...proposedExams]}
                 placeholder="Choose an exam"
                 emptyText="No exams found"
-                emptyAction={{ label: "Propose a new exam", onClick: () => setProposeExamOpen(true) }}
+                emptyAction={canPropose ? { label: "Propose a new exam", onClick: () => setProposeExamOpen(true) } : undefined}
               />
             )}
           />
-          <FieldDescription className="flex flex-wrap items-center gap-1">
-            Can&apos;t find the exam?
-            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-caption" onClick={() => setProposeExamOpen(true)}>
-              + Propose a new exam
-            </Button>
-          </FieldDescription>
+          {canAddToCatalogue ? (
+            <FieldDescription>
+              Cannot find the exam?{" "}
+              <Link href="/courses" className="underline underline-offset-2">
+                Add it in the Catalogue
+              </Link>
+              .
+            </FieldDescription>
+          ) : canPropose ? (
+            <FieldDescription className="flex flex-wrap items-center gap-1">
+              Cannot find the exam?
+              <Button type="button" variant="link" size="sm" className="h-auto p-0 text-caption" onClick={() => setProposeExamOpen(true)}>
+                + Propose a new exam
+              </Button>
+            </FieldDescription>
+          ) : (
+            <FieldDescription>Cannot find the exam? Ask an admin to add it to the Catalogue.</FieldDescription>
+          )}
           <FieldError errors={[errors.targetCertificateId]} />
         </Field>
       )}
@@ -280,7 +303,7 @@ export function LearningSheet({
               options={courseOptions}
               placeholder={goal === "exam" ? "Self-study (no course)" : "Choose a course"}
               emptyText="No courses found"
-              emptyAction={{ label: "Propose a new course", onClick: (query) => setProposeName(query ?? "") }}
+              emptyAction={canPropose ? { label: "Propose a new course", onClick: (query) => setProposeName(query ?? "") } : undefined}
             />
           )}
         />
@@ -293,12 +316,24 @@ export function LearningSheet({
               ? "Add its certificate when you finish."
               : "Add its certificate when finished."}
         </FieldDescription>
-        <FieldDescription className="flex flex-wrap items-center gap-1">
-          Can&apos;t find the course?
-          <Button type="button" variant="link" size="sm" className="h-auto p-0 text-caption" onClick={() => setProposeName("")}>
-            + Propose a new course
-          </Button>
-        </FieldDescription>
+        {canAddToCatalogue ? (
+          <FieldDescription>
+            Cannot find the course?{" "}
+            <Link href="/courses" className="underline underline-offset-2">
+              Add it in the Catalogue
+            </Link>
+            .
+          </FieldDescription>
+        ) : canPropose ? (
+          <FieldDescription className="flex flex-wrap items-center gap-1">
+            Cannot find the course?
+            <Button type="button" variant="link" size="sm" className="h-auto p-0 text-caption" onClick={() => setProposeName("")}>
+              + Propose a new course
+            </Button>
+          </FieldDescription>
+        ) : (
+          <FieldDescription>Cannot find the course? Ask an admin to add it to the Catalogue.</FieldDescription>
+        )}
         <FieldError errors={[errors.courseId && goal === "course" ? { message: "Choose a course" } : errors.courseId]} />
       </Field>
       {duplicate && (
@@ -327,8 +362,11 @@ export function LearningSheet({
       </Field>
       {status === "in_progress" && (
         <Field>
-          <FieldLabel htmlFor="learning-progress">Progress (%)</FieldLabel>
-          <Input id="learning-progress" type="number" min={0} max={99} className="h-9" {...form.register("progress")} aria-invalid={!!errors.progress} />
+          <FieldLabel htmlFor="learning-progress">
+            Progress (%)
+            <RequiredMark />
+          </FieldLabel>
+          <Input id="learning-progress" type="number" min={0} max={99} className="h-9" aria-required {...form.register("progress")} aria-invalid={!!errors.progress} />
           <FieldError errors={[errors.progress]} />
         </Field>
       )}
@@ -375,25 +413,27 @@ export function LearningSheet({
         <FieldError errors={[errors.notes]} />
       </Field>
     </FormSheet>
-    <ProposeCertificateDialog
-      open={proposeExamOpen}
-      onOpenChange={setProposeExamOpen}
-      defaultKind="exam"
-      lockKind
-      defaultName=""
-      providers={providers}
-      onSuccess={(choice) => {
-        setProposedExams((previous) => [...previous, { id: choice.id, label: choice.label, hint: choice.hint }]);
-        form.setValue("targetCertificateId", choice.id, { shouldDirty: true });
-        form.clearErrors(["courseId", "targetCertificateId"]);
-      }}
-    />
-    {proposeName !== null && (
+    {canPropose && (
+      <ProposeCertificateDialog
+        open={proposeExamOpen}
+        onOpenChange={setProposeExamOpen}
+        defaultKind="exam"
+        lockKind
+        defaultName=""
+        providers={providers}
+        onSuccess={(choice) => {
+          setProposedExams((previous) => [...previous, { id: choice.id, label: choice.label, hint: choice.hint }]);
+          form.setValue("targetCertificateId", choice.id, { shouldDirty: true });
+          form.clearErrors(["courseId", "targetCertificateId"]);
+        }}
+      />
+    )}
+    {canPropose && proposeName !== null && (
       <ProposeCourseDialog
         open
         onOpenChange={(next) => !next && setProposeName(null)}
         defaultName={proposeName}
-        viewerMemberId={viewerMemberId}
+        viewerMemberId={proposerMemberId}
         onCreated={(course) => {
           setProposedCourses((previous) => [...previous, course]);
           form.setValue("courseId", course.id, { shouldDirty: true });

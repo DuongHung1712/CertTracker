@@ -6,6 +6,7 @@ import { FileDropzone } from "@/components/file-dropzone";
 import { Button } from "@/components/ui/button";
 import type { CertificateSuggestion } from "@/features/records/ai-read";
 import { MAX_PAGES } from "@/lib/ai/contract";
+import { pluralize } from "@/lib/plural";
 import { EVIDENCE_ACCEPT, MAX_EVIDENCE_BYTES } from "@/lib/storage/evidence";
 
 const NETWORK_ERROR = "The AI could not be reached. Fill in the form by hand, or try again.";
@@ -137,7 +138,7 @@ export function AiFileCard({
         {shown.kind === "done" && (
           <p className="font-medium text-foreground">
             {filled > 0
-              ? `AI filled ${filled} ${filled === 1 ? "field" : "fields"}. Check them before saving.`
+              ? `AI filled ${pluralize(filled, "field")}. Check them before saving.`
               : shown.filled > 0
                 ? "No field holds the AI's answer any more. Check the form below."
                 : "AI could not fill any field. Fill in the form below."}
@@ -146,7 +147,7 @@ export function AiFileCard({
         {shown.kind === "failed" && <p className="text-destructive">{shown.message}</p>}
         {shown.kind === "done" && resultCard}
         {(shown.kind === "done" || shown.kind === "failed") && file && (
-          <Button type="button" variant="ghost" size="sm" className="w-fit" onClick={() => void read(file)}>
+          <Button type="button" variant="ghost" className="w-fit" onClick={() => void read(file)}>
             Read again
           </Button>
         )}

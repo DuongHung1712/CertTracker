@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { fieldLabel } from "./helpers";
 import { deleteAccount, inviteLink } from "./support/accounts";
 import { signInAsSeedAdmin } from "./support/restore-seed";
 
@@ -48,8 +49,8 @@ test("an invited member sets a password, signs in as Member and sees their own p
   await expect(page.getByRole("status")).toBeVisible();
   await expect(page.getByText("Password set successfully", { exact: true })).toBeVisible();
 
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await page.getByLabel(fieldLabel("Email")).fill(email);
+  await page.getByLabel(fieldLabel("Password")).fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 
@@ -73,8 +74,8 @@ test("a broken link shows no form", async ({ page }) => {
 test("a recovery link works while another user is signed in", async ({ page }) => {
   const { hash } = await inviteLink(email, "recovery");
   await page.goto("/login");
-  await page.getByLabel("Email").fill("admin@certtracker.test");
-  await page.getByLabel("Password", { exact: true }).fill("Password123!");
+  await page.getByLabel(fieldLabel("Email")).fill("admin@certtracker.test");
+  await page.getByLabel(fieldLabel("Password")).fill("Password123!");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
 

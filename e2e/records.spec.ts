@@ -186,7 +186,7 @@ test("the kind choice filters the certificate picker, clears the pick, and a reo
   }
 });
 
-test("a record for a course completion saves the granting course, and the table shows the kind", async ({ page }) => {
+test("a record for a course certificate saves the granting course, and the table shows the kind", async ({ page }) => {
   const completion = await createCompletionFixture();
   try {
     await signIn(page, "admin@certtracker.test");
@@ -198,19 +198,19 @@ test("a record for a course completion saves the granting course, and the table 
     await pickOption(page, dialog, "Course certificate", completion.certificateName, completion.optionName);
     await dialog.getByLabel(fieldLabel("Issue date")).fill("01/06/2026");
     await dialog.getByRole("button", { name: "Save" }).click();
-    await expect(page.getByText("Added course completion")).toBeVisible();
+    await expect(page.getByText("Added course certificate")).toBeVisible();
 
     const admin = await signInAsSeedAdmin();
     const saved = await admin.from("training_records").select("course_id").eq("member_id", AN).eq("certificate_id", completion.certificateId).single();
     expect(saved.data?.course_id).toBe(completion.courseId);
     const row = recordRow(page, "Nguyễn Văn An", completion.certificateName);
-    await expect(row).toContainText("Course completion");
+    await expect(row).toContainText("Course certificate");
   } finally {
     await completion.remove();
   }
 });
 
-test("the Kind filter separates exam certificates from course completions, and the dashboard counts them apart", async ({ page }) => {
+test("the Kind filter separates exam certificates from course certificates, and the dashboard counts them apart", async ({ page }) => {
   const completion = await createCompletionFixture();
   try {
     const admin = await signInAsSeedAdmin();
@@ -414,7 +414,7 @@ test("member updates own progress on the Learning tab and cannot see company fie
 });
 
 test("the certificate form offers to propose a missing certificate", async ({ page }) => {
-  const hint = "Can't find yours?";
+  const hint = "Cannot find yours?";
   await signIn(page, "member@certtracker.test");
   await page.goto("/records");
   await expect(page).toHaveURL(/\/me$/);

@@ -358,7 +358,7 @@ export function SkillsView({ workspace, viewerHasMemberProfile = false }: Skills
               }
               action={
                 workspace.canEdit ? (
-                  <Button type="button" size="sm" onClick={() => setBatchOpen(true)}>
+                  <Button type="button" onClick={() => setBatchOpen(true)}>
                     Update skill rate
                   </Button>
                 ) : undefined
@@ -420,8 +420,8 @@ export function SkillsView({ workspace, viewerHasMemberProfile = false }: Skills
                     aria-pressed={viewMode === mode}
                     onClick={() => setViewMode(mode)}
                     className={cn(
-                      "inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      viewMode === mode && "bg-card text-foreground shadow-xs",
+                      "inline-flex size-7 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                      viewMode === mode && "bg-card text-foreground",
                     )}
                   >
                     <Icon className="size-3.5" aria-hidden />
@@ -431,15 +431,10 @@ export function SkillsView({ workspace, viewerHasMemberProfile = false }: Skills
             </div>
 
             {visibleSkills.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-border p-10">
-                <EmptyState
-                  title="No skills match these filters"
-                  description="Try another category or status, or clear the search."
-                />
-                <Button type="button" variant="outline" size="sm" onClick={clearFilters}>
-                  Clear all filters
-                </Button>
-              </div>
+              <EmptyState
+                title="No skills match these filters"
+                description="Try another category or status, or clear the search."
+              />
             ) : viewMode === "grid" ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {visibleSkills.map((skill) => (

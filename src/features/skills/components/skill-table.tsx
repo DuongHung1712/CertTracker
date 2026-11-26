@@ -59,7 +59,7 @@ export function SkillTable({
                   <button
                     type="button"
                     onClick={() => onViewDetails(skill)}
-                    className="block max-w-full truncate rounded-xs text-left font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="block max-w-full truncate rounded-xs text-left font-medium text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   >
                     {skill.name}
                   </button>
@@ -94,7 +94,6 @@ export function SkillTable({
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
                       aria-label={`Edit ${skill.name}`}
                       onClick={() => onAssess(skill)}
                     >
@@ -105,7 +104,6 @@ export function SkillTable({
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
                         disabled={reviewPending}
                         onClick={() => onReturn?.(skill)}
                       >
@@ -113,7 +111,6 @@ export function SkillTable({
                       </Button>
                       <Button
                         type="button"
-                        size="sm"
                         disabled={reviewPending}
                         onClick={() => onApprove?.(skill)}
                       >

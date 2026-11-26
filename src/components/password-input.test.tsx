@@ -65,7 +65,7 @@ describe("password forms use it", () => {
 
   it("the login form autofocuses Email and carries the next path", () => {
     const { container } = render(<LoginForm next="/records?search=Tran" />);
-    expect(document.activeElement).toBe(screen.getByLabelText("Email"));
+    expect(document.activeElement).toBe(screen.getByLabelText(/^Email/));
     expect(container.querySelector<HTMLInputElement>('input[name="next"]')?.value).toBe("/records?search=Tran");
   });
 });

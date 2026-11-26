@@ -18,7 +18,7 @@ const TILE_SURFACE: Record<Tone, string> = {
   danger: "border-destructive/30 bg-card",
 };
 const LABEL_COLOUR: Record<Tone, string> = {
-  primary: "text-primary-foreground/80",
+  primary: "text-primary-foreground-muted",
   neutral: "text-muted-foreground",
   warning: "text-[var(--status-expiring-soon-fg)]",
   danger: "text-destructive",
@@ -30,7 +30,7 @@ const VALUE_COLOUR: Record<Tone, string> = {
   danger: "text-foreground",
 };
 const MUTED_COLOUR: Record<Tone, string> = {
-  primary: "text-primary-foreground/80",
+  primary: "text-primary-foreground-muted",
   neutral: "text-muted-foreground",
   warning: "text-muted-foreground",
   danger: "text-muted-foreground",
@@ -55,7 +55,7 @@ function Tile({
   href?: string;
   tone: Tone;
   icon: ReactNode;
-  value: number;
+  value: number | string;
   summary: string;
   children: ReactNode;
 }) {
@@ -80,7 +80,7 @@ function Tile({
           </dt>
           <span className={cn("shrink-0", LABEL_COLOUR[tone])}>{icon}</span>
         </div>
-        <dd className={cn("mt-1 text-2xl font-semibold tabular-nums tracking-tight sm:text-3xl", VALUE_COLOUR[tone])}>{value}</dd>
+        <dd className={cn("mt-1 text-kpi font-semibold tabular-nums tracking-tight", VALUE_COLOUR[tone])}>{value}</dd>
         <dd className={cn("min-w-0 truncate text-caption leading-tight", MUTED_COLOUR[tone])} title={summary}>
           {summary}
         </dd>
@@ -110,7 +110,7 @@ function Footer({ children, strong }: { children: ReactNode; strong?: boolean })
   );
 }
 
-export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
+export function MemberKpiCards({ kpis, learningError }: { kpis: MemberKpis; learningError?: string }) {
   const held = kpis.validCount + kpis.completionDoneCount;
   const needsAction = kpis.expiredCount + kpis.expiringCount;
   const hasExpired = kpis.expiredCount > 0;
@@ -135,7 +135,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         value={held}
         summary={[
           held > 0
-            ? `${pluralize(kpis.validCount, "exam certificate")} · ${pluralize(kpis.completionDoneCount, "course completion")}`
+            ? `${pluralize(kpis.validCount, "exam certificate")} · ${pluralize(kpis.completionDoneCount, "course certificate")}`
             : kpis.waitingCount > 0
               ? null
               : "None yet",
@@ -175,7 +175,7 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         ) : hasExpiring && kpis.leastDaysRecord ? (
           <Footer strong>{daysLeftLabel(kpis.leastDaysRecord.daysToExpiry)}</Footer>
         ) : (
-          <span className="flex items-center gap-1.5 font-medium text-status-active-fg">
+          <span className="flex items-center gap-1.5 font-medium text-primary">
             <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
             All up to date
           </span>
@@ -186,13 +186,15 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
         label="In progress"
         view="in-progress"
         // The journey lives on the Learning tab (decision #72).
-        href={kpis.inProgressCount === 0 ? "/courses" : "/me?tab=learning&status=in_progress"}
+        href={!learningError && kpis.inProgressCount === 0 ? "/courses" : "/me?tab=learning&status=in_progress"}
         tone="neutral"
         icon={<PlayCircle className="size-3.5 text-primary" aria-hidden="true" />}
-        value={kpis.inProgressCount}
-        summary={kpis.inProgressCount > 0 ? "Update as you go" : "Nothing in progress"}
+        value={learningError ? "—" : kpis.inProgressCount}
+        summary={learningError ? "Could not load" : kpis.inProgressCount > 0 ? "Update as you go" : "Nothing in progress"}
       >
-        {kpis.activeInProgress ? (
+        {learningError ? (
+          <Footer>Open My learning</Footer>
+        ) : kpis.activeInProgress ? (
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between gap-2">
               <span className="min-w-0 truncate font-medium text-foreground" title={kpis.activeInProgress.certificateName}>
@@ -200,8 +202,8 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
               </span>
               <span className="shrink-0 font-semibold tabular-nums text-foreground">{progress}%</span>
             </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted" aria-hidden="true">
-              <div className="h-full rounded-full bg-primary" style={{ width: `${progress}%` }} />
+            <div className="h-1.5 w-full overflow-hidden rounded-sm bg-muted" aria-hidden="true">
+              <div className="h-full rounded-sm bg-primary" style={{ width: `${progress}%` }} />
             </div>
           </div>
         ) : (
@@ -212,18 +214,20 @@ export function MemberKpiCards({ kpis }: { kpis: MemberKpis }) {
       <Tile
         label="Up next"
         view="up-next"
-        href={kpis.notStartedCount > 0 ? "/me?tab=learning&status=not_started" : "/me?tab=learning"}
+        href={!learningError && kpis.notStartedCount > 0 ? "/me?tab=learning&status=not_started" : "/me?tab=learning"}
         tone="neutral"
         icon={<CalendarClock className="size-3.5 text-primary" aria-hidden="true" />}
-        value={kpis.notStartedCount}
-        summary={kpis.nextPlanned?.certificateName ?? "Nothing planned"}
+        value={learningError ? "—" : kpis.notStartedCount}
+        summary={learningError ? "Could not load" : kpis.nextPlanned?.certificateName ?? "Nothing planned"}
       >
-        <Footer strong={Boolean(kpis.nextPlanned?.plannedExamDate)}>
-          {kpis.nextPlanned?.plannedExamDate
-            ? formatDate(kpis.nextPlanned.plannedExamDate)
-            : kpis.nextPlanned
-              ? "Set a date"
-              : "Plan one"}
+        <Footer strong={!learningError && Boolean(kpis.nextPlanned?.plannedExamDate)}>
+          {learningError
+            ? "Open My learning"
+            : kpis.nextPlanned?.plannedExamDate
+              ? formatDate(kpis.nextPlanned.plannedExamDate)
+              : kpis.nextPlanned
+                ? "Set a date"
+                : "Plan one"}
         </Footer>
       </Tile>
     </dl>

@@ -47,7 +47,7 @@ export function describeIssue(row: IssueRow): string {
     case "certificate_no_validity":
       return "No validity period is set. Ignore this if the exam certificate does not expire.";
     case "course_proposal":
-      return `${proposedBy(row)} Approve also adds a course completion.`;
+      return `${proposedBy(row)} Approve also adds a course certificate.`;
     case "certificate_proposal":
       return proposedBy(row);
   }

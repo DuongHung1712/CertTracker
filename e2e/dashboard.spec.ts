@@ -87,12 +87,15 @@ test("manager sees four tiles, one Needs attention list and the team table", asy
   await expect(waitingTile(page).getByText("0", { exact: true })).toBeVisible();
   await expect(summaryValue(page, "Expiring in 60 days")).toHaveText("1");
   await expect(summaryValue(page, "Expired")).toHaveText("0");
-  await expect(summaryValue(page, "Valid certificates")).toHaveText("100%");
+  await expect(summaryValue(page, "Valid certificates")).toHaveText("1");
 
   // Needs attention: An's expiring AWS and Châu, who has no certificate; each row opens that person's learning.
   const attention = section(page, "Needs attention");
   await expect(attention.getByRole("link", { name: new RegExp(`Nguyễn Văn An · ${AWS}`) })).toHaveAttribute("href", /\/records\?search=/);
   await expect(attention.getByRole("link", { name: /Lê Minh Châu/ })).toContainText("No certificate yet");
+  await expect(attention.getByRole("link", { name: /Lê Minh Châu/ })).toHaveAttribute("href", /\/members\?search=/);
+  // 1 valid of 1 completed (An's AWS); the summary carries the readiness %.
+  await expect(page.getByText(/of 1 completed · 100/)).toBeVisible();
 
   // My team: managed members only (Bình is unmanaged); one team means no Team column and no team filter.
   const team = section(page, "My team");
@@ -169,8 +172,8 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   // The certificates list holds results only (decision #72): the planned AWS exam is a learning item, not listed here.
   const certSection = page.getByRole("region", { name: "My certificates" });
   await expect(certSection).toBeVisible();
-  await expect(certSection.getByText("0 exam certificates, 0 course completions for Lê Minh Châu")).toBeVisible();
-  await expect(certSection.getByRole("button", { name: "Add your first certificate or course completion" })).toBeVisible();
+  await expect(certSection.getByText("0 exam certificates, 0 course certificates for Lê Minh Châu")).toBeVisible();
+  await expect(certSection.getByRole("button", { name: "Add your first certificate" })).toBeVisible();
   await expect(certSection.getByRole("heading", { name: AWS })).toHaveCount(0);
 
   // Attention banner is hidden when nothing expires within 60 days
@@ -185,11 +188,11 @@ test("member sees anonymous aggregates only", async ({ page }) => {
   await expect(page.getByRole("link", { name: "My skills" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Quarterly goals" })).toBeVisible();
 
-  // Topbar notification contains Certificate review
+  // Topbar notification contains In-app alerts
   const notifyBtn = page.getByRole("button", { name: "Notifications" });
   await expect(notifyBtn).toBeVisible();
   await notifyBtn.click();
-  const certReviewCard = page.getByRole("region", { name: "Certificate review (Coming soon)" });
+  const certReviewCard = page.getByRole("region", { name: "In-app alerts (Coming soon)" });
   await expect(certReviewCard).toBeVisible();
   await page.keyboard.press("Escape");
 

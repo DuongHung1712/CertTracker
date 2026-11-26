@@ -54,13 +54,13 @@ export function MemberLearningNow({ items, onAdd }: { items: RecordRow[]; onAdd:
       toast.success(`${item.certificateName}: ${next}%`, { action: { label: "Undo", onClick: () => void undo(item, from, next) } });
     } else {
       setTaken((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => id !== item.id)));
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
     }
   }
 
   async function undo(item: RecordRow, back: number, from: number) {
     const result = await updateLearningProgress({ id: item.id, progress: back, from });
-    if (!result.ok) return void toast.error(result.error);
+    if (!result.ok) return void toast.error(result.error, { duration: Infinity });
     setTaken((prev) => ({ ...prev, [item.id]: { base: from, value: back } }));
     toast.success(`${item.certificateName}: back to ${back}%`);
   }
@@ -76,7 +76,7 @@ export function MemberLearningNow({ items, onAdd }: { items: RecordRow[]; onAdd:
               : `${pluralize(studying, "item")} in progress${items.length > studying ? `, ${items.length - studying} not started` : ""}.`}
           </p>
         </div>
-        <Button type="button" size="sm" variant="outline" onClick={onAdd} className="gap-1.5">
+        <Button type="button" variant="outline" onClick={onAdd} className="gap-1.5">
           <Plus aria-hidden className="size-4" />
           Add learning
         </Button>
@@ -111,7 +111,7 @@ export function MemberLearningNow({ items, onAdd }: { items: RecordRow[]; onAdd:
                       <Link
                         href="/me?tab=learning"
                         aria-label={`Finish ${item.certificateName} in My learning`}
-                        className={buttonVariants({ size: "sm", variant: "outline" })}
+                        className={buttonVariants({ variant: "outline" })}
                       >
                         Finish
                       </Link>
@@ -120,11 +120,10 @@ export function MemberLearningNow({ items, onAdd }: { items: RecordRow[]; onAdd:
                         <Button
                           key={by}
                           type="button"
-                          size="sm"
                           variant="outline"
                           disabled={busyId === item.id}
                           onClick={() => void step(item, by)}
-                          aria-label={`Add ${by}% progress to ${item.certificateName}`}
+                          aria-label={`+${by}% progress for ${item.certificateName}`}
                           className="tabular-nums"
                         >
                           +{by}%
@@ -140,9 +139,9 @@ export function MemberLearningNow({ items, onAdd }: { items: RecordRow[]; onAdd:
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={progress}
-                    className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted"
+                    className="h-1.5 flex-1 overflow-hidden rounded-sm bg-muted"
                   >
-                    <div className="h-full rounded-full bg-primary transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${progress}%` }} />
+                    <div className="h-full rounded-sm bg-primary transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${progress}%` }} />
                   </div>
                   <span className="w-10 text-right text-caption tabular-nums text-foreground">{progress}%</span>
                 </div>

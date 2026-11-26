@@ -58,7 +58,7 @@ describe("AiReaderSettings", () => {
     render(<AiReaderSettings settings={settings} />);
     await userEvent.click(screen.getByRole("switch"));
     await userEvent.click(screen.getByRole("button", { name: /save/i }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("You do not have permission to do this."));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("You do not have permission to do this.", { duration: Infinity }));
     expect(screen.getByRole("alert").textContent).toContain("You do not have permission to do this.");
     expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
   });

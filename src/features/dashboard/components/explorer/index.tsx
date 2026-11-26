@@ -100,11 +100,11 @@ export function Explorer({
                   <TabsTrigger
                     key={tab.id}
                     value={tab.id}
-                    className="h-7 flex-none whitespace-nowrap rounded-md px-3 text-xs font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground"
+                    className="h-7 flex-none whitespace-nowrap rounded-md px-3 text-caption font-medium transition-all data-[state=active]:bg-background data-[state=active]:text-foreground"
                   >
                     <span>{tab.label}</span>
                     {tab.result.ok && (
-                      <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-caption font-semibold tabular-nums text-muted-foreground">
+                      <span className="ml-1.5 rounded-sm bg-muted px-1.5 py-0.5 text-caption font-semibold tabular-nums text-muted-foreground">
                         {tab.result.data.length}
                       </span>
                     )}

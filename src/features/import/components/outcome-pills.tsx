@@ -33,7 +33,7 @@ export function OutcomePills({
             disabled={count === 0 && !active}
             onClick={() => onChange(active ? OUTCOME_ALL : id)}
             className={cn(
-              "inline-flex min-h-8 items-center rounded-full border px-3 text-body tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-60",
+              "inline-flex min-h-8 items-center rounded-lg border px-3 text-body tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:text-muted-foreground disabled:opacity-60",
               active ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent",
               id === "error" && !active && count > 0 && "text-destructive",
             )}

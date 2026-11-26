@@ -71,9 +71,9 @@ describe("UserGuideCard", () => {
     expect(renderToStaticMarkup(<UserGuideCard userId="u1" role="member" initialVisible={false} />)).toBe("");
   });
 
-  it("Don't show again hides it now and at the next sign-in, for this person only", async () => {
+  it("Do not show again hides it now and at the next sign-in, for this person only", async () => {
     const { unmount } = render(<UserGuideCard userId="u1" role="member" />);
-    await userEvent.click(screen.getByRole("button", { name: "Don't show again" }));
+    await userEvent.click(screen.getByRole("button", { name: "Do not show again" }));
     expect(screen.queryByRole("region", { name: "Welcome to CertTracker" })).toBeNull();
     unmount();
 
@@ -97,15 +97,15 @@ describe("UserGuideCard", () => {
     expect(screen.getByRole("region", { name: "Welcome to CertTracker" })).toBeTruthy();
   });
 
-  it("shows again on request (the menu's User guide) even after Don't show again", async () => {
+  it("shows again on request (the menu's User guide) even after Do not show again", async () => {
     const first = render(<UserGuideCard userId="u1" role="member" />);
-    await userEvent.click(screen.getByRole("button", { name: "Don't show again" }));
+    await userEvent.click(screen.getByRole("button", { name: "Do not show again" }));
     first.unmount();
 
     render(<UserGuideCard userId="u1" role="member" forceOpen />);
     expect(await screen.findByRole("region", { name: "Welcome to CertTracker" })).toBeTruthy();
     expect(screen.getByText("Add a certificate you hold")).toBeTruthy(); // opened with its steps
-    // ?guide=1 comes off the address, so a refresh does not undo the next "Don't show again".
+    // ?guide=1 comes off the address, so a refresh does not undo the next "Do not show again".
     expect(replace).toHaveBeenCalledWith("/dashboard", { scroll: false });
   });
 
@@ -121,7 +121,7 @@ describe("UserGuideCard", () => {
 
   it("stays dismissed after a refresh once the address has no ?guide=1", async () => {
     const first = render(<UserGuideCard userId="u1" role="member" forceOpen />);
-    await userEvent.click(await screen.findByRole("button", { name: "Don't show again" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Do not show again" }));
     first.unmount();
     render(<UserGuideCard userId="u1" role="member" forceOpen={false} />);
     expect(screen.queryByRole("region", { name: "Welcome to CertTracker" })).toBeNull();

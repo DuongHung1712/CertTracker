@@ -163,7 +163,7 @@ test("R18: the form explains that Date passed is not the expiry date", async ({ 
 
 test("Add mode hints: what the link is, what the evidence is and who sees it", async ({ page }) => {
   const dialog = await openAddForm(page);
-  await expect(dialog.getByLabel(fieldLabel("Certificate link"))).toHaveAccessibleDescription("Link to the public badge or verification page.");
+  await expect(dialog.getByLabel(fieldLabel("Certificate link"))).toHaveAccessibleDescription("Link to the public certificate or verification page.");
   await expect(dialog.getByText(/^Upload a scan or screenshot \(PDF\/image up to 4 MB\)\. Only the member, their managers and admins can see it\.$/)).toBeVisible();
 
   await dialog.getByRole("button", { name: "Cancel" }).click();

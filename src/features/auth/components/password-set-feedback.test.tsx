@@ -13,7 +13,7 @@ describe("PasswordSetFeedback", () => {
     expect(alert).toBeTruthy();
     expect(alert.textContent).toContain("Password set successfully");
     expect(alert.textContent).toContain(
-      "Your password has been saved. Please sign in below with your email and new password to access your CertTracker account."
+      "Your password has been saved. Sign in below with your email and new password."
     );
   });
 });

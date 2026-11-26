@@ -59,16 +59,16 @@ describe("deleteCertificate", () => {
 describe("createCertificate", () => {
   const unique = { code: "23505", message: "duplicate key" };
 
-  it("words a duplicate by kind: certificate for an exam, course completion for a completion", async () => {
+  it("words a duplicate by kind: certificate for an exam, course certificate for a completion", async () => {
     replies.certificates = [{ data: null, error: unique }];
     expect(await createCertificate(exam)).toEqual({
       ok: false,
-      error: `A certificate named "${exam.name}" already exists for this provider, or this course already grants a completion.`,
+      error: `A certificate named "${exam.name}" already exists for this provider, or this course already grants a course certificate.`,
     });
     replies.certificates = [{ data: null, error: unique }];
     expect(await createCertificate(completion)).toEqual({
       ok: false,
-      error: `A course completion named "${exam.name}" already exists for this provider, or this course already grants a completion.`,
+      error: `A course certificate named "${exam.name}" already exists for this provider, or this course already grants a course certificate.`,
     });
   });
 });
@@ -78,7 +78,7 @@ describe("updateCertificate kind change (spec Q6)", () => {
     replies.training_records = [{ data: [{ id: "r1" }], error: null }];
     expect(await updateCertificate({ ...completion, courseId: OTHER_COURSE })).toEqual({
       ok: false,
-      error: "This course completion has records with another course. Change them first.",
+      error: "This course certificate has records with another course. Change them first.",
     });
     expect(updateValues).not.toHaveBeenCalled();
   });
@@ -87,7 +87,7 @@ describe("updateCertificate kind change (spec Q6)", () => {
     replies.training_records = [{ data: [{ id: "r1" }], error: null }];
     expect(await updateCertificate(completion)).toEqual({
       ok: false,
-      error: "This course completion has records with another course. Change them first.",
+      error: "This course certificate has records with another course. Change them first.",
     });
     expect(updateValues).not.toHaveBeenCalled();
   });
@@ -118,7 +118,7 @@ describe("deleteCourse", () => {
     replies.certificates = [{ data: { name: "Machine Learning Specialization" }, error: null }];
     expect(await deleteCourse({ id: ID })).toEqual({
       ok: false,
-      error: "This course grants the completion Machine Learning Specialization. Delete or change that completion first.",
+      error: "This course grants the course certificate Machine Learning Specialization. Delete or change that course certificate first.",
     });
   });
 

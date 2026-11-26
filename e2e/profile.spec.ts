@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signIn } from "./helpers";
+import { fieldLabel, signIn } from "./helpers";
 import { inviteLink } from "./support/accounts";
 import { addSeedManagerProgramScope, MANAGER_USER_ID, removeSeedManagerProgramScope, SEED_PROGRAM_NAME } from "./support/manager-scopes";
 import {
@@ -174,9 +174,9 @@ test.describe("change password", () => {
     await acceptInvitation(page, email, (await inviteLink(email)).hash);
     await page.goto("/profile");
 
-    await page.getByLabel("Current password").fill("not-the-password-1");
-    await page.getByLabel("New password", { exact: true }).fill(NEW_PASSWORD);
-    await page.getByLabel("Confirm new password").fill(NEW_PASSWORD);
+    await page.getByLabel(fieldLabel("Current password")).fill("not-the-password-1");
+    await page.getByLabel(fieldLabel("New password")).fill(NEW_PASSWORD);
+    await page.getByLabel(fieldLabel("Confirm new password")).fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Change password" }).click();
     await expect(page.getByText("The current password is not correct.")).toBeVisible();
     await expect(page).toHaveURL(/\/profile$/);
@@ -184,20 +184,20 @@ test.describe("change password", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
 
     await page.goto("/profile");
-    await page.getByLabel("Current password").fill(PILOT_PASSWORD);
-    await page.getByLabel("New password", { exact: true }).fill(NEW_PASSWORD);
-    await page.getByLabel("Confirm new password").fill(NEW_PASSWORD);
+    await page.getByLabel(fieldLabel("Current password")).fill(PILOT_PASSWORD);
+    await page.getByLabel(fieldLabel("New password")).fill(NEW_PASSWORD);
+    await page.getByLabel(fieldLabel("Confirm new password")).fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Change password" }).click();
     await expect(page.getByText("Password changed")).toBeVisible();
     for (const name of ["Current password", "New password", "Confirm new password"]) {
-      await expect(page.getByLabel(name, { exact: true })).toHaveValue("");
+      await expect(page.getByLabel(fieldLabel(name))).toHaveValue("");
     }
 
     await page.getByRole("button", { name: /Account/ }).click();
     await page.getByRole("menuitem", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/login/);
-    await page.getByLabel("Email").fill(email);
-    await page.getByLabel("Password", { exact: true }).fill(NEW_PASSWORD);
+    await page.getByLabel(fieldLabel("Email")).fill(email);
+    await page.getByLabel(fieldLabel("Password")).fill(NEW_PASSWORD);
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
   });

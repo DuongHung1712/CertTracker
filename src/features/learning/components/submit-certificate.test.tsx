@@ -7,9 +7,9 @@ import type { LearningRow } from "@/features/learning/queries";
 
 // The certificate sheet is tested on its own; here it only reports a save.
 vi.mock("@/features/records/components/record-sheet", () => ({
-  RecordSheet: (props: { open: boolean; presetCertificateId?: string; onSaved?: (id: string) => void }) =>
+  RecordSheet: (props: { open: boolean; presetCertificateId?: string; viewerMemberId?: string | null; onSaved?: (id: string) => void }) =>
     props.open ? (
-      <button type="button" onClick={() => props.onSaved?.("r-new")}>
+      <button type="button" data-viewer={String(props.viewerMemberId)} onClick={() => props.onSaved?.("r-new")}>
         fake save {props.presetCertificateId}
       </button>
     ) : null,
@@ -39,7 +39,7 @@ describe("submitTargets", () => {
 
 describe("SubmitCertificate", () => {
   const show = (item: LearningRow) =>
-    render(<SubmitCertificate row={item} onClose={() => {}} certificateOptions={[]} studyCourses={[]} completionByCourse={COMPLETIONS} />);
+    render(<SubmitCertificate row={item} onClose={() => {}} certificateOptions={[]} completionByCourse={COMPLETIONS} />);
 
   it("opens the certificate sheet preset with the exam (the database then completes the item)", () => {
     show(row({ targetCertificateId: "e1" }));
@@ -53,7 +53,21 @@ describe("SubmitCertificate", () => {
   });
 
   it("proposes the completion certificate when the course has none yet", () => {
-    show(row({ courseId: "k2", courseName: "My Coursera ML" }));
+    render(<SubmitCertificate row={row({ courseId: "k2", courseName: "My Coursera ML" })} onClose={() => {}} certificateOptions={[]} completionByCourse={COMPLETIONS} viewerMemberId="5eed0000-0000-0000-0000-00000000b001" />);
     expect(screen.getByText("propose My Coursera ML")).toBeTruthy();
+  });
+
+  it("for an unlinked manager in team mode, passes viewerMemberId=null to RecordSheet and hides Propose when no completion certificate exists", () => {
+    const view = render(
+      <SubmitCertificate row={row({ targetCertificateId: "e1" })} onClose={() => {}} certificateOptions={[]} completionByCourse={COMPLETIONS} mode="team" viewerMemberId={null} />,
+    );
+    expect(screen.getByRole("button", { name: /fake save e1/ }).getAttribute("data-viewer")).toBe("null");
+    view.unmount();
+
+    render(
+      <SubmitCertificate row={row({ courseId: "k2", courseName: "My Coursera ML" })} onClose={() => {}} certificateOptions={[]} completionByCourse={COMPLETIONS} mode="team" viewerMemberId={null} />,
+    );
+    expect(screen.queryByText("propose My Coursera ML")).toBeNull();
+    expect(screen.getByText("Course certificate missing")).toBeTruthy();
   });
 });

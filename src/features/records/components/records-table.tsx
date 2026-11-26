@@ -21,17 +21,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { CERTIFICATE_KIND_LABEL, CERTIFICATE_KIND_NOUN } from "@/features/certificates/schema";
 import { inMemberView, MEMBER_VIEW_LABEL, type MemberView } from "@/features/dashboard/member-metrics";
 import { deleteRecord, deleteRecords, reviewRecord } from "@/features/records/actions";
 import { EvidenceCell } from "@/features/records/components/evidence-cell";
 import { RecordSheet } from "@/features/records/components/record-sheet";
 import { filterByKind, isApprovedDone, isRecordDeletableByMember, isReviewable, KIND_FILTER_LABEL, KIND_FILTERS, kindCounts, learningPath, type ApprovalState, type KindFilter } from "@/features/records/kind";
-import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
+import type { CertificateChoice } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { MAX_BULK_DELETE, reviewSchema } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
+import { pluralize } from "@/lib/plural";
 import { foldText } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 /** A Base UI `Select` value must be a non-empty string, so "no filter" is a sentinel, not "". */
 const APPROVAL_FILTER_LABEL: Record<ApprovalState, string> = {
@@ -62,7 +65,7 @@ function byDaysToExpiry(
 /** One click, no dialog; the page refreshes itself through the action's revalidation. */
 async function approve(record: RecordRow) {
   const result = await reviewRecord({ id: record.id, decision: "approve" });
-  if (!result.ok) toast.error(result.error);
+  if (!result.ok) toast.error(result.error, { duration: Infinity });
   else toast.success(`Approved ${CERTIFICATE_KIND_NOUN[record.certificateKind]} of ${record.memberName}`);
 }
 
@@ -72,7 +75,7 @@ export function RecordsTable({
   records,
   memberOptions,
   certificateOptions,
-  studyCourses,
+  providers,
   mode,
   canDelete,
   showCompanyFields,
@@ -84,6 +87,7 @@ export function RecordsTable({
   canReview = false,
   reviewerMemberId = null,
   initialApproval = false,
+  initialApprovalState,
   aiReaderEnabled = false,
 }: {
   /** Shows "Fill from file" in the add sheet; see RecordSheet. */
@@ -91,7 +95,7 @@ export function RecordsTable({
   records: RecordRow[];
   memberOptions: ComboboxOption[];
   certificateOptions: CertificateChoice[];
-  studyCourses: StudyCourse[];
+  providers?: { id: string; name: string }[];
   /** "self" hides the member/team columns and the team filter. */
   mode: "team" | "self";
   canDelete: boolean;
@@ -111,15 +115,21 @@ export function RecordsTable({
   reviewerMemberId?: string | null;
   /** Opens the list narrowed to items waiting for approval (/records?approval=waiting). */
   initialApproval?: boolean;
+  /** Starting Status filter (/me?approval=returned); /me keeps it in the URL so a reload restores it. */
+  initialApprovalState?: string;
 }) {
   const isTeam = mode === "team";
   const [search, setSearch] = useState(initialSearch);
   const [teamFilter, setTeamFilter] = useState(
     initialTeam ? (initialTeam === NO_TEAM_LABEL || initialTeam === NO_TEAM ? NO_TEAM : initialTeam) : ALL,
   );
-  const [statusFilter, setStatusFilter] = useState(
-    initialApproval || initialView === "waiting" ? "waiting" : ALL,
-  );
+  const seedStatus = (): string =>
+    initialApproval || initialView === "waiting"
+      ? "waiting"
+      : initialApprovalState && initialApprovalState in APPROVAL_FILTER_LABEL
+        ? initialApprovalState
+        : ALL;
+  const [statusFilter, setStatusFilter] = useState(seedStatus);
   const [expiryFilter, setExpiryFilter] = useState(ALL);
   const [kindFilter, setKindFilter] = useState<KindFilter>(ALL);
   const [waitingOnly, setWaitingOnly] = useState(initialApproval);
@@ -127,6 +137,15 @@ export function RecordsTable({
   const [returnNote, setReturnNote] = useState("");
   const [returnError, setReturnError] = useState<string | null>(null);
   const [view, setView] = useState<MemberView | undefined>(initialView);
+  // Re-seed when real navigation changes the link params (instead of keying the table, which would remount it on
+  // every router.refresh() and close an open sheet).
+  const seedKey = `${initialView ?? ""}|${initialApprovalState ?? ""}`;
+  const [prevSeedKey, setPrevSeedKey] = useState(seedKey);
+  if (prevSeedKey !== seedKey) {
+    setPrevSeedKey(seedKey);
+    setView(initialView);
+    setStatusFilter(seedStatus());
+  }
   const [sheetOpen, setSheetOpen] = useState(false);
   // Keep the id, not the row: the sheet must see the refreshed row (e.g. `hasEvidence`) after a server action revalidates.
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -162,7 +181,7 @@ export function RecordsTable({
       if (query) {
         const haystack = foldText(
           isTeam
-            ? `${record.memberName} ${record.memberCode} ${record.teamName ?? ""} ${record.certificateName} ${record.certTypeName ?? ""} ${record.courseName ?? ""} ${record.providerName ?? ""}`
+            ? `${record.memberName} ${record.memberCode} ${record.certificateName} ${record.certTypeName ?? ""} ${record.courseName ?? ""} ${record.providerName ?? ""} ${record.teamName ?? ""}`
             : `${record.certificateName} ${record.certTypeName ?? ""} ${record.courseName ?? ""} ${record.providerName ?? ""}`,
         );
         if (!haystack.includes(query)) return false;
@@ -176,10 +195,22 @@ export function RecordsTable({
     });
   }, [records, search, isTeam, teamFilter, statusFilter, expiryFilter, kindFilter, view, waitingOnly, reviewerMemberId]);
 
+  function syncSelfUrl(nextView: MemberView | undefined, nextStatus: string) {
+    if (isTeam || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (nextView) url.searchParams.set("view", nextView);
+    else url.searchParams.delete("view");
+    if (nextStatus !== ALL) url.searchParams.set("approval", nextStatus);
+    else url.searchParams.delete("approval");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }
+
   function openEdit(id: string) {
     setEditingId(id);
     setSheetOpen(true);
   }
+
+  const canPropose = !canAddToCatalogue && Boolean(reviewerMemberId ?? fixedMemberId);
 
   // With a checkbox column in front, the name column sticks right after it (2.5rem); alone, DataTable's `first:` rule applies.
   const stickyName = canDelete ? STICKY_NAME_META : undefined;
@@ -190,7 +221,7 @@ export function RecordsTable({
 
   // Memoised: react-table renders each `cell` function as a component, so a fresh `columns` array on every render
   // gives every cell a new component type and remounts it. That closed an open row menu on each Realtime refresh.
-  // The cells close over `canDelete` and the stable useState setters only, so these two deps are complete.
+  // The cells close over `canDelete` and the stable useState setters only, so these deps are complete.
   const columns = useMemo<ColumnDef<RecordRow, unknown>[]>(
     () => [
       ...(canDelete
@@ -224,7 +255,14 @@ export function RecordsTable({
               header: "Full name",
               cell: ({ row }) => (
                 <div className="flex min-w-32 flex-col items-start">
-                  <button type="button" className="text-left font-medium hover:underline" onClick={() => openEdit(row.original.id)}>
+                  <button
+                    type="button"
+                    className="text-left font-medium hover:underline"
+                    onClick={() => {
+                      setEditingId(row.original.id);
+                      setSheetOpen(true);
+                    }}
+                  >
                     {row.original.memberName}
                   </button>
                   <span className="text-caption text-muted-foreground">{row.original.memberCode}</span>
@@ -240,7 +278,7 @@ export function RecordsTable({
         header: "Certificate",
         cell: ({ row }) => (
           // Name alone on the first line so it gets the width; kind, proposal state and path go underneath.
-          <div className="flex max-w-md flex-col gap-0.5">
+          <div className={cn("flex flex-col gap-0.5", isTeam ? "max-w-md" : "max-w-[200px] sm:max-w-md")}>
             <span className="flex min-w-0">
               {isTeam ? (
                 <span className="truncate" title={row.original.certificateName}>
@@ -251,13 +289,16 @@ export function RecordsTable({
                   type="button"
                   className="truncate text-left font-medium hover:underline"
                   title={row.original.certificateName}
-                  onClick={() => openEdit(row.original.id)}
+                  onClick={() => {
+                    setEditingId(row.original.id);
+                    setSheetOpen(true);
+                  }}
                 >
                   {row.original.certificateName}
                 </button>
               )}
             </span>
-            <span className="flex min-w-0 items-center gap-1.5">
+            <span className="flex min-w-0 flex-wrap items-center gap-1.5">
               <Badge variant="secondary" className="shrink-0 rounded-sm">
                 {CERTIFICATE_KIND_LABEL[row.original.certificateKind]}
               </Badge>
@@ -319,20 +360,34 @@ export function RecordsTable({
           const record = row.original;
           return (
             <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="-my-1"
-                    aria-label={`Actions for ${record.memberName} · ${record.certificateName}`}
-                  />
-                }
-              >
-                <MoreHorizontal aria-hidden />
-              </DropdownMenuTrigger>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <DropdownMenuTrigger
+                      render={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="-my-1"
+                          aria-label={`Actions for ${record.memberName} · ${record.certificateName}`}
+                        />
+                      }
+                    />
+                  }
+                >
+                  <MoreHorizontal aria-hidden />
+                </TooltipTrigger>
+                <TooltipContent side="left">Actions</TooltipContent>
+              </Tooltip>
               <DropdownMenuContent align="end" className="min-w-40">
-                <DropdownMenuItem onClick={() => openEdit(record.id)}>Edit</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setEditingId(record.id);
+                    setSheetOpen(true);
+                  }}
+                >
+                  Edit
+                </DropdownMenuItem>
                 {record.hasEvidence && (
                   <DropdownMenuItem
                     render={<a href={`/api/records/${record.id}/evidence`} target="_blank" rel="noopener noreferrer" />}
@@ -370,7 +425,7 @@ export function RecordsTable({
         },
       },
     ],
-    [isTeam, canDelete, canReview, reviewerMemberId, kindFilter, stickyName, mode, showCompanyFields],
+    [isTeam, canDelete, canReview, reviewerMemberId, stickyName],
   );
 
   async function handleDelete() {
@@ -379,7 +434,7 @@ export function RecordsTable({
     const result = await deleteRecord({ id: confirming.id });
     setPending(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       setConfirming(null);
       return;
     }
@@ -411,16 +466,16 @@ export function RecordsTable({
     setPending(false);
     setBulkConfirming(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       return;
     }
     setSelection({});
     // The action already revalidated the page, so the rows that did go disappear on their own.
     const { count } = result.data;
     if (count < selectedIds.length) {
-      toast.warning(`Deleted ${count} of ${selectedIds.length} items. The rest were already gone or you can't delete them.`);
+      toast.warning(`Deleted ${count} of ${selectedIds.length} items. The rest were already gone or you cannot delete them.`);
     } else {
-      toast.success(`Deleted ${count} ${count === 1 ? "item" : "items"}`);
+      toast.success(`Deleted ${pluralize(count, "item")}`);
     }
   }
 
@@ -450,6 +505,7 @@ export function RecordsTable({
           setKindFilter(ALL);
           setWaitingOnly(false);
           setView(undefined);
+          syncSelfUrl(undefined, ALL);
         }}
       >
         {isTeam && (
@@ -488,9 +544,11 @@ export function RecordsTable({
         <Select
           value={statusFilter}
           onValueChange={(value) => {
-            setStatusFilter(value ?? ALL);
+            const nextStatus = value ?? ALL;
+            setStatusFilter(nextStatus);
             setWaitingOnly(false);
             setView(undefined);
+            syncSelfUrl(undefined, nextStatus);
           }}
         >
           <SelectTrigger aria-label="Status">
@@ -512,6 +570,7 @@ export function RecordsTable({
           onValueChange={(value) => {
             setExpiryFilter(value ?? ALL);
             setView(undefined);
+            syncSelfUrl(undefined, statusFilter);
           }}
         >
           <SelectTrigger aria-label="Expiry">
@@ -536,7 +595,6 @@ export function RecordsTable({
         </Select>
         {canReview && (
           <Button
-            size="sm"
             variant={waitingOnly ? "secondary" : "outline"}
             aria-pressed={waitingOnly}
             onClick={() => {
@@ -549,9 +607,8 @@ export function RecordsTable({
           </Button>
         )}
         <Button
-          size="sm"
           className="ml-auto"
-          disabled={certificateOptions.length === 0 || (isTeam && memberOptions.length === 0)}
+          disabled={(certificateOptions.length === 0 && !canPropose) || (isTeam && memberOptions.length === 0)}
           onClick={() => {
             setEditingId(null);
             setSheetOpen(true);
@@ -567,11 +624,12 @@ export function RecordsTable({
             Showing <strong className="font-medium text-foreground">{MEMBER_VIEW_LABEL[view]}</strong> only
           </span>
           <Button
-            size="sm"
             variant="ghost"
             onClick={() => {
+              const nextStatus = view === "waiting" ? ALL : statusFilter;
               if (view === "waiting") setStatusFilter(ALL);
               setView(undefined);
+              syncSelfUrl(undefined, nextStatus);
             }}
           >
             Show all
@@ -582,11 +640,11 @@ export function RecordsTable({
       {selectedIds.length > 0 && (
         <div className="flex items-center gap-2 rounded-lg border bg-muted px-3 py-1.5 text-table" role="region" aria-label="Bulk actions">
           <span>{selectedIds.length} selected</span>
-          <Button size="sm" variant="destructive" disabled={tooManySelected} onClick={() => setBulkConfirming(true)}>
+          <Button variant="destructive" disabled={tooManySelected} onClick={() => setBulkConfirming(true)}>
             Delete
           </Button>
           {tooManySelected && <span className="text-caption text-muted-foreground">Select up to {MAX_BULK_DELETE} to delete.</span>}
-          <Button size="sm" variant="ghost" onClick={() => setSelection({})}>
+          <Button variant="ghost" onClick={() => setSelection({})}>
             Clear selection
           </Button>
         </div>
@@ -619,7 +677,7 @@ export function RecordsTable({
         editing={editing}
         memberOptions={memberOptions}
         certificateOptions={certificateOptions}
-        studyCourses={studyCourses}
+        providers={providers}
         showCompanyFields={showCompanyFields}
         canAddToCatalogue={canAddToCatalogue}
         fixedMemberId={fixedMemberId}
@@ -665,7 +723,7 @@ export function RecordsTable({
           onOpenChange={setBulkConfirming}
           title={`Delete ${selectedIds.length} selected ${selectedIds.length === 1 ? "item" : "items"}?`}
           description="The selected items and their evidence files will be deleted. This cannot be undone."
-          confirmLabel={`Delete ${selectedIds.length} ${selectedIds.length === 1 ? "item" : "items"}`}
+          confirmLabel={`Delete ${pluralize(selectedIds.length, "item")}`}
           pendingLabel="Deleting…"
           pending={pending}
           onConfirm={handleBulkDelete}

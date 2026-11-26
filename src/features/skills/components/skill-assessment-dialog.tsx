@@ -137,7 +137,7 @@ function AssessmentForm({
                   disabled={pending || removing}
                   onClick={() => setLevel(lvl)}
                   className={cn(
-                    "flex flex-col items-start gap-0.5 rounded-md border p-2.5 text-left text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50",
+                    "flex flex-col items-start gap-0.5 rounded-md border p-2.5 text-left text-caption transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50",
                     selected ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-muted/50",
                   )}
                 >
@@ -175,7 +175,7 @@ function AssessmentForm({
               setYearsInput(e.target.value);
               if (yearsError) setYearsError(null);
             }}
-            className="w-32 tabular-nums"
+            className="h-9 w-32 tabular-nums"
           />
           <FieldError errors={yearsError ? [{ message: yearsError }] : []} />
         </Field>

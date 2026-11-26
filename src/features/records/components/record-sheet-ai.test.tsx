@@ -31,7 +31,6 @@ const base = {
   onOpenChange: () => {},
   memberOptions: [],
   certificateOptions: CERTIFICATES,
-  studyCourses: [],
   showCompanyFields: false,
   fixedMemberId: "m1",
 };
@@ -296,7 +295,7 @@ describe("RecordSheet: a certificate that is not in the catalogue", () => {
     expect(screen.queryByRole("button", { name: /propose it/i })).toBeNull();
   });
 
-  it("warns when the member already has that course completion and disables Save without offering Propose it", async () => {
+  it("warns when the member already has that course certificate and disables Save without offering Propose it", async () => {
     const pendingCert = {
       id: "c-pend-1",
       label: "Introduction to subagents",

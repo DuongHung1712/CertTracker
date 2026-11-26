@@ -1,10 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
+import { DiscardChangesDialog } from "@/components/discard-changes-dialog";
+import { RequiredMark } from "@/components/required-mark";
 import {
   CareerStartFields,
   NO_MONTH,
@@ -71,27 +73,67 @@ export function MemberDialog({
   // just `useForm<MemberInput>`, which forces the input type to match the
   // output type and fails to compile — tells react-hook-form to accept the
   // input shape as field values and hand `onSubmit` the resolved output.
-  const form = useForm<z.input<typeof memberSchema>, unknown, MemberInput>({
-    resolver: zodResolver(memberSchema),
-    values: {
+  const defaultValues = useMemo(
+    () => ({
       fullName: editing?.fullName ?? "",
       email: editing?.email ?? "",
       teamId: editing?.teamId ?? "",
       isActive: editing?.isActive ?? true,
-    },
+    }),
+    [editing],
+  );
+  const initialCareer = useMemo(() => careerDraftFor(editing), [editing]);
+  const initialAccess = editing?.accessRole ?? null;
+
+  const form = useForm<z.input<typeof memberSchema>, unknown, MemberInput>({
+    resolver: zodResolver(memberSchema),
+    values: defaultValues,
   });
-  const [career, setCareer] = useState(() => careerDraftFor(editing));
+  const [career, setCareer] = useState(initialCareer);
   const [careerError, setCareerError] = useState<string | undefined>();
-  const [access, setAccess] = useState(editing?.accessRole ?? null);
+  const [access, setAccess] = useState(initialAccess);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   // Start from the member being edited each time the dialog opens (adjusted during render, not in an effect).
   const [wasOpen, setWasOpen] = useState(open);
   if (wasOpen !== open) {
     setWasOpen(open);
     if (open) {
-      setCareer(careerDraftFor(editing));
+      setCareer(initialCareer);
       setCareerError(undefined);
-      setAccess(editing?.accessRole ?? null);
+      setAccess(initialAccess);
+      setConfirmDiscard(false);
     }
+  }
+
+  const careerDirty =
+    canEditCareer &&
+    (career.roleId !== initialCareer.roleId ||
+      career.start.year !== initialCareer.start.year ||
+      career.start.month !== initialCareer.start.month ||
+      (editing?.userId ? access !== initialAccess : false));
+  const isDirty = form.formState.isDirty || careerDirty;
+
+  function closeClean() {
+    form.reset(defaultValues);
+    form.clearErrors();
+    setCareer(initialCareer);
+    setCareerError(undefined);
+    setAccess(initialAccess);
+    setConfirmDiscard(false);
+    onOpenChange(false);
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (next) {
+      onOpenChange(true);
+      return;
+    }
+    if (form.formState.isSubmitting) return;
+    if (isDirty) {
+      setConfirmDiscard(true);
+      return;
+    }
+    closeClean();
   }
 
   async function onSubmit(values: MemberInput) {
@@ -125,91 +167,105 @@ export function MemberDialog({
       }
     }
     toast.success(editing ? `Saved member ${values.fullName}` : `Added member ${values.fullName}`);
-    onOpenChange(false);
-    form.reset({ fullName: "", email: "", teamId: "", isActive: true });
-    setCareer(careerDraftFor(null));
+    closeClean();
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent size="md">
-        <DialogHeader>
-          <DialogTitle className="text-section-title">{editing ? "Edit member" : "Add member"}</DialogTitle>
-        </DialogHeader>
-        <form className="flex flex-col gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <Field>
-            <FieldLabel htmlFor="member-name">Full name</FieldLabel>
-            <Input
-              id="member-name"
-              className="h-9"
-              {...form.register("fullName")}
-              aria-invalid={!!form.formState.errors.fullName}
-            />
-            <FieldError errors={[form.formState.errors.fullName]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="member-email">Email</FieldLabel>
-            <Input
-              id="member-email"
-              type="email"
-              className="h-9"
-              {...form.register("email")}
-              aria-invalid={!!form.formState.errors.email}
-            />
-            <FieldError errors={[form.formState.errors.email]} />
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="member-team">Team</FieldLabel>
-            <Controller
-              control={form.control}
-              name="teamId"
-              render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="member-team" className="w-full" aria-invalid={!!form.formState.errors.teamId}>
-                    {/* Base UI's SelectValue renders the raw value by default; map it back to the team name. */}
-                    <SelectValue placeholder="Choose a team">
-                      {(value: string) => teams.find((team) => team.id === value)?.name ?? "Choose a team"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teams.map((team) => (
-                      <SelectItem key={team.id} value={team.id}>
-                        {team.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <FieldError errors={[form.formState.errors.teamId]} />
-          </Field>
-          {canEditCareer && editing && (
+    <>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle className="text-section-title">{editing ? "Edit member" : "Add member"}</DialogTitle>
+          </DialogHeader>
+          <form className="flex flex-col gap-4" noValidate onSubmit={form.handleSubmit(onSubmit)}>
+            <p className="text-caption text-muted-foreground">* Required</p>
             <Field>
-              <FieldLabel htmlFor="member-access">Access</FieldLabel>
-              {access ? (
-                <Select value={access} onValueChange={(role) => setAccess(role ?? access)}>
-                  <SelectTrigger id="member-access" className="w-full">
-                    <SelectValue>{(value: Role) => ROLE_LABEL[value]}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.keys(ROLE_LABEL) as Role[]).map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {ROLE_LABEL[role]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <p className="text-caption text-muted-foreground">No account yet. New accounts start as Member.</p>
-              )}
+              <FieldLabel htmlFor="member-name">
+                Full name <RequiredMark />
+              </FieldLabel>
+              <Input
+                id="member-name"
+                className="h-9"
+                {...form.register("fullName")}
+                aria-required="true"
+                aria-invalid={!!form.formState.errors.fullName}
+              />
+              <FieldError errors={[form.formState.errors.fullName]} />
             </Field>
-          )}
-          {canEditCareer ? (
-            <>
+            <Field>
+              <FieldLabel htmlFor="member-email">
+                Email <RequiredMark />
+              </FieldLabel>
+              <Input
+                id="member-email"
+                type="email"
+                className="h-9"
+                {...form.register("email")}
+                aria-required="true"
+                aria-invalid={!!form.formState.errors.email}
+              />
+              <FieldError errors={[form.formState.errors.email]} />
+            </Field>
+            <Field>
+              <FieldLabel htmlFor="member-team">
+                Team <RequiredMark />
+              </FieldLabel>
+              <Controller
+                control={form.control}
+                name="teamId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger
+                      id="member-team"
+                      size="lg"
+                      className="w-full"
+                      aria-required="true"
+                      aria-invalid={!!form.formState.errors.teamId}
+                    >
+                      {/* Base UI's SelectValue renders the raw value by default; map it back to the team name. */}
+                      <SelectValue placeholder="Choose a team">
+                        {(value: string) => teams.find((team) => team.id === value)?.name ?? "Choose a team"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teams.map((team) => (
+                        <SelectItem key={team.id} value={team.id}>
+                          {team.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <FieldError errors={[form.formState.errors.teamId]} />
+            </Field>
+            {canEditCareer && editing && (
               <Field>
-                <FieldLabel htmlFor="member-career-role">Career role</FieldLabel>
-                <Select value={career.roleId} onValueChange={(roleId) => setCareer({ ...career, roleId: roleId ?? NO_ROLE })}>
-                  <SelectTrigger id="member-career-role" className="w-full">
+                <FieldLabel htmlFor="member-access">Access</FieldLabel>
+                {access ? (
+                  <Select value={access} onValueChange={(role) => setAccess(role ?? access)}>
+                    <SelectTrigger id="member-access" size="lg" className="w-full">
+                      <SelectValue>{(value: Role) => ROLE_LABEL[value]}</SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(ROLE_LABEL) as Role[]).map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {ROLE_LABEL[role]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-caption text-muted-foreground">No account yet. New accounts start as Member.</p>
+                )}
+              </Field>
+            )}
+            {canEditCareer ? (
+              <>
+                <Field>
+                  <FieldLabel htmlFor="member-career-role">Career role</FieldLabel>
+                  <Select value={career.roleId} onValueChange={(roleId) => setCareer({ ...career, roleId: roleId ?? NO_ROLE })}>
+                    <SelectTrigger id="member-career-role" size="lg" className="w-full">
                     <SelectValue>{(value: string) => roles.find((role) => role.id === value)?.name ?? "Not set"}</SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -263,23 +319,25 @@ export function MemberDialog({
               {form.formState.errors.root.message}
             </p>
           )}
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={form.formState.isSubmitting}
-            >
-              {form.formState.isSubmitting ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <DiscardChangesDialog open={confirmDiscard} onOpenChange={setConfirmDiscard} onDiscard={closeClean} />
+    </>
   );
 }

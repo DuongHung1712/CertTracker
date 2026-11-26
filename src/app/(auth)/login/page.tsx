@@ -18,7 +18,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <div className="flex size-10 items-center justify-center rounded-lg bg-accent text-accent-foreground mb-1">
             <Logo size={24} />
           </div>
-          <CardTitle className="text-page-title font-semibold tracking-tight">CertTracker</CardTitle>
+          <CardTitle className="text-page-title font-semibold tracking-tight">
+            <h1>CertTracker</h1>
+          </CardTitle>
           <CardDescription className="text-body text-muted-foreground text-balance">
             Sign in with the account you were given
           </CardDescription>

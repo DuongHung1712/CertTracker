@@ -21,7 +21,7 @@ export function useConfirmedDelete<T>({
     const result = await remove(target);
     setPending(false);
     if (result.ok) toast.success(successMessage(target));
-    else toast.error(result.error);
+    else toast.error(result.error, { duration: Infinity });
     setTarget(null);
   }
 

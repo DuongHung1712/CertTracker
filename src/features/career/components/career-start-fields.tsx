@@ -1,5 +1,6 @@
 "use client";
 
+import { RequiredMark } from "@/components/required-mark";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,24 +15,26 @@ export function toCareerStartInput({ year, month }: CareerStartDraft) {
   return { year: year.trim(), month: month === NO_MONTH ? null : Number(month) };
 }
 
-/** Month (optional) + year of the first job. Shared by the member's own page and the admin's member form. */
+/** Month + year of the first job. Shared by the member's own page and the admin's member form. */
 export function CareerStartFields({
   idPrefix,
   value,
   onChange,
   error,
   disabled = false,
+  requiredYear = false,
 }: {
   idPrefix: string;
   value: CareerStartDraft;
   onChange: (value: CareerStartDraft) => void;
   error?: string;
   disabled?: boolean;
+  requiredYear?: boolean;
 }) {
   return (
     <div className="flex flex-wrap items-start gap-3">
       <Field className="w-44">
-        <FieldLabel htmlFor={`${idPrefix}-month`}>Month (optional)</FieldLabel>
+        <FieldLabel htmlFor={`${idPrefix}-month`}>Month</FieldLabel>
         <Select value={value.month} onValueChange={(month) => onChange({ ...value, month: month ?? NO_MONTH })} disabled={disabled}>
           <SelectTrigger id={`${idPrefix}-month`} size="lg" className="w-full" aria-invalid={!!error}>
             <SelectValue>
@@ -49,7 +52,9 @@ export function CareerStartFields({
         </Select>
       </Field>
       <Field className="w-28">
-        <FieldLabel htmlFor={`${idPrefix}-year`}>Year</FieldLabel>
+        <FieldLabel htmlFor={`${idPrefix}-year`}>
+          Year {requiredYear && <RequiredMark />}
+        </FieldLabel>
         <Input
           id={`${idPrefix}-year`}
           className="h-9"
@@ -57,6 +62,7 @@ export function CareerStartFields({
           placeholder="2020"
           value={value.year}
           disabled={disabled}
+          aria-required={requiredYear || undefined}
           aria-invalid={!!error}
           onChange={(event) => onChange({ ...value, year: event.target.value })}
         />

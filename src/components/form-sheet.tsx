@@ -42,7 +42,7 @@ export function FormSheet({
         <SheetHeader>
           <SheetTitle className="text-section-title">{title}</SheetTitle>
         </SheetHeader>
-        <form className="flex flex-1 flex-col gap-4 overflow-y-auto px-4" onSubmit={onSubmit}>
+        <form noValidate className="flex flex-1 flex-col gap-4 overflow-y-auto px-4" onSubmit={onSubmit}>
           {children}
           {rootError && (
             <p role="alert" className="text-caption text-destructive">
@@ -51,10 +51,10 @@ export function FormSheet({
           )}
           {/* Sticky so Save stays on screen however long the form is. */}
           <SheetFooter className="sticky bottom-0 mt-auto flex-row justify-end gap-2 border-t border-border bg-popover px-0 pt-2 pb-4">
-            <Button type="button" variant="outline" onClick={() => requestOpenChange(false)}>
+            <Button type="button" variant="outline" size="lg" onClick={() => requestOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={submitting || submitDisabled}>
+            <Button type="submit" size="lg" disabled={submitting || submitDisabled}>
               {submitting ? "Saving…" : "Save"}
             </Button>
           </SheetFooter>

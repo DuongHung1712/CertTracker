@@ -44,7 +44,7 @@ export function SkillCard({
           <button
             type="button"
             onClick={() => onViewDetails(skill)}
-            className="rounded-xs text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-xs text-left hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {skill.name}
           </button>
@@ -92,7 +92,6 @@ export function SkillCard({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             className="shrink-0"
             aria-label={`Edit ${skill.name}`}
             onClick={() => onAssess(skill)}
@@ -104,7 +103,6 @@ export function SkillCard({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               disabled={reviewPending}
               onClick={() => onReturn?.(skill)}
             >
@@ -112,7 +110,6 @@ export function SkillCard({
             </Button>
             <Button
               type="button"
-              size="sm"
               disabled={reviewPending}
               onClick={() => onApprove?.(skill)}
             >

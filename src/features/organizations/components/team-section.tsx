@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { AddButton } from "@/components/data/add-button";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { Button } from "@/components/ui/button";
@@ -60,14 +60,21 @@ export function TeamSection({
             id: "actions",
             header: "",
             enableSorting: false,
+            meta: { className: "sticky right-0 z-[1] w-[1%] whitespace-nowrap", cellClassName: "bg-card group-hover:bg-accent" },
             cell: ({ row }) => (
               <div className="flex justify-end gap-1">
-                <Button variant="ghost" size="sm" onClick={() => setSettingManagers(row.original)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Set managers for ${row.original.name}`}
+                  onClick={() => setSettingManagers(row.original)}
+                >
                   Set managers
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={`Edit ${row.original.name}`}
                   onClick={() => {
                     setEditing(row.original);
                     setDialogOpen(true);
@@ -78,6 +85,7 @@ export function TeamSection({
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label={`Delete ${row.original.name}`}
                   className="text-destructive hover:text-destructive"
                   onClick={() => setConfirming(row.original)}
                 >
@@ -96,7 +104,7 @@ export function TeamSection({
     const result = await deleteTeam({ id: confirming.id });
     setPending(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       setConfirming(null);
       return;
     }
@@ -106,20 +114,17 @@ export function TeamSection({
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <h2 className="text-section-title">Teams</h2>
         {canManage && (
-          <Button
-            size="sm"
-            disabled={programs.length === 0}
+          <AddButton
+            label="Add team"
+            blockedReason={programs.length === 0 ? "Add a program first." : undefined}
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
             }}
-          >
-            <Plus aria-hidden className="size-4" />
-            Add team
-          </Button>
+          />
         )}
       </div>
       <DataTable

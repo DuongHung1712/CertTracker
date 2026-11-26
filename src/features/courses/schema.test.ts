@@ -108,7 +108,7 @@ describe("courseSchema messages", () => {
 describe("courseDeleteDescription", () => {
   it("names the completion a granting course blocks, and is a plain warning otherwise", () => {
     expect(courseDeleteDescription("ML Specialization")).toBe(
-      "This course grants the completion ML Specialization. Delete or change that completion first.",
+      "This course grants the course certificate ML Specialization. Delete or change that course certificate first.",
     );
     expect(courseDeleteDescription(null)).toContain("This cannot be undone.");
   });

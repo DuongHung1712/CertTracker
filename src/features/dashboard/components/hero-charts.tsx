@@ -227,8 +227,8 @@ export function ExpiredMiniChart({
         aria-label="No expired certificates. All completed certificates are up to date."
         className={`flex ${MINI_CHART_HEIGHT} flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border/80 bg-muted/20 p-2 text-center`}
       >
-        <CheckCircle2 className="size-5 text-[var(--status-active-fg)]" aria-hidden />
-        <span className="text-xs font-semibold text-foreground">No expired certificates</span>
+        <CheckCircle2 className="size-5 text-primary" aria-hidden />
+        <span className="text-caption font-semibold text-foreground">No expired certificates</span>
         <span className="text-caption text-muted-foreground">All completed certificates are up to date</span>
       </div>
     );

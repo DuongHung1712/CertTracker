@@ -35,7 +35,7 @@ export function expiryDetail({
   expiryDate: string | null;
   kind?: "exam" | "completion";
 }): string {
-  if (status === "No Expiry") return kind === "completion" ? "Doesn't expire" : "This certificate does not expire";
+  if (status === "No Expiry") return kind === "completion" ? "Does not expire" : "This certificate does not expire";
   if (status === "N/A" || daysToExpiry === null || expiryDate === null) return "Not earned yet";
   const date = formatDate(expiryDate);
   if (daysToExpiry < 0) return `Expired ${pluralize(-daysToExpiry, "day")} ago · ${date}`;

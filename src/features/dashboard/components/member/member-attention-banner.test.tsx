@@ -28,7 +28,7 @@ describe("MemberAttentionBanner", () => {
     expect(html).toContain("Expires soon:");
     expect(html).toContain("AWS Solutions Architect Associate");
     expect(html).toContain("12 days left");
-    expect(html).toContain("Renew credential");
+    expect(html).toContain("Renew certificate");
     expect(html).not.toContain("Certificate expired:");
     expect(tone(html)).toBe("expiring-soon");
   });
@@ -53,7 +53,7 @@ describe("MemberAttentionBanner", () => {
     expect(html).toContain('aria-label="Certificate attention required"');
     expect(html).toContain("Certificate expired:");
     expect(html).toContain("Expired on 01/11/2026");
-    expect(html).toContain("Renew credential");
+    expect(html).toContain("Renew certificate");
     expect(html).not.toContain("Expires soon:");
     expect(tone(html)).toBe("expired");
   });

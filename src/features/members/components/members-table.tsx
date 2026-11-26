@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { Clock, MoreHorizontal, Plus } from "lucide-react";
+import { Clock, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { pluralize } from "@/lib/plural";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { AddButton } from "@/components/data/add-button";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { FilterBar } from "@/components/data/filter-bar";
@@ -97,6 +98,7 @@ export function MembersTable({
   const [confirming, setConfirming] = useState<Member | null>(null);
   const [pending, setPending] = useState(false);
   const [clearingScopes, setClearingScopes] = useState<Member | null>(null);
+  const hasNoTeam = useMemo(() => members.some((m) => m.teamId === null), [members]);
 
   const hasActiveFilters =
     search.length > 0 || teamFilter !== FILTER_ALL || statusFilter !== FILTER_ALL || accessFilter !== FILTER_ALL;
@@ -192,44 +194,30 @@ export function MembersTable({
       id: "actions",
       header: "",
       enableSorting: false,
-      cell: ({ row }) => {
-        return (
-          <div className="flex items-center justify-end">
-            <DropdownMenu>
-              <DropdownMenuTrigger
-                render={
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="-my-1"
-                    aria-label={`Actions for ${row.original.fullName}`}
-                  />
-                }
-              >
-                <MoreHorizontal aria-hidden />
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem render={<Link href={`/skills?memberId=${row.original.id}`} />}>
-                  View skills
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => {
-                    setEditing(row.original);
-                    setDialogOpen(true);
-                  }}
-                >
-                  Edit
-                </DropdownMenuItem>
-                {canDelete && (
-                  <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        );
-      },
+      meta: { className: "sticky right-0 z-[1] w-10", cellClassName: "bg-card group-hover:bg-accent" },
+      cell: ({ row }) => (
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="-my-1" aria-label={`Actions for ${row.original.fullName}`} />}>
+            <MoreHorizontal aria-hidden />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem render={<Link href={`/skills?memberId=${row.original.id}`} />}>View skills</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => {
+                setEditing(row.original);
+                setDialogOpen(true);
+              }}
+            >
+              Edit
+            </DropdownMenuItem>
+            {canDelete && (
+              <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
+                Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      ),
     },
   ];
 
@@ -239,7 +227,7 @@ export function MembersTable({
     const result = await deleteMember({ id: confirming.id });
     setPending(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       setConfirming(null);
       return;
     }
@@ -253,7 +241,7 @@ export function MembersTable({
     const result = await removeManagerScopes({ userId: clearingScopes.userId });
     setPending(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       setClearingScopes(null);
       return;
     }
@@ -289,7 +277,7 @@ export function MembersTable({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={FILTER_ALL}>All teams</SelectItem>
-            <SelectItem value={FILTER_NONE}>No team</SelectItem>
+            {(hasNoTeam || teamFilter === FILTER_NONE) && <SelectItem value={FILTER_NONE}>No team</SelectItem>}
             {teams.map((team) => (
               <SelectItem key={team.id} value={team.id}>
                 {team.name}
@@ -324,19 +312,14 @@ export function MembersTable({
           </Select>
         )}
         {canCreate && (
-          <Button
-            size="sm"
-            className="ml-auto"
-            disabled={teams.length === 0}
-            title={teams.length === 0 ? "Add a team in Organisation first." : undefined}
+          <AddButton
+            label="Add member"
+            blockedReason={teams.length === 0 ? "Add a team in Organisation first." : undefined}
             onClick={() => {
               setEditing(null);
               setDialogOpen(true);
             }}
-          >
-            <Plus aria-hidden className="size-4" />
-            Add member
-          </Button>
+          />
         )}
       </FilterBar>
       <DataTable
@@ -347,7 +330,13 @@ export function MembersTable({
           members.length === 0 ? (
             <EmptyState
               title="No members yet"
-              description={teams.length === 0 ? "Add a team in Organisation first." : "Add the first member to start tracking your team."}
+              description={
+                canCreate
+                  ? teams.length === 0
+                    ? "Add a team in Organisation first."
+                    : "Add the first member to start tracking your team."
+                  : "Ask an admin to assign members to your teams."
+              }
             />
           ) : (
             <EmptyState title="No members found" description="Try a different search or clear the filters." />

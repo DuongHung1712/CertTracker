@@ -44,7 +44,7 @@ describe("Unified Set managers flow for Programs and Teams", () => {
     expect(screen.getByRole("columnheader", { name: "Managers" })).toBeTruthy();
     expect(screen.getByText("Nguyễn Văn An")).toBeTruthy();
 
-    await userEvent.click(screen.getByRole("button", { name: "Set managers" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Set managers\b/ }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText("1 selected")).toBeTruthy();
 
@@ -81,7 +81,7 @@ describe("Unified Set managers flow for Programs and Teams", () => {
     expect(screen.getByText("Lê Minh Châu")).toBeTruthy();
     expect(screen.getByText("Nguyễn Văn An (program)")).toBeTruthy();
 
-    await userEvent.click(screen.getByRole("button", { name: "Set managers" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Set managers\b/ }));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(/Also managed via/)).toBeTruthy();
     expect(within(dialog).getByText("Via program")).toBeTruthy();

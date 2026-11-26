@@ -48,7 +48,7 @@ export function PendingSkillReviewsSection({
                 <div className="flex flex-wrap items-center gap-2 text-body">
                   <Link
                     href={`/skills?memberId=${review.memberId}`}
-                    className="font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                   >
                     {review.memberName}
                   </Link>
@@ -72,7 +72,6 @@ export function PendingSkillReviewsSection({
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   disabled={isPending}
                   onClick={() => onReturn(review)}
                 >
@@ -84,7 +83,6 @@ export function PendingSkillReviewsSection({
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   disabled={isPending}
                   onClick={() => onApprove(review)}
                 >
@@ -180,12 +178,12 @@ export function SkillsHeader({
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
-          <Button type="button" variant="outline" size="sm" onClick={onOpenGuide}>
+          <Button type="button" variant="outline" onClick={onOpenGuide}>
             <HelpCircle aria-hidden />
             Level guide
           </Button>
           {canEdit && stats.totalSkills > 0 && (
-            <Button type="button" size="sm" onClick={onOpenBatchAssess}>
+            <Button type="button" onClick={onOpenBatchAssess}>
               <ListChecks aria-hidden />
               Update skill rate
             </Button>

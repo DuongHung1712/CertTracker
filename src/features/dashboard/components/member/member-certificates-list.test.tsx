@@ -14,7 +14,6 @@ function render(records: RecordRow[]): string {
       fullName="Lê Minh Châu"
       records={records}
       certificateOptions={[]}
-        studyCourses={[]}
       memberId="m1"
       sheetOpen={false}
       onSheetOpenChange={() => {}}

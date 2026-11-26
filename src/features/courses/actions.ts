@@ -142,13 +142,13 @@ export async function createCourseWithCompletion(input: CourseWithCompletionInpu
   });
   if (completion.error) {
     const message = mapPostgresError(completion.error, {
-      duplicate: `A certificate or course completion named "${completionName}" already exists for this provider. Rename the course or give the completion a different name.`,
+      duplicate: `A course certificate named "${completionName}" already exists for this provider. Rename the course or give the course certificate a different name.`,
       restricted: "The chosen type or provider no longer exists. Reload the page and choose again.",
     });
     const cleanup = await supabase.from("courses").delete().eq("id", course.data.id);
     if (cleanup.error) {
       revalidatePath("/courses");
-      return err(`The course "${data.name}" was added but its course completion was not, and the course could not be removed. Delete it from the Courses tab, then try again. (${message})`);
+      return err(`The course "${data.name}" was added but its course certificate was not, and the course could not be removed. Delete it from the Courses tab, then try again. (${message})`);
     }
     return err(message);
   }
@@ -179,7 +179,7 @@ async function deleteCourseMessage(
   if (error.code !== "23503") return mapPostgresError(error);
   const granted = await supabase.from("certificates").select("name").eq("course_id", courseId).maybeSingle();
   if (!granted.data) return mapPostgresError(error);
-  return `This course grants the completion ${granted.data.name}. Delete or change that completion first.`;
+  return `This course grants the course certificate ${granted.data.name}. Delete or change that course certificate first.`;
 }
 
 export async function deleteCourse(input: { id: string }): Promise<Result<null>> {

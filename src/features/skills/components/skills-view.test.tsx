@@ -168,7 +168,7 @@ describe("SkillsView", () => {
     await user.click(screen.getByRole("tab", { name: /All skills/i }));
     await user.type(screen.getByRole("searchbox", { name: "Search skills or certificates" }), "nothing-like-this");
     expect(screen.getByText("No skills match these filters")).toBeDefined();
-    await user.click(screen.getByRole("button", { name: "Clear all filters" }));
+    await user.click(screen.getByRole("button", { name: "Clear filters" }));
     expect(screen.getByText("TypeScript & Type-Level Design")).toBeDefined();
 
     expect(screen.getByRole("table")).toBeDefined();

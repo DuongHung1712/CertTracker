@@ -39,7 +39,7 @@ const SkillBatchRow = React.memo(function SkillBatchRow({
 }) {
   return (
     <TableRow className={cn(isChanged && "bg-accent/30")}>
-      <TableCell className="w-full max-w-0">
+      <TableCell className="min-w-44 max-w-xs sm:w-full sm:max-w-0">
         <span className="block truncate font-medium text-foreground">{skill.name}</span>
         <span className="block truncate text-caption text-muted-foreground">{skill.description}</span>
       </TableCell>
@@ -187,7 +187,7 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
                   className="h-8 pl-8"
                 />
               </div>
-              <Button type="button" variant="outline" size="sm" disabled={!dirty || pending} onClick={resetRatings}>
+              <Button type="button" variant="outline" disabled={!dirty || pending} onClick={resetRatings}>
                 <RotateCcw aria-hidden className="size-3.5" />
                 Reset
               </Button>

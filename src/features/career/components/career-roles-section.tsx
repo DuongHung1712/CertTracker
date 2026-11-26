@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { deleteCareerRole, moveCareerRole } from "@/features/career/actions";
 import { CareerRoleDialog } from "@/features/career/components/career-role-dialog";
 import type { CareerRole } from "@/features/career/queries";
@@ -23,7 +24,7 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
     setPending(true);
     const result = await moveCareerRole({ id: role.id, direction });
     setPending(false);
-    if (!result.ok) toast.error(result.error);
+    if (!result.ok) toast.error(result.error, { duration: Infinity });
   }
 
   const columns: ColumnDef<CareerRole, unknown>[] = [
@@ -41,26 +42,40 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="-my-1"
-            aria-label={`Move ${row.original.name} up`}
-            disabled={pending || row.index === 0}
-            onClick={() => move(row.original, "up")}
-          >
-            <ArrowUp aria-hidden />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="-my-1"
-            aria-label={`Move ${row.original.name} down`}
-            disabled={pending || row.index === roles.length - 1}
-            onClick={() => move(row.original, "down")}
-          >
-            <ArrowDown aria-hidden />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className="-my-1"
+                  aria-label={`Move ${row.original.name} up`}
+                  disabled={pending || row.index === 0}
+                  onClick={() => move(row.original, "up")}
+                >
+                  <ArrowUp aria-hidden />
+                </Button>
+              }
+            />
+            <TooltipContent>Move up</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  className="-my-1"
+                  aria-label={`Move ${row.original.name} down`}
+                  disabled={pending || row.index === roles.length - 1}
+                  onClick={() => move(row.original, "down")}
+                >
+                  <ArrowDown aria-hidden />
+                </Button>
+              }
+            />
+            <TooltipContent>Move down</TooltipContent>
+          </Tooltip>
           <Button
             variant="ghost"
             size="sm"
@@ -90,7 +105,7 @@ export function CareerRolesSection({ roles }: { roles: CareerRole[] }) {
     const result = await deleteCareerRole({ id: confirming.id });
     setPending(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       setConfirming(null);
       return;
     }
