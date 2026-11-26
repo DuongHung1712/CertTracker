@@ -29,7 +29,7 @@ export function StyleSwitcherDemo() {
           <div className="flex items-center gap-2">
             <Palette className="size-5 text-primary" />
             <h3 className="text-section-title font-semibold">Dual-Axis Theme Engine</h3>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+            <span className="rounded-sm bg-primary/10 px-2.5 py-0.5 text-caption font-semibold text-primary">
               3 Styles &times; 3 Modes
             </span>
           </div>
@@ -61,7 +61,7 @@ export function StyleSwitcherDemo() {
               onClick={() => setTheme("light")}
               className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-caption font-medium transition-colors ${
                 theme === "light"
-                  ? "bg-card text-foreground shadow-xs"
+                  ? "bg-card text-foreground border border-border"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -73,7 +73,7 @@ export function StyleSwitcherDemo() {
               onClick={() => setTheme("dark")}
               className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-caption font-medium transition-colors ${
                 theme === "dark"
-                  ? "bg-card text-foreground shadow-xs"
+                  ? "bg-card text-foreground border border-border"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -85,7 +85,7 @@ export function StyleSwitcherDemo() {
               onClick={() => setTheme("system")}
               className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-caption font-medium transition-colors ${
                 theme === "system"
-                  ? "bg-card text-foreground shadow-xs"
+                  ? "bg-card text-foreground border border-border"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -107,22 +107,22 @@ export function StyleSwitcherDemo() {
               onClick={() => setStyle(item.id)}
               className={`group flex flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all ${
                 isSelected
-                  ? "border-primary bg-accent/40 ring-2 ring-primary/40 shadow-xs"
+                  ? "border-primary bg-accent/40 ring-2 ring-primary/40"
                   : "border-border bg-card hover:border-primary/50 hover:bg-muted/40"
               }`}
             >
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <div className="flex size-9 items-center justify-center rounded-lg border bg-card shadow-xs">
+                  <div className="flex size-9 items-center justify-center rounded-lg border bg-card">
                     {styleIcons[item.id]}
                   </div>
                   <div>
                     <h4 className="text-body font-semibold text-foreground">{item.label}</h4>
-                    <span className="text-[11px] font-medium text-muted-foreground">{item.tagline}</span>
+                    <span className="text-caption font-medium text-muted-foreground">{item.tagline}</span>
                   </div>
                 </div>
                 {isSelected && (
-                  <span className="flex size-6 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
                     <Check className="size-3.5" />
                   </span>
                 )}
@@ -134,48 +134,48 @@ export function StyleSwitcherDemo() {
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {item.id === "classic" && (
                   <>
-                    <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                    <span className="rounded bg-muted px-2 py-0.5 text-caption font-mono text-muted-foreground">
                       Flat Swiss 1px borders
                     </span>
-                    <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                    <span className="rounded bg-muted px-2 py-0.5 text-caption font-mono text-muted-foreground">
                       Warm paper white
                     </span>
-                    <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                    <span className="rounded bg-muted px-2 py-0.5 text-caption font-mono text-muted-foreground">
                       High data density
                     </span>
-                    <span className="rounded bg-muted px-2 py-0.5 text-[10px] font-mono text-muted-foreground">
+                    <span className="rounded bg-muted px-2 py-0.5 text-caption font-mono text-muted-foreground">
                       Strict 6px radius
                     </span>
                   </>
                 )}
                 {item.id === "vault" && (
                   <>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Precision 1px solid borders
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Monospace metadata
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Solid obsidian/paper
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Live status dots
                     </span>
                   </>
                 )}
                 {item.id === "nordic" && (
                   <>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Linen & Terracotta
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Deep pine green
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Warm sand borders
                     </span>
-                    <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-2 py-0.5 text-caption font-mono font-medium text-primary">
                       Zero gradients
                     </span>
                   </>
@@ -238,18 +238,18 @@ export function StyleSwitcherDemo() {
               Ghost
             </Button>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-caption text-muted-foreground">
             Current style active: <strong className="text-foreground">{style.toUpperCase()}</strong>. Notice the solid border transition and lack of blurry gradient overlays.
           </p>
         </div>
 
-        {/* Component Touchpoint 2: Form Inputs & Monospace Credential Tags */}
+        {/* Component Touchpoint 2: Form Inputs & Monospace Certificate Tags */}
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="border-b pb-3">
             <h4 className="text-body font-semibold">Form Inputs & Monospace Tags</h4>
             <p className="text-caption text-muted-foreground">
               {style === "vault"
-                ? "Vault rule: precision 1px solid border with uppercase monospace credential tags."
+                ? "Vault rule: precision 1px solid border with uppercase monospace tags."
                 : style === "nordic"
                 ? "Nordic rule: warm sand input borders with terracotta focus ring and craft typography."
                 : "Classic rule: standard neutral border-input token with clean typographic labels."}
@@ -259,8 +259,8 @@ export function StyleSwitcherDemo() {
           <div className="flex flex-col gap-3 pt-2">
             <div className="flex flex-col gap-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="poc-interactive-input">Credential Identifier</Label>
-                <span className="font-mono text-[11px] text-muted-foreground">
+                <Label htmlFor="poc-interactive-input">Certificate Identifier</Label>
+                <span className="font-mono text-caption text-muted-foreground">
                   {style === "vault"
                     ? "[REGISTRY: VAULT-SEC-8829]"
                     : style === "nordic"
@@ -272,13 +272,13 @@ export function StyleSwitcherDemo() {
                 id="poc-interactive-input"
                 value={testInput}
                 onChange={(e) => setTestInput(e.target.value)}
-                placeholder="Enter credential ID..."
+                placeholder="Enter certificate ID..."
                 className="font-mono text-body"
               />
             </div>
             <div className="flex items-center gap-2 pt-1">
               <span className="vault-mono-tag">SHA-256: 7F83B165...</span>
-              <span className="vault-stamp-valid">SEC-VERIFIED</span>
+              <span className="vault-stamp-valid">VAULT-SEALED</span>
             </div>
           </div>
         </div>
@@ -300,7 +300,7 @@ export function StyleSwitcherDemo() {
 
         <div className="relative max-h-52 overflow-auto rounded-lg border">
           <table className="w-full min-w-[700px] text-left text-table">
-            <thead className="sticky top-0 z-10 border-b border-border shadow-xs">
+            <thead className="sticky top-0 z-10 border-b border-border">
               <tr className="border-b border-border">
                 <th className="sticky left-0 z-20 px-4 py-2 text-label uppercase text-muted-foreground">
                   Member (Sticky Left)
@@ -346,17 +346,17 @@ export function StyleSwitcherDemo() {
         </div>
       </div>
 
-      {/* Component Touchpoint 4: Authentic Credential Vault Showcase (Anti-Slop, Zero Gradients) */}
+      {/* Component Touchpoint 4: Theme Showcase (Anti-Slop, Zero Gradients) */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Card 1: Cryptographically Verified Credential */}
+        {/* Card 1: Sealed Certificate Card */}
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="border-b pb-3">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="size-4 text-emerald-600 dark:text-emerald-400" />
-              <h4 className="text-body font-semibold">Verified Credential Card</h4>
+              <ShieldCheck className="size-4 text-primary" />
+              <h4 className="text-body font-semibold">Vault Certificate Card</h4>
             </div>
             <p className="text-caption text-muted-foreground">
-              Authentic security aesthetic: crisp 1px solid emerald verification border, monospace metadata, and solid live pulsing status dot.
+              Authentic certificate aesthetic: crisp 1px precision border, monospace metadata, and solid live pulsing expiry dot.
             </p>
           </div>
 
@@ -369,9 +369,9 @@ export function StyleSwitcherDemo() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="vault-stamp-valid">
-                      CRYPTOGRAPHICALLY VERIFIED
+                      APPROVED CERTIFICATE
                     </span>
-                    <span className="font-mono text-[10px] text-muted-foreground">
+                    <span className="font-mono text-caption text-muted-foreground">
                       [VAULT-SEC-01]
                     </span>
                   </div>
@@ -379,11 +379,11 @@ export function StyleSwitcherDemo() {
                     AWS Certified Solutions Architect - Professional
                   </h5>
                   <p className="font-mono text-caption text-muted-foreground mt-0.5">
-                    Credential ID: AWS-PSA-90821-VN
+                    Certificate ID: AWS-PSA-90821-VN
                   </p>
                 </div>
-                <div className="flex size-10 items-center justify-center rounded-lg border border-emerald-500/40 bg-emerald-500/10">
-                  <Award className="size-5 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-accent">
+                  <Award className="size-5 text-accent-foreground" />
                 </div>
               </div>
 
@@ -396,9 +396,9 @@ export function StyleSwitcherDemo() {
               </div>
             </VaultCard>
 
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {style === "vault"
-                ? "Vault mode active: 1px solid precision verification border with solid emerald indicator pulse."
+                ? "Vault mode active: 1px solid precision border with solid expiry indicator pulse."
                 : style === "nordic"
                 ? "Nordic mode active: 1px solid warm sand border with terracotta accent focus."
                 : "Switch to 'Credential Vault' or 'Nordic Heritage' style above to inspect style nuances."}
@@ -406,35 +406,35 @@ export function StyleSwitcherDemo() {
           </div>
         </div>
 
-        {/* Card 2: Security Credential with Live Pulsing Status Dots */}
+        {/* Card 2: Security Certificate with Live Pulsing Expiry Dots */}
         <div className="flex flex-col gap-3 rounded-xl border bg-card p-5">
           <div className="border-b pb-3">
             <div className="flex items-center gap-2">
               <ShieldCheck className="size-4 text-primary" />
-              <h4 className="text-body font-semibold">Security Credential & Live Dots</h4>
+              <h4 className="text-body font-semibold">Certificate & Live Expiry Dots</h4>
             </div>
             <p className="text-caption text-muted-foreground">
-              Zero gradient colors: 100% solid surfaces with live pulsing indicators (emerald for valid, amber for expiring, red for expired).
+              Zero gradient colours: 100% solid surfaces with live pulsing expiry indicators (valid, expiring in 60d, expired).
             </p>
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
             <VaultCard
-              className="group cursor-pointer border-emerald-500/30"
+              className="group cursor-pointer border-border"
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="inline-flex items-center gap-1.5 rounded border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase text-primary">
-                    Official Security Credential · (ISC)&sup2;
+                  <div className="inline-flex items-center gap-1.5 rounded border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-caption font-semibold uppercase text-primary">
+                    Official Security Certificate · (ISC)&sup2;
                   </div>
                   <h5 className="mt-2 text-body font-bold text-foreground">
                     Certified Information Systems Security Professional (CISSP)
                   </h5>
                   <p className="font-mono text-caption text-muted-foreground mt-0.5">
-                    REGISTRY: CISSP-90821-VN · SHA-256 VERIFIED
+                    REGISTRY: CISSP-90821-VN · ACTIVE
                   </p>
                 </div>
-                <div className="vault-seal flex size-9 items-center justify-center rounded-lg text-primary-foreground shadow-xs">
+                <div className="vault-seal flex size-9 items-center justify-center rounded-lg text-primary-foreground">
                   <ShieldCheck className="size-4" />
                 </div>
               </div>
@@ -442,30 +442,30 @@ export function StyleSwitcherDemo() {
               <div className="mt-4 flex flex-wrap items-center gap-3 border-t pt-3">
                 <div className="flex items-center gap-1.5" data-status-tone="active">
                   <span className="vault-live-dot" aria-hidden />
-                  <span className="rounded border border-status-active-border bg-status-active-bg px-2 py-0.5 font-mono text-[11px] font-medium text-status-active-fg">
+                  <span className="rounded border border-status-active-border bg-status-active-bg px-2 py-0.5 font-mono text-caption font-medium text-status-active-fg">
                     Active (Live Pulse)
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5" data-status-tone="expiring-60">
                   <span className="vault-live-dot" aria-hidden />
-                  <span className="rounded border border-status-expiring-60-border bg-status-expiring-60-bg px-2 py-0.5 font-mono text-[11px] font-medium text-status-expiring-60-fg">
+                  <span className="rounded border border-status-expiring-60-border bg-status-expiring-60-bg px-2 py-0.5 font-mono text-caption font-medium text-status-expiring-60-fg">
                     Expiring in 60d
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5" data-status-tone="expired">
                   <span className="vault-live-dot" aria-hidden />
-                  <span className="rounded border border-status-expired-border bg-status-expired-bg px-2 py-0.5 font-mono text-[11px] font-medium text-status-expired-fg">
+                  <span className="rounded border border-status-expired-border bg-status-expired-bg px-2 py-0.5 font-mono text-caption font-medium text-status-expired-fg">
                     Expired
                   </span>
                 </div>
               </div>
             </VaultCard>
 
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-caption text-muted-foreground">
               {style === "vault"
-                ? "Vault mode active: Real-time solid status dot pulses indicate credential lifecycle states."
+                ? "Vault mode active: solid status dot pulses indicate certificate expiry states."
                 : style === "nordic"
-                ? "Nordic mode active: Warm earthy status badges with high-contrast text and zero gradients."
+                ? "Nordic mode active: warm earthy status tags with high-contrast text and zero gradients."
                 : "Switch to 'Credential Vault' or 'Nordic Heritage' style above to activate live status dot indicators."}
             </p>
           </div>

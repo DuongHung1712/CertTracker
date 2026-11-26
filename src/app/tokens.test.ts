@@ -165,6 +165,13 @@ describe("Nordic Heritage tokens", () => {
     }
   });
 
+  it.each(modes)("$name: muted primary text, muted text on muted and destructive on card reach 4.5:1", ({ own, base }) => {
+    const t = { ...base, ...own };
+    expect(contrastRatio(t["primary-foreground-muted"], t.primary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t["muted-foreground"], t.muted)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(t.destructive, t.card)).toBeGreaterThanOrEqual(4.5);
+  });
+
   it.each(modes)("$name: primary and ring reach contrast guidelines on card and background", ({ own }) => {
     expect(contrastRatio(own["primary-foreground"], own.primary)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(own.primary, own.card)).toBeGreaterThanOrEqual(4.5);
@@ -173,8 +180,27 @@ describe("Nordic Heritage tokens", () => {
     expect(contrastRatio(own.ring, own.background)).toBeGreaterThanOrEqual(3);
   });
 
-  it.each(modes)("$name: sidebar and secondary surfaces reach WCAG AA contrast", ({ own }) => {
+  it.each(modes)("$name: sidebar, secondary, and accent surfaces reach WCAG AA contrast", ({ own }) => {
     expect(contrastRatio(own["sidebar-foreground"], own.sidebar)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(own["secondary-foreground"], own.secondary)).toBeGreaterThanOrEqual(4.5);
+    expect(contrastRatio(own["accent-foreground"], own.accent)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
+describe("design-system CSS hygiene", () => {
+  const css = readFileSync(resolve(process.cwd(), "src/app/globals.css"), "utf8");
+
+  it("reserves --status-* tokens strictly for expiry (no [data-stamp] usage)", () => {
+    const stampRules = [...css.matchAll(/\[data-stamp[^\]]*\][^{]*\{[^}]*\}/g)].map((m) => m[0]);
+    expect(stampRules.length).toBeGreaterThan(0);
+    for (const rule of stampRules) {
+      expect(rule).not.toMatch(/--status-/);
+    }
+  });
+
+  it("uses no manual box-shadow or sub-12px font-size in Vault or Nordic styles", () => {
+    const multiStyleSection = css.slice(css.indexOf("MULTI-STYLE THEME SYSTEM"));
+    expect(multiStyleSection).not.toMatch(/box-shadow:/);
+    expect(multiStyleSection).not.toMatch(/font-size:\s*1[01]px/);
   });
 });

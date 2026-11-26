@@ -9,6 +9,8 @@ const getDashboardKpis = vi.fn<() => Promise<DashboardKpis>>();
 const getBreakdown = vi.fn<(dimension: string, limit?: number) => Promise<BreakdownRow[]>>();
 const getRanking = vi.fn<() => Promise<RankingRow[]>>();
 
+vi.mock("server-only", () => ({}));
+vi.mock("@/features/records/ai-flag", () => ({ isAiReaderEnabled: vi.fn(async () => false) }));
 vi.mock("next/navigation", () => ({
   redirect: vi.fn(() => {
     throw new Error("redirect");
