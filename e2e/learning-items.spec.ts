@@ -53,8 +53,8 @@ test("self-study for an exam, submit the certificate, manager approves: only the
     await member.goto("/me?tab=learning");
     await expect(recordRow(member, AWS)).toContainText("Not started");
 
-    // Passed: submit the certificate from the item.
-    await openRowMenu(member, AWS, "Submit certificate");
+    // Passed: add the certificate from the item.
+    await openRowMenu(member, AWS, "Add certificate");
     const dialog = member.getByRole("dialog");
     await expect(dialog.getByRole("heading", { name: "Add certificate" })).toBeVisible();
     await dialog.getByLabel(fieldLabel("Date passed")).fill("01/06/2026");

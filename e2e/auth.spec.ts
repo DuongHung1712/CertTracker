@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ADMIN_EMAIL, SEED_PASSWORD, signIn } from "./helpers";
+import { ADMIN_EMAIL, SEED_PASSWORD, fieldLabel, signIn } from "./helpers";
 
 test("unauthenticated visitor is sent to login", async ({ page }) => {
   await page.goto("/");
@@ -20,7 +20,7 @@ test("admin signs in, sees dashboard, and signs out", async ({ page }) => {
 test("wrong password shows an error", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("Email").fill(ADMIN_EMAIL);
-  await page.getByLabel("Password", { exact: true }).fill("wrong-password");
+  await page.getByLabel(fieldLabel("Password")).fill("wrong-password");
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.locator("form").getByRole("alert")).toHaveText("Wrong email or password. Check them and try again.");
@@ -28,7 +28,7 @@ test("wrong password shows an error", async ({ page }) => {
 
 async function signInFromLogin(page: Page, email: string) {
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password", { exact: true }).fill(SEED_PASSWORD);
+  await page.getByLabel(fieldLabel("Password")).fill(SEED_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
 }
 
@@ -61,7 +61,7 @@ test("a signed-in user opening /login with a dot-segment next value never leaves
 
 test("the password toggle shows and hides what was typed", async ({ page }) => {
   await page.goto("/login");
-  const password = page.getByLabel("Password", { exact: true });
+  const password = page.getByLabel(fieldLabel("Password"));
   await password.fill("abc");
   await page.getByRole("button", { name: "Show password" }).click();
   await expect(password).toHaveAttribute("type", "text");

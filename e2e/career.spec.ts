@@ -24,7 +24,7 @@ test("member sets when they started working and sees the YoE; the role is read-o
   // The role is set by the admin: no control for it on this page.
   await expect(page.getByRole("combobox", { name: "Career role" })).toHaveCount(0);
 
-  await page.getByLabel("Month (optional)").click();
+  await page.getByLabel("Month").click();
   await page.getByRole("option", { name: "March" }).click();
   await page.getByLabel("Year").fill("2020");
   await page.getByRole("button", { name: "Save", exact: true }).click();
