@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { Clock, MoreHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { pluralize } from "@/lib/plural";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable } from "@/components/data/data-table";
 import { EmptyState } from "@/components/data/empty-state";
@@ -64,6 +66,7 @@ export function MembersTable({
   teams,
   roles,
   scopes,
+  pendingSkillReviews = {},
   showScopes,
   canCreate,
   canDelete,
@@ -75,6 +78,8 @@ export function MembersTable({
   roles: RoleOption[];
   /** Manager scopes keyed by user id (Admin only; empty otherwise). */
   scopes: Record<string, Scope[]>;
+  /** Pending Level 5 skill review counts keyed by member id. */
+  pendingSkillReviews?: Record<string, number>;
   showScopes: boolean;
   canCreate: boolean;
   canDelete: boolean;
@@ -117,11 +122,27 @@ export function MembersTable({
     {
       accessorKey: "fullName",
       header: "Full name",
-      cell: ({ row }) => (
-        <span className="block max-w-[20rem] truncate" title={row.original.fullName}>
-          {row.original.fullName}
-        </span>
-      ),
+      cell: ({ row }) => {
+        // Next to the name, not in the actions column: that column is off-screen at 1280 px on wide tables.
+        const pendingCount = pendingSkillReviews[row.original.id] ?? 0;
+        return (
+          <span className="flex max-w-[20rem] items-center gap-1.5">
+            <span className="truncate" title={row.original.fullName}>
+              {row.original.fullName}
+            </span>
+            {pendingCount > 0 && (
+              <Link
+                href={`/skills?memberId=${row.original.id}`}
+                aria-label={`Review ${pluralize(pendingCount, "pending Level 5 skill")} for ${row.original.fullName}`}
+                className="relative inline-flex min-h-6 min-w-6 shrink-0 items-center justify-center gap-1 rounded-sm border border-border bg-secondary px-1.5 py-0.5 text-caption font-medium tabular-nums text-secondary-foreground after:absolute after:-inset-1 hover:bg-accent hover:text-accent-foreground"
+              >
+                <Clock className="size-3" aria-hidden />
+                {pendingCount}
+              </Link>
+            )}
+          </span>
+        );
+      },
     },
     { accessorKey: "email", header: "Email" },
     { accessorKey: "teamName", header: "Team", cell: ({ row }) => row.original.teamName ?? "—" },
@@ -171,28 +192,44 @@ export function MembersTable({
       id: "actions",
       header: "",
       enableSorting: false,
-      cell: ({ row }) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="-my-1" aria-label={`Actions for ${row.original.fullName}`} />}>
-            <MoreHorizontal aria-hidden />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => {
-                setEditing(row.original);
-                setDialogOpen(true);
-              }}
-            >
-              Edit
-            </DropdownMenuItem>
-            {canDelete && (
-              <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
-                Delete
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ),
+      cell: ({ row }) => {
+        return (
+          <div className="flex items-center justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="-my-1"
+                    aria-label={`Actions for ${row.original.fullName}`}
+                  />
+                }
+              >
+                <MoreHorizontal aria-hidden />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem render={<Link href={`/skills?memberId=${row.original.id}`} />}>
+                  View skills
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setEditing(row.original);
+                    setDialogOpen(true);
+                  }}
+                >
+                  Edit
+                </DropdownMenuItem>
+                {canDelete && (
+                  <DropdownMenuItem variant="destructive" onClick={() => setConfirming(row.original)}>
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
     },
   ];
 

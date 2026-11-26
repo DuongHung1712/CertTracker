@@ -1,8 +1,9 @@
-import { Award, ExternalLink } from "lucide-react";
+import { Award, ExternalLink, ShieldCheck, Undo2 } from "lucide-react";
 import { categoryLabel } from "../metrics";
 import { LEVEL_SCALE_GUIDE } from "../schema";
 import type { Skill } from "../types";
 import { SkillStatus } from "./skill-status";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,21 +13,52 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDateTimeVn } from "@/lib/format";
 import { pluralize } from "@/lib/plural";
 
 interface SkillDetailDialogProps {
   skill: Skill | null;
+  canEdit?: boolean;
+  canReview?: boolean;
+  reviewPending?: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenAssess: (skill: Skill) => void;
+  onApprove?: (skill: Skill) => void;
+  onReturn?: (skill: Skill) => void;
 }
 
-/** Everything behind one card: what the level means, what backs the rating, and what to study next. */
-export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDetailDialogProps) {
+function formatDisplayDate(value: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return formatDate(value);
+  return formatDateTimeVn(value).slice(0, 10);
+}
+
+/** Everything behind one card: what the level means, what backs the rating, and review status. */
+export function SkillDetailDialog({
+  skill,
+  canEdit = true,
+  canReview = false,
+  reviewPending = false,
+  onOpenChange,
+  onOpenAssess,
+  onApprove,
+  onReturn,
+}: SkillDetailDialogProps) {
   if (!skill) return null;
 
   const current = LEVEL_SCALE_GUIDE[skill.currentLevel];
   const proof = skill.certifiedProof;
+  const endorsedLevel5 = skill.verification === "certified" && skill.currentLevel === 5 && !proof;
+  const showReviewActions = canReview && skill.verification === "pending_review";
+  const proofMeta = proof
+    ? [
+        proof.issuer,
+        proof.certificateCode || null,
+        proof.verifiedDate ? `issued ${formatDisplayDate(proof.verifiedDate)}` : null,
+        proof.expiryDate ? `valid until ${formatDisplayDate(proof.expiryDate)}` : "no expiry",
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   return (
     <Dialog open onOpenChange={onOpenChange}>
@@ -36,9 +68,16 @@ export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDe
           <DialogDescription>{skill.description}</DialogDescription>
         </DialogHeader>
 
+        {skill.verification === "returned" && skill.reviewNote && (
+          <Alert variant="destructive">
+            <Undo2 aria-hidden />
+            <AlertDescription>Returned for changes: {skill.reviewNote}</AlertDescription>
+          </Alert>
+        )}
+
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-caption sm:grid-cols-3">
           <div>
-            <dt className="text-label uppercase text-muted-foreground">Your level</dt>
+            <dt className="text-label uppercase text-muted-foreground">{canEdit ? "Your level" : "Level"}</dt>
             <dd className="text-body font-semibold text-foreground">
               {skill.currentLevel} · {current.title}
             </dd>
@@ -46,7 +85,9 @@ export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDe
           <div>
             <dt className="text-label uppercase text-muted-foreground">Experience</dt>
             <dd className="text-body text-foreground">{pluralize(skill.yearsOfExperience, "year")}</dd>
-            <dd className="text-muted-foreground">Rated {formatDate(skill.lastEvaluatedAt)}</dd>
+            <dd className="text-muted-foreground">
+              {skill.lastEvaluatedAt ? `Rated ${formatDisplayDate(skill.lastEvaluatedAt)}` : "Not rated yet"}
+            </dd>
           </div>
           <div>
             <dt className="text-label uppercase text-muted-foreground">Status</dt>
@@ -70,10 +111,7 @@ export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDe
                 <Award className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
                 <div className="min-w-0">
                   <p className="font-medium text-foreground">{proof.certificateName}</p>
-                  <p className="text-muted-foreground">
-                    {proof.issuer} · {proof.certificateCode} · issued {formatDate(proof.verifiedDate)} ·{" "}
-                    {proof.expiryDate ? `valid until ${formatDate(proof.expiryDate)}` : "no expiry"}
-                  </p>
+                  <p className="text-muted-foreground">{proofMeta}</p>
                 </div>
               </div>
               {proof.credentialUrl && (
@@ -83,19 +121,29 @@ export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDe
                   rel="noreferrer"
                   className="inline-flex shrink-0 items-center gap-1 font-medium text-primary hover:underline"
                 >
-                  Check credential
+                  View certificate
                   <ExternalLink className="size-3" aria-hidden />
                 </a>
               )}
             </div>
+          ) : endorsedLevel5 ? (
+            <div className="flex items-start gap-2 rounded-md border border-primary/25 bg-primary/5 p-3 text-foreground">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+              <p>
+                Endorsed at Level 5 by {skill.reviewedByName ?? (canEdit ? "your manager" : "a manager")}
+                {skill.reviewedAt ? ` on ${formatDisplayDate(skill.reviewedAt)}` : ""}.
+              </p>
+            </div>
           ) : (
             <p className="text-muted-foreground">
-              No certificate yet. When you add a matching certificate, this skill shows as certified.
+              {canEdit
+                ? "No certificate yet. When you add a matching certificate, this skill shows as certified."
+                : "No linked certificate yet."}
             </p>
           )}
           {skill.evidenceNote && (
             <p className="text-foreground">
-              <span className="text-muted-foreground">Your note: </span>
+              <span className="text-muted-foreground">{canEdit ? "Your note: " : "Member note: "}</span>
               {skill.evidenceNote}
             </p>
           )}
@@ -124,15 +172,42 @@ export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDe
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button
-            type="button"
-            onClick={() => {
-              onOpenChange(false);
-              onOpenAssess(skill);
-            }}
-          >
-            Edit rating
-          </Button>
+          {canEdit && (
+            <Button
+              type="button"
+              onClick={() => {
+                onOpenChange(false);
+                onOpenAssess(skill);
+              }}
+            >
+              Edit rating
+            </Button>
+          )}
+          {showReviewActions && (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={reviewPending}
+                onClick={() => {
+                  onOpenChange(false);
+                  onReturn?.(skill);
+                }}
+              >
+                Return
+              </Button>
+              <Button
+                type="button"
+                disabled={reviewPending}
+                onClick={() => {
+                  onOpenChange(false);
+                  onApprove?.(skill);
+                }}
+              >
+                Approve
+              </Button>
+            </>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

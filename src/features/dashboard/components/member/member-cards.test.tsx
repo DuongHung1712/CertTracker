@@ -9,12 +9,6 @@ import { SkillsMatrixCard } from "./skills-matrix-card";
 // a plain title and one line ending "Not available yet.", disabled controls and no fake data.
 const CARDS: { name: string; element: ReactElement; title: string; description: string }[] = [
   {
-    name: "SkillsMatrixCard",
-    element: <SkillsMatrixCard />,
-    title: "My skills",
-    description: "See your skill levels next to your team&#x27;s standards. Not available yet.",
-  },
-  {
     name: "QuarterlyTargetCard",
     element: <QuarterlyTargetCard />,
     title: "Quarterly goals",
@@ -87,5 +81,46 @@ describe("[copy] Coming soon cards", () => {
     const html = renderToStaticMarkup(CARDS.find((card) => card.name.startsWith("MemberProfileCard"))!.element);
     expect(html).toContain("3 years of experience");
     expect(html).not.toContain("tenure");
+  });
+});
+
+describe("SkillsMatrixCard (live)", () => {
+  it("renders empty state linking to /skills without 'My skills' in link text", () => {
+    const html = renderToStaticMarkup(<SkillsMatrixCard />);
+    expect(html).toContain("My skills");
+    expect(html).toContain("No skills rated yet");
+    expect(html).toContain('href="/skills"');
+    expect(html).toContain("Rate skills");
+    expect(html).not.toContain("Coming soon");
+    const linkMatches = [...html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((m) => m[1]);
+    expect(linkMatches.length).toBeGreaterThan(0);
+    for (const linkInner of linkMatches) {
+      expect(linkInner.toLowerCase()).not.toContain("my skills");
+    }
+  });
+
+  it("renders populated counts, returned notice, and 'View skills' link to /skills", () => {
+    const html = renderToStaticMarkup(
+      <SkillsMatrixCard
+        summary={{
+          totalSkills: 16,
+          certifiedCount: 2,
+          pendingReviewCount: 1,
+          returnedCount: 2,
+          averageLevel: 3.4,
+        }}
+      />,
+    );
+    expect(html).toContain("16");
+    expect(html).toContain("3.4");
+    expect(html).toContain("2");
+    expect(html).toContain("1");
+    expect(html).toContain("2 skills returned for changes");
+    expect(html).toContain('href="/skills"');
+    expect(html).toContain("View skills");
+    const linkMatches = [...html.matchAll(/<a\b[^>]*>([\s\S]*?)<\/a>/g)].map((m) => m[1]);
+    for (const linkInner of linkMatches) {
+      expect(linkInner.toLowerCase()).not.toContain("my skills");
+    }
   });
 });

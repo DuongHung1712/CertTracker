@@ -89,19 +89,39 @@ export const LEVEL_SCALE_GUIDE: Record<SkillLevel, LevelDescription> = {
   },
 };
 
+const skillLevelSchema = z.preprocess(
+  (value) => (value === "" || value === null ? Number.NaN : value),
+  z.coerce
+    .number("Competency level must be a number")
+    .int("Competency level must be a whole number")
+    .min(0, "Competency level must be between 0 and 5")
+    .max(5, "Competency level must be between 0 and 5"),
+);
+
+export const quickRateSkillSchema = z.object({
+  skillId: z.guid("Skill ID is required"),
+  level: skillLevelSchema,
+});
+
+export type QuickRateSkillInput = z.infer<typeof quickRateSkillSchema>;
+
 export const updateSkillAssessmentSchema = z
   .object({
-    skillId: z.string().min(1, "Skill ID is required"),
-    newLevel: z.coerce.number().int().min(0).max(5).optional(),
-    currentLevel: z.coerce.number().int().min(0).max(5).optional(),
-    evidenceNote: z.string().max(1000, "Notes cannot exceed 1000 characters").optional(),
-    yearsOfExperience: z.coerce.number().min(0).max(50),
-    requestManagerReview: z.boolean().default(false),
+    skillId: z.guid("Skill ID is required"),
+    newLevel: skillLevelSchema.optional(),
+    currentLevel: skillLevelSchema.optional(),
+    evidenceNote: z.string().trim().max(1000, "Notes cannot exceed 1000 characters").nullish(),
+    yearsOfExperience: z.preprocess(
+      (value) => (value === "" || value === null ? Number.NaN : value),
+      z.coerce
+        .number("Years of experience must be a number")
+        .min(0, "Years of experience cannot be negative")
+        .max(50, "Years of experience cannot exceed 50")
+        .refine(Number.isFinite, "Years of experience must be a valid number"),
+    ),
   })
   .refine(
-    (data) =>
-      data.newLevel !== undefined ||
-      data.currentLevel !== undefined,
+    (data) => data.newLevel !== undefined || data.currentLevel !== undefined,
     {
       message: "Competency level between 0 and 5 is required",
       path: ["newLevel"],
@@ -109,3 +129,44 @@ export const updateSkillAssessmentSchema = z
   );
 
 export type UpdateSkillAssessmentInput = z.infer<typeof updateSkillAssessmentSchema>;
+
+export const batchSkillAssessmentItemSchema = z.object({
+  skillId: z.guid("Skill ID is required"),
+  level: skillLevelSchema,
+});
+
+export const batchSaveSkillAssessmentsSchema = z.object({
+  items: z
+    .array(batchSkillAssessmentItemSchema)
+    .min(1, "Rate at least one skill before saving")
+    .max(300, "Cannot save more than 300 skills at once")
+    .refine(
+      (items) => new Set(items.map((item) => item.skillId)).size === items.length,
+      "Duplicate skill entries are not allowed",
+    ),
+});
+
+export type BatchSaveSkillAssessmentsInput = z.infer<typeof batchSaveSkillAssessmentsSchema>;
+
+export const removeMemberSkillSchema = z.object({
+  skillId: z.guid("Skill ID is required"),
+});
+
+export type RemoveMemberSkillInput = z.infer<typeof removeMemberSkillSchema>;
+
+export const reviewMemberSkillSchema = z
+  .object({
+    memberId: z.guid("Member ID is required"),
+    skillId: z.guid("Skill ID is required"),
+    decision: z.enum(["approve", "return"]),
+    note: z.string().trim().max(1000, "Review note cannot exceed 1000 characters").optional(),
+  })
+  .refine(
+    (value) => value.decision === "approve" || (typeof value.note === "string" && value.note.length > 0),
+    {
+      path: ["note"],
+      message: "Write what the member should fix.",
+    },
+  );
+
+export type ReviewMemberSkillInput = z.infer<typeof reviewMemberSkillSchema>;

@@ -5,6 +5,7 @@ import { listCareerRoles } from "@/features/career/queries";
 import { ImportMembersDialog } from "@/features/members/components/import-members-dialog";
 import { MembersTable } from "@/features/members/components/members-table";
 import { listMemberScopes, listMembers, listTeamOptionsForCurrentUser, type MemberScope } from "@/features/members/queries";
+import { listPendingSkillReviewCounts } from "@/features/skills/queries";
 
 export default async function MembersPage({
   searchParams,
@@ -16,11 +17,12 @@ export default async function MembersPage({
   // UX only: RLS gives a Member no update right here; /me is their screen.
   if (user?.role === "member") redirect("/me");
   const isAdmin = user?.role === "admin";
-  const [members, teams, roles, scopes] = await Promise.all([
+  const [members, teams, roles, scopes, pendingSkillReviews] = await Promise.all([
     listMembers(),
     listTeamOptionsForCurrentUser(),
     listCareerRoles(),
     isAdmin ? listMemberScopes() : Promise.resolve(new Map<string, MemberScope[]>()),
+    listPendingSkillReviewCounts(user?.memberId ?? null),
   ]);
 
   // Data Quality links open the list already searched (?search=<name>); the key remounts the table when it changes.
@@ -33,7 +35,19 @@ export default async function MembersPage({
         description={isAdmin ? "Everyone, with their teams." : "Members of the teams in your scope."}
         actions={isAdmin ? <ImportMembersDialog /> : undefined}
       />
-      <MembersTable key={initialSearch} initialSearch={initialSearch} members={members} teams={teams} roles={roles} canEditCareer={isAdmin} scopes={Object.fromEntries(scopes)} showScopes={isAdmin} canCreate={isAdmin} canDelete={isAdmin} />
+      <MembersTable
+        key={initialSearch}
+        initialSearch={initialSearch}
+        members={members}
+        teams={teams}
+        roles={roles}
+        canEditCareer={isAdmin}
+        scopes={Object.fromEntries(scopes)}
+        pendingSkillReviews={Object.fromEntries(pendingSkillReviews)}
+        showScopes={isAdmin}
+        canCreate={isAdmin}
+        canDelete={isAdmin}
+      />
     </div>
   );
 }

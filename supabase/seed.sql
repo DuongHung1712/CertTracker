@@ -76,7 +76,7 @@ insert into public.manager_scopes (team_id, user_id)
   values ('5eed0000-0000-0000-0000-00000000a001', '5eed0000-0000-0000-0000-00000000f00b');
 
 -- Skills matrix demo data (moved from migration 20261119000001: it names seed-only members and certificates).
--- Seed Domains
+-- Seed Domains (matches migration 20261126000001_my_skills_persistence)
 insert into public.skill_domains (id, name, slug, sort_order) values
   ('5eed0000-0000-0000-0000-00000000d001', 'Cloud & Infrastructure', 'cloud', 1),
   ('5eed0000-0000-0000-0000-00000000d002', 'Backend & Systems', 'backend', 2),
@@ -84,7 +84,9 @@ insert into public.skill_domains (id, name, slug, sort_order) values
   ('5eed0000-0000-0000-0000-00000000d004', 'DevOps & SRE', 'devops', 4),
   ('5eed0000-0000-0000-0000-00000000d005', 'Security & Compliance', 'security', 5),
   ('5eed0000-0000-0000-0000-00000000d006', 'Data & AI', 'data_ai', 6),
-  ('5eed0000-0000-0000-0000-00000000d007', 'Leadership & Architecture', 'leadership', 7)
+  ('5eed0000-0000-0000-0000-00000000d007', 'Leadership & Collaboration', 'leadership', 7),
+  ('5eed0000-0000-0000-0000-00000000d008', 'Mobile & Native', 'mobile', 8),
+  ('5eed0000-0000-0000-0000-00000000d009', 'Embedded & IoT', 'embedded', 9)
 on conflict (slug) do nothing;
 
 -- Seed Standard Skills
@@ -124,25 +126,28 @@ select
 where exists (select 1 from public.certificates where id = '5eed0000-0000-0000-0000-00000000e002')
 on conflict (skill_id, certificate_id) do nothing;
 
--- Member Skills for Lê Minh Châu (member@certtracker.test, 5eed0000-0000-0000-0000-00000000b003)
+-- Member Skills for Nguyễn Văn An (an@certtracker.test, 5eed0000-0000-0000-0000-00000000b001) and Lê Minh Châu (member@certtracker.test, 5eed0000-0000-0000-0000-00000000b003).
+-- Châu keeps zero training_records so e2e/dashboard.spec.ts and e2e/approval.spec.ts stay clean; non-L5 rows are self_assessed and a213 is an L5 endorsement request.
+-- An holds e001 (AWS SAA), so a201 automatically derives Certified proof from training_records + skill_certificate_links.
 insert into public.member_skills (
   member_id, skill_id, current_level, years_of_experience,
-  verification_status, evidence_note, last_evaluated_at
+  verification_status, manager_endorsement_requested, evidence_note, last_evaluated_at
 ) values
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a201', 4, 5, 'certified', 'Led production migration of core microservices to AWS EKS with multi-AZ failover and IAM Role for Service Accounts.', '2026-10-15'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a202', 3, 3, 'certified', 'Maintains production Kubernetes manifests, node pools, and pod disruption budgets across 3 clusters.', '2026-09-20'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a203', 4, 4, 'certified', 'Author of our internal VPC & RDS reusable Terraform modules used across 6 client project repositories.', '2026-11-01'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a204', 4, 5, 'self_assessed', 'Architected CertTracker UI with Base UI, accessible radix primitives, and strict dual-axis theme switcher.', '2026-11-12'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a205', 4, 4, 'certified', 'Enforced zero-any lint rules across codebase; maintained Supabase auto-generated schema bindings.', '2026-10-18'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a206', 3, 3, 'self_assessed', 'Implemented transactional outbox pattern for notification queue in Go microservice.', '2026-08-30'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a207', 3, 4, 'certified', 'Designed CertTracker RLS security invoker policies and compound indices for 100k+ certificate rows.', '2026-09-10'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a208', 2, 2, 'self_assessed', 'Implemented PKCE auth flow and CSRF protections across team internal web properties.', '2026-07-15'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a209', 3, 3, 'certified', 'Engineered zero-downtime deployment pipelines with Vitest and Playwright end-to-end regression gates.', '2026-10-02'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a210', 2, 2, 'self_assessed', 'Configured Grafana dashboards for API response p99 latency and database connection pool saturation.', '2026-08-14'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a211', 2, 2, 'certified', 'Integrated server-side DeepSeek analysis pipelines with sanitized member IDs respecting decision #50.', '2026-11-05'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a212', 4, 4, 'self_assessed', 'Authored OpenAPI 3.1 specifications and unified response envelope patterns for all team services.', '2026-10-25'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a213', 3, 4, 'pending_review', 'Submitted RFC for asynchronous export worker queue. Endorsement review requested from DC Manager for Level 4 promotion.', '2026-11-15'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a214', 3, 3, 'self_assessed', 'Mentored 2 junior engineers through their first production release cycle; authored team Git conventions guide.', '2026-10-30'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a215', 1, 1, 'self_assessed', 'Basic event listener consumer implemented in development environment.', '2026-06-12'),
-  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a216', 3, 3, 'certified', 'Achieved sub-100ms LCP on CertTracker dashboard views with zero cumulative layout shift (CLS).', '2026-09-18')
+  ('5eed0000-0000-0000-0000-00000000b001', '5eed0000-0000-0000-0000-00000000a201', 4, 4.0, 'self_assessed', false, 'Designed and operated multi-AZ AWS production workloads backed by AWS SAA certification.', '2026-10-15'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a201', 4, 5.0, 'self_assessed', false, 'Led production migration of core microservices to AWS EKS with multi-AZ failover and IAM Role for Service Accounts.', '2026-10-15'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a202', 3, 3.0, 'self_assessed', false, 'Maintains production Kubernetes manifests, node pools, and pod disruption budgets across 3 clusters.', '2026-09-20'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a203', 4, 4.0, 'self_assessed', false, 'Author of our internal VPC & RDS reusable Terraform modules used across 6 client project repositories.', '2026-11-01'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a204', 4, 5.0, 'self_assessed', false, 'Architected CertTracker UI with Base UI, accessible radix primitives, and strict dual-axis theme switcher.', '2026-11-12'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a205', 4, 4.0, 'self_assessed', false, 'Enforced zero-any lint rules across codebase; maintained Supabase auto-generated schema bindings.', '2026-10-18'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a206', 3, 3.0, 'self_assessed', false, 'Implemented transactional outbox pattern for notification queue in Go microservice.', '2026-08-30'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a207', 3, 4.0, 'self_assessed', false, 'Designed CertTracker RLS security invoker policies and compound indices for 100k+ certificate rows.', '2026-09-10'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a208', 2, 2.0, 'self_assessed', false, 'Implemented PKCE auth flow and CSRF protections across team internal web properties.', '2026-07-15'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a209', 3, 3.0, 'self_assessed', false, 'Engineered zero-downtime deployment pipelines with Vitest and Playwright end-to-end regression gates.', '2026-10-02'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a210', 2, 2.0, 'self_assessed', false, 'Configured Grafana dashboards for API response p99 latency and database connection pool saturation.', '2026-08-14'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a211', 2, 2.0, 'self_assessed', false, 'Integrated server-side DeepSeek analysis pipelines with sanitized member IDs respecting decision #50.', '2026-11-05'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a212', 4, 4.0, 'self_assessed', false, 'Authored OpenAPI 3.1 specifications and unified response envelope patterns for all team services.', '2026-10-25'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a213', 5, 4.0, 'pending_review', true, 'Submitted RFC for asynchronous export worker queue. Endorsement review requested from DC Manager for Level 5 DC Master.', '2026-11-15'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a214', 3, 3.0, 'self_assessed', false, 'Mentored 2 junior engineers through their first production release cycle; authored team Git conventions guide.', '2026-10-30'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a215', 1, 1.0, 'self_assessed', false, 'Basic event listener consumer implemented in development environment.', '2026-06-12'),
+  ('5eed0000-0000-0000-0000-00000000b003', '5eed0000-0000-0000-0000-00000000a216', 3, 3.0, 'self_assessed', false, 'Achieved sub-100ms LCP on CertTracker dashboard views with zero cumulative layout shift (CLS).', '2026-09-18')
 on conflict (member_id, skill_id) do nothing;

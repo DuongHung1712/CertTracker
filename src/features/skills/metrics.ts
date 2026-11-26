@@ -11,14 +11,60 @@ import type {
 import { todayVn } from "@/lib/dates";
 import { foldText } from "@/lib/text";
 
+const VERIFICATION_STATUSES: readonly VerificationStatus[] = ["certified", "self_assessed", "pending_review", "returned"];
+
+/** Narrows a `member_skills.verification_status` string; unknown values read as self-rated. */
+export function toVerificationStatus(value: string | null | undefined): VerificationStatus {
+  return VERIFICATION_STATUSES.find((status) => status === value) ?? "self_assessed";
+}
+
 /**
- * Applies a new level. Level 5 always needs manager review; otherwise a linked
- * certificate keeps the skill certified and anything else is self-assessed.
+ * Resolves effective verification status from DB state and live certificate proof.
+ * Never trusts DB "certified" for levels 0-4 without valid proof, preserves Level 5
+ * pending review, and normalizes stale pre-migration pending_review rows below Level 5.
+ */
+export function resolveSkillVerification({
+  currentLevel,
+  dbStatus,
+  hasCertifiedProof,
+}: {
+  currentLevel: SkillLevel;
+  dbStatus: VerificationStatus;
+  hasCertifiedProof: boolean;
+}): VerificationStatus {
+  if (dbStatus === "returned") return "returned";
+  if (dbStatus === "pending_review") {
+    if (currentLevel === 5) return "pending_review";
+    return currentLevel > 0 && hasCertifiedProof ? "certified" : "self_assessed";
+  }
+  if (currentLevel === 5 && dbStatus === "certified") return "certified";
+  if (currentLevel > 0 && hasCertifiedProof) return "certified";
+  return "self_assessed";
+}
+
+/**
+ * Applies a new level. Level 5 needs manager review (unless already endorsed at Level 5);
+ * otherwise a linked certificate keeps levels 1-4 certified and anything else is self-assessed.
+ * Re-rating clears any prior return note.
  */
 export function rateSkill(skill: Skill, level: SkillLevel, today: string = todayVn()): Skill {
+  const keepEndorsed = level === 5 && skill.currentLevel === 5 && skill.verification === "certified";
   const verification: VerificationStatus =
-    level === 5 ? "pending_review" : skill.certifiedProof ? "certified" : "self_assessed";
-  return { ...skill, currentLevel: level, verification, lastEvaluatedAt: today };
+    level === 5
+      ? keepEndorsed
+        ? "certified"
+        : "pending_review"
+      : level > 0 && skill.certifiedProof
+        ? "certified"
+        : "self_assessed";
+  return {
+    ...skill,
+    currentLevel: level,
+    verification,
+    lastEvaluatedAt: today,
+    reviewNote: undefined,
+    ...(keepEndorsed ? {} : { reviewedByName: undefined, reviewedAt: undefined }),
+  };
 }
 
 export function categoryLabel(category: SkillCategory): string {
@@ -36,6 +82,7 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
       certifiedCount: 0,
       selfAssessedCount: 0,
       pendingReviewCount: 0,
+      returnedCount: 0,
       averageLevel: 0,
       strongCount: 0,
       certifiedPercentage: 0,
@@ -45,6 +92,7 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
   let certified = 0;
   let selfAssessed = 0;
   let pendingReview = 0;
+  let returned = 0;
   let sumLevel = 0;
   let strong = 0;
 
@@ -53,6 +101,7 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
     if (s.verification === "certified") certified++;
     else if (s.verification === "self_assessed") selfAssessed++;
     else if (s.verification === "pending_review") pendingReview++;
+    else if (s.verification === "returned") returned++;
 
     if (s.currentLevel >= 4) strong++;
   }
@@ -65,6 +114,7 @@ export function calculateSkillStats(skills: Skill[]): SkillStats {
     certifiedCount: certified,
     selfAssessedCount: selfAssessed,
     pendingReviewCount: pendingReview,
+    returnedCount: returned,
     averageLevel,
     strongCount: strong,
     certifiedPercentage,
@@ -81,23 +131,14 @@ export function filterSkills(
   const query = foldText(filters.query);
 
   return skills.filter((skill) => {
-    // 1. Category filter
     if (filters.category !== "all" && skill.category !== filters.category) {
       return false;
     }
 
-    // 2. Verification filter
-    if (filters.verification === "certified" && skill.verification !== "certified") {
-      return false;
-    }
-    if (filters.verification === "self_assessed" && skill.verification !== "self_assessed") {
-      return false;
-    }
-    if (filters.verification === "pending_review" && skill.verification !== "pending_review") {
+    if (filters.verification !== "all" && skill.verification !== filters.verification) {
       return false;
     }
 
-    // 3. Search query
     if (query) {
       const haystack = foldText(
         `${skill.name} ${skill.code} ${skill.description} ${skill.certifiedProof?.certificateName ?? ""} ${skill.certifiedProof?.certificateCode ?? ""}`,
