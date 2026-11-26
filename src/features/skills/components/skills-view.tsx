@@ -94,7 +94,7 @@ export function SkillsView({ workspace, viewerHasMemberProfile = false }: Skills
   const [status, setStatus] = React.useState<SkillVerificationFilter>("all");
   const [query, setQuery] = React.useState("");
   const [sortBy, setSortBy] = React.useState<SkillSortOption>("level-desc");
-  const [viewMode, setViewMode] = React.useState<"grid" | "table">("grid");
+  const [viewMode, setViewMode] = React.useState<"grid" | "table">("table");
 
   const [guideOpen, setGuideOpen] = React.useState(false);
   const [batchOpen, setBatchOpen] = React.useState(false);

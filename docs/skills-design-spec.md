@@ -15,7 +15,7 @@ There are **no per-skill role targets** (removed 2026-11-20, owner: too hard to 
 3. **Four KPI tiles** (`KpiTile`): Average level (0–5 scale) · Level 4 or higher (of N) · Certified (of N, %) · Waiting for review (level 5 needs your manager).
 4. **Category tabs** (line tabs, wrap onto a second row, never scroll hidden): All skills + only categories that have skills, each with a count.
 5. **Filter bar** (`FilterBar` + `OptionSelect`): search (name, code, description, certificate) · Status (All / Certified / Waiting for review / Returned / Self-rated) · Sort (Highest level first [default] / Lowest level first / Name A–Z / Recently rated) · Clear filters · Card/Table view toggle.
-6. **Skills**: cards (1/2/3 columns) or table. Empty state with "Clear all filters"; a member with no saved rating sees "No skills rated yet" with an **Update skill rate** button instead.
+6. **Skills**: table (default) or cards (1/2/3 columns). Empty state with "Clear all filters"; a member with no saved rating sees "No skills rated yet" with an **Update skill rate** button instead.
 
 The page lists the skills the member has saved (`member_skills` rows). The full catalogue (182 skills, §5) is reachable from **Update skill rate**. A Manager (in scope) or Admin opens another member's page with `/skills?memberId=<id>` (from `/members` → "View skills", or the "Waiting for your review" list on their own page), read-only except Approve / Return on Level 5 requests.
 

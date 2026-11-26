@@ -51,7 +51,7 @@ const SkillBatchRow = React.memo(function SkillBatchRow({
         />
       </TableCell>
       <TableCell className="text-right whitespace-nowrap">
-        {skill.currentLevel === 0 && skill.verification === "self_assessed" ? (
+        {!skill.isSaved && skill.currentLevel === 0 ? (
           <span className="text-caption text-muted-foreground">Not rated</span>
         ) : (
           <SkillStatus status={skill.verification} />
@@ -108,7 +108,7 @@ export function SkillBatchAssessDialog({ open, onOpenChange, skills, onSave }: S
     [draft, q, category],
   );
 
-  const ratedCount = React.useMemo(() => draft.filter((s) => s.currentLevel > 0).length, [draft]);
+  const ratedCount = React.useMemo(() => draft.filter((s) => s.isSaved || s.currentLevel > 0).length, [draft]);
   const countFor = (id: SkillCategory) => {
     const inCategory = draft.filter((s) => s.category === id);
     return `${inCategory.filter((s) => s.currentLevel > 0).length}/${inCategory.length}`;

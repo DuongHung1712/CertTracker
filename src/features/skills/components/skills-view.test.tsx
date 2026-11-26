@@ -157,7 +157,7 @@ describe("SkillsView", () => {
     expect(screen.queryByText("No skills match these filters")).toBeNull();
   });
 
-  it("filters by category tab, searches, clears filters, and switches between card and table view", async () => {
+  it("filters by category tab, searches, clears filters, and starts in table view and switches to cards", async () => {
     const user = userEvent.setup();
     render(<SkillsView workspace={makeWorkspace()} />);
 
@@ -171,9 +171,10 @@ describe("SkillsView", () => {
     await user.click(screen.getByRole("button", { name: "Clear all filters" }));
     expect(screen.getByText("TypeScript & Type-Level Design")).toBeDefined();
 
-    await user.click(screen.getByRole("button", { name: "Table view" }));
     expect(screen.getByRole("table")).toBeDefined();
     expect(screen.getByRole("columnheader", { name: /Your level/ })).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Card view" }));
+    expect(screen.queryByRole("table")).toBeNull();
   });
 
   it("opens detail dialog with View certificate link and omits empty certificateCode", async () => {
@@ -196,6 +197,7 @@ describe("SkillsView", () => {
 
     render(<SkillsView workspace={makeWorkspace()} />);
 
+    await user.click(screen.getByRole("button", { name: "Card view" }));
     const tsCard = screen.getByText("TypeScript & Type-Level Design").closest("article")!;
     await user.click(within(tsCard).getByRole("radio", { name: /^Level 4/ }));
 
@@ -221,6 +223,7 @@ describe("SkillsView", () => {
 
     render(<SkillsView workspace={makeWorkspace()} />);
 
+    await user.click(screen.getByRole("button", { name: "Card view" }));
     const tsCard = screen.getByRole("button", { name: "TypeScript & Type-Level Design" }).closest("article")!;
     const awsCard = screen.getByRole("button", { name: "Cloud Architecture & AWS Services" }).closest("article")!;
 
@@ -317,6 +320,7 @@ describe("SkillsView", () => {
     expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
 
     // Approve Go Microservices at Level 5
+    await user.click(screen.getByRole("button", { name: "Card view" }));
     const goCard = screen.getByRole("button", { name: "Go Microservices" }).closest("article")!;
     await user.click(within(goCard).getByRole("button", { name: /^Approve/ }));
     await waitFor(() =>

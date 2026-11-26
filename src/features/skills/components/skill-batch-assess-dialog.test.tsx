@@ -171,6 +171,14 @@ describe("SkillBatchAssessDialog", () => {
     expect(handleOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("shows a saved Level 0 skill as rated, not 'Not rated'", () => {
+    const savedAtZero = [{ ...BACKEND_SKILLS[0], currentLevel: 0 as const, verification: "self_assessed" as const, isSaved: true }];
+    render(<SkillBatchAssessDialog open={true} onOpenChange={vi.fn()} skills={savedAtZero} onSave={vi.fn()} />);
+
+    expect(screen.getByText("1 of 1 rated")).toBeDefined();
+    expect(screen.queryByText("Not rated")).toBeNull();
+  });
+
   it("filters skills when typing in search input and shows clean empty state", () => {
     render(
       <SkillBatchAssessDialog

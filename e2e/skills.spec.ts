@@ -65,6 +65,7 @@ test("empty member rates, edits 0.5y, persists across reload, and completes Leve
     await expect(editDialog).toHaveCount(0);
 
     await member.reload();
+    await member.getByRole("button", { name: "Card view" }).click(); // /skills opens in table view
     const pythonCard = member.locator("article").filter({ hasText: "Python (FastAPI & AsyncIO)" });
     await expect(pythonCard).toContainText("2.5 years");
     await expect(pythonCard).toContainText("Built async webhook worker");
@@ -88,6 +89,7 @@ test("empty member rates, edits 0.5y, persists across reload, and completes Leve
     await manager.getByRole("menuitem", { name: "View skills" }).click();
     await expect(manager).toHaveURL(new RegExp(`/skills\\?memberId=${pilotMemberId}$`));
 
+    await manager.getByRole("button", { name: "Card view" }).click(); // /skills opens in table view
     const mgrPgCard = manager.locator("article").filter({ hasText: "PostgreSQL & Relational Data Modeling" });
     await mgrPgCard.getByRole("button", { name: /Return/ }).click();
     const returnDialog = manager.getByRole("alertdialog");
@@ -101,6 +103,7 @@ test("empty member rates, edits 0.5y, persists across reload, and completes Leve
 
     // Member sees returned note, fixes to Level 5 again, and manager approves from pending queue.
     await member.reload();
+    await member.getByRole("button", { name: "Card view" }).click(); // /skills opens in table view
     await expect(pgCard).toContainText("Returned");
     await expect(pgCard).toContainText(`Returned: ${RETURN_NOTE}`);
     await member.getByRole("button", { name: "Edit PostgreSQL & Relational Data Modeling" }).click();
@@ -122,6 +125,7 @@ test("empty member rates, edits 0.5y, persists across reload, and completes Leve
 
     // Member reloads /skills and /dashboard: Level 5 is Certified and dashboard card updates.
     await member.reload();
+    await member.getByRole("button", { name: "Card view" }).click(); // /skills opens in table view
     await expect(pgCard).toContainText("Level 5 · Master");
     await expect(pgCard).toContainText("Certified");
 
@@ -149,6 +153,7 @@ test("displays live certificate proof for approved certificates and blocks membe
     await manager.goto(`/skills?memberId=${AN_ID}`);
     await expect(manager.getByRole("heading", { level: 1, name: "Skills · Nguyễn Văn An" })).toBeVisible();
 
+    await manager.getByRole("button", { name: "Card view" }).click(); // /skills opens in table view
     const awsCard = manager.locator("article").filter({ hasText: "Cloud Architecture & AWS Services" });
     await expect(awsCard).toContainText("Certified");
     await expect(awsCard).toContainText("AWS Solutions Architect Associate");
