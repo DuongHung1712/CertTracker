@@ -53,7 +53,7 @@ export function ManagerAttentionList({
 
       {items.length === 0 ? (
         incomplete ? null : <p className="flex items-center gap-2 rounded-md border border-dashed border-border px-3 py-4 text-body text-muted-foreground">
-          <CheckCircle2 aria-hidden className="size-4 shrink-0 text-status-active-fg" />
+          <CheckCircle2 aria-hidden className="size-4 shrink-0 text-primary" />
           No certificate in your teams has expired or is about to, and everyone has one.
         </p>
       ) : (
@@ -70,7 +70,9 @@ export function ManagerAttentionList({
                   <span className="min-w-0 flex-1 truncate text-body font-medium text-foreground" title={item.title}>
                     {item.title}
                   </span>
-                  {showTeam && item.teamName && <span className="hidden shrink-0 text-caption text-muted-foreground sm:inline">{item.teamName}</span>}
+                  {showTeam && item.teamName && (
+                    <span className="max-w-24 shrink-0 truncate text-caption text-muted-foreground sm:max-w-none">{item.teamName}</span>
+                  )}
                   <span className={cn("shrink-0 text-caption tabular-nums", item.kind === "expired" ? "font-medium text-status-expired-fg" : "text-muted-foreground")}>
                     {item.detail}
                   </span>

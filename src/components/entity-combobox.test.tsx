@@ -36,7 +36,7 @@ describe("EntityCombobox", () => {
   it("lists grouped options under their headings and still filters across groups", async () => {
     const grouped: ComboboxOption[] = [
       { id: "a", label: "AWS Associate", group: "Exam certificates" },
-      { id: "c", label: "Intro to LLMs", group: "Course completions" },
+      { id: "c", label: "Intro to LLMs", group: "Course certificates" },
       { id: "n", label: "NVIDIA Associate", group: "Exam certificates" },
     ];
     render(
@@ -45,7 +45,7 @@ describe("EntityCombobox", () => {
     const input = screen.getByRole("combobox");
     await userEvent.click(input);
     expect(screen.getByText("Exam certificates")).toBeTruthy();
-    expect(screen.getByText("Course completions")).toBeTruthy();
+    expect(screen.getByText("Course certificates")).toBeTruthy();
     expect(screen.getAllByRole("option")).toHaveLength(3);
 
     await userEvent.type(input, "llms");

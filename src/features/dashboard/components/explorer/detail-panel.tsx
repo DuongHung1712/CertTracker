@@ -30,12 +30,12 @@ export function DetailPanel({
       await navigator.clipboard.writeText(copySummaryText(row, groupLabel));
       toast.success("Copied summary to clipboard");
     } catch {
-      toast.error("Could not copy the summary. Your browser did not allow it.");
+      toast.error("Could not copy the summary. Your browser did not allow it.", { duration: Infinity });
     }
   }
 
   return (
-    <div className="flex flex-col @container bg-card/40 p-5 @2xl:col-span-7">
+    <div className="flex min-w-0 flex-col @container bg-card/40 p-5 @2xl:col-span-7">
       {selectedRow ? (
         <section
           role="region"
@@ -47,7 +47,7 @@ export function DetailPanel({
           <div className="flex flex-col gap-2 border-b border-border pb-4">
             <div className="flex items-center justify-between gap-2">
               <span className="text-label font-medium uppercase tracking-wider text-muted-foreground">
-                Detail View · {groupLabel}
+                Detail view · {groupLabel}
               </span>
             </div>
             <h3
@@ -72,9 +72,9 @@ export function DetailPanel({
             <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
                 <span className="min-w-0 truncate" title="Valid">Valid</span>
-                <span className="size-2 rounded-full bg-[var(--status-active-fg)]" aria-hidden />
+                <span className="size-2 rounded-sm bg-[var(--status-active-fg)]" aria-hidden />
               </div>
-              <span className="text-lg font-bold tabular-nums text-foreground">
+              <span className="text-page-title font-bold tabular-nums text-foreground">
                 {formatNumber(selectedRow.valid)}
               </span>
               <span className="text-caption text-muted-foreground">Not expired</span>
@@ -84,9 +84,9 @@ export function DetailPanel({
             <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
                 <span className="min-w-0 truncate" title="Completed">Completed</span>
-                <span className="size-2 rounded-full bg-[var(--chart-1)]" aria-hidden />
+                <span className="size-2 rounded-sm bg-[var(--chart-1)]" aria-hidden />
               </div>
-              <span className="text-lg font-bold tabular-nums text-foreground">
+              <span className="text-page-title font-bold tabular-nums text-foreground">
                 {formatNumber(selectedRow.done)}
               </span>
               <span className="text-caption text-muted-foreground">Finished</span>
@@ -96,9 +96,9 @@ export function DetailPanel({
             <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
                 <span className="min-w-0 truncate" title="In progress">In progress</span>
-                <span className="size-2 rounded-full bg-[var(--chart-2)]" aria-hidden />
+                <span className="size-2 rounded-sm bg-[var(--chart-2)]" aria-hidden />
               </div>
-              <span className="text-lg font-bold tabular-nums text-foreground">
+              <span className="text-page-title font-bold tabular-nums text-foreground">
                 {formatNumber(selectedRow.inProgress)}
               </span>
               <span className="text-caption text-muted-foreground">Currently studying</span>
@@ -108,11 +108,11 @@ export function DetailPanel({
             <div className="flex flex-col justify-between gap-2 min-w-0 rounded-lg border border-border/80 bg-background/80 p-3">
               <div className="flex items-center justify-between text-caption text-muted-foreground">
                 <span className="min-w-0 truncate" title="Expired">Expired</span>
-                <span className="size-2 rounded-full bg-[var(--status-expired-fg)]" aria-hidden />
+                <span className="size-2 rounded-sm bg-[var(--status-expired-fg)]" aria-hidden />
               </div>
               <span
                 className={cn(
-                  "text-lg font-bold tabular-nums",
+                  "text-page-title font-bold tabular-nums",
                   selectedRow.expired > 0 ? "text-destructive" : "text-foreground",
                 )}
               >
@@ -199,7 +199,7 @@ export function DetailPanel({
                 }
                 className={cn(
                   buttonVariants({ variant: "default", size: "sm" }),
-                  "h-8 gap-1.5 text-xs font-medium",
+                  "h-8 gap-1.5 text-caption font-medium",
                 )}
               >
                 <span>View learning</span>

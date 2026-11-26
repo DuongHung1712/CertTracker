@@ -62,6 +62,7 @@ export function getGreetingTimeOfDay(now: Date = new Date()): "morning" | "after
     timeZone: VN_TIME_ZONE,
     hour: "numeric",
     hour12: false,
+    hourCycle: "h23",
   });
   const hour = Number.parseInt(formatter.format(now), 10);
   if (hour >= 5 && hour < 12) return "morning";

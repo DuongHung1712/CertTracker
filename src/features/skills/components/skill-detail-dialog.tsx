@@ -83,7 +83,7 @@ export function SkillDetailDialog({ skill, onOpenChange, onOpenAssess }: SkillDe
                   rel="noreferrer"
                   className="inline-flex shrink-0 items-center gap-1 font-medium text-primary hover:underline"
                 >
-                  Check credential
+                  Check certificate
                   <ExternalLink className="size-3" aria-hidden />
                 </a>
               )}

@@ -1,18 +1,22 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { RequiredMark } from "@/components/required-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PasswordInput } from "@/components/password-input";
 import { Label } from "@/components/ui/label";
-import { changePassword } from "@/features/auth/actions";
+import { changePassword, type ChangePasswordState } from "@/features/auth/actions";
+import { changePasswordSchema, firstChangePasswordIssue } from "@/features/auth/schema";
 
 const FIELDS = [
   { name: "currentPassword", label: "Current password", autoComplete: "current-password" },
   { name: "password", label: "New password", autoComplete: "new-password" },
   { name: "confirmPassword", label: "Confirm new password", autoComplete: "new-password" },
 ] as const;
+
+const EMPTY_VALUES = { currentPassword: "", password: "", confirmPassword: "" };
 
 function ErrorText({ message }: { message: string }) {
   return (
@@ -22,15 +26,32 @@ function ErrorText({ message }: { message: string }) {
   );
 }
 
+async function submitChangePassword(_prev: ChangePasswordState | null, formData: FormData): Promise<ChangePasswordState | null> {
+  const parsed = changePasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) {
+    const { message, field } = firstChangePasswordIssue(parsed.error);
+    return { ok: false, error: message, field };
+  }
+  return changePassword(null, formData);
+}
+
 export function ChangePasswordForm() {
-  const [state, formAction, pending] = useActionState(changePassword, null);
-  const form = useRef<HTMLFormElement>(null);
+  const [state, formAction, pending] = useActionState(submitChangePassword, null);
+  const [values, setValues] = useState(EMPTY_VALUES);
+  const [seen, setSeen] = useState(state);
+  if (state !== seen) {
+    setSeen(state);
+    if (state?.ok) setValues(EMPTY_VALUES);
+  }
   const failure = state && !state.ok ? state : null;
   const errorField = failure?.field;
 
   useEffect(() => {
     if (state?.ok) {
-      form.current?.reset();
       toast.success("Password changed");
     }
   }, [state]);
@@ -41,7 +62,8 @@ export function ChangePasswordForm() {
         <CardTitle className="text-section-title">Change password</CardTitle>
       </CardHeader>
       <CardContent>
-        <form ref={form} action={formAction} className="flex max-w-sm flex-col gap-4">
+        <form action={formAction} noValidate className="flex max-w-sm flex-col gap-4">
+          <p className="text-caption text-muted-foreground">* Required</p>
           {FIELDS.map((field) => {
             const invalid = errorField === field.name;
             const isNewPassword = field.name === "password";
@@ -54,14 +76,15 @@ export function ChangePasswordForm() {
             return (
               <div key={field.name} className="flex flex-col gap-1.5">
                 <Label htmlFor={field.name} className="text-body font-medium">
-                  {field.label}
+                  {field.label} <RequiredMark />
                 </Label>
                 <PasswordInput
                   id={field.name}
                   name={field.name}
                   autoComplete={field.autoComplete}
-                  minLength={isNewPassword ? 8 : undefined}
-                  required
+                  value={values[field.name]}
+                  onChange={(event) => setValues((prev) => ({ ...prev, [field.name]: event.target.value }))}
+                  aria-required="true"
                   className="h-9"
                   aria-invalid={invalid || undefined}
                   aria-describedby={describedBy}
@@ -76,7 +99,7 @@ export function ChangePasswordForm() {
             );
           })}
           {failure && !errorField && <ErrorText message={failure.error} />}
-          <Button type="submit" className="h-9 w-fit font-medium" disabled={pending}>
+          <Button type="submit" size="lg" className="w-fit font-medium" disabled={pending}>
             {pending ? "Saving…" : "Change password"}
           </Button>
         </form>

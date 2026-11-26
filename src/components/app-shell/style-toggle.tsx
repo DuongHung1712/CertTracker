@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
-const ICON_TONE: Partial<Record<ThemeStyle, string>> = { vault: "text-status-active-fg", nordic: "text-primary" };
+const ICON_TONE: Partial<Record<ThemeStyle, string>> = { vault: "text-primary", nordic: "text-primary" };
 const optionOf = (style: ThemeStyle) => THEME_STYLES.find((option) => option.id === style) ?? THEME_STYLES[0];
 
 /** One-click switch cycling between visual styles (Classic -> Vault -> Nordic -> Classic). */
@@ -23,11 +23,13 @@ export function StyleToggle({ className }: { className?: string }) {
             variant="ghost"
             size="sm"
             onClick={toggleStyle}
-            aria-label={`Switch visual style to ${next.label} (currently ${meta.label}). Shortcut: Alt+V`}
             className={className}
           >
             <Icon aria-hidden className={cn("size-4", ICON_TONE[meta.id])} />
-            <span className="hidden text-caption font-medium lg:inline">{meta.shortLabel}</span>
+            <span className="hidden text-caption font-medium lg:inline">{meta.shortLabel}</span>{" "}
+            <span className="sr-only">
+              Switch visual style to {next.label} (currently {meta.label}). Shortcut: Alt+V
+            </span>
           </Button>
         }
       />

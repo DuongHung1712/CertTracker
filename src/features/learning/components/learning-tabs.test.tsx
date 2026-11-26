@@ -23,6 +23,12 @@ describe("LearningTabs", () => {
     expect(replace).toHaveBeenCalledWith("/me?team=Alpha&tab=learning", { scroll: false });
   });
 
+  it("shows no number, not a false 0, on a tab whose list could not be loaded", () => {
+    render(<LearningTabs initialTab="certificates" learningCount={5} certificates={<p>certs</p>} learning={<p>journey</p>} />);
+    expect(screen.getByRole("tab", { name: "Certificates" })).toBeTruthy();
+    expect(screen.getByRole("tab", { name: "Learning (5)" })).toBeTruthy();
+  });
+
   it("derives the active tab from ?tab= in searchParams", () => {
     currentParams = new URLSearchParams("tab=learning");
     render(<LearningTabs initialTab="certificates" certificatesCount={2} learningCount={5} certificates={<p>certs</p>} learning={<p>journey</p>} />);

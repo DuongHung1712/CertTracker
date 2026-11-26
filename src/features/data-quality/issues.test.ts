@@ -27,10 +27,10 @@ describe("describeIssue", () => {
 });
 
 describe("proposals", () => {
-  it("says who proposed it, and that approving a course adds its completion certificate", () => {
+  it("says who proposed it, and that approving a course adds its course certificate", () => {
     expect(describeIssue(row({ type: "certificate_proposal", since: "2026-11-20" }))).toBe("Proposed by M001 An on 20/11/2026.");
     expect(describeIssue(row({ type: "course_proposal", since: "2026-11-20", memberCode: null, memberName: null }))).toBe(
-      "Proposed by a member on 20/11/2026. Approve also adds a course completion.",
+      "Proposed by a member on 20/11/2026. Approve also adds a course certificate.",
     );
   });
   it("opens the Catalogue tab it belongs to, searched for the proposed name", () => {

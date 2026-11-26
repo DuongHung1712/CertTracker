@@ -115,12 +115,12 @@ describe("StyleToggle", () => {
     expect(document.documentElement.getAttribute("data-style")).toBe("classic");
   });
 
-  it("exposes correct visual style names and target styles in aria-label for all 3 styles", () => {
+  it("exposes correct visual style names and target styles in accessible name for all 3 styles (WCAG 2.5.3)", () => {
     document.documentElement.removeAttribute("data-style");
     const { unmount } = renderWithProviders(<StyleToggle />, "classic");
     expect(
       screen.getByRole("button", {
-        name: "Switch visual style to Credential Vault (currently Classic Swiss). Shortcut: Alt+V",
+        name: "Classic Switch visual style to Credential Vault (currently Classic Swiss). Shortcut: Alt+V",
       }),
     ).toBeDefined();
     unmount();
@@ -129,7 +129,7 @@ describe("StyleToggle", () => {
     const { unmount: unmountVault } = renderWithProviders(<StyleToggle />, "vault");
     expect(
       screen.getByRole("button", {
-        name: "Switch visual style to Nordic Heritage (currently Credential Vault). Shortcut: Alt+V",
+        name: "Vault Switch visual style to Nordic Heritage (currently Credential Vault). Shortcut: Alt+V",
       }),
     ).toBeDefined();
     unmountVault();
@@ -138,7 +138,7 @@ describe("StyleToggle", () => {
     renderWithProviders(<StyleToggle />, "nordic");
     expect(
       screen.getByRole("button", {
-        name: "Switch visual style to Classic Swiss (currently Nordic Heritage). Shortcut: Alt+V",
+        name: "Nordic Switch visual style to Classic Swiss (currently Nordic Heritage). Shortcut: Alt+V",
       }),
     ).toBeDefined();
   });

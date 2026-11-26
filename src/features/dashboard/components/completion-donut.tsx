@@ -85,7 +85,7 @@ export function CompletionDonut({ counts }: { counts: CompletionCounts }) {
             <li key={seg.name} className="flex items-center justify-between gap-2">
               <span className="inline-flex items-center gap-2">
                 <span
-                  className="size-2.5 rounded-full shrink-0"
+                  className="size-2.5 shrink-0 rounded-sm"
                   style={{ backgroundColor: seg.color }}
                   aria-hidden
                 />

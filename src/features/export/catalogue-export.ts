@@ -8,7 +8,7 @@ import { toCsv } from "@/features/export/csv";
 type CourseRow = Awaited<ReturnType<typeof listCourses>>[number];
 type Cell = string | number | null;
 
-const KIND_LABEL: Record<CertificateKind, string> = { exam: "Exam certificate", completion: "Course completion" };
+const KIND_LABEL: Record<CertificateKind, string> = { exam: "Exam certificate", completion: "Course certificate" };
 
 export const CERTIFICATE_HEADERS = [
   "Name",

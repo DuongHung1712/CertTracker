@@ -28,7 +28,7 @@ export function SkillCard({ skill, onViewDetails, onAssess, onQuickRate }: Skill
           <button
             type="button"
             onClick={() => onViewDetails(skill)}
-            className="rounded-xs text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="rounded-xs text-left hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             {skill.name}
           </button>
@@ -61,7 +61,7 @@ export function SkillCard({ skill, onViewDetails, onAssess, onQuickRate }: Skill
             {categoryLabel(skill.category)} · {pluralize(skill.yearsOfExperience, "year")}
           </span>
         </div>
-        <Button type="button" variant="outline" size="sm" className="shrink-0" aria-label={`Edit ${skill.name}`} onClick={() => onAssess(skill)}>
+        <Button type="button" variant="outline" className="shrink-0" aria-label={`Edit ${skill.name}`} onClick={() => onAssess(skill)}>
           Edit
         </Button>
       </div>

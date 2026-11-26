@@ -21,13 +21,14 @@ export function RecordStatusLabel({ status }: { status: RecordStatus }) {
 }
 
 const APPROVAL_BADGE = {
+  approved: { icon: CircleCheck, label: "Approved", variant: "outline" },
   waiting: { icon: Hourglass, label: "Waiting for approval", variant: "secondary" },
   returned: { icon: Undo2, label: "Returned", variant: "destructive" },
 } as const;
 
-/** Next to Completed: nothing for Approved, text plus icon (not colour alone) for the other two. */
+/** Next to Completed: explicit text plus icon (not colour alone) for all approval states. */
 export function ApprovalBadge({ approval }: { approval: ApprovalState | null }) {
-  if (approval !== "waiting" && approval !== "returned") return null;
+  if (!approval) return null;
   const { icon: Icon, label, variant } = APPROVAL_BADGE[approval];
   return (
     <Badge data-stamp={approval} variant={variant} className="rounded-sm whitespace-nowrap">
@@ -44,8 +45,8 @@ export function CatalogueStatusBadge({ status }: { status?: "approved" | "pendin
     return (
       <Badge
         data-stamp="catalogue-pending"
-        variant="outline"
-        className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm border-status-expiring-soon-border bg-status-expiring-soon-bg text-caption text-status-expiring-soon-fg"
+        variant="secondary"
+        className="inline-flex items-center gap-1 whitespace-nowrap rounded-sm text-caption"
       >
         <Hourglass aria-hidden className="size-3" />
         Awaiting admin approval

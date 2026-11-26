@@ -124,6 +124,15 @@ export function CertificatesTable({
     {
       accessorKey: "validityMonths",
       header: "Validity",
+      sortDescFirst: false,
+      sortingFn: (a, b, columnId) => {
+        const x = a.getValue<number | null>(columnId);
+        const y = b.getValue<number | null>(columnId);
+        if (x === y) return 0;
+        if (x === null) return 1;
+        if (y === null) return -1;
+        return x - y;
+      },
       cell: ({ row }) => (row.original.validityMonths ? pluralize(row.original.validityMonths, "month") : "No expiry"),
     },
     {
@@ -152,7 +161,7 @@ export function CertificatesTable({
                     onClick={async () => {
                       const res = await approveCertificate({ id: row.id });
                       if (!res.ok) {
-                        toast.error(res.error);
+                        toast.error(res.error, { duration: Infinity });
                       } else {
                         toast.success(`Approved ${row.name}`);
                       }
@@ -164,7 +173,7 @@ export function CertificatesTable({
                     onClick={async () => {
                       const res = await rejectCertificate({ id: row.id });
                       if (!res.ok) {
-                        toast.error(res.error);
+                        toast.error(res.error, { duration: Infinity });
                       } else {
                         toast.success(`Rejected ${row.name}`);
                       }

@@ -18,6 +18,6 @@ describe("columns guide", () => {
   });
 
   it("states that an import only creates exam certificates", () => {
-    expect(EXAM_ONLY_NOTE).toBe("Every new certificate created by an import is an exam certificate. Add course completions in the Catalogue.");
+    expect(EXAM_ONLY_NOTE).toBe("Every new certificate created by an import is an exam certificate. Add course certificates in the Catalogue.");
   });
 });

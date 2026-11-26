@@ -122,7 +122,7 @@ export function CertificateSheet({
         <FieldLabel htmlFor="certificate-name">
           Name <RequiredMark />
         </FieldLabel>
-        <Input id="certificate-name" className="h-9" {...form.register("name")} aria-invalid={!!errors.name} />
+        <Input id="certificate-name" className="h-9" aria-required {...form.register("name")} aria-invalid={!!errors.name} />
         <FieldError errors={[errors.name]} />
       </Field>
       <Field>
@@ -180,14 +180,14 @@ export function CertificateSheet({
                 onChange={(id) => field.onChange(id || null)}
                 options={courses.map((course) => ({ id: course.id, label: course.name }))}
                 placeholder="Choose a course"
-                emptyText={hasCourses ? "Every course already grants a completion." : "No courses yet. Add a course first."}
+                emptyText={hasCourses ? "Every course already grants a course certificate." : "No courses yet. Add a course first."}
                 aria-required
                 aria-invalid={!!errors.courseId}
               />
             )}
           />
           <FieldDescription>
-            A completion needs its granting course first.{" "}
+            A course certificate needs its granting course first.{" "}
             <Link href="/courses?tab=courses" onClick={() => onOpenChange(false)} className="underline">
               {hasCourses ? "Open the Courses tab" : "Add one in the Courses tab"}
             </Link>

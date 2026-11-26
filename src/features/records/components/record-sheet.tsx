@@ -29,7 +29,7 @@ import { findProviderId, type CertificateSuggestion } from "@/features/records/a
 import { AiFileCard } from "@/features/records/components/ai-file-card";
 import { createRecord, deleteRecord, removeEvidence, updateRecord, uploadEvidence } from "@/features/records/actions";
 import { cn } from "@/lib/utils";
-import { courseAfterCertificateChange, type CertificateChoice, type StudyCourse } from "@/features/records/certificate-course";
+import type { CertificateChoice } from "@/features/records/certificate-course";
 import { CERTIFICATE_KIND_NOUN, type CertificateKind } from "@/features/certificates/schema";
 import { ADD_KIND_CHOICES, isRecordDeletableByMember, issuedDateHint, issuedDateLabel, recordSavedMessage, recordSheetTitle, type ApprovalState } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
@@ -80,14 +80,13 @@ export function RecordSheet({
   editing,
   memberOptions,
   certificateOptions,
-  studyCourses,
   showCompanyFields,
   canAddToCatalogue = false,
   fixedMemberId,
   presetCertificateId,
   records,
   onEditExisting,
-  viewerMemberId = null,
+  viewerMemberId,
   canDelete = false,
   providers,
   aiReaderEnabled = false,
@@ -105,7 +104,6 @@ export function RecordSheet({
   editing: Editing;
   memberOptions: ComboboxOption[];
   certificateOptions: CertificateChoice[];
-  studyCourses: StudyCourse[];
   /** False for role "member": those fields are then never registered nor sent (a DB trigger rejects them). */
   showCompanyFields: boolean;
   /** Admin only: the catalogue is read-only for managers and members, so the hint links there for an admin alone. */
@@ -120,7 +118,9 @@ export function RecordSheet({
   providers?: { id: string; name: string }[];
 }) {
   // Only a reviewer on someone else's item sees the reviewer wording.
-  const isReviewer = showCompanyFields && !!editing && editing.memberId !== viewerMemberId;
+  const isReviewer = showCompanyFields && !!editing && editing.memberId !== (viewerMemberId ?? null);
+  const proposerMemberId = viewerMemberId === undefined ? (fixedMemberId ?? null) : viewerMemberId;
+  const canPropose = !canAddToCatalogue && Boolean(proposerMemberId);
   const [proposedCertificates, setProposedCertificates] = useState<CertificateChoice[]>([]);
   const localCertificates = useMemo(
     () => [...proposedCertificates, ...certificateOptions],
@@ -292,7 +292,7 @@ export function RecordSheet({
     const result = await removeEvidence({ id: editing.id });
     setRemovingEvidence(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       return;
     }
     toast.success("Removed evidence");
@@ -300,7 +300,6 @@ export function RecordSheet({
 
   const errors = form.formState.errors;
   const certificateId = useWatch({ control: form.control, name: "certificateId" });
-  const courseId = useWatch({ control: form.control, name: "courseId" });
   const memberId = useWatch({ control: form.control, name: "memberId" });
   const viaCompany = useWatch({ control: form.control, name: "viaCompany" });
   const refundStatus = useWatch({ control: form.control, name: "refundStatus" });
@@ -368,7 +367,7 @@ export function RecordSheet({
     const result = await deleteRecord({ id: editing.id });
     setDeleting(false);
     if (!result.ok) {
-      toast.error(result.error);
+      toast.error(result.error, { duration: Infinity });
       return;
     }
     toast.success(`Deleted ${editing.certificateName}`);
@@ -468,7 +467,7 @@ export function RecordSheet({
       return;
     }
     form.setValue("certificateId", "", { shouldDirty: true });
-    form.setValue("courseId", courseAfterCertificateChange(undefined, studyCourses, ""), { shouldDirty: true });
+    form.setValue("courseId", "", { shouldDirty: true });
     form.clearErrors("certificateId");
   }
 
@@ -528,7 +527,7 @@ export function RecordSheet({
     }
     if (aiFilled.certificateId !== undefined && !suggestion.certificateId && certificateId === aiFilled.certificateId) {
       form.setValue("certificateId", "", { shouldDirty: true });
-      form.setValue("courseId", courseAfterCertificateChange(undefined, studyCourses, ""), { shouldDirty: true });
+      form.setValue("courseId", "", { shouldDirty: true });
     }
     const filled: typeof aiFilled = {};
     if (certificateOpen) {
@@ -563,7 +562,7 @@ export function RecordSheet({
   function handleCertificateChange(nextId: string) {
     form.setValue("certificateId", nextId, { shouldDirty: true });
     const next = localCertificates.find((option) => option.id === nextId);
-    form.setValue("courseId", courseAfterCertificateChange(next, studyCourses, String(courseId ?? "")), { shouldDirty: true });
+    form.setValue("courseId", next?.kind === "completion" ? (next.grantingCourse?.id ?? "") : "", { shouldDirty: true });
     form.clearErrors("certificateId");
   }
 
@@ -580,7 +579,7 @@ export function RecordSheet({
     holdsAiValue("certificateId") && certificate ? (
       duplicate ? (
         <div
-          className="flex flex-col gap-2.5 rounded-lg border border-destructive/35 bg-destructive/[0.03] p-3.5 text-body shadow-xs"
+          className="flex flex-col gap-2.5 rounded-lg border border-destructive/35 bg-destructive/[0.03] p-3.5 text-body"
           data-slot="ai-duplicate-card"
         >
           <div className="flex items-start gap-2.5">
@@ -589,16 +588,16 @@ export function RecordSheet({
             </div>
             <div className="flex flex-col gap-0.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-semibold text-destructive uppercase tracking-wider">
+                <span className="text-label font-semibold text-destructive uppercase tracking-wider">
                   Already on this list
                 </span>
                 {(aiSuggestion?.readProvider || certificate.hint) && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                  <Badge variant="outline" className="text-caption px-1.5 py-0 font-normal">
                     {aiSuggestion?.readProvider ?? certificate.hint}
                   </Badge>
                 )}
               </div>
-              <p className="font-semibold text-foreground text-sm leading-snug break-words">
+              <p className="font-semibold text-foreground text-body leading-snug break-words">
                 {certificate.label}
               </p>
             </div>
@@ -608,7 +607,7 @@ export function RecordSheet({
             <Info className="size-3.5 text-destructive shrink-0" aria-hidden="true" />
             <span>
               {isCompletion
-                ? "This course completion is already on this list."
+                ? "This course certificate is already on this list."
                 : duplicate.issuedDate
                   ? `Already added on ${formatDate(duplicate.issuedDate)}.`
                   : "Already added on this list."}{" "}
@@ -620,9 +619,8 @@ export function RecordSheet({
             {onEditExisting && (
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
-                className="font-medium shadow-xs"
+                className="font-medium"
                 onClick={() => openExisting(duplicate)}
               >
                 Open existing
@@ -631,7 +629,6 @@ export function RecordSheet({
             <Button
               type="button"
               variant="ghost"
-              size="sm"
               className="text-caption text-muted-foreground hover:text-foreground"
               onClick={focusCertificateField}
             >
@@ -641,7 +638,7 @@ export function RecordSheet({
         </div>
       ) : (
         <div
-          className="flex flex-col gap-2.5 rounded-lg border border-primary/25 bg-background p-3.5 text-body shadow-xs"
+          className="flex flex-col gap-2.5 rounded-lg border border-primary/25 bg-background p-3.5 text-body"
           data-slot="ai-matched-card"
         >
           <div className="flex items-start gap-2.5">
@@ -650,7 +647,7 @@ export function RecordSheet({
             </div>
             <div className="flex flex-col gap-0.5 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+                <span className="text-label font-semibold text-primary uppercase tracking-wider">
                   {isNewlyProposed
                     ? "Proposed & selected"
                     : isExistingPending
@@ -658,12 +655,12 @@ export function RecordSheet({
                       : "Matched in catalogue"}
                 </span>
                 {(aiSuggestion?.readProvider || certificate.hint) && (
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                  <Badge variant="outline" className="text-caption px-1.5 py-0 font-normal">
                     {aiSuggestion?.readProvider ?? certificate.hint}
                   </Badge>
                 )}
               </div>
-              <p className="font-semibold text-foreground text-sm leading-snug break-words">
+              <p className="font-semibold text-foreground text-body leading-snug break-words">
                 {certificate.label}
               </p>
             </div>
@@ -674,7 +671,7 @@ export function RecordSheet({
               <Info className="size-3.5 text-primary shrink-0" aria-hidden="true" />
               <span>
                 {isNewlyProposed || isExistingPending
-                  ? "Pending approval · Selected in the form below."
+                  ? "Awaiting admin approval · Selected in the form below."
                   : existingForCert?.issuedDate
                     ? `Auto-selected as a renewal (previous date: ${formatDate(existingForCert.issuedDate)}).`
                     : "Auto-selected in the form below."}
@@ -694,7 +691,7 @@ export function RecordSheet({
       )
     ) : aiRead && !certificateId ? (
       <div
-        className="flex flex-col gap-2.5 rounded-lg border border-primary/25 bg-background p-3.5 text-body shadow-xs"
+        className="flex flex-col gap-2.5 rounded-lg border border-primary/25 bg-background p-3.5 text-body"
         data-slot="ai-unmatched-card"
       >
         <div className="flex items-start gap-2.5">
@@ -703,16 +700,16 @@ export function RecordSheet({
           </div>
           <div className="flex flex-col gap-0.5 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-semibold text-primary uppercase tracking-wider">
+              <span className="text-label font-semibold text-primary uppercase tracking-wider">
                 AI Detected
               </span>
               {aiRead.provider && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                <Badge variant="outline" className="text-caption px-1.5 py-0 font-normal">
                   {aiRead.provider}
                 </Badge>
               )}
             </div>
-            <p className="font-semibold text-foreground text-sm leading-snug break-words">
+            <p className="font-semibold text-foreground text-body leading-snug break-words">
               {aiRead.name}
             </p>
           </div>
@@ -720,24 +717,39 @@ export function RecordSheet({
 
         <div className="flex items-center gap-2 rounded-md bg-muted/60 border border-border/60 px-2.5 py-1.5 text-caption text-muted-foreground">
           <Info className="size-3.5 text-primary shrink-0" aria-hidden="true" />
-          <span>This certificate is not in the catalogue yet. Propose it now to add it.</span>
+          <span>
+            {canPropose
+              ? "This certificate is not in the catalogue yet. Propose it now to add it."
+              : canAddToCatalogue
+                ? "This certificate is not in the catalogue yet. Add it in the Catalogue first."
+                : "This certificate is not in the catalogue yet. Ask an admin to add it."}
+          </span>
         </div>
 
         <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-          <Button
-            type="button"
-            size="sm"
-            className="gap-1.5 font-medium shadow-xs"
-            onClick={openProposeFromAi}
-            id="record-propose-btn"
-          >
-            <Sparkles className="size-3.5" aria-hidden="true" />
-            Propose it
-          </Button>
+          {canPropose && (
+            <Button
+              type="button"
+              className="gap-1.5 font-medium"
+              onClick={openProposeFromAi}
+              id="record-propose-btn"
+            >
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              Propose it
+            </Button>
+          )}
+          {canAddToCatalogue && (
+            <Button
+              variant="outline"
+              nativeButton={false}
+              render={<Link href="/courses" />}
+            >
+              Add in Catalogue
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"
-            size="sm"
             className="text-caption text-muted-foreground hover:text-foreground"
             onClick={focusCertificateField}
           >
@@ -808,7 +820,7 @@ export function RecordSheet({
                       <span>{choice.label}</span>
                       {aiSuggestion?.kind === choice.kind && (
                         <span
-                          className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-primary"
+                          className="inline-flex items-center rounded-sm bg-primary/10 px-1.5 py-0.5 text-primary"
                           aria-hidden="true"
                           title="Detected by AI"
                         >
@@ -823,7 +835,7 @@ export function RecordSheet({
             <FieldDescription>{ADD_KIND_CHOICES.find((choice) => choice.kind === kind)?.hint}</FieldDescription>
             {aiSuggestion && aiSuggestion.kind !== kind && (
               <div className="flex items-center justify-between gap-2 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1.5 text-caption mt-1">
-                <span className="flex items-center gap-1.5 text-foreground/80">
+                <span className="flex items-center gap-1.5 text-foreground">
                   <Sparkles className="size-3.5 text-primary shrink-0" aria-hidden="true" />
                   Document was detected as a {aiSuggestion.kind === "exam" ? "certificate" : "course certificate"}.
                 </span>
@@ -887,17 +899,21 @@ export function RecordSheet({
               className={aiFieldBorder("certificateId")}
               placeholder={aiRead && !certificateId ? "Or choose an existing certificate from catalogue" : kind === "exam" ? "Choose a certificate" : "Choose a course certificate"}
               emptyText={kind === "exam" ? "No certificates found" : "No course certificates found"}
-              emptyAction={{
-                label: kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate",
-                onClick: (query) => handleOpenPropose(query),
-              }}
+              emptyAction={
+                canPropose
+                  ? {
+                      label: kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate",
+                      onClick: (query) => handleOpenPropose(query),
+                    }
+                  : undefined
+              }
               aria-invalid={!!errors.certificateId}
               aria-required
               aria-describedby="record-certificate-hint"
             />
             {certificate?.catalogueStatus === "pending" && (
-              <p className="text-caption text-amber-700 dark:text-amber-400">
-                This item is pending admin approval. You can still save it.
+              <p className="text-caption text-muted-foreground">
+                This item is awaiting admin approval. You can still save it.
               </p>
             )}
             {duplicate && (
@@ -913,15 +929,15 @@ export function RecordSheet({
             <FieldDescription id="record-certificate-hint">
               {canAddToCatalogue ? (
                 <>
-                  Can&apos;t find yours?{" "}
+                  Cannot find yours?{" "}
                   <Link href="/courses" className="underline underline-offset-2">
                     Add it in the Catalogue
                   </Link>
                   .
                 </>
-              ) : (
+              ) : canPropose ? (
                 <span className="flex flex-wrap items-center gap-1.5">
-                  <span>Can&apos;t find yours?</span>
+                  <span>Cannot find yours?</span>
                   <Button
                     type="button"
                     variant="link"
@@ -932,6 +948,8 @@ export function RecordSheet({
                     + {kind === "exam" ? "Propose a new certificate" : "Propose a new course certificate"}
                   </Button>
                 </span>
+              ) : (
+                "Cannot find it? Ask an admin to add it to the Catalogue."
               )}
             </FieldDescription>
             <FieldError errors={[errors.certificateId && kind === "completion" ? { ...errors.certificateId, message: "Choose a course certificate" } : errors.certificateId]} />
@@ -975,7 +993,7 @@ export function RecordSheet({
               aria-invalid={!!errors.certificateUrl}
               aria-describedby="record-url-hint"
             />
-            <FieldDescription id="record-url-hint">Link to the public badge or verification page.</FieldDescription>
+            <FieldDescription id="record-url-hint">Link to the public certificate or verification page.</FieldDescription>
             <FieldError errors={[errors.certificateUrl]} />
           </Field>
           {showCompanyFields && (
@@ -1067,7 +1085,7 @@ export function RecordSheet({
                 >
                   View current evidence
                 </a>
-                <Button type="button" variant="ghost" size="sm" disabled={removingEvidence} onClick={handleRemoveEvidence}>
+                <Button type="button" variant="ghost" disabled={removingEvidence} onClick={handleRemoveEvidence}>
                   Remove evidence
                 </Button>
               </div>
@@ -1084,7 +1102,6 @@ export function RecordSheet({
               <Button
                 type="button"
                 variant="destructive"
-                size="sm"
                 disabled={deleting}
                 onClick={() => setConfirmDelete(true)}
               >
@@ -1111,18 +1128,20 @@ export function RecordSheet({
           </SheetFooter>
         </form>
       </SheetContent>
-      <ProposeCertificateDialog
-        open={proposeOpen}
-        onOpenChange={setProposeOpen}
-        defaultKind={kind}
-        defaultName={proposeName}
-        defaultProviderId={proposeProvider ? proposeProvider.id : undefined}
-        defaultProposedProvider={proposeProvider?.name ?? ""}
-        providers={providersList}
-        existingCertificates={localCertificates}
-        onSelectExisting={handleSelectExistingCertificate}
-        onSuccess={handleProposeSuccess}
-      />
+      {canPropose && (
+        <ProposeCertificateDialog
+          open={proposeOpen}
+          onOpenChange={setProposeOpen}
+          defaultKind={kind}
+          defaultName={proposeName}
+          defaultProviderId={proposeProvider ? proposeProvider.id : undefined}
+          defaultProposedProvider={proposeProvider?.name ?? ""}
+          providers={providersList}
+          existingCertificates={localCertificates}
+          onSelectExisting={handleSelectExistingCertificate}
+          onSuccess={handleProposeSuccess}
+        />
+      )}
       <DiscardChangesDialog open={confirmDiscard} onOpenChange={setConfirmDiscard} onDiscard={closeNow} />
       {editing && (
         <ConfirmDialog

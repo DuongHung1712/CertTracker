@@ -2,11 +2,12 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { MemberReadinessRow } from "@/features/dashboard/manager-metrics";
+import { formatNumber } from "@/lib/format";
 
 function Status({ row }: { row: MemberReadinessRow }) {
-  if (row.expiredCount > 0) return <Badge variant="destructive">Needs renewal</Badge>;
-  if (row.validCount > 0) return <Badge variant="outline" className="border-status-active-border bg-status-active-bg text-status-active-fg">Ready</Badge>;
-  return <Badge variant="outline">No certificate yet</Badge>;
+  if (row.expiredCount > 0) return <Badge variant="destructive" className="rounded-sm">Needs renewal</Badge>;
+  if (row.validCount > 0) return <Badge variant="secondary" className="rounded-sm">Ready</Badge>;
+  return <Badge variant="outline" className="rounded-sm">No certificate yet</Badge>;
 }
 
 /** The people the manager looks after: how many valid certificates, what they are studying, and whether anything needs renewing. */
@@ -36,9 +37,9 @@ export function ManagerTeamTable({ rows, showTeam }: { rows: MemberReadinessRow[
                 </Link>
               </TableCell>
               {showTeam && <TableCell className="text-muted-foreground">{row.teamName ?? "No team"}</TableCell>}
-              <TableCell className="text-right tabular-nums">{row.validCount}</TableCell>
-              <TableCell className="text-right tabular-nums">{row.inProgressCount}</TableCell>
-              <TableCell className="text-right tabular-nums">{row.expiredCount}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatNumber(row.validCount)}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatNumber(row.inProgressCount)}</TableCell>
+              <TableCell className="text-right tabular-nums">{formatNumber(row.expiredCount)}</TableCell>
               <TableCell>
                 <Status row={row} />
               </TableCell>

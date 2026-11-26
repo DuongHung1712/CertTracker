@@ -13,11 +13,11 @@ describe("SetPasswordForm", () => {
   it("renders new password inputs, save button, and guidance copy", () => {
     render(<SetPasswordForm tokenHash="test-token" type="invite" />);
 
-    expect(screen.getByLabelText("New password")).toBeTruthy();
-    expect(screen.getByLabelText("Confirm password")).toBeTruthy();
+    expect(screen.getByLabelText(/^New password/)).toBeTruthy();
+    expect(screen.getByLabelText(/^Confirm password/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save password" })).toBeTruthy();
     expect(
-      screen.getByText("After setting your password, you will be redirected to sign in with your new credentials.")
+      screen.getByText("After setting your password, you will be redirected to sign in with your new password.")
     ).toBeTruthy();
   });
 });

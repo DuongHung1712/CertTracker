@@ -36,6 +36,6 @@ describe("saveAiReaderSettings", () => {
   it("never shows a raw database error", async () => {
     rpc.mockResolvedValue({ data: null, error: { code: "XX000", message: "relation public.ai_feature_flags is broken" } });
     const result = await saveAiReaderSettings({ enabled: true, dailyLimit: 10 });
-    expect(result).toEqual({ ok: false, error: "Something went wrong. Please try again." });
+    expect(result).toEqual({ ok: false, error: "Something went wrong. Try again." });
   });
 });

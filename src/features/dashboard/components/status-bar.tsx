@@ -63,7 +63,7 @@ export function StatusBar({
           {segments.map((s) => (
             <span key={s.key} className="inline-flex items-center gap-1.5">
               <span
-                className="size-2 rounded-full shrink-0"
+                className="size-2 shrink-0 rounded-sm"
                 style={{ backgroundColor: s.color }}
                 aria-hidden
               />

@@ -14,6 +14,7 @@ import type { AdminDashboardData } from "@/features/dashboard/load";
 import { examDoneCerts, expiringCerts, roundedShare, validCerts } from "@/features/dashboard/metrics";
 import { buildExplorerTabs } from "@/features/dashboard/view-model";
 import { isProposal } from "@/features/data-quality/issues";
+import { formatNumber } from "@/lib/format";
 import { pluralize } from "@/lib/plural";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 
@@ -79,11 +80,13 @@ export function AdminDashboardView({ greeting, subtitle, kpis, certificates, tea
         </Section>
       )}
 
-      <details className="group rounded-lg border border-border bg-card p-4">
-        <summary className="cursor-pointer"><h2 className="inline text-section-title font-semibold text-foreground">Individual ranking</h2></summary>
-        <p className="mt-1 text-caption text-muted-foreground">Ranked by valid certificates, then by total completed. Equal numbers share a rank.</p>
-        <div className="mt-3">{ranking.ok ? <RankingTable rows={ranking.data} /> : <SectionError title="Individual ranking" />}</div>
-      </details>
+      {(!noRecords || !ranking.ok) && (
+        <details className="group rounded-lg border border-border bg-card p-4">
+          <summary className="cursor-pointer"><h2 className="inline text-section-title font-semibold text-foreground">Individual ranking</h2></summary>
+          <p className="mt-1 text-caption text-muted-foreground">Ranked by valid certificates, then by total completed. Equal numbers share a rank.</p>
+          <div className="mt-3">{ranking.ok ? <RankingTable rows={ranking.data} /> : <SectionError title="Individual ranking" />}</div>
+        </details>
+      )}
     </div>
   );
 }
@@ -99,13 +102,13 @@ function Tiles({ kpis }: { kpis: Extract<AdminDashboardData["kpis"], { ok: true 
       <SummaryTile
         label="Valid certificates"
         value={valid}
-        summary={examDone === 0 ? "No completed certificates yet" : `of ${examDone} completed · ${roundedShare(valid, examDone)}%`}
+        summary={examDone === 0 ? "No completed certificates yet" : `of ${formatNumber(examDone)} completed · ${roundedShare(valid, examDone)}%`}
         footer={pluralize(kpis.totalMembers, "active member")}
       />
       <SummaryTile
         label="Expiring in 60 days"
         value={expiring}
-        summary={expiring === 0 ? "Nothing expiring soon" : `${kpis.expiringSoonCerts} within 30 days`}
+        summary={expiring === 0 ? "Nothing expiring soon" : `${formatNumber(kpis.expiringSoonCerts)} within 30 days`}
         footer="Within 30 days: see Needs attention"
         tone={kpis.expiringSoonCerts > 0 ? "warning" : "neutral"}
       />

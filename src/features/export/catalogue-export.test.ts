@@ -19,7 +19,7 @@ describe("certificateExportRows", () => {
     const courses = [course({ id: "a", name: "Prep A", preparesForId: "e1" }), course({ id: "b", name: "Prep B", preparesForId: "e1" })];
     const [examRow, completionRow] = certificateExportRows([exam, completion], courses);
     expect(examRow).toEqual(["AWS SAA", "Exam certificate", "Cloud", "AWS", "Associate", 36, "https://x.test", null, "Prep A; Prep B"]);
-    expect(completionRow[1]).toBe("Course completion");
+    expect(completionRow[1]).toBe("Course certificate");
     expect(completionRow[5]).toBeNull();
     expect(completionRow[7]).toBe("Intro");
   });

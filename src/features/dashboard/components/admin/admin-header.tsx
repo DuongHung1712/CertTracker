@@ -31,7 +31,7 @@ export function AdminHeader({
       actions={
         <div className="flex flex-wrap items-center gap-2">
           {showFilterButton && (
-            <Button type="button" variant="outline" size="sm" onClick={focusGroupFilters} className="gap-1.5 text-caption font-medium">
+            <Button type="button" variant="outline" onClick={focusGroupFilters} className="gap-1.5 text-caption font-medium">
               <SlidersHorizontal className="size-3.5" aria-hidden="true" />
               <span>Filter Explorer</span>
             </Button>

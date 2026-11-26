@@ -39,7 +39,7 @@ describe("MemberKpiCards tiles", () => {
       makeRecord({ id: "c", certificateKind: "completion", status: "in_progress", expiryStatus: "N/A", daysToExpiry: null }),
     ]);
     expect(tileValue(html, "Valid")).toBe("2");
-    expect(html).toContain("1 exam certificate · 1 course completion");
+    expect(html).toContain("1 exam certificate · 1 course certificate");
   });
 
   it("Valid says None yet when nothing is valid or waiting", () => {
@@ -95,7 +95,7 @@ describe("MemberKpiCards: waiting for approval", () => {
   it("Valid leaves out the waiting item and its summary says how many wait", () => {
     const html = render([doneRecord(120, { id: "a" }), waiting]);
     expect(tileValue(html, "Valid")).toBe("1");
-    expect(html).toContain("1 exam certificate · 0 course completions · 1 waiting for approval");
+    expect(html).toContain("1 exam certificate · 0 course certificates · 1 waiting for approval");
   });
 
   it("links the waiting part to the waiting view", () => {
@@ -114,5 +114,13 @@ describe("MemberKpiCards: waiting for approval", () => {
 
   it("shows no waiting line when nothing waits", () => {
     expect(render([doneRecord(120, { id: "a" })])).not.toContain("waiting for approval");
+  });
+
+  it("shows dashes on In progress and Up next when learning fails to load", () => {
+    const html = renderToStaticMarkup(
+      <MemberKpiCards kpis={calculateMemberKpis([])} learningError="Could not load learning" />,
+    );
+    expect(html).toContain("Could not load");
+    expect(html).toContain(">—</dd>");
   });
 });

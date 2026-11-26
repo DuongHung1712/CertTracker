@@ -3,7 +3,7 @@ import { HEADER_ALIASES, IMPORT_FIELD_LABEL, IMPORT_FIELDS, type ImportField } f
 import { REFUND_STATUS_LABEL } from "@/features/records/schema";
 
 /** Owner decision: no Kind column, so an import only ever creates exam certificates. */
-export const EXAM_ONLY_NOTE = "Every new certificate created by an import is an exam certificate. Add course completions in the Catalogue.";
+export const EXAM_ONLY_NOTE = "Every new certificate created by an import is an exam certificate. Add course certificates in the Catalogue.";
 
 export type GuideColumn = {
   field: ImportField;
@@ -21,10 +21,10 @@ const orList = (items: string[]): string => `${items.slice(0, -1).join(", ")} or
 const DETAILS: Record<ImportField, { required?: boolean; description: string; example: string }> = {
   email: { required: true, description: "The member's email. An existing member is found by it; an unknown one is created.", example: "jane@company.com" },
   recordType: {
-    description: "Certificate for a result, Learning for a course or exam you are preparing. Blank: Completed rows are certificates, others learning.",
+    description: "Certificate for a result, Learning for a course or exam a member is preparing. Blank: Completed rows are certificates, others learning.",
     example: "Learning",
   },
-  courseName: { required: true, description: "The exam certificate (on a Learning row: the exam you are preparing for; optional when Course studied is set). A name that is not in the catalogue is created, which needs a Provider.", example: "AWS Certified Cloud Practitioner" },
+  courseName: { required: true, description: "The exam certificate (on a Learning row: the exam a member is preparing for; optional when Course studied is set). A name that is not in the catalogue is created, which needs a Provider.", example: "AWS Certified Cloud Practitioner" },
   memberName: { description: "Needed to create a new member; an existing member keeps their name.", example: "Jane Nguyen" },
   team: { description: "A team that already exists in Organisation. A new member without a team is created with none.", example: "Team Alpha" },
   provider: { description: "Needed to create a new certificate. Also picks one when several certificates share a name.", example: "AWS" },

@@ -11,9 +11,9 @@ import { cn } from "@/lib/utils";
 const TONES = {
   proposals: {
     icon: FilePlus2,
-    row: "border-status-expiring-soon-border bg-status-expiring-soon-bg/40 hover:border-status-expiring-soon-fg hover:bg-status-expiring-soon-bg",
-    iconColor: "text-status-expiring-soon-fg",
-    detail: "font-medium text-status-expiring-soon-fg",
+    row: "border-primary/40 bg-primary/5 hover:border-primary hover:bg-primary/10",
+    iconColor: "text-primary",
+    detail: "font-medium text-primary",
   },
   expired: {
     icon: AlertCircle,
@@ -52,7 +52,7 @@ function AttentionRow({ item }: { item: AdminAttentionItem }) {
       <div className="flex min-w-0 items-start gap-2">
         <Icon className={cn("mt-0.5 size-4 shrink-0", tone.iconColor)} aria-hidden="true" />
         <div className="flex min-w-0 flex-col">
-          <span className="truncate text-xs font-semibold text-foreground" title={item.label}>{item.label}</span>
+          <span className="truncate text-caption font-semibold text-foreground" title={item.label}>{item.label}</span>
           <span className={cn("text-caption tabular-nums", tone.detail)}>{item.detail}</span>
         </div>
       </div>
@@ -67,7 +67,7 @@ function AttentionRow({ item }: { item: AdminAttentionItem }) {
 function AllClear() {
   return (
     <div className="flex flex-col items-center justify-center gap-1 rounded-md border border-dashed border-border bg-muted/20 p-4 text-center">
-      <CheckCircle2 className="size-4 text-status-active-fg" aria-hidden="true" />
+      <CheckCircle2 className="size-4 text-primary" aria-hidden="true" />
       <p className="text-caption font-medium text-foreground">Nothing needs attention</p>
       <p className="text-caption text-muted-foreground">
         No expired certificates, none expire within 30 days, and no data problems.
@@ -95,7 +95,7 @@ export function AdminNeedsAttention({
     <section aria-label="Needs attention" className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-section-title font-semibold text-foreground">Needs attention</h2>
-        {!isEmpty && <span className="inline-flex size-2 rounded-full bg-destructive" aria-hidden="true" />}
+        {!isEmpty && <span className="inline-flex size-2 rounded-sm bg-destructive" aria-hidden="true" />}
       </div>
 
       {isEmpty ? (

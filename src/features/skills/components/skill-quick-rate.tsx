@@ -62,8 +62,8 @@ export function SkillQuickRate({ skillName, currentLevel, onRate, className }: S
                     tabIndex={isSelected ? 0 : -1}
                     onClick={() => onRate(level)}
                     className={cn(
-                      "inline-flex size-7 items-center justify-center rounded-md border font-mono text-caption tabular-nums transition-colors",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      "inline-flex size-8 items-center justify-center rounded-md border font-mono text-caption tabular-nums transition-colors",
+                      "focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
                       isSelected
                         ? "border-primary bg-primary font-semibold text-primary-foreground"
                         : "border-border bg-card text-muted-foreground hover:border-foreground/40 hover:text-foreground",

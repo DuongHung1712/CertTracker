@@ -230,7 +230,7 @@ export function getNeedsAttentionItems(records: RecordRow[]): NeedsAttentionItem
     }));
 }
 
-/** Returns members who have no completed exam certificates yet (course completions do not count). */
+/** Returns members who have no completed exam certificates yet (course certificates do not count). */
 export function getMembersWithoutCerts(
   members: { id: string; fullName: string; teamName: string | null }[],
   records: RecordRow[],
@@ -258,7 +258,7 @@ export type ManagerAttentionItem = {
 
 const searchHref = (text: string) => `/records?search=${encodeURIComponent(text)}`;
 const learningSearchHref = (text: string) => `/records?tab=learning&search=${encodeURIComponent(text)}`;
-/** Opens Learning on that one certificate (the search matches name, code and certificate in this order), not on everything the person has. */
+/** Opens the certificate list on that one certificate (the search matches name, code and certificate in this order), not on everything the person has. */
 const rowHref = (r: RecordRow) => searchHref(`${r.memberName} ${r.memberCode} ${r.certificateName}`);
 
 /**
@@ -305,7 +305,8 @@ export function getManagerAttention(
       title: member.fullName,
       detail: "No certificate yet",
       teamName: member.teamName,
-      href: learningSearchHref(member.fullName),
+      // No certificate rows to search in /records; the Members list is where this person can be found.
+      href: `/members?search=${encodeURIComponent(member.fullName)}`,
     })),
   ];
   return { items: all.slice(0, limit), total: all.length };

@@ -116,13 +116,13 @@ describe("ManagerDashboardView: the four tiles", () => {
   it("says how many completed certificates are valid and how many members have no certificate", () => {
     const overview = textOf(region(render(), "Overview"));
     // Three completed certificates, two of them still valid.
-    expect(overview).toContain("Valid certificates 66% 2 of 3 certificates valid");
+    expect(overview).toContain("Valid certificates 2 of 3 completed · 66%");
     expect(overview).toContain("1 member without a certificate");
   });
 
-  it("shows a dash, not 0%, when nothing is completed yet", () => {
+  it("shows 0 completed certificates clearly when nothing is completed yet", () => {
     const overview = textOf(region(render({ records: [] }), "Overview"));
-    expect(overview).toContain("Valid certificates — No certificates yet");
+    expect(overview).toContain("Valid certificates 0 No completed certificates yet");
     expect(overview).toContain("3 members without a certificate");
   });
 });

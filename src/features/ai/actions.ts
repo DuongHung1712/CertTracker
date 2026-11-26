@@ -17,7 +17,7 @@ export async function saveAiReaderSettings(input: unknown): Promise<Result<null>
     p_enabled: parsed.data.enabled,
     p_daily_limit: parsed.data.dailyLimit,
   });
-  if (error) return err(error.code === INSUFFICIENT_PRIVILEGE ? "You do not have permission to do this." : "Something went wrong. Please try again.");
+  if (error) return err(error.code === INSUFFICIENT_PRIVILEGE ? "You do not have permission to do this." : "Something went wrong. Try again.");
 
   // The sheet on these pages shows or hides its upload card from the flag.
   for (const path of ["/settings", "/records", "/me"]) revalidatePath(path);

@@ -16,8 +16,9 @@ export function LearningTabs({
   learning,
 }: {
   initialTab: LearningTab;
-  certificatesCount: number;
-  learningCount: number;
+  /** Undefined when the list could not be loaded: the tab then shows no number rather than a false 0. */
+  certificatesCount?: number;
+  learningCount?: number;
   certificates: ReactNode;
   learning: ReactNode;
 }) {
@@ -37,8 +38,8 @@ export function LearningTabs({
   return (
     <Tabs value={tab} onValueChange={(value) => change(value as LearningTab)}>
       <TabsList>
-        <TabsTrigger value="certificates">{`Certificates (${certificatesCount})`}</TabsTrigger>
-        <TabsTrigger value="learning">{`Learning (${learningCount})`}</TabsTrigger>
+        <TabsTrigger value="certificates">{certificatesCount === undefined ? "Certificates" : `Certificates (${certificatesCount})`}</TabsTrigger>
+        <TabsTrigger value="learning">{learningCount === undefined ? "Learning" : `Learning (${learningCount})`}</TabsTrigger>
       </TabsList>
       <TabsContent value="certificates" className="pt-2">
         {certificates}

@@ -27,6 +27,7 @@ export function ImportMembersDialog() {
     setPreview(null);
     setError(null);
     setDone(null);
+    setStatus(null);
     setStale(false);
   }
 
@@ -79,7 +80,7 @@ export function ImportMembersDialog() {
         <DialogHeader>
           <DialogTitle className="text-section-title">Import members</DialogTitle>
           <DialogDescription>
-            Upload an Excel or CSV file with the columns Full name, Email, Team and Career role. Members are created without an account; invite them later so they can sign in.{" "}
+            Upload an Excel or CSV file with the columns Full name, Email, Team and Career role. Members are created without an account; accounts are linked separately so they can sign in.{" "}
             <a href="/templates/members-import.csv" download className="inline-flex items-center gap-1 text-primary underline">
               <Download aria-hidden className="size-4" />
               Download template

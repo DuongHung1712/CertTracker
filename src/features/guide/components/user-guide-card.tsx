@@ -57,7 +57,7 @@ export function UserGuideCard({ userId, role, forceOpen = false, initialVisible 
               setForced(false);
               dismissGuide(userId);
             }}>
-            Don&apos;t show again
+            Do not show again
           </Button>
         </div>
       </div>

@@ -24,16 +24,16 @@ export function MemberProfileCard({
       <div className="flex items-start gap-3">
         <div
           aria-hidden="true"
-          className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono font-bold text-sm"
+          className="flex size-11 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground font-mono font-bold text-body"
         >
           {initials}
         </div>
         <div className="flex flex-col min-w-0">
-          <h2 className="text-sm font-semibold text-foreground truncate">{fullName}</h2>
-          <p className="text-xs text-muted-foreground truncate">
+          <h2 className="text-section-title font-semibold text-foreground truncate">{fullName}</h2>
+          <p className="text-caption text-muted-foreground truncate">
             {careerRoleName ?? "Role not set"} · {teamName ?? "No team assigned"}
           </p>
-          <div className="flex items-center gap-1 pt-1.5 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 pt-1.5 text-caption text-muted-foreground">
             <Timer className="size-3 shrink-0" aria-hidden="true" />
             <span>{yoeYears === null ? "Experience not set" : `${formatYoe(yoeYears)} of experience`}</span>
           </div>

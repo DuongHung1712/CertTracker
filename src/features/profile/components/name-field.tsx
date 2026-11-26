@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { updateMyName } from "@/features/profile/actions";
 
 /** The Name row of the Account card: text with an edit button, or an inline form. */
@@ -49,15 +50,23 @@ export function NameField({ fullName }: { fullName: string }) {
     return (
       <div className="flex items-center gap-1">
         <span>{fullName}</span>
-        <Button type="button" variant="ghost" size="sm" aria-label="Edit name" ref={editButton} onClick={open}>
-          <Pencil className="size-4" aria-hidden />
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button type="button" variant="ghost" size="icon-xs" aria-label="Edit name" ref={editButton} onClick={open}>
+                <Pencil className="size-3.5" aria-hidden />
+              </Button>
+            }
+          />
+          <TooltipContent>Edit name</TooltipContent>
+        </Tooltip>
       </div>
     );
   }
 
   return (
     <form
+      noValidate
       action={formAction}
       className="flex flex-col gap-1.5"
       onKeyDown={(e) => e.key === "Escape" && cancel()}
@@ -73,14 +82,15 @@ export function NameField({ fullName }: { fullName: string }) {
           onChange={(e) => setValue(e.target.value)}
           autoComplete="name"
           autoFocus
+          aria-required="true"
           className="h-9 w-full sm:w-64"
           aria-invalid={failed || undefined}
           aria-describedby={failed ? "profile-name-error" : undefined}
         />
-        <Button type="submit" size="sm" disabled={pending}>
+        <Button type="submit" size="lg" disabled={pending}>
           {pending ? "Saving…" : "Save"}
         </Button>
-        <Button type="button" variant="ghost" size="sm" onClick={cancel}>
+        <Button type="button" variant="ghost" size="lg" onClick={cancel}>
           Cancel
         </Button>
       </div>

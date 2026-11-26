@@ -80,15 +80,15 @@ export function ScopeManagersField({
         {selectedCandidates.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
             {selectedCandidates.map((candidate) => (
-              <Badge key={candidate.userId} variant="secondary" className="gap-1 rounded-sm pr-1 font-normal">
+              <Badge key={candidate.userId} variant="secondary" className="h-auto gap-1 overflow-visible rounded-sm py-0.5 pr-0.5 font-normal">
                 <span className="max-w-40 truncate">{candidate.fullName}</span>
                 <button
                   type="button"
                   onClick={() => toggle(candidate.userId, false)}
                   aria-label={`Remove ${candidate.fullName}`}
-                  className="inline-flex size-4 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted-foreground/20 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="relative inline-flex size-6 items-center justify-center rounded-sm text-muted-foreground transition-colors after:absolute after:-inset-1 hover:bg-muted-foreground/20 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                 >
-                  <X className="size-3" aria-hidden />
+                  <X className="size-3.5" aria-hidden />
                 </button>
               </Badge>
             ))}
@@ -105,7 +105,7 @@ export function ScopeManagersField({
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search managers by name or email…"
           aria-label="Search managers by name or email"
-          className="h-8 pl-8"
+          className="h-9 pl-8"
         />
       </div>
 
@@ -139,7 +139,7 @@ export function ScopeManagersField({
                   <span className="flex flex-wrap items-center gap-1.5">
                     <span className="truncate text-body font-medium text-foreground">{candidate.fullName}</span>
                     {inherited && (
-                      <Badge variant="outline" className="rounded-sm px-1.5 py-0 text-[11px] font-normal text-muted-foreground">
+                      <Badge variant="outline" className="rounded-sm px-1.5 py-0 text-label font-normal text-muted-foreground">
                         Via program
                       </Badge>
                     )}

@@ -13,8 +13,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { FieldError } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RequiredMark } from "@/components/required-mark";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -33,18 +35,26 @@ interface SkillAssessmentDialogProps {
 
 function AssessmentForm({ skill, onClose, onSave }: { skill: Skill; onClose: () => void; onSave: SkillAssessmentDialogProps["onSave"] }) {
   const [level, setLevel] = React.useState<SkillLevel>(skill.currentLevel);
-  const [years, setYears] = React.useState(skill.yearsOfExperience);
+  const [yearsInput, setYearsInput] = React.useState(String(skill.yearsOfExperience));
+  const [yearsError, setYearsError] = React.useState<string | null>(null);
   const [note, setNote] = React.useState(skill.evidenceNote ?? "");
   const needsReview = LEVEL_SCALE_GUIDE[level].requiresReview;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onSave({ skillId: skill.id, newLevel: level, yearsOfExperience: Math.max(0, years), evidenceNote: note.trim() });
+    const trimmedYears = yearsInput.trim();
+    const parsedYears = Number(trimmedYears);
+    if (!trimmedYears || Number.isNaN(parsedYears) || parsedYears < 0 || parsedYears > 50) {
+      setYearsError("Enter years between 0 and 50");
+      return;
+    }
+    onSave({ skillId: skill.id, newLevel: level, yearsOfExperience: parsedYears, evidenceNote: note.trim() });
     onClose();
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <p className="text-caption text-muted-foreground">* Required</p>
       <fieldset className="flex flex-col gap-2">
         <legend className="mb-2 text-label uppercase text-muted-foreground">Your level</legend>
         <div role="radiogroup" aria-label="Your level" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -59,7 +69,7 @@ function AssessmentForm({ skill, onClose, onSave }: { skill: Skill; onClose: () 
                 aria-checked={selected}
                 onClick={() => setLevel(lvl)}
                 className={cn(
-                  "flex flex-col items-start gap-0.5 rounded-md border p-2.5 text-left text-caption transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "flex flex-col items-start gap-0.5 rounded-md border p-2.5 text-left text-caption transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
                   selected ? "border-primary bg-primary/10" : "border-border bg-card hover:bg-muted/50",
                 )}
               >
@@ -80,22 +90,29 @@ function AssessmentForm({ skill, onClose, onSave }: { skill: Skill; onClose: () 
       </fieldset>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="skill-years">Years using this skill at work</Label>
+        <Label htmlFor="skill-years">
+          Years using this skill at work <RequiredMark />
+        </Label>
         <Input
           id="skill-years"
           type="number"
           min={0}
           max={50}
           step={0.5}
-          value={years}
-          onChange={(e) => setYears(Number.parseFloat(e.target.value) || 0)}
-          className="w-32 tabular-nums"
-          required
+          value={yearsInput}
+          onChange={(e) => {
+            setYearsInput(e.target.value);
+            setYearsError(null);
+          }}
+          aria-required
+          aria-invalid={!!yearsError}
+          className="h-9 w-32 tabular-nums"
         />
+        <FieldError errors={yearsError ? [{ message: yearsError }] : []} />
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="skill-evidence">What have you done with it? (optional)</Label>
+        <Label htmlFor="skill-evidence">What have you done with it?</Label>
         <Textarea
           id="skill-evidence"
           rows={3}

@@ -29,9 +29,9 @@ export const THEME_STYLES: StyleOption[] = [
     label: "Credential Vault",
     shortLabel: "Vault",
     icon: ShieldCheck,
-    tagline: "Cryptographic security & physical credential",
+    tagline: "Crisp precision borders & high-contrast surfaces",
     description:
-      "Tailored for authentic credentials: crisp precision 1px borders, monospace security tags, solid high-contrast surfaces, and live status dots.",
+      "Tailored for formal certificates: crisp precision 1px borders, monospace security tags, solid high-contrast surfaces, and live status dots.",
   },
   {
     id: "nordic",

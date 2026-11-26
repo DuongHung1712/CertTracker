@@ -19,7 +19,7 @@ import { deleteLearningItem } from "@/features/learning/actions";
 import { LearningSheet } from "@/features/learning/components/learning-sheet";
 import { SubmitCertificate } from "@/features/learning/components/submit-certificate";
 import type { CourseOption, LearningRow } from "@/features/learning/queries";
-import type { CertificateChoice, StudyCourse } from "@/features/records/certificate-course";
+import type { CertificateChoice } from "@/features/records/certificate-course";
 import type { RecordRow } from "@/features/records/queries";
 import { RECORD_STATUSES } from "@/features/records/schema";
 import { formatDate } from "@/lib/format";
@@ -42,9 +42,10 @@ export function LearningTable({
   examOptions,
   viewerMemberId = null,
   certificateOptions = [],
-  studyCourses = [],
   providers,
   showCompanyFields = false,
+  canAddToCatalogue = false,
+  canDelete = false,
   aiReaderEnabled = false,
   records,
   initialSearch = "",
@@ -59,11 +60,12 @@ export function LearningTable({
   examOptions: ComboboxOption[];
   /** The signed-in member, who proposes a missing course; null for an admin. */
   viewerMemberId?: string | null;
-  /** For "Submit certificate": the certificate sheet needs the catalogue. */
+  /** For "Add certificate": the certificate sheet needs the catalogue. */
   certificateOptions?: CertificateChoice[];
-  studyCourses?: StudyCourse[];
   providers?: { id: string; name: string }[];
   showCompanyFields?: boolean;
+  canAddToCatalogue?: boolean;
+  canDelete?: boolean;
   aiReaderEnabled?: boolean;
   records?: RecordRow[];
   /** Links open the list already searched (?search=<name>). */
@@ -80,9 +82,14 @@ export function LearningTable({
     [certificateOptions],
   );
   const [search, setSearch] = useState(initialSearch);
-  const [status, setStatus] = useState(
-    (RECORD_STATUSES as readonly string[]).includes(initialStatus) ? initialStatus : ALL,
-  );
+  const seedStatus = (RECORD_STATUSES as readonly string[]).includes(initialStatus) ? initialStatus : ALL;
+  const [status, setStatus] = useState(seedStatus);
+  // Re-seed when real navigation changes ?status= (a key would remount the table on every router.refresh()).
+  const [prevSeed, setPrevSeed] = useState(seedStatus);
+  if (prevSeed !== seedStatus) {
+    setPrevSeed(seedStatus);
+    setStatus(seedStatus);
+  }
   const [teamFilter, setTeamFilter] = useState(
     initialTeam ? (initialTeam === NO_TEAM_LABEL || initialTeam === NO_TEAM ? NO_TEAM : initialTeam) : ALL,
   );
@@ -92,6 +99,14 @@ export function LearningTable({
     remove: (row) => deleteLearningItem({ id: row.id }),
     successMessage: (row) => `Removed ${itemName(row)}`,
   });
+
+  function syncSelfStatusUrl(nextStatus: string) {
+    if (mode !== "self" || typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (nextStatus !== ALL) url.searchParams.set("status", nextStatus);
+    else url.searchParams.delete("status");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+  }
 
   const teamOptions = useMemo<SelectOption[]>(() => {
     const names = [...new Set(rows.flatMap((row) => (row.teamName ? [row.teamName] : [])))].sort((a, b) => a.localeCompare(b, "vi"));
@@ -183,7 +198,8 @@ export function LearningTable({
           setSheetOpen(true);
         },
         onDelete: remove.request,
-        extraItems: (row) => <DropdownMenuItem onClick={() => setSubmitting(row)}>Submit certificate</DropdownMenuItem>,
+        extraItems: (row) =>
+          row.status === "done" ? null : <DropdownMenuItem onClick={() => setSubmitting(row)}>Add certificate</DropdownMenuItem>,
       }),
     ],
     [mode, remove.request],
@@ -201,6 +217,7 @@ export function LearningTable({
             setSearch("");
             setStatus(ALL);
             setTeamFilter(ALL);
+            syncSelfStatusUrl(ALL);
           }}
         >
           {mode === "team" && (
@@ -209,7 +226,16 @@ export function LearningTable({
             </div>
           )}
           <div className="w-40">
-            <OptionSelect id="learning-status-filter" value={status} onChange={setStatus} options={STATUS_FILTER} placeholder="Status" />
+            <OptionSelect
+              id="learning-status-filter"
+              value={status}
+              onChange={(next) => {
+                setStatus(next);
+                syncSelfStatusUrl(next);
+              }}
+              options={STATUS_FILTER}
+              placeholder="Status"
+            />
           </div>
         </FilterBar>
         <AddButton
@@ -242,6 +268,7 @@ export function LearningTable({
         examOptions={examOptions}
         rows={rows}
         viewerMemberId={viewerMemberId}
+        canAddToCatalogue={canAddToCatalogue}
         providers={providers}
       />
       {submitting && (
@@ -250,10 +277,13 @@ export function LearningTable({
           row={submitting}
           onClose={() => setSubmitting(null)}
           certificateOptions={certificateOptions}
-          studyCourses={studyCourses}
           completionByCourse={completionByCourse}
           providers={providers}
           showCompanyFields={showCompanyFields}
+          canAddToCatalogue={canAddToCatalogue}
+          canDelete={canDelete}
+          viewerMemberId={viewerMemberId}
+          mode={mode}
           aiReaderEnabled={aiReaderEnabled}
           records={records}
         />

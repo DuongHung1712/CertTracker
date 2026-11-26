@@ -17,6 +17,7 @@ import { ExportLinks } from "@/features/export/components/export-links";
 import { RecordsRealtime } from "@/features/records/components/records-realtime";
 import { isReviewable } from "@/features/records/kind";
 import type { RecordRow } from "@/features/records/queries";
+import { formatNumber } from "@/lib/format";
 import { pluralize } from "@/lib/plural";
 
 /**
@@ -131,8 +132,12 @@ export function ManagerDashboardView({
                 />
                 <SummaryTile
                   label="Valid certificates"
-                  value={kpis.doneCount === 0 ? "—" : kpis.teamReadinessFormatted}
-                  summary={kpis.doneCount === 0 ? "No certificates yet" : `${kpis.validCount} of ${kpis.doneCount} certificates valid`}
+                  value={formatNumber(kpis.validCount)}
+                  summary={
+                    kpis.doneCount === 0
+                      ? "No completed certificates yet"
+                      : `of ${formatNumber(kpis.doneCount)} completed · ${kpis.teamReadinessFormatted}`
+                  }
                   footer={membersError ? "Members could not be loaded" : `${pluralize(withoutCertificate, "member")} without a certificate`}
                 />
               </div>

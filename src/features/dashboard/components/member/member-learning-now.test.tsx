@@ -8,7 +8,7 @@ import { makeRecord } from "@/features/records/__fixtures__/record-row";
 const updateLearningProgress = vi.fn();
 vi.mock("@/features/learning/actions", () => ({ updateLearningProgress: (...args: unknown[]) => updateLearningProgress(...args) }));
 const toast = { success: vi.fn(), error: vi.fn() };
-vi.mock("sonner", () => ({ toast: { success: (m: string, o?: unknown) => toast.success(m, o), error: (m: string) => toast.error(m) } }));
+vi.mock("sonner", () => ({ toast: { success: (m: string, o?: unknown) => toast.success(m, o), error: (m: string, o?: unknown) => toast.error(m, o) } }));
 
 const item = (over: Parameters<typeof makeRecord>[0]) =>
   makeRecord({ certificateKind: "exam", expiryStatus: "N/A", daysToExpiry: null, approval: null, ...over });
@@ -33,7 +33,7 @@ describe("MemberLearningNow", () => {
 
   it("+10% sends the new value, shows it at once and says so", async () => {
     render(<MemberLearningNow items={[studying]} onAdd={() => {}} />);
-    await userEvent.click(screen.getByRole("button", { name: "Add 10% progress to AWS SAA" }));
+    await userEvent.click(screen.getByRole("button", { name: "+10% progress for AWS SAA" }));
     expect(updateLearningProgress).toHaveBeenCalledWith({ id: "a", progress: 40, from: 30 });
     expect(screen.getByRole("progressbar", { name: "Progress of AWS SAA" }).getAttribute("aria-valuenow")).toBe("40");
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith("AWS SAA: 40%", expect.objectContaining({ action: expect.objectContaining({ label: "Undo" }) })));
@@ -41,13 +41,13 @@ describe("MemberLearningNow", () => {
 
   it("+25% on a not started item starts it", async () => {
     render(<MemberLearningNow items={[waiting]} onAdd={() => {}} />);
-    await userEvent.click(screen.getByRole("button", { name: "Add 25% progress to CKA" }));
+    await userEvent.click(screen.getByRole("button", { name: "+25% progress for CKA" }));
     expect(updateLearningProgress).toHaveBeenCalledWith({ id: "b", progress: 25, from: 0 });
   });
 
   it("Undo in the toast puts the value back, from the value just written", async () => {
     render(<MemberLearningNow items={[studying]} onAdd={() => {}} />);
-    await userEvent.click(screen.getByRole("button", { name: "Add 10% progress to AWS SAA" }));
+    await userEvent.click(screen.getByRole("button", { name: "+10% progress for AWS SAA" }));
     await waitFor(() => expect(toast.success).toHaveBeenCalled());
     const options = toast.success.mock.calls[0][1] as { action: { onClick: () => void } };
     options.action.onClick();
@@ -57,17 +57,17 @@ describe("MemberLearningNow", () => {
 
   it("stops at 99% and swaps the buttons for a link to finish it in My learning", async () => {
     render(<MemberLearningNow items={[{ ...studying, progress: 90 }]} onAdd={() => {}} />);
-    await userEvent.click(screen.getByRole("button", { name: "Add 25% progress to AWS SAA" }));
+    await userEvent.click(screen.getByRole("button", { name: "+25% progress for AWS SAA" }));
     expect(updateLearningProgress).toHaveBeenCalledWith({ id: "a", progress: 99, from: 90 });
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Add 10% progress to AWS SAA" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("button", { name: "+10% progress for AWS SAA" })).toBeNull());
     expect(screen.getByRole("link", { name: "Finish AWS SAA in My learning" }).getAttribute("href")).toBe("/me?tab=learning");
   });
 
   it("puts the old value back and shows the reason when the server refuses", async () => {
     updateLearningProgress.mockResolvedValue({ ok: false, error: "Reload the page and try again." });
     render(<MemberLearningNow items={[studying]} onAdd={() => {}} />);
-    await userEvent.click(screen.getByRole("button", { name: "Add 10% progress to AWS SAA" }));
-    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Reload the page and try again."));
+    await userEvent.click(screen.getByRole("button", { name: "+10% progress for AWS SAA" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Reload the page and try again.", { duration: Infinity }));
     expect(screen.getByRole("progressbar", { name: "Progress of AWS SAA" }).getAttribute("aria-valuenow")).toBe("30");
   });
 

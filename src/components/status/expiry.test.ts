@@ -60,7 +60,7 @@ describe("expiryDetail", () => {
 
   it("words a completion that never expires without 'certificate'", () => {
     expect(expiryDetail({ status: "No Expiry", daysToExpiry: null, expiryDate: null, kind: "completion" })).toBe(
-      "Doesn't expire",
+      "Does not expire",
     );
   });
 });
