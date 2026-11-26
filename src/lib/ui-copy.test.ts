@@ -68,6 +68,11 @@ const JARGON = [
   "learners",
   "Upload proof",
   "Recorded credentials",
+  "Course completion",
+  "course completion",
+  "Renew credential",
+  "Check credential",
+  "new credentials",
 ];
 
 describe("[copy] plain-English interface", () => {
@@ -110,5 +115,14 @@ describe("[copy] plain-English interface", () => {
     const allowed = (p: Piece) =>
       (p.file === "src/features/import/clean.ts" || p.file === "src/features/members/import-plan.ts") && p.text === "e-mail";
     expect(offenders((p) => /e-mail/i.test(p.text) && !allowed(p))).toEqual([]);
+  });
+
+  it("avoids contractions and 'please' in user-visible copy", () => {
+    const visible = (p: Piece) => /\s/.test(p.text.trim()) && !p.text.trim().startsWith("/");
+    expect(
+      offenders((p) =>
+        visible(p) && /\b(?:please|(?:can|don|doesn|won|isn|aren|didn|couldn|shouldn|wouldn)'t)\b/i.test(p.text),
+      ),
+    ).toEqual([]);
   });
 });

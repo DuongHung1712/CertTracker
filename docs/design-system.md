@@ -175,12 +175,12 @@ The first column identifies the row (code or name), the last column is the "⋯"
 
 The page is titled "Catalogue" and has two tabs, **Certificates** and **Courses**. Everyone reads; only the admin sees the add button, the row menu and the Certificate types and Providers sections below the tabs. Both tables have a Link column (`ExternalLinkCell`).
 
-- **Approval badge (`ApprovalBadge`, `components/status/record-status.tsx`):** next to the Completed status in the records table and the member list; "Waiting for approval" is a `secondary` badge with an hourglass, "Returned" a `destructive` badge with an undo icon (text plus icon, never colour alone); Approved shows nothing. It uses the badge variants, no `--status-*` tokens (those are for expiry only).
-- **Kind badge:** `secondary` badge, `rounded-sm`, with `CERTIFICATE_KIND_LABEL`: "Exam" or "Course completion". It appears in the Certificates table, in the records table next to the certificate name, and in the certificate picker options ("AWS Solutions Architect Associate · Exam"). A credential from finishing a course is a course completion, never a certificate, in text, toasts and dialogs (`CERTIFICATE_KIND_NOUN` picks the noun).
-- **Certificate form:** Kind first. The Course picker appears only for a course completion and lists courses that grant nothing yet (plus the edited completion's own). Empty states differ: "No courses yet. Add a course first." and "Every course already grants a completion." The title follows the selected kind.
+- **Approval badge (`ApprovalBadge`, `components/status/record-status.tsx`):** next to the Completed status in the records table and the member list; "Approved" is an `outline` badge with a check icon, "Waiting for approval" is a `secondary` badge with an hourglass, "Returned" a `destructive` badge with an undo icon (text plus icon, never colour alone); `null` renders nothing. It uses the badge variants, no `--status-*` tokens (those are for expiry only).
+- **Kind badge:** `secondary` badge, `rounded-sm`, with `CERTIFICATE_KIND_LABEL`: "Exam" or "Course certificate". It appears in the Certificates table, in the records table next to the certificate name, and in the certificate picker options ("AWS Solutions Architect Associate · Exam"). Text, toasts and dialogs name the kind with `CERTIFICATE_KIND_NOUN`: "certificate" for an exam, "course certificate" for a course certificate.
+- **Certificate form:** Kind first. The Course picker appears only for a course certificate and lists courses that grant nothing yet (plus the edited course certificate's own). Empty states differ: "No courses yet. Add a course first." and "Every course already grants a course certificate." The title follows the selected kind.
 - **Course form:** Name, Provider, Duration (hours), Cost and Currency, Refundable, Course link, Prepares for (exam certificates only).
-- **Courses table:** Name, Provider, Duration, Cost, Refundable, Link, Prepares for, Grants ("Completion: <name>"); Grants is reached by the table's own scroll at 1280 px.
-- **Record form, Course studied field:** hidden until a certificate is chosen; for an exam an optional `Select` whose options are the courses that prepare for it, with "None (self-study)"; for a course completion read-only, showing the granting course. A saved course that no longer prepares for the certificate stays listed as "<name> (no longer linked to this certificate)". The records table shows the column from `xl`.
+- **Courses table:** Name, Provider, Duration, Cost, Refundable, Link, Prepares for, Grants ("Course certificate: <name>"); Grants is reached by the table's own scroll at 1280 px.
+- **Record form, Course studied field:** hidden until a certificate is chosen; for an exam an optional `Select` whose options are the courses that prepare for it, with "None (self-study)"; for a course certificate read-only, showing the granting course. A saved course that no longer prepares for the certificate stays listed as "<name> (no longer linked to this certificate)". The records table shows the column from `xl`.
 
 Course form (`Sheet`): the estimated study time is labelled "Duration (hours)". The "Refund conditions" `Textarea` appears only while "Refundable" is on; turning it off clears the text. The courses table shows the conditions truncated under the "Yes" badge, with the full text in a `Tooltip`.
 
@@ -200,7 +200,7 @@ In the certificate form, mark the required fields with `RequiredMark` after the 
 > This member's 5 certificates will be deleted too. This cannot be undone.
 > [Cancel] [Delete member]
 
-When the database **blocks** the delete (for example a course that certificates still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course grants the completion <name>. Delete or change that completion first."*).
+When the database **blocks** the delete (for example a course that certificates still use, `on delete restrict`), do not open a `ConfirmDialog`: show an `Alert` that gives the reason and what to do (*"This course grants the course certificate <name>. Delete or change that certificate first."*).
 
 ### 4.4 Feedback
 
@@ -244,19 +244,19 @@ An admin approves, renews and fixes, so the page is four numbers, one list and t
 - **Needs attention (`AdminNeedsAttention`):** live feed from the records: expired certificates (most overdue first), then certificates expiring within 30 days (soonest first), at most `ADMIN_ATTENTION_LIMIT` (10), then one "Data quality" row ("<n> issues to check") that the cut never drops. When cut it ends with "Showing 10 of N. View all certificates". Rows are links with a `focus-visible` ring; tone shows in the icon and the hover background, never a side stripe. Empty: "Nothing needs attention". If data quality fails the row says "Data quality could not be loaded".
 - **Explorer:** opens on the team tab (tabs By team, By certificate type, By provider, Popular certificates; master list and detail panel; the selected row is solid `bg-primary`). With no certificates the Explorer is replaced by the "No certificates yet" empty state.
 - **Individual ranking:** a closed `<details>` at the bottom; one click opens `RankingTable`.
-- **Removed on purpose** (they live elsewhere or were not real): profile card, quick actions, planned features, earned-by-month chart, stat strips, course-completion strip, the Soon tabs.
+- **Removed on purpose** (they live elsewhere or were not real): profile card, quick actions, planned features, earned-by-month chart, stat strips, course-certificate strip, the Soon tabs.
 - **Failures:** every query settles on its own and a failure shows in its own region (`SectionError`); a failed query is never shown as "All clear" or a default value.
 - **Banned copy:** no invented strings, no audit, pool, department, credential or "verified" wording, no dead controls. `admin-copy.test.ts` scans the admin components.
 
 ### 4.7 Member Dashboard
-- **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate or course completion" opening the record sheet).
-- **Attention Banner:** Expiry palette alert banner for the certificate expiring soonest within 30 days (expiring-soon tokens) or already expired (expired tokens, "Expired on <date>"), with "Upload proof" action button opening the record sheet. Hidden when nothing expires within 60 days.
+- **Header:** Title "Dashboard", greeting with time-of-day in `Asia/Ho_Chi_Minh` ("Good morning, <name>"), Export data links, and primary action with a single `+` icon ("Add certificate" opening the record sheet).
+- **Attention Banner:** Expiry palette alert banner for the certificate expiring soonest within 30 days (expiring-soon tokens) or already expired (expired tokens, "Expired on <date>"), with "Renew certificate" / "Upload proof" action button opening the record sheet. Hidden when nothing expires within 60 days.
 - **Overview:** 4 personal KPI cards for the member's own records inside region "Overview" (`dl > div` with bare numbers in the first `dd`):
   1. "Recorded certificates": inverted solid-teal highlight card with "N valid of M".
   2. "Expiring soon": the one with the least days left, with the course and "N days left".
   3. "In progress": count plus up to two mini progress bars with course name and percent.
   4. "Expired": count; 0 shows a check icon and "All up to date".
-- **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Specialization focus" coming-soon card.
+- **Member Profile:** Initials avatar, full name, career role and team, years of experience (`formatYoe`), and embedded "Focus area" coming-soon card.
 - **My Certificates List:** Table/list view with filter tabs (`All`, `Valid`, `Expiring within 60 days`, `In progress`) with item counts, sort dropdown ("Expiry" default / "Name"), status badge (`ExpiryBadge`), dates, inline progress, edit icon button, and proof link button (`/api/records/${id}/evidence`). Maximum 8 rows with a "View all certificates" link to `/me` when there are more.
 - **Coming Soon Cards:** Stack of non-interactive preview cards (`ComingSoonCard` with `disabled` and `aria-disabled="true"`) for upcoming modules: "Ask about certificates" (with a disabled question box), "My skills", "Quarterly goals", "Next career role", "Certificate review" and, inside the profile card, "Focus area". Each has the chip "Coming soon" and a one-line description ending "Not available yet.".
 - **Responsive:** Three desktop zones collapse into a single column on mobile (390px) without horizontal scroll.
@@ -359,7 +359,7 @@ Text colours stay those of the active style and light/dark theme. `src/app/token
 
 What Vault adds on top of the tokens, all from CSS hooks (Classic draws none of it):
 
-- **Status stamps** (`data-stamp` on `RecordStatusLabel`, `ApprovalBadge`, `CatalogueStatusBadge`): one mono uppercase stamp per status, coloured from the status tokens. Not started = N/A, In progress = primary, Completed = active, Waiting and a pending proposal = expiring-soon, Returned and a rejected proposal = expired.
+- **Status stamps** (`data-stamp` on `RecordStatusLabel`, `ApprovalBadge`, `CatalogueStatusBadge`): one mono uppercase stamp per status, coloured from semantic neutral, accent and destructive tokens (`--status-*` is reserved strictly for expiry). Not started = muted, In progress = primary, Completed = secondary, Approved = accent, Waiting and a pending proposal = secondary, Returned and a rejected proposal = destructive.
 - **Held credential**: an approved, not renewed item gets a sealed icon (`data-sealed`) and a record line (`.vault-credential-strip`: Issued, Valid to, Holder code). Only what really counts looks like a certificate.
 - **Live dot**: only on a counted credential (`ExpiryBadge counted`); a Waiting, Returned or renewed item shows its expiry without it.
 - **Ledger tables**: mono column heads, 1px column rules, tabular numerals.
